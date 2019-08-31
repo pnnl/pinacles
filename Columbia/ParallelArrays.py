@@ -85,13 +85,13 @@ class GhostArray(GhostArrayBase):
                 send_buf = np.copy(self.array[nh:2*nh,:,:,:], order='F') 
                 recv_buf = np.empty_like(send_buf)
                 comm.Sendrecv(send_buf, dest, 113, recv_buf)
-                self.array[:-nh,:,:,:] = recv_buf
+                self.array[-nh:,:,:,:] = recv_buf
 
             if dim == 1:
                 send_buf = np.copy(self.array[:,nh:2*nh,:,:], order='F')
                 recv_buf = np.empty_like(send_buf)
                 comm.Sendrecv(send_buf, dest, 113, recv_buf) 
-                self.array[:,:-nh,:,:] = recv_buf
+                self.array[:,-nh:,:,:] = recv_buf
 
             #Now do the left exchange 
             source, dest = comm.Shift(0,-1)
