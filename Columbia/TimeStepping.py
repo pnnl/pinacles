@@ -17,7 +17,6 @@ class RungeKuttaBase:
         return
 
     def update(self):
-        pass
 
         return 
 
