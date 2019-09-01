@@ -1,6 +1,6 @@
 import json  
 import argparse 
-from Columbia import TerminalIO, Grid, ParallelArrays
+from Columbia import TerminalIO, Grid, ParallelArrays, Containers
 from mpi4py import MPI 
 import cProfile
 import numpy as n
@@ -9,7 +9,12 @@ def main(namelist):
     TerminalIO.start_message() 
 
     ModelGrid = Grid.RegularCartesian(namelist)
+    PrognosticState = Containers.ModelState(ModelGrid, prognostic=True) 
+    DiagnosticState = Containers.ModelState(ModelGrid) 
+    PrognosticState.add_variable('q_t')
 
+
+    PrognosticState.allocate()
     TestArr = ParallelArrays.GhostArray(ModelGrid, ndof=5)
 
     TestArr.set(MPI.COMM_WORLD.Get_rank()) 
