@@ -19,6 +19,6 @@ class WENO_5th_Order(ScalarAdvectionBase):
         ScalarAdvectionBase.__init__(self) 
         return 
 
-    def update(); 
+    def update(self):
 
         return 
