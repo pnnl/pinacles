@@ -15,7 +15,6 @@ class ModelState:
         self._units = {}           #Store the units, this is also hand for plotting 
         self._nvars = 0            #The number of 3D field stored in this model state 
   
-
         return 
 
     def add_variable(self, name, long_name=None, latex_name=None, units=None): 

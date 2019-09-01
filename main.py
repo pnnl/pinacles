@@ -15,6 +15,7 @@ def main(namelist):
 
 
     PrognosticState.allocate()
+    PrognosticState.boundary_exchange()
     TestArr = ParallelArrays.GhostArray(ModelGrid, ndof=5)
 
     TestArr.set(MPI.COMM_WORLD.Get_rank()) 
