@@ -1,6 +1,6 @@
 import json  
 import argparse 
-from Columbia import TerminalIO, Grid, ParallelArrays, Containers
+from Columbia import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
 from Columbia import ScalarAdvection, TimeStepping
 from mpi4py import MPI 
 import cProfile
@@ -13,9 +13,15 @@ def main(namelist):
     PrognosticState = Containers.ModelState(ModelGrid, prognostic=True) 
     DiagnosticState = Containers.ModelState(ModelGrid) 
     PrognosticState.add_variable('q_t')
-    SA = ScalarAdvection.ScalarAdvectionFactory(namelist)
+    #SA = ScalarAdvection.ScalarAdvectionFactory(namelist)
+
+    Thermo = Thermodynamics.factory(namelist, ModelGrid, PrognosticState, DiagnosticState)
+
 
     PrognosticState.allocate()
+    DiagnosticState.allocate()
+
+
     PrognosticState.boundary_exchange()
     TestArr = ParallelArrays.GhostArray(ModelGrid, ndof=5)
 
