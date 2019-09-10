@@ -1,37 +1,30 @@
 import json  
 import argparse 
 from Columbia import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
-from Columbia import ScalarAdvection, TimeStepping
+from Columbia import ScalarAdvection, TimeStepping, ReferenceState
 from mpi4py import MPI 
-import cProfile
-import numpy as n
+import numpy as numpy
+import time
 
 def main(namelist): 
     TerminalIO.start_message() 
 
+
+
+    t0 = time.time() 
     ModelGrid = Grid.RegularCartesian(namelist)
     PrognosticState = Containers.ModelState(ModelGrid, prognostic=True) 
-    DiagnosticState = Containers.ModelState(ModelGrid) 
-    PrognosticState.add_variable('q_t')
-    #SA = ScalarAdvection.ScalarAdvectionFactory(namelist)
-
+    DiagnosticState = Containers.ModelState(ModelGrid)
     Thermo = Thermodynamics.factory(namelist, ModelGrid, PrognosticState, DiagnosticState)
-
-
+    Ref =  ReferenceState.factory(namelist, ModelGrid, Thermo)
+    Ref.set_surface()
+    Ref.integrate()
     PrognosticState.allocate()
     DiagnosticState.allocate()
-
+    t1 = time.time() 
+    print(t1 - t0)
 
     PrognosticState.boundary_exchange()
-    TestArr = ParallelArrays.GhostArray(ModelGrid, ndof=5)
-
-    TestArr.set(MPI.COMM_WORLD.Get_rank()) 
-    import time 
-    for i in range(1): 
-        t0 = time.time() 
-        TestArr.boundary_exchange()
-        t1 = time.time() 
-        print(t1 - t0)
 
     TerminalIO.end_message() 
 

@@ -4,17 +4,20 @@ print(dir(Thermodynamics))
 from Columbia import parameters 
 
 @numba.njit()
-def h(T, z): 
+def s(z, T): 
     return parameters.CPD * T + parameters.G*z
 
 @numba.njit()
-def T(h,z): 
-    return (h - parameters.G * z)*parameters.ICPD
+def T(z, s): 
+    return (s - parameters.G * z)*parameters.ICPD
 
 @numba.njit()
-def rho(P0, T): 
-    return P0/(parameters.RD*T)
+def rho(P, T): 
+    return P/(parameters.RD*T)
 
+@numba.njit
+def alpha(P,T): 
+    return 1.0/rho(P,T)
 
 class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase): 
     def __init__(self, Grid, PrognosticState, DiagnosticState):

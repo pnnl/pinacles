@@ -75,6 +75,15 @@ class GridBase:
         return np.copy(self._global_axes[2]) 
 
     @property
+    def z_global_edge(self): 
+        ''' Copy here is forced to keep _global_axes externally immutable,  
+        if performace becomes an issue we can provide a property that return a 
+        view so that copy occurs. 
+        '''
+        return np.copy(self._global_axes_edge[2]) 
+
+
+    @property
     def global_axes(self): 
         ''' Copy here is forced to keep _global_axes externally immutable,  
         if performace becomes an issue we can provide a property that return a 
@@ -160,12 +169,20 @@ class RegularCartesian(GridBase):
     def _compute_globalcoordiantes(self): 
     
         self._global_axes = [] 
+        self._global_axes_edge = [] 
         for i in range(3): 
             dx = self._l[i]/self._n[i]
-            lx = -(self._n_halo[i] + 0.5)  * dx 
-            ux = (self._n_halo[i] - 0.5) * dx 
+            
+            #Location of lowest most halo point 
+            lx = (-self._n_halo[i] +0.5)  * dx 
 
+            #Location of upper most halo point 
+            ux = ((self._n[i]+self._n_halo[i]) - 0.5) * dx
+
+            #Generate an axis based on upper and lower points 
             self._global_axes.append(np.linspace(lx, ux, self.ngrid[i]))
+            self._global_axes_edge.append(self._global_axes[i] + 0.5 * dx)
+
 
         return 
 
