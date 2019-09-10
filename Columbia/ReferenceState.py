@@ -137,7 +137,6 @@ class ReferenceDry(ReferenceBase):
 
         self.update_ref_boundaries() 
 
-        print(self.rho0)
         return 
 
 def factory(namelist, Grid, Thermo): 
