@@ -77,17 +77,32 @@ class ReferenceBase:
         return np.copy(self._P0)
 
     @property
+    def p0_edge(self): 
+        return np.copy(self.p0_edge)
+
+    @property
     def T0(self):
         return np.copy(self._T0)
+
+    @property 
+    def T0_edge(self): 
+        return np.copy(self._T0_edge)
 
     @property
     def rho0(self): 
         return np.copy(self._rho0)
 
     @property
+    def rho0_edge(self): 
+        return np.copy(self._rho0_edge)
+
+    @property
     def alpha0(self): 
         return np.copy(self._alpha0)
 
+    @property
+    def alpha0_edge(self): 
+        return np.copy(self._alpha0_edge)
 
 def _integrate_dry(z, lnpsfc, ssfc, n=250): 
     p0_out = np.empty_like(z)
@@ -122,19 +137,23 @@ class ReferenceDry(ReferenceBase):
         
         z = np.append([0.0],self._Grid.z_global[nhalo:-nhalo] )
 
+        #Compute reference pressure profiles 
         self._P0[nhalo:-nhalo] = _integrate_dry(z, lnp_sfc, self.ssfc)[1:]
         self._P0_edge[nhalo:-nhalo] = _integrate_dry(self._Grid.z_global_edge[nhalo:-nhalo], lnp_sfc, self.ssfc)
         
+        #Compute reference temperature profiles
         self._T0[nhalo:-nhalo] = ThermodynamicsDry.T(z, self.ssfc)[1:]
         self._T0_edge[nhalo:-nhalo] = ThermodynamicsDry.T(self._Grid.z_global_edge[nhalo:-nhalo], self.ssfc)
 
+        #Cmopute reference density profiles 
         self._rho0[nhalo:-nhalo] = ThermodynamicsDry.rho(self._P0[nhalo:-nhalo], self._T0[nhalo:-nhalo])
-
         self._rho0_edge[nhalo:-nhalo]=ThermodynamicsDry.rho(self._P0_edge[nhalo:-nhalo], self._T0_edge[nhalo:-nhalo])
         
+        #Compute reference specifi volume profiles 
         self._alpha0[nhalo:-nhalo] = ThermodynamicsDry.alpha(self._P0[nhalo:-nhalo], self._T0[nhalo:-nhalo])
         self._alpha0_edge[nhalo:-nhalo] = ThermodynamicsDry.alpha(self._P0_edge[nhalo:-nhalo], self._T0_edge[nhalo:-nhalo])
 
+        #Set the ghostpoint for the reference profiles 
         self.update_ref_boundaries() 
 
         return 
