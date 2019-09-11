@@ -1,63 +1,64 @@
-import json  
-import argparse 
+import json
+import argparse
 from Columbia import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
 from Columbia import ScalarAdvection, TimeStepping, ReferenceState
-from mpi4py import MPI 
+from mpi4py import MPI
 import numpy as numpy
 import time
 
-def main(namelist): 
-    TerminalIO.start_message() 
+def main(namelist):
+    TerminalIO.start_message()
 
-    t0 = time.time() 
+    t0 = time.time()
     ModelGrid = Grid.RegularCartesian(namelist)
-    ScalarState = Containers.ModelState(ModelGrid, prognostic=True) 
+    ScalarState = Containers.ModelState(ModelGrid, prognostic=True)
     VelocityState = Containers.ModelState(ModelGrid, prognostic=True)
     DiagnosticState = Containers.ModelState(ModelGrid)
-    
-    # Add velocity variables 
+
+    # Add velocity variables
     VelocityState.add_variable('u')
     VelocityState.add_variable('v')
     VelocityState.add_variable('w')
 
-    for i in range(200): 
+    for i in range(5):
         ScalarState.add_variable(str(i))
 
-    # Set up the thermodynamics class 
+    # Set up the thermodynamics class
     Thermo = Thermodynamics.factory(namelist, ModelGrid, ScalarState, DiagnosticState)
 
-    # In the futhre the microphyics should be initialized here 
+    # In the futhre the microphyics should be initialized here
 
-    # Set up the reference state class 
+    # Set up the reference state class
     Ref =  ReferenceState.factory(namelist, ModelGrid, Thermo)
     Ref.set_surface()
     Ref.integrate()
 
-    #Setup the scalar advection calss 
+    #Setup the scalar advection calss
     ScalarAdv = ScalarAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
     # Allocate all of the big parallel arrays needed for the container classes
     ScalarState.allocate()
     VelocityState.allocate()
     DiagnosticState.allocate()
-    t1 = time.time() 
+    t1 = time.time()
     print(t1 - t0)
 
-    ScalarState.boundary_exchange()
-    VelocityState.boundary_exchange()
 
-    for i in range(10): 
-        t0 = time.time() 
+
+    for i in range(10):
+        t0 = time.time()
         ScalarAdv.update()
+        ScalarState.boundary_exchange()
+        VelocityState.boundary_exchange()
         t1 = time.time()
         print(t1 - t0)
 
 
-    TerminalIO.end_message() 
+    TerminalIO.end_message()
 
-    return 
+    return
 
-if __name__ == '__main__': 
+if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Input for Columbia an LES!')
     parser.add_argument('inputfile')
@@ -65,5 +66,5 @@ if __name__ == '__main__':
 
     with open(args.inputfile, 'r') as namelist_h:
         namelist = json.load(namelist_h)
-        #cProfile.run('main(namelist)_h') 
+        #cProfile.run('main(namelist)_h')
         main(namelist)
