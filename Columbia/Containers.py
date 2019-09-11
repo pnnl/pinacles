@@ -5,7 +5,7 @@ class ModelState:
     def __init__(self, Grid, prognostic=False): 
 
         self._Grid = Grid          #The grid to use for this ModelState container 
-        self._prognostic = False   #Is prognostic, if True we will allocate a tendency array 
+        self._prognostic = prognostic  #Is prognostic, if True we will allocate a tendency array 
 
         self._state_array = None   #This will store present values of the model state 
         self._tend_array = None    #If prognostic this will store the values of the tend array 
@@ -35,11 +35,15 @@ class ModelState:
 
         #Allocate tendency array 
         self._state_array = ParallelArrays.GhostArray(self._Grid, ndof=self._nvars)
-
+        self._state_array.zero()
+        
         #Only allocate tendency array if this is a container for prognostic variables 
         if self._prognostic: 
             self._tend_array = ParallelArrays.GhostArray(self._Grid, ndof=self._nvars)
+            self._tend_array.zero()
 
+       
+        
         return 
 
     def boundary_exchange(self):
@@ -50,11 +54,15 @@ class ModelState:
     def get_field(self, name):
         #Return a contiguious memory slice of _state_array containing the values of name 
         dof = self._dofs[name]
-        return self._state_array[:,:,:,dof]
+        return self._state_array.array[:,:,:,dof]
 
     def get_tend(self,name):
         #Return a contiguous memory slice of _tend_array containing the tendencies of name 
         #TODO add error handling for this case. 
         dof = self._dofs[name]
-        return self._tend_array[:,:,:,dof]
+        return self._tend_array.array[:,:,:,dof]
+
+    @property
+    def names(self): 
+        return self._dofs.keys()
     

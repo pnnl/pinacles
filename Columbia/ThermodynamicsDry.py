@@ -20,8 +20,8 @@ def alpha(P,T):
     return 1.0/rho(P,T)
 
 class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase): 
-    def __init__(self, Grid, PrognosticState, DiagnosticState):
-        Thermodynamics.ThermodynamicsBase.__init__(self, Grid, PrognosticState, DiagnosticState)
+    def __init__(self, Grid, ScalarState, DiagnosticState):
+        Thermodynamics.ThermodynamicsBase.__init__(self, Grid, ScalarState, DiagnosticState)
         return  
 
     def update(self): 

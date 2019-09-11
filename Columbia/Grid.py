@@ -133,8 +133,6 @@ class GridBase:
     def local_shape(self): 
         return self._local_shape
 
-
-
     def _create_subcomms(self): 
         self.subcomms = Subcomm(MPI.COMM_WORLD, dims=[0,0,1])
         return 
