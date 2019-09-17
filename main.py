@@ -14,13 +14,15 @@ def main(namelist):
     ScalarState = Containers.ModelState(ModelGrid, prognostic=True)
     VelocityState = Containers.ModelState(ModelGrid, prognostic=True)
     DiagnosticState = Containers.ModelState(ModelGrid)
+    ScalarTimeStepping = TimeStepping.factory(namelist, ModelGrid, ScalarState)
+    VelocityTimeStepping = TimeStepping.factory(namelist, ModelGrid, VelocityState)
 
     # Add velocity variables
     VelocityState.add_variable('u')
     VelocityState.add_variable('v')
     VelocityState.add_variable('w')
 
-    for i in range(5):
+    for i in range(100):
         ScalarState.add_variable(str(i))
 
     # Set up the thermodynamics class
@@ -40,6 +42,11 @@ def main(namelist):
     ScalarState.allocate()
     VelocityState.allocate()
     DiagnosticState.allocate()
+
+    ScalarTimeStepping.initialize()
+    VelocityTimeStepping.initialize()
+    
+
     t1 = time.time()
     print(t1 - t0)
 
@@ -47,9 +54,13 @@ def main(namelist):
 
     for i in range(10):
         t0 = time.time()
-        ScalarAdv.update()
-        ScalarState.boundary_exchange()
-        VelocityState.boundary_exchange()
+        for n in range(ScalarTimeStepping.n_rk_step): 
+            print(n)
+            ScalarAdv.update()
+            ScalarTimeStepping.update() 
+            VelocityTimeStepping.update()
+            ScalarState.boundary_exchange()
+            VelocityState.boundary_exchange()
         t1 = time.time()
         print(t1 - t0)
 

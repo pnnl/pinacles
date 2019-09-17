@@ -98,7 +98,6 @@ def weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, p
                                                      phi[i,j,k],
                                                      phi[i,j,k-1])
 
-
     return
 
 @numba.njit
@@ -137,12 +136,11 @@ class ScalarWENO5(ScalarAdvectionBase):
 
         #Allocate arrays for storing fluxes
         # TODO define these as class data
-        fluxx = np.empty_like(u)
-        fluxy = np.empty_like(v)
-        fluxz = np.empty_like(w)
+        fluxx = np.zeros_like(u)
+        fluxy = np.zeros_like(v)
+        fluxz = np.zeros_like(w)
 
         nhalo = self._Grid.n_halo
-
         #Now iterate over the scalar variables
         for var in self._ScalarState.names:
             #Get a scalar field (No copy done here)
@@ -151,6 +149,8 @@ class ScalarWENO5(ScalarAdvectionBase):
 
             #Now compute the WENO fluxes
             weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
+
+            
 
             #Now compute the flux divergences
             flux_divergence(nhalo, self._Grid.dx[0], self._Grid.dx[1], self._Grid.dx[2],

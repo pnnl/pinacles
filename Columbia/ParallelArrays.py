@@ -43,7 +43,7 @@ class GhostArray(GhostArrayBase):
         if halo: 
             local_max = np.array(np.amax(self.array[:,:,:,dof]),dtype=np.double) 
 
-        global_max = np.empty_like(local_max)
+        global_max = np.empty_like(local_max, order='F')
         MPI.COMM_WORLD.Allreduce(local_max, global_max, op=MPI.MAX)
         
         return global_max 
@@ -56,7 +56,7 @@ class GhostArray(GhostArrayBase):
         if halo: 
             local_min = np.array(np.amin(self.array[:,:,:,dof]),dtype=np.double) 
 
-        global_min = np.empty_like(local_min)
+        global_min = np.empty_like(local_min, order='F')
         MPI.COMM_WORLD.Allreduce(local_min, global_min, op=MPI.MIN)
         
         return global_min 

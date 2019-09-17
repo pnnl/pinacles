@@ -1,5 +1,5 @@
 from Columbia import ParallelArrays
-
+import numpy as np
 
 class ModelState: 
     def __init__(self, Grid, prognostic=False): 
@@ -42,8 +42,6 @@ class ModelState:
             self._tend_array = ParallelArrays.GhostArray(self._Grid, ndof=self._nvars)
             self._tend_array.zero()
 
-       
-        
         return 
 
     def boundary_exchange(self):
@@ -65,4 +63,13 @@ class ModelState:
     @property
     def names(self): 
         return self._dofs.keys()
+
+    @property
+    def state_array(self): 
+        return self._state_array.array[:,:,:,:]
+
+    @property
+    def tend_array(self): 
+        return self._tend_array.array[:,:,:,:]
+
     
