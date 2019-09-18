@@ -2,6 +2,7 @@ import json
 import argparse
 from Columbia import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
 from Columbia import ScalarAdvection, TimeStepping, ReferenceState
+from Columbia import MomentumAdvection
 from mpi4py import MPI
 import numpy as numpy
 import time
@@ -39,6 +40,7 @@ def main(namelist):
 
     #Setup the scalar advection calss
     ScalarAdv = ScalarAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState)
+    MomAdv = MomentumAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
     # Allocate all of the big parallel arrays needed for the container classes
     ScalarState.allocate()
@@ -60,6 +62,7 @@ def main(namelist):
             #print(n)
             Thermo.update()
             ScalarAdv.update()
+            MomAdv.update() 
             ScalarTimeStepping.update() 
             VelocityTimeStepping.update()
             ScalarState.boundary_exchange()
