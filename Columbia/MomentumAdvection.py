@@ -31,5 +31,3 @@ class MomentumWENO5(MomentumAdvectionBase):
 def factory(namelist, Grid, Ref, ScalarState, VelocityState): 
     return MomentumWENO5(Grid, Ref, ScalarState, VelocityState)
     
-
-    return 
