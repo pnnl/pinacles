@@ -2,7 +2,7 @@ import numba
 
 @numba.njit
 def centered_second(phi, phip1):
-    return 0.5*(phi, phip1)
+    return 0.5*(phi + phip1)
 
 @numba.njit()
 def interp_weno5(phim2, phim1,  phi, phip1, phip2):
