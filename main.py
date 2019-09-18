@@ -22,18 +22,20 @@ def main(namelist):
     VelocityState.add_variable('v')
     VelocityState.add_variable('w')
 
-    for i in range(100):
+    for i in range(2):
         ScalarState.add_variable(str(i))
 
+    # Set up the reference state class
+    Ref =  ReferenceState.factory(namelist, ModelGrid)
+    Ref.set_surface()
+    Ref.integrate()
+
     # Set up the thermodynamics class
-    Thermo = Thermodynamics.factory(namelist, ModelGrid, ScalarState, DiagnosticState)
+    Thermo = Thermodynamics.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState)
 
     # In the futhre the microphyics should be initialized here
 
-    # Set up the reference state class
-    Ref =  ReferenceState.factory(namelist, ModelGrid, Thermo)
-    Ref.set_surface()
-    Ref.integrate()
+
 
     #Setup the scalar advection calss
     ScalarAdv = ScalarAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState)
@@ -55,7 +57,8 @@ def main(namelist):
     for i in range(10):
         t0 = time.time()
         for n in range(ScalarTimeStepping.n_rk_step): 
-            print(n)
+            #print(n)
+            Thermo.update()
             ScalarAdv.update()
             ScalarTimeStepping.update() 
             VelocityTimeStepping.update()

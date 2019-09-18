@@ -5,10 +5,9 @@ import numba
 
 
 class ReferenceBase: 
-    def __init__(self, Grid, Thermo):
+    def __init__(self, Grid):
         
         self._Grid = Grid
-        self._Thermo = Thermo 
         self._ssfc = None 
 
         #Allocate memory for reference state profiles 
@@ -121,9 +120,9 @@ def _integrate_dry(z, lnpsfc, ssfc, n=250):
     return np.exp(p0_out)
 
 class ReferenceDry(ReferenceBase): 
-    def __init__(self, namelist, Grid, Thermo):
+    def __init__(self, namelist, Grid):
         
-        ReferenceBase.__init__(self, Grid, Thermo)
+        ReferenceBase.__init__(self, Grid)
 
         return 
 
@@ -158,5 +157,5 @@ class ReferenceDry(ReferenceBase):
 
         return 
 
-def factory(namelist, Grid, Thermo): 
-    return ReferenceDry(namelist, Grid, Thermo)
+def factory(namelist, Grid): 
+    return ReferenceDry(namelist, Grid)
