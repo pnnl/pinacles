@@ -6,7 +6,6 @@ def factory(namelist, Grid, Ref, ScalarState, VelocityState):
 
     return ScalarWENO5(Grid, Ref, ScalarState, VelocityState)
 
-    return
 
 
 class ScalarAdvectionBase:
