@@ -177,6 +177,18 @@ def w_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz, wt):
                                                      w[i,j,k],
                                                      w[i,j,k-1]) * rho0[k]                   
 
+        w_flux_div(shape, fluxx, fluxy, fluxz, wt)
+
+    return 
+
+@numba.njit 
+def uv_flux_div(shape, fluxx, fluxy, fluxz, uvt): 
+
+
+    return 
+
+@numba.njit 
+def w_flux_div(shape, fluxx, fluxy, fluxz, wt): 
 
 
     return 
