@@ -41,6 +41,7 @@ def test_uv_flux_divergence():
     #Call the flux divergence
     Mom_impl.uv_flux_div(1.0/dx, 1.0/dy, 1.0/dz, alpha0_half, fluxx, fluxy, fluxz, uvt)
 
+    #Here the flux divergence is the sum of the x and the z flux 
     assert(np.all(uvt[1:-1,1:-1,1:-1] == 5.0))
 
     return
