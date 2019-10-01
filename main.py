@@ -23,7 +23,7 @@ def main(namelist):
     VelocityState.add_variable('v')
     VelocityState.add_variable('w')
 
-    for i in range(2):
+    for i in range(24):
         ScalarState.add_variable(str(i))
 
     # Set up the reference state class
