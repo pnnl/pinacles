@@ -189,5 +189,5 @@ class RegularCartesian(GridBase):
             self._global_axes.append(np.linspace(lx, ux, self.ngrid[i]))
             self._global_axes_edge.append(self._global_axes[i] + 0.5 * dx)
 
-        self._dx = tuple(dx_list)
+        self._dx = np.array(dx_list)
         return

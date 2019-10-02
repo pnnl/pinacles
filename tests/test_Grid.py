@@ -7,12 +7,15 @@ namelist['grid']['n'] =  (10, 10, 10)
 namelist['grid']['n_halo'] = (3,3,3)
 namelist['grid']['l']  = (1000.0, 1000.0, 1000.0)
 
-def test_Grid(): 
+def test_GridInit():
 
     TestGrid = Grid.RegularCartesian(namelist)
 
     #Test that things are set correctly
     assert(np.all(TestGrid.n == [10,10,10]))
+    assert(np.all(TestGrid.n_halo == [3,3,3]))
+    assert(np.all(TestGrid.l == [1000.0, 1000.0, 1000.0]))
+    assert(np.all(TestGrid.dx == [100.0, 100.0, 100.0]))
+    assert(np.all(TestGrid.ngrid == [16, 16, 16]))
 
-
-    return 
+    return
