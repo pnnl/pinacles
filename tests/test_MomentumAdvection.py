@@ -51,5 +51,9 @@ def test_uv_flux_divergence():
 def test_w_flux_divergence():
 
     shape = (10, 10, 10)
+    fluxx = np.zeros(shape, order='F', dtype=np.double)
+    fluxy = np.zeros_like(fluxx)
+    fluxz = np.zeros_like(fluxx)
+    uvt = np.zeros_like(fluxx)
 
     return

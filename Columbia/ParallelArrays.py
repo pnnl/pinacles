@@ -45,44 +45,44 @@ class GhostArray(GhostArrayBase):
 
         global_max = np.empty_like(local_max, order='F')
         MPI.COMM_WORLD.Allreduce(local_max, global_max, op=MPI.MAX)
-        
+
         return global_max 
 
-    def min(self, dof=0, profile=False, halo=False): 
-        if not halo: 
+    def min(self, dof=0, profile=False, halo=False):
+        if not halo:
             local_min = np.array(np.amin(self.array[self._n_halo[0]:-self._n_halo[0],
                                                 self._n_halo[1]:-self._n_halo[1],
-                                                self._n_halo[2]:-self._n_halo[2],dof]),dtype=np.double) 
-        if halo: 
-            local_min = np.array(np.amin(self.array[:,:,:,dof]),dtype=np.double) 
+                                                self._n_halo[2]:-self._n_halo[2],dof]),dtype=np.double)
+        if halo:
+            local_min = np.array(np.amin(self.array[:,:,:,dof]),dtype=np.double)
 
         global_min = np.empty_like(local_min, order='F')
         MPI.COMM_WORLD.Allreduce(local_min, global_min, op=MPI.MIN)
-        
-        return global_min 
 
-    def boundary_exchange(self): 
-        #TODO At present this boundary exchange sends all dofs. We could do this DOF by DOF. 
+        return global_min
+
+    def boundary_exchange(self):
+        #TODO At present this boundary exchange sends all dofs. We could do this DOF by DOF.
 
         for dim in range(2):
 
             comm = self._Grid.subcomms[dim]
             comm_size = comm.Get_size()
 
-            #First do the right exchange 
+            #First do the right exchange
             source, dest = comm.Shift(0,1)
 
             if source == MPI.PROC_NULL:
                 source = comm_size - 1
-            
-            if dest == MPI.PROC_NULL: 
-                dest = 0 
-            
-            #Construct the buffers 
+
+            if dest == MPI.PROC_NULL:
+                dest = 0
+
+            #Construct the buffers
             nh = self._n_halo[dim]
 
-            if dim == 0: 
-                send_buf = np.copy(self.array[nh:2*nh,:,:,:], order='F') 
+            if dim == 0:
+                send_buf = np.copy(self.array[nh:2*nh,:,:,:], order='F')
                 recv_buf = np.empty_like(send_buf)
                 comm.Sendrecv(send_buf, dest, 113, recv_buf)
                 self.array[-nh:,:,:,:] = recv_buf
