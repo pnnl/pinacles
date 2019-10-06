@@ -38,9 +38,9 @@ class MomentumWENO5(MomentumAdvectionBase):
         w_t = self._VelocityState.get_tend('w')
 
         #TODO Move the allocation somewhere else. 
-        fluxx = np.empty_like(u, order='F')
-        fluxy = np.empty_like(v, order='F')
-        fluxz = np.empty_like(v, order='F')
+        fluxx = np.empty_like(u)
+        fluxy = np.empty_like(v)
+        fluxz = np.empty_like(v)
   
 
         #Here we return the fluxes. We could capture these for output

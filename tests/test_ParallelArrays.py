@@ -26,13 +26,13 @@ def test_GhostArraySetZero():
     #Check that we can set one DOF at a time to zero
     TestArray.array[:,:,:,:] = 1.0
     TestArray.zero(dof=0)
-    assert(np.all(TestArray.array[:,:,:,0] == 0.0))
-    assert(np.all(TestArray.array[:,:,:,1] == 1.0))
+    assert(np.all(TestArray.array[0,:,:,:] == 0.0))
+    assert(np.all(TestArray.array[1,:,:,:] == 1.0))
 
     TestArray.array[:,:,:,:] = 1.0
     TestArray.zero(dof=1)
-    assert(np.all(TestArray.array[:,:,:,0] == 1.0))
-    assert(np.all(TestArray.array[:,:,:,1] == 0.0))
+    assert(np.all(TestArray.array[0,:,:,:] == 1.0))
+    assert(np.all(TestArray.array[1,:,:,:] == 0.0))
 
     return
 
@@ -47,13 +47,29 @@ def test_GhostArraySetValue():
     assert(np.all(TestArray.array == 0.0))
 
     TestArray.set(10.0, dof=0)
-    assert(np.all(TestArray.array[:,:,:,0] == 10.0))
-    assert(np.all(TestArray.array[:,:,:,1] == 0.0))
+    assert(np.all(TestArray.array[0,:,:,:] == 10.0))
+    assert(np.all(TestArray.array[1,:,:,:] == 0.0))
 
     TestArray.zero()
     assert(np.all(TestArray.array == 0.0))
     TestArray.set(10.0, dof=1)
-    assert(np.all(TestArray.array[:,:,:,0] == 0.0))
-    assert(np.all(TestArray.array[:,:,:,1] == 10.0))
+    assert(np.all(TestArray.array[0,:,:,:] == 0.0))
+    assert(np.all(TestArray.array[1,:,:,:] == 10.0))
 
     return
+
+
+def test_mean(): 
+        
+    #Test the mean function
+    TestArray.set(10.0)
+    assert(np.all(TestArray.array==10.0))
+    assert(np.all(TestArray.mean()==10.0))
+    
+    #Test the remove mean function
+    assert(np.all(TestArray.array[0,:,:,:]==10.0))
+    TestArray.remove_mean(dof=0)
+    assert(np.all(TestArray.array[0,:,:,:]==0.0))
+    assert(np.all(TestArray.array[1,:,:,:]==10.0))
+    
+    return 

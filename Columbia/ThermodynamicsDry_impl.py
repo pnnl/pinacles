@@ -24,9 +24,9 @@ def buoyancy(alpha0,alpha):
 @numba.njit 
 def eos(z_in, P_in, alpha0, s_in, T_out, alpha_out, buoyancy_out):
     shape = s_in.shape
-    for k in range(shape[2]): 
+    for i in range(shape[0]): 
         for j in range(shape[1]):
-            for i in range(shape[0]):
+            for k in range(shape[2]):
                  T_out[i,j,k] = T(z_in[k], s_in[i,j,k])
                  alpha_out[i,j,k] = alpha(P_in[k], T_out[i,j,k])
                  buoyancy_out[i,j,k] = buoyancy(alpha0[k], alpha_out[i,j,k])
@@ -35,8 +35,8 @@ def eos(z_in, P_in, alpha0, s_in, T_out, alpha_out, buoyancy_out):
 @numba.njit
 def apply_buoyancy(buoyancy, w_t): 
     shape = w_t.shape
-    for k in range(shape[2]): 
+    for i in range(shape[0]): 
         for j in range(shape[1]):
-            for i in range(shape[0]):
+            for k in range(shape[2]):
                 w_t[i,j,k] += w_t[i,j,k]
     return 

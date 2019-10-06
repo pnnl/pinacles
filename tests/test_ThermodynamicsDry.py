@@ -63,13 +63,15 @@ def test_eos():
     T_test = np.empty_like(s_test)
     alpha_test = np.empty_like(s_test)
     buoyancy_test = np.empty_like(s_test)
-    for k in range(dims[2]): 
+    
+    for i in range(dims[0]): 
         for j in range(dims[1]): 
-            for i in range(dims[0]): 
+            for k in range(dims[2]): 
                 T_test[i,j,k] = 300.0 + np.random.randn()
                 s_test[i,j,k] = ThermoDry.s(z_in[k], T_test[i,j,k])
                 alpha_test[i,j,k] = ThermoDry.alpha(P_in[k], T_test[i,j,k])
                 buoyancy_test[i,j,k] = ThermoDry.buoyancy(alpha0[k], alpha_test[i,j,k])
+    
     T_out = np.empty_like(s_test)
     alpha_out = np.empty_like(s_test)
     buoyancy_out = np.empty_like(s_test)

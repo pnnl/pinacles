@@ -30,7 +30,7 @@ class RungeKutta2ndSSP(RungeKuttaBase):
         return 
 
     def initialize(self): 
-        self._Tn = np.empty_like(self._PrognosticState.state_array, order='F')
+        self._Tn = np.empty_like(self._PrognosticState.state_array)
         self._Tn[:,:,:,:]=0.0
         return 
 
@@ -39,7 +39,7 @@ class RungeKutta2ndSSP(RungeKuttaBase):
         present_tend = self._PrognosticState.tend_array
 
         if self._rk_step == 0: 
-            self._Tn = np.copy(present_state, order='F')
+            self._Tn = np.copy(present_state) #TODO: Replace this copy
             TS_impl.rk2ssp_s0(self._Tn, present_tend, self._dt )
             self._rk_step = 1 
 

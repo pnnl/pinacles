@@ -3,6 +3,7 @@ import argparse
 from Columbia import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
 from Columbia import ScalarAdvection, TimeStepping, ReferenceState
 from Columbia import MomentumAdvection
+from Columbia import PressureSolver
 from mpi4py import MPI
 import numpy as numpy
 import time
@@ -18,12 +19,13 @@ def main(namelist):
     ScalarTimeStepping = TimeStepping.factory(namelist, ModelGrid, ScalarState)
     VelocityTimeStepping = TimeStepping.factory(namelist, ModelGrid, VelocityState)
 
+
     # Add velocity variables
     VelocityState.add_variable('u')
     VelocityState.add_variable('v')
     VelocityState.add_variable('w')
 
-    for i in range(24):
+    for i in range(1):
         ScalarState.add_variable(str(i))
 
     # Set up the reference state class
@@ -37,10 +39,12 @@ def main(namelist):
     # In the futhre the microphyics should be initialized here
 
 
-
     #Setup the scalar advection calss
     ScalarAdv = ScalarAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState)
     MomAdv = MomentumAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState)
+
+    #Setup the pressure solver
+    PSolver = PressureSolver.factory(namelist, Grid, Ref, VelocityState)
 
     # Allocate all of the big parallel arrays needed for the container classes
     ScalarState.allocate()
@@ -59,14 +63,14 @@ def main(namelist):
     for i in range(10):
         t0 = time.time()
         for n in range(ScalarTimeStepping.n_rk_step): 
-            #print(n)
             Thermo.update()
             ScalarAdv.update()
             MomAdv.update() 
             ScalarTimeStepping.update() 
-            VelocityTimeStepping.update()
+            VelocityTimeStepping.update() 
             ScalarState.boundary_exchange()
             VelocityState.boundary_exchange()
+            PSolver.update()
         t1 = time.time()
         print(t1 - t0)
 
