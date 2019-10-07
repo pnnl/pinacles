@@ -18,4 +18,9 @@ def test_GridInit():
     assert(np.all(TestGrid.dx == [100.0, 100.0, 100.0]))
     assert(np.all(TestGrid.ngrid == [16, 16, 16]))
 
+    x = TestGrid.x_local
+    y = TestGrid.y_local 
+    z = TestGrid.z_local
+
+
     return

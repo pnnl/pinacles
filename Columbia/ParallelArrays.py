@@ -121,18 +121,18 @@ class GhostArray(GhostArrayBase):
         local_sum = np.sum(self.array[dof,
             self._n_halo[0]:-self._n_halo[0],
             self._n_halo[1]:-self._n_halo[1],
-            self._n_halo[2]:-self._n_halo[2]],axis=(0,1))
+            :],axis=(0,1))
 
         n = self._Grid.n
         local_sum /= n[0] * n[1] 
         mean = np.empty_like(local_sum)
         MPI.COMM_WORLD.Allreduce(local_sum, mean, op=MPI.SUM)
-
+        
         return mean
 
     def remove_mean(self, dof): 
         #TODO perhpas use numba here? 
         mean = self.mean(dof)
-        self.array[dof,:,:,:] -= mean[dof,np.newaxis, np.newaxis, np.newaxis]
+        self.array[dof,:,:,:] -= mean[np.newaxis, np.newaxis, :]
     
         return 

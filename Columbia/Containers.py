@@ -17,6 +17,14 @@ class ModelState:
 
         return
 
+    @property
+    def get_state_array(self): 
+        return self._state_array
+
+    @property 
+    def get_tend_array(self): 
+        return self._tend_array 
+
     def add_variable(self, name, long_name=None, latex_name=None, units=None):
         #TODO add error handling here. For example what happens if memory has alread been allocated for this container.
         self._dofs[name] = self._nvars
@@ -57,6 +65,16 @@ class ModelState:
         #TODO add error handling for this case.
         dof = self._dofs[name]
         return self._tend_array.array[dof,:,:,:]
+
+    def remove_mean(self, name): 
+        #This removes the mean from a field 
+        dof = self._dofs[name]
+        self._state_array.remove_mean(dof)
+        return 
+
+    def mean(self, name): 
+        dof = self._dofs[name]    
+        return self._state_array.mean(dof)
 
     @property
     def names(self):

@@ -105,7 +105,7 @@ class GridBase:
         view so that copy occurs.
         '''
         start = self._local_start[0]
-        end = self._local_end[0] + self._n_halo
+        end = self._local_end[0] + 2*self._n_halo[0]
         return np.copy(self._global_axes[0][start:end])
 
     @property
@@ -115,7 +115,7 @@ class GridBase:
         view so that copy occurs.
         '''
         start = self._local_start[1]
-        end = self._local_end[1] + self._n_halo
+        end = self._local_end[1] + 2*self._n_halo[1]
         return np.copy(self._global_axes[1][start:end])
 
     @property
@@ -125,7 +125,7 @@ class GridBase:
         view so that copy occurs.
         '''
         start = self._local_start[2]
-        end = self._local_end[2] + self._n_halo
+        end = self._local_end[2] + 2*self._n_halo[2]
         return np.copy(self._global_axes[2][start:end])
 
     @property

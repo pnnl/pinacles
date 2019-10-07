@@ -1,6 +1,7 @@
 import numpy as np
 import Columbia.PressureSolver_impl as Pres_impl
 
+
 def test_divergence():
 
     shape = (10, 10, 10)
@@ -16,6 +17,7 @@ def test_divergence():
     #Compute the divergence
     Pres_impl.divergence(dx, rho0, rho0_edge, 
         u, v, w, div)
+
 
 
 

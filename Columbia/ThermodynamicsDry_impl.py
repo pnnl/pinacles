@@ -38,5 +38,5 @@ def apply_buoyancy(buoyancy, w_t):
     for i in range(shape[0]): 
         for j in range(shape[1]):
             for k in range(shape[2]):
-                w_t[i,j,k] += w_t[i,j,k]
+                w_t[i,j,k] += 0.5 * (buoyancy[i,j,k] + buoyancy[i,j,k+1])
     return 

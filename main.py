@@ -44,7 +44,7 @@ def main(namelist):
     MomAdv = MomentumAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
     #Setup the pressure solver
-    PSolver = PressureSolver.factory(namelist, Grid, Ref, VelocityState)
+    PSolver = PressureSolver.factory(namelist, ModelGrid, Ref, VelocityState)
 
     # Allocate all of the big parallel arrays needed for the container classes
     ScalarState.allocate()
