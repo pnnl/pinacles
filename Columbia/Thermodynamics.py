@@ -8,7 +8,7 @@ class ThermodynamicsBase:
         self._VelocityState = VelocityState 
 
         #Add prognostic fields that are required by all thermodynamic classes 
-        self._ScalarState.add_variable('h') #TODO Move this elsewhere 
+        self._ScalarState.add_variable('s') #TODO Move this elsewhere 
 
         #Add diagnostic fields that are required by all thermodynamic classes 
         self._DiagnosticState.add_variable('T')

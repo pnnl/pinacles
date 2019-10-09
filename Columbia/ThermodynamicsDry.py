@@ -14,7 +14,7 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         p0 = self._Ref.p0 
         alpha0 = self._Ref.alpha0
 
-        s = self._ScalarState.get_field('h')
+        s = self._ScalarState.get_field('s')
         T = self._DiagnosticState.get_field('T')
         alpha = self._DiagnosticState.get_field('alpha')
         buoyancy = self._DiagnosticState.get_field('buoyancy')

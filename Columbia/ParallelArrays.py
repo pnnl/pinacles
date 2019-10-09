@@ -19,6 +19,10 @@ class GhostArray(GhostArrayBase):
 
         return 
 
+    @property
+    def shape(self): 
+        return self._shape 
+
     def zero(self, dof=None): 
         if dof is None: 
             self.array[:,:,:,:] = 0.0

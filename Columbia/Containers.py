@@ -17,6 +17,10 @@ class ModelState:
 
         return
 
+    @property 
+    def nvars(self): 
+        return self._nvars
+
     @property
     def get_state_array(self): 
         return self._state_array

@@ -73,3 +73,15 @@ def test_mean():
     assert(np.all(TestArray.array[1,:,:,:]==10.0))
     
     return 
+
+def test_boundary_exchange(): 
+
+    # First test the X boundary exchange this is only a 
+    # serial test
+    x = np.arange(TestArray.shape[1], dtype=np.double) 
+    TestArray.array[:,:,:,:] = x[np.newaxis, :, np.newaxis, np.newaxis]
+
+    # Call the boundary exchange 
+    TestArray.boundary_exchange() 
+
+    return 

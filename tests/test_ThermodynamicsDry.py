@@ -120,22 +120,33 @@ def test_update():
     DiagnosticState.allocate()
 
     #Now let's create an isothermal state
-    h = ScalarState.get_field('h')
+    s = ScalarState.get_field('s')
     z = ModelGrid.z_local
 
-    for i in range(h.shape[0]): 
-        for j in range(h.shape[1]): 
-            for k in range(h.shape[2]): 
-                h[i,j,k] = ThermoDry_impl.s(z[k], 293.15)
+    for i in range(s.shape[0]): 
+        for j in range(s.shape[1]): 
+            for k in range(s.shape[2]): 
+                s[i,j,k] = ThermoDry_impl.s(z[k], 293.15)
 
     #Now run update 
     Thermo.update()
 
     #Now test the value of temperature 
     T = DiagnosticState.get_field('T')
+    Tcopy = np.copy(T)
     assert(np.all(T == 293.15))
 
     #Check that the mean is zero
+    buoyancy = DiagnosticState.get_field('buoyancy')
+    buoyancy_copy = np.copy(buoyancy) 
     DiagnosticState.remove_mean('buoyancy')
     buoyancy_mean = DiagnosticState.mean('buoyancy')
     assert(np.allclose(buoyancy_mean[ModelGrid.n_halo[2]:-ModelGrid.n_halo[2]],0))
+
+    #Call update again and make sure you get the same answer. 
+    wt_copy = np.copy(VelocityState.get_field('w'))
+    Thermo.update()
+    wt = np.copy(VelocityState.get_field('w'))
+    assert(np.all(T == Tcopy))
+    assert(np.all(buoyancy == buoyancy_copy))
+    assert(np.all(wt_copy == wt))
