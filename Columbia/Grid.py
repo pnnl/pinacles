@@ -54,6 +54,10 @@ class GridBase:
         return self._ngrid
 
     @property
+    def ngrid_local(self):
+        return self._ngrid_local
+
+    @property
     def dx(self):
         return self._dx
 
@@ -158,7 +162,8 @@ class GridBase:
         self._local_start = np.array(dum_array.substart)
         self._local_end = self._local_start + self._local_shape
 
-
+        #Get the local shape
+        self._ngrid_local = self._local_shape + 2 * self._n_halo
 
 
         return

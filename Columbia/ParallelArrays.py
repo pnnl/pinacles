@@ -13,7 +13,7 @@ class GhostArray(GhostArrayBase):
     def __init__(self, _Grid, dtype=np.double,ndof=1): 
 
         GhostArrayBase.__init__(self, _Grid)
-        self._shape = tuple(np.append(ndof, self._Grid.ngrid))
+        self._shape = tuple(np.append(ndof, self._Grid.ngrid_local))
         self._n_halo = self._Grid.n_halo 
         self.array = np.empty(self._shape, dtype=np.double)  
 

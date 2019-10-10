@@ -53,21 +53,18 @@ def main(namelist):
 
     ScalarTimeStepping.initialize()
     VelocityTimeStepping.initialize()
-    
 
     t1 = time.time()
     print(t1 - t0)
 
-
-
     for i in range(10):
         t0 = time.time()
-        for n in range(ScalarTimeStepping.n_rk_step): 
+        for n in range(ScalarTimeStepping.n_rk_step):
             Thermo.update()
             ScalarAdv.update()
-            MomAdv.update() 
-            ScalarTimeStepping.update() 
-            VelocityTimeStepping.update() 
+            MomAdv.update()
+            ScalarTimeStepping.update()
+            VelocityTimeStepping.update()
             ScalarState.boundary_exchange()
             VelocityState.boundary_exchange()
             PSolver.update()
