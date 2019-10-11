@@ -56,23 +56,25 @@ class PressureSolver:
     def update(self): 
     
         #First get views in to the velocity components
-        #u = self._VelocityState.get_field('u')
-        #v = self._VelocityState.get_field('v')
-        #w = self._VelocityState.get_field('w')
+        u = self._VelocityState.get_field('u')
+        v = self._VelocityState.get_field('v')
+        w = self._VelocityState.get_field('w')
 
         #div = np.empty_like(u)
 
-        #rho0  = self._Ref.rho0 
-        #rho0_edge = self._Ref.rho0_edge
+        rho0  = self._Ref.rho0 
+        rho0_edge = self._Ref.rho0_edge
 
-        #dxs = self._Grid.dx 
-        #n_halo = self._Grid.n_halo
+        dxs = self._Grid.dx 
+        n_halo = self._Grid.n_halo
 
-        #First compute divergence of wind field
-        #divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
 
         div = fft.DistArray(self._Grid.n, self._Grid.subcomms)
-        div[:,:,:] = 22.0
+        #First compute divergence of wind field
+        divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
+
+        div = fft.DistArray(self._Grid.n, self._Grid.subcomms)
+        div[0,0,0] = 1.0
         div_cpy = div.copy()
         div_0 = div.redistribute(0)
 
@@ -82,8 +84,7 @@ class PressureSolver:
 
         div_hat_2 = div_hat.redistribute(2)
 
-
-        print(div_hat_2[0,0,0])
+        #The TDM solver goes here 
 
         div_hat = div_hat_2.redistribute(1)
 
