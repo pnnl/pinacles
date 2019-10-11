@@ -1,5 +1,6 @@
 import numpy as np
 import Columbia.PressureSolver_impl as Pres_impl
+import Columbia.PressureSolver as PressureSolver
 import Columbia.Grid as Grid
 import Columbia.Containers as Containers
 import Columbia.ReferenceState as ReferenceState
