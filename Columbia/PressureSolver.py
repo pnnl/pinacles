@@ -20,9 +20,9 @@ class PressureSolver:
         self._set_upperlower_diagonals()
 
         #Setup the Fourier Transform
-        div =  fft.DistArray(self._Grid.n , self._Grid.subcomms)
+        div =  fft.DistArray(self._Grid.n , self._Grid.subcomms, dtype=np.complex)
         div = div.redistribute(0)
-        self._fft =  fft.PFFT(self._Grid.subcomms, darray=div, axes=(1,0))
+        self._fft =  fft.PFFT(self._Grid.subcomms, darray=div, axes=(1,0), transforms={})
 
         self._set_center_diagional()
         self._set_upperlower_diagonals()
@@ -48,21 +48,15 @@ class PressureSolver:
         v = self._VelocityState.get_field('v')
         w = self._VelocityState.get_field('w')
 
-        #div = np.empty_like(u)
-
         rho0  = self._Ref.rho0
         rho0_edge = self._Ref.rho0_edge
 
         dxs = self._Grid.dx
         n_halo = self._Grid.n_halo
 
-
-        div = fft.DistArray(self._Grid.n, self._Grid.subcomms)
+        div = fft.DistArray(self._Grid.n, self._Grid.subcomms, dtype=np.complex)
         #First compute divergence of wind field
         divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
-
-        div = fft.DistArray(self._Grid.n, self._Grid.subcomms)
-        div[0,0,0] = 1.0
 
         div_0 = div.redistribute(0)
 
