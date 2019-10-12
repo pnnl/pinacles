@@ -1,7 +1,8 @@
 import numpy as np
 from Columbia.PressureSolver_impl import divergence
+from Columbia.TDMA import Thomas
 import mpi4py_fft as fft
-from mpi4py import MPI 
+from mpi4py import MPI
 
 class PressureSolver:
     def __init__(self, Grid, Ref, VelocityState):
@@ -23,18 +24,21 @@ class PressureSolver:
         div = div.redistribute(0)
         self._fft =  fft.PFFT(self._Grid.subcomms, darray=div, axes=(1,0))
 
+        self._set_center_diagional()
+        self._set_upperlower_diagonals()
+
         return
 
     def _set_center_diagional(self):
 
-        self._b = np.zeros(self._Grid.n[2], dtype=np.double)
+        self._b = np.ones(self._Grid.n[2], dtype=np.double)
 
         return
 
 
     def _set_upperlower_diagonals(self):
-        self._a = np.zeros(self._Grid.n[2]-1, dtype=np.double)
-        self._b = np.zeros(self._Grid.n[2]-1, dtype=np.double)
+        self._a = np.zeros(self._Grid.n[2], dtype=np.double)
+        self._c = np.zeros(self._Grid.n[2], dtype=np.double)
         return
 
     def update(self):
@@ -68,7 +72,15 @@ class PressureSolver:
 
         div_hat_2 = div_hat.redistribute(2)
 
-        #The TDM solver goes here 
+        #The TDM solver goes here
+        divh2_real = div_hat_2.real
+        divh2_img = div_hat_2.imag
+
+        Thomas(divh2_real, self._a, self._b, self._c)
+        Thomas(divh2_img, self._a, self._b, self._c)
+
+
+        div_hat_2 = divh2_real + divh2_img * 0j
 
         div_hat = div_hat_2.redistribute(1)
 
@@ -78,9 +90,9 @@ class PressureSolver:
         div = div_0.redistribute(2)
 
 
-        return 
+        return
 
 
 
-def factory(namelist, Grid, Ref, VelocityState): 
+def factory(namelist, Grid, Ref, VelocityState):
     return PressureSolver(Grid, Ref, VelocityState)

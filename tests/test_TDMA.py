@@ -15,7 +15,7 @@ def test_TDMA():
     a_test = np.array([[4, -1, 0, 0], [-1, 4, -1, 0], [0, -1, 4, -1], [0, 0, -1, 4] ], dtype=np.double)
     b_test = np.array([21, 69, 34, 22], dtype=np.double)
 
-    test_soln = np.linalg.solve(a_test, b_test) 
+    test_soln = np.linalg.solve(a_test, b_test)
     assert(np.allclose(rhs[:,:,:], test_soln[np.newaxis, np.newaxis, :]))
 
     return
