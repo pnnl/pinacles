@@ -40,18 +40,55 @@ class GridBase:
     @property
     def n(self):
         return self._n
+        """ Returns the number of points in the domain w/o halos. 
+        This corresponds to namelist['grid']['n'] in the input namelsit.
 
+        Returns: 
+            n: float ndarray of shape (3,)
+        """
     @property
     def n_halo(self):
+        """
+        Returns an array containing the number of halo points in 
+        each of the coordinate directions. 
+        
+        Returns:
+            n_halo : float ndarray of shape (3,)
+        """
         return self._n_halo
 
     @property
     def l(self):
+        """The length of the LES domain in each of the coordinate 
+        directions.
+        
+        Returns:
+            l : float ndarray of shape (3,)
+        """
         return self._l
 
     @property
     def ngrid(self):
+        """Returns the total number of points in the global 
+        domain including ghost points.
+        
+        Returns:
+            ngrid : float ndarray of shape (3,)
+        """
         return self._ngrid
+
+    @property
+    def local_shape(self): 
+        return self._local_shape
+
+    @property
+    def nl(self): 
+        #TODO replace all instanes of local_shape with nl
+        return self._local_shape
+
+    @property
+    def local_start(self): 
+        return self._local_start 
 
     @property
     def ngrid_local(self):
@@ -140,10 +177,6 @@ class GridBase:
         '''
         return np.copy(self._local_axes)
 
-    @property
-    def local_shape(self):
-        return self._local_shape
-
     def _create_subcomms(self):
         self.subcomms = Subcomm(MPI.COMM_WORLD, dims=[0,0,1])
         return
@@ -164,7 +197,6 @@ class GridBase:
 
         #Get the local shape
         self._ngrid_local = self._local_shape + 2 * self._n_halo
-
 
         return
 
