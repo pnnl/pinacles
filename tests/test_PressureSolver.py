@@ -38,7 +38,7 @@ def build_mocks(n=[16, 16, 100]):
 
 
 def test_modified_wavenumbers(): 
-    n = 16 
+    n = 16
     namelist, Ref, ModelGrid, ScalarState, VelocityState, DiagnosticState = build_mocks([n,n,n]) 
     
     #Since we are just checking the wave numbers, no need to init any fields
@@ -51,8 +51,12 @@ def test_modified_wavenumbers():
     #The test domain is symmetric so check that kx2 equals ky2
     assert(np.all(PresTest._kx2 == PresTest._ky2))
 
-    #Check symmetry
-    for i in range(int(n/2)): 
+    #Check that we have removed the odd ball
+    assert(PresTest._kx2[0] == 0.0)
+    assert(PresTest._ky2[0] == 0.0)
+
+    #Check symmetry not included first and last element
+    for i in range(1,int(n/2)-1): 
         assert(PresTest._kx2[i] == PresTest._kx2[-i])
         assert(PresTest._ky2[i] == PresTest._ky2[-i])
 
