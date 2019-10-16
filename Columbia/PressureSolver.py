@@ -17,7 +17,7 @@ class PressureSolver:
         div = div.redistribute(0)
         self._fft =  fft.PFFT(self._Grid.subcomms, darray=div, axes=(1,0), transforms={})
 
-        self._TMDA_solve = PressureTDMA(self._Grid)
+        self._TMDA_solve = PressureTDMA(self._Grid, self._Ref)
 
         return
 
@@ -51,9 +51,9 @@ class PressureSolver:
         divh2_real = div_hat_2.real
         divh2_img = div_hat_2.imag
 
-        Thomas(divh2_real, self._a, self._b, self._c)
-        Thomas(divh2_img, self._a, self._b, self._c)
-
+        #Place the pressure solve here 
+        self._TMDA_solve.solve(divh2_real)
+        self._TMDA_solve.solve(divh2_img)
 
         div_hat_2 = divh2_real + divh2_img * 0j
 

@@ -26,11 +26,46 @@ def Thomas(x, a, b, c):
             for k in range(shape[2]-2,-1,-1):
                 x[i,j,k] = x[i,j,k] - scratch[k] * x[i,j,k+1]
     return
+ 
+@numba.njit()
+def PressureThomas(n_halo, dxs, rho0, rho0_edge, kx2, ky2, x, a, c): 
+    shape = x.shape 
+    scratch = np.empty(shape[2], dtype=np.double)
+    b = np.empty(shape[2], dtype=np.double)
+    
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            #For each i and j build the diagonal
+            b[0] = (rho0[n_halo[2]] * (kx2[i] + ky2[j])
+                         - (rho0[n_halo[2]])/dxs[2]/dxs[2])
+            for k in range(1,shape[2]-1):
+                b[k] = (rho0[k + n_halo[2]] * (kx2[i] + ky2[j])
+                     - (rho0_edge[k + n_halo[2]] + rho0_edge[k + n_halo[2] -1])/dxs[2]/dxs[2])
+            k = shape[2]-1
+            b[k] = (rho0[k + n_halo[2]] * (kx2[i] + ky2[j])
+                    - (rho0_edge[k + n_halo[2] -1])/dxs[2]/dxs[2])
+
+            #Now begin the actual algorithm solve
+            
+            #Upward sweep
+            scratch[0] = c[0]/b[0]
+            x[i,j,0] = x[i,j,0]/b[0]
+            for k in range(1,shape[2]):
+                m = 1.0/(b[k] - a[k] * scratch[k-1])
+                scratch[k] = c[k] * m
+                x[i,j,k] = (x[i,j,k] - a[k] * x[i,j,k-1])*m
+
+            #Downward sweep
+            for k in range(shape[2]-2,-1,-1):
+                x[i,j,k] = x[i,j,k] - scratch[k] * x[i,j,k+1]
+
+    return 
 
 class PressureTDMA: 
-    def __init__(self, Grid):
+    def __init__(self, Grid, Ref):
 
-        self._Grid = Grid 
+        self._Grid = Grid
+        self._Ref = Ref
 
         #Set up the diagonals for the solve
         self._a = None
@@ -39,20 +74,13 @@ class PressureTDMA:
 
 
         self._compute_modified_wavenumbers()
-        self._set_center_diagional()
         self._set_upperlower_diagonals()
 
         return 
 
-    def _set_center_diagional(self):
-        """ compute the diaginal this needs this only needs 
-        to be called once and MUST be calle after the modified
-        wavenumbers are computed compute_modified_wavenumbers
-        """
-        self._b = np.zeros(self._Grid.n[2], dtype=np.double)
-
-        self._b[0]
-
+    def _set_upperlower_diagonals(self):
+        self._a = np.zeros(self._Grid.n[2], dtype=np.double)
+        self._c = np.zeros(self._Grid.n[2], dtype=np.double)
         return
 
     def _compute_modified_wavenumbers(self):
@@ -91,12 +119,11 @@ class PressureTDMA:
 
         return
 
-    def _set_upperlower_diagonals(self):
-        self._a = np.zeros(self._Grid.n[2], dtype=np.double)
-        self._c = np.zeros(self._Grid.n[2], dtype=np.double)
-        return
-
-
-    def solve(self): 
+    def solve(self, x): 
+        n_halo = self._Grid.n_halo 
+        dxs = self._Grid.dx
+        rho0 = self._Ref.rho0
+        rho0_edge = self._Ref.rho0_edge 
+        PressureThomas(n_halo, dxs, rho0, rho0_edge, self._kx2, self._ky2, x, self._a, self._c)
 
         return 

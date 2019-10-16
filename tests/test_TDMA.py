@@ -59,7 +59,7 @@ def test_modified_wavenumbers():
     namelist, Ref, ModelGrid, ScalarState, VelocityState, DiagnosticState = build_mocks([n,n,n]) 
     
     #Since we are just checking the wave numbers, no need to init any fields
-    PresTest = TDMA.PressureTDMA(ModelGrid)
+    PresTest = TDMA.PressureTDMA(ModelGrid, Ref)
 
     #Check that the sizes are correct 
     assert(np.shape(PresTest._kx2) == (16,))
