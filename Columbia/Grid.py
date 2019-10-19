@@ -27,6 +27,7 @@ class GridBase:
 
         #Set the grid spacing
         self._dx = None
+        self._dxi = None
 
         #Store sub-cummunicators created by mpi4py_fft
         self.subcomms = None
@@ -97,6 +98,10 @@ class GridBase:
     @property
     def dx(self):
         return self._dx
+
+    @property
+    def dxi(self): 
+        return self._dxi
 
     @property
     def x_global(self):
@@ -227,4 +232,5 @@ class RegularCartesian(GridBase):
             self._global_axes_edge.append(self._global_axes[i] + 0.5 * dx)
 
         self._dx = np.array(dx_list)
+        self._dxi = 1.0/self._dx
         return

@@ -5,7 +5,7 @@ from Columbia import ScalarAdvection, TimeStepping, ReferenceState
 from Columbia import MomentumAdvection
 from Columbia import PressureSolver
 from mpi4py import MPI
-import numpy as numpy
+import numpy as np
 import time
 
 def main(namelist):
@@ -44,7 +44,7 @@ def main(namelist):
     MomAdv = MomentumAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
     #Setup the pressure solver
-    PSolver = PressureSolver.factory(namelist, ModelGrid, Ref, VelocityState)
+    PSolver = PressureSolver.factory(namelist, ModelGrid, Ref, VelocityState, DiagnosticState)
 
     # Allocate all of the big parallel arrays needed for the container classes
     ScalarState.allocate()
@@ -56,8 +56,9 @@ def main(namelist):
 
     t1 = time.time()
     print(t1 - t0)
-
-    for i in range(10):
+    times = []
+    for i in range(20):
+        print(i)
         t0 = time.time()
         for n in range(ScalarTimeStepping.n_rk_step):
             Thermo.update()
@@ -69,7 +70,9 @@ def main(namelist):
             VelocityState.boundary_exchange()
             PSolver.update()
         t1 = time.time()
-        print(t1 - t0)
+        times.append(t1 - t0)
+
+    print(np.min(times))
 
 
     TerminalIO.end_message()

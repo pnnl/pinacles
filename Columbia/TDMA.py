@@ -79,8 +79,31 @@ class PressureTDMA:
         return 
 
     def _set_upperlower_diagonals(self):
+
+        n_halo = self._Grid.n_halo
+        nl = self._Grid.nl
+        dxi = self._Grid.dxi
+        
+        rho0 = self._Ref.rho0
+        rho0_edge = self._Ref.rho0_edge
+
         self._a = np.zeros(self._Grid.n[2], dtype=np.double)
         self._c = np.zeros(self._Grid.n[2], dtype=np.double)
+
+        #First set the lower boundary condition 
+        self._a[0] = 0.0 
+        self._c[0] = dxi[2] * dxi[2] * rho0_edge[n_halo[2]]
+
+        #Fill Matrix Values
+        for k in range(1,nl[2]-1):
+            self._a[k] = dxi[2] * dxi[2] * rho0_edge[k + n_halo[2]-1]
+            self._c[k] = dxi[2] * dxi[2] * rho0[k + n_halo[0]]
+
+        #Now set surface boundary conditions
+        k = nl[2]-1
+        self._a[k] = dxi[2] * dxi[2] * rho0_edge[k + n_halo[2]-1]
+        self._c[k] = 0.0
+
         return
 
     def _compute_modified_wavenumbers(self):
