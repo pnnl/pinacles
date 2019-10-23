@@ -1,3 +1,4 @@
+import numba 
 import json
 import argparse
 from Columbia import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
