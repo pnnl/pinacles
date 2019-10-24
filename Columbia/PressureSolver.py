@@ -1,5 +1,5 @@
 import numpy as np
-from Columbia.PressureSolver_impl import divergence, fill_pressure
+from Columbia.PressureSolver_impl import divergence, fill_pressure, apply_pressure
 from Columbia.TDMA import Thomas, PressureTDMA
 import mpi4py_fft as fft
 from mpi4py import MPI
@@ -32,8 +32,8 @@ class PressureSolver:
         w = self._VelocityState.get_field('w')
 
         #u[25:-25,25:-25,25:-25] = 2.0
-        if MPI.COMM_WORLD.rank == 0: 
-            u[5:10,5:10,5:10] = 1.0
+        #if MPI.COMM_WORLD.rank == 0: 
+        #    u[5:10,5:10,5:10] = 1.0
 
 
         dynp = self._DiagnosticState.get_field('dynamic pressure')
@@ -74,17 +74,23 @@ class PressureSolver:
 
         fill_pressure(n_halo, div, dynp)
 
+        #TODO add single vairable exchange
         self._DiagnosticState.boundary_exchange()
 
+        apply_pressure(dxs, dynp, u, v, w)
+        self._VelocityState.boundary_exchange()
+        divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
+        print('Divergence', np.amax(div))
+
         import pylab as plt
-        plt.contourf(dynp[:,:,25],200)
+        plt.contourf(u[:,:,25],200)
         plt.colorbar()
         plt.show()
 
 
 
-        print(np.amin(dynp), np.amax(dynp))
-        import sys; sys.exit()
+        #print(np.amin(dynp), np.amax(dynp))
+        #import sys; sys.exit()
 
 
 

@@ -55,6 +55,9 @@ def main(namelist):
     ScalarTimeStepping.initialize()
     VelocityTimeStepping.initialize()
 
+    u = VelocityState.get_field('u')
+    u[5:10,5:10,5:10] = 1.0
+
     t1 = time.time()
     print(t1 - t0)
     times = []

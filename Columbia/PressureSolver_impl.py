@@ -27,6 +27,14 @@ def  fill_pressure(n_halo, pres, dynp):
     return
 
 @numba.njit
-def apply_pressure(n_halo, dynp, u, v, w):
+def apply_pressure(dxs, dynp, u, v, w):
+    shape = dynp.shape
+
+    for i in range(shape[0]-1):
+        for j in range(shape[1]-1):
+            for k in range(shape[2]-1):
+                u[i,j,k] -=  (dynp[i+1,j,k] - dynp[i,j,k])/dxs[0]
+                v[i,j,k] -=  (dynp[i,j+1,k] - dynp[i,j,k])/dxs[1]
+                w[i,j,k] -=  (dynp[i,j,k+1] - dynp[i,j,k])/dxs[2]
 
     return
