@@ -4,21 +4,29 @@ import numba
 def divergence(n_halo, dxs, rho0, rho0_edge, u, v, w, div):
 
     shape = u.shape
-    for i in range(n_halo[0],shape[0]-n_halo[0]):
-        for j in range(n_halo[1],shape[1]-n_halo[1]):
-            for k in range(n_halo[2],shape[2]-n_halo[2]):
-                div[i,j,k] = ((u[i,j,k]-u[i-1,j,k])/dxs[0]/rho0[k]
-                    + (v[i,j,k] - v[i,j,k-1])/dxs[1]/rho0[k]
+    nh0 = n_halo[0]
+    nh1 = n_halo[1]
+    nh2 = n_halo[2]
+    for i in range(nh0,shape[0]-nh0):
+        for j in range(nh1,shape[1]-nh1):
+            for k in range(nh2,shape[2]-nh2):
+                div[i-nh0,j-nh1,k-nh2] = ((u[i,j,k]-u[i-1,j,k])/dxs[0]/rho0[k]
+                    + (v[i,j,k] - v[i,j-1,k])/dxs[1]/rho0[k]
                     + (w[i,j,k]/rho0_edge[k] - w[i,j,k-1]/rho0_edge[k-1])/dxs[2])
 
     return
 
 @numba.njit
 def  fill_pressure(n_halo, pres, dynp):
-    #shape = dynp.shape
-    #for i in range(n_halo[0], shape[0] - n_halo[0]): 
-    #    for j in range(n_halo[1], shape[1] - n_halo[1]): 
-    #        for k in range(n_halo[2], shape[2] - n_halo[2]): #
-#
+    shape = pres.shape
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+           for k in range(shape[2]):
+                dynp[i+n_halo[0],j+n_halo[1],k+n_halo[2]] = pres[i,j,k].real
 
-    return 
+    return
+
+@numba.njit
+def apply_pressure(n_halo, dynp, u, v, w):
+
+    return

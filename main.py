@@ -66,7 +66,7 @@ def main(namelist):
             ScalarAdv.update()
             MomAdv.update()
             ScalarTimeStepping.update()
-            VelocityTimeStepping.update()
+            #VelocityTimeStepping.update()
             ScalarState.boundary_exchange()
             VelocityState.boundary_exchange()
             PSolver.update()

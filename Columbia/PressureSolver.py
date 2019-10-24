@@ -11,7 +11,7 @@ class PressureSolver:
         self._Ref = Ref
         self._VelocityState = VelocityState
         self._DiagnosticState = DiagnosticState
-        
+
         #Add dynamic pressure as a diagnsotic state
         self._DiagnosticState.add_variable('dynamic pressure')
 
@@ -31,6 +31,11 @@ class PressureSolver:
         v = self._VelocityState.get_field('v')
         w = self._VelocityState.get_field('w')
 
+        #u[25:-25,25:-25,25:-25] = 2.0
+        if MPI.COMM_WORLD.rank == 0: 
+            u[5:10,5:10,5:10] = 1.0
+
+
         dynp = self._DiagnosticState.get_field('dynamic pressure')
 
         rho0  = self._Ref.rho0
@@ -41,7 +46,8 @@ class PressureSolver:
 
         div = fft.DistArray(self._Grid.n, self._Grid.subcomms, dtype=np.complex)
         #First compute divergence of wind field
-        #divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
+        divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
+
 
         div_0 = div.redistribute(0)
 
@@ -55,17 +61,31 @@ class PressureSolver:
         divh2_img = div_hat_2.imag
 
         #Place the pressure solve here 
-        #self._TMDA_solve.solve(divh2_real)
-        #self._TMDA_solve.solve(divh2_img)
+        self._TMDA_solve.solve(divh2_real)
+        self._TMDA_solve.solve(divh2_img)
 
-        div_hat_2 = divh2_real + divh2_img * 0j
+        div_hat_2 = divh2_real + divh2_img * 1j
 
         div_hat = div_hat_2.redistribute(1)
 
         self._fft.backward(div_hat, div_0)
 
         div = div_0.redistribute(2)
-        #fill_pressure(n_halo, div, dynp)
+
+        fill_pressure(n_halo, div, dynp)
+
+        self._DiagnosticState.boundary_exchange()
+
+        import pylab as plt
+        plt.contourf(dynp[:,:,25],200)
+        plt.colorbar()
+        plt.show()
+
+
+
+        print(np.amin(dynp), np.amax(dynp))
+        import sys; sys.exit()
+
 
 
         return
