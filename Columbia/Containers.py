@@ -2,7 +2,7 @@ from Columbia import ParallelArrays
 import numpy as np
 
 class ModelState:
-    def __init__(self, Grid, prognostic=False):
+    def __init__(self, Grid, prognostic=False, identical_bcs=False):
 
         self._Grid = Grid          #The grid to use for this ModelState container
         self._prognostic = prognostic  #Is prognostic, if True we will allocate a tendency array
@@ -15,29 +15,42 @@ class ModelState:
         self._units = {}           #Store the units, this is also hand for plotting
         self._nvars = 0            #The number of 3D field stored in this model state
         self._bcs = {}
-
+        self._loc = {}
+        self._identical_bcs = identical_bcs
 
         return
 
-    @property 
-    def nvars(self): 
+    @property
+    def nvars(self):
         return self._nvars
 
     @property
     def get_state_array(self): 
+        #TODO this is a property so we should remove the get in the function name
         return self._state_array
 
-    @property 
-    def get_tend_array(self): 
-        return self._tend_array 
+    @property
+    def get_tend_array(self):
+        #TODO this is a property so we should remove the get in the function name
+        return self._tend_array
 
-    def add_variable(self, name, long_name=None, latex_name=None, units=None, bcs='symmetric'):
+    @property
+    def identical_bcs(self):
+        return self._identical_bcs
+
+    def add_variable(self, name, long_name=None, latex_name=None, units=None, bcs='gradient zero', loc=('x','y','z')):
+
+        #Do some correctness checks and warn for some behavior
+        assert(bcs in  ['gradient zero', 'value zero'])
+
+
         #TODO add error handling here. For example what happens if memory has alread been allocated for this container.
         self._dofs[name] = self._nvars
         self._long_names[name] = long_name
         self._latex_names[name] = latex_name
         self._units[name] = units
         self._bcs[name] = bcs
+        self._loc[name] = loc
 
         #Increment the bumber of variables
         self._nvars += 1
@@ -62,14 +75,68 @@ class ModelState:
         self._state_array.boundary_exchange()
         return
 
-    def update_bcs(self, name): 
+    def update_bcs(self, name):
 
         bc = self._bcs[name]
-        n_halo = self._Grid.n_halo
-        if bc == 'symmetric': 
-            pass
+        if bc == 'gradient zero':
+            self._gradient_zero_bc(name)
+        elif bc == 'value zero':
+            self._zero_value_bc(name)
+        else:
+            assert(bc in  ['gradient zero', 'value zero'])
 
-        return 
+        return
+
+    def update_all_bcs(self):
+        #TODO add other BC types. For now only assume everything is cell center and gradient zero
+        #TODO PERFORMANCE. May want to use numba here.
+
+        if self._identical_bcs:
+            nh2 = self._Grid.n_halo[2]
+            #First set the bottom boundary
+            self._state_array.array[:,:,:,:nh2] = self._state_array.array[:,:,:,nh2:2*nh2][:,:,:,::-1]
+
+            #Second set the top boundary
+            self._state_array.array[:,:,:,-nh2:] = self._state_array.array[:,:,:,-2*nh2:-nh2][:,:,:,::-1]
+
+        else:
+            for name in self._dofs.keys():
+                if self._bcs[name] == 'gradient zero':
+                    self._gradient_zero_bc(name)
+                else:
+                    self._zero_value_bc(name)
+        return
+
+    def _gradient_zero_bc(self, name):
+        #Todo add other BCS.
+        #TODO PERFORMANCE. May want to use number here.
+        nh2 = self._Grid.n_halo[2]
+        field = self.get_field(name)
+
+        #First set the bottom boundary
+        field[:,:,:nh2] = field[:,:,nh2:2*nh2][:,:,::-1]
+
+        #Second set the top boundary
+        field[:,:,-nh2:]= field[:,:,-2*nh2:-nh2][:,:,::-1]
+
+        return
+
+    def _zero_value_bc(self, name):
+        #Todo add other BCS
+        #TODO PERFORMANCE. May want to use number here.
+        nh2 = self._Grid.n_halo[2]
+        field = self.get_field(name)
+
+        #First set the bottom boundary
+        field[:,:,:nh2-1] = -field[:,:,nh2:2*nh2-1][:,:,::-1]
+        field[:,:,nh2-1] = 0.0
+
+        #Second set the top boundary
+        field[:,:,-(nh2-1):] = -field[:,:,(-2*nh2+1):(-2*nh2+1)+(nh2-1)][:,:,::-1]
+        field[:,:,-nh2] = 0.0
+
+
+        return
 
     def get_field(self, name):
         #Return a contiguious memory slice of _state_array containing the values of name

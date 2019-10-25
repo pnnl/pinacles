@@ -24,7 +24,7 @@ def main(namelist):
     # Add velocity variables
     VelocityState.add_variable('u')
     VelocityState.add_variable('v')
-    VelocityState.add_variable('w')
+    VelocityState.add_variable('w', bcs='value zero')
 
     for i in range(1):
         ScalarState.add_variable(str(i))
@@ -61,7 +61,8 @@ def main(namelist):
     t1 = time.time()
     print(t1 - t0)
     times = []
-    for i in range(1):
+    PSolver.update()
+    for i in range(20):
         print(i)
         t0 = time.time()
         for n in range(ScalarTimeStepping.n_rk_step):
@@ -69,13 +70,20 @@ def main(namelist):
             #ScalarAdv.update()
             #MomAdv.update()
             #ScalarTimeStepping.update()
-            #VelocityTimeStepping.update()
+            VelocityTimeStepping.update()
             ScalarState.boundary_exchange()
             VelocityState.boundary_exchange()
+            ScalarState.update_all_bcs()
+            VelocityState.update_all_bcs()
             PSolver.update()
+            print(np.amax(u))
         t1 = time.time()
         times.append(t1 - t0)
-
+    import pylab as plt 
+    plt.figure(12)
+    plt.contourf(u[:,:,50],200)
+    plt.colorbar()
+    plt.show()
     print(np.min(times))
 
 

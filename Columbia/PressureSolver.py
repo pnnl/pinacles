@@ -51,11 +51,11 @@ class PressureSolver:
         div = fft.DistArray(self._Grid.n, self._Grid.subcomms, dtype=np.complex)
         #First compute divergence of wind field
         divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
-        print('Divergence 1', np.amax(np.abs(div)))
-        import pylab as plt
-        plt.figure(11)
-        plt.contourf(div[:,:,50],200)
-        plt.colorbar()
+        #print('Divergence 1', np.amax(np.abs(div)))
+        #import pylab as plt
+        #plt.figure(11)
+        #plt.contourf(div[:,:,50],200)
+        #plt.colorbar()
 
         div_0 = div.redistribute(0)
 
@@ -86,23 +86,30 @@ class PressureSolver:
 
         #TODO add single vairable exchange
         self._DiagnosticState.boundary_exchange()
+        self._DiagnosticState._gradient_zero_bc('dynamic pressure')
 
         apply_pressure(dxs, dynp, u, v, w)
-        print('W mean: ', np.mean(np.mean(w[n_halo[0]:-n_halo[0], n_halo[1]:-n_halo[1],:], axis=0),axis=0))
+        #print('W mean: ', np.mean(np.mean(w[n_halo[0]:-n_halo[0], n_halo[1]:-n_halo[1],:], axis=0),axis=0))
         self._VelocityState.boundary_exchange()
+        self._VelocityState.update_all_bcs()
         divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
 
         print('Divergence 2', np.amax(np.abs(div)))
 
         import pylab as plt
-        plt.figure(12)
-        plt.contourf(u[:,:,50],200)
-        plt.figure(13)
-        plt.contourf(v[:,:,50],20)
-        plt.figure(14)
-        plt.contourf(w[:,:,50],20)
-        plt.colorbar()
-        plt.show()
+        #plt.figure(12)
+        #plt.contourf(u[:,:,50],200)
+        #plt.colorbar()
+        #plt.figure(13)
+        #plt.contourf(v[:,:,50],20)
+        #plt.colorbar()
+        #plt.figure(14)
+        #plt.contourf(w[:,:,50],20)
+        #plt.colorbar()
+        #plt.figure(15)
+        #plt.contourf(div[:,50,:],20)
+        #plt.colorbar()
+        #plt.show()
 
 
 
