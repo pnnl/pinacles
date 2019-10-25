@@ -35,29 +35,31 @@ def PressureThomas(n_halo, dxs, rho0, rho0_edge, kx2, ky2, x, a, c):
     
     for i in range(shape[0]):
         for j in range(shape[1]):
-            #For each i and j build the diagonal
-            b[0] = (rho0[n_halo[2]] * (kx2[i] + ky2[j])
-                         - (rho0_edge[n_halo[2]])/dxs[2]/dxs[2])
-            for k in range(1,shape[2]-1):
+            if i != 0 or j != 0: 
+                
+                #For each i and j build the diagonal
+                b[0] = (rho0[n_halo[2]] * (kx2[i] + ky2[j])
+                            - (rho0_edge[n_halo[2]])/dxs[2]/dxs[2])
+                for k in range(1,shape[2]-1):
+                    b[k] = (rho0[k + n_halo[2]] * (kx2[i] + ky2[j])
+                        - (rho0_edge[k + n_halo[2]] + rho0_edge[k + n_halo[2] -1])/dxs[2]/dxs[2])
+                k = shape[2]-1
                 b[k] = (rho0[k + n_halo[2]] * (kx2[i] + ky2[j])
-                     - (rho0_edge[k + n_halo[2]] + rho0_edge[k + n_halo[2] -1])/dxs[2]/dxs[2])
-            k = shape[2]-1
-            b[k] = (rho0[k + n_halo[2]] * (kx2[i] + ky2[j])
-                    - (rho0_edge[k + n_halo[2] -1])/dxs[2]/dxs[2])
+                        - (rho0_edge[k + n_halo[2] -1])/dxs[2]/dxs[2])
 
-            #Now begin the actual algorithm solve
-            
-            #Upward sweep
-            scratch[0] = c[0]/b[0]
-            x[i,j,0] = x[i,j,0]/b[0]
-            for k in range(1,shape[2]):
-                m = 1.0/(b[k] - a[k] * scratch[k-1])
-                scratch[k] = c[k] * m
-                x[i,j,k] = (x[i,j,k] - a[k] * x[i,j,k-1])*m
+                #Now begin the actual algorithm solve
+                
+                #Upward sweep
+                scratch[0] = c[0]/b[0]
+                x[i,j,0] = x[i,j,0]/b[0]
+                for k in range(1,shape[2]):
+                    m = 1.0/(b[k] - a[k] * scratch[k-1])
+                    scratch[k] = c[k] * m
+                    x[i,j,k] = (x[i,j,k] - a[k] * x[i,j,k-1])*m
 
-            #Downward sweep
-            for k in range(shape[2]-2,-1,-1):
-                x[i,j,k] = x[i,j,k] - scratch[k] * x[i,j,k+1]
+                #Downward sweep
+                for k in range(shape[2]-2,-1,-1):
+                    x[i,j,k] = x[i,j,k] - scratch[k] * x[i,j,k+1]
 
     return 
 
@@ -135,9 +137,8 @@ class PressureTDMA:
             self._ky2[jj] = (2.0 * np.cos((2.0 * np.pi/n[1]) * yi)-2.0)/dx[1]/dx[1]     
 
         #Remove the odd-ball
-        if local_start[0] == 0: 
+        if local_start[0] == 0 and local_start[1] == 0: 
             self._kx2[0] = 0.0
-        if local_start[1] == 0: 
             self._ky2[0] = 0.0
 
         return

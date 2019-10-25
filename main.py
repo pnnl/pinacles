@@ -56,7 +56,7 @@ def main(namelist):
     VelocityTimeStepping.initialize()
 
     u = VelocityState.get_field('u')
-    u[5:10,5:10,5:10] = 1.0
+    u[45:55,45:55,45:55] = 1.0
 
     t1 = time.time()
     print(t1 - t0)
@@ -65,10 +65,10 @@ def main(namelist):
         print(i)
         t0 = time.time()
         for n in range(ScalarTimeStepping.n_rk_step):
-            Thermo.update()
-            ScalarAdv.update()
-            MomAdv.update()
-            ScalarTimeStepping.update()
+            #Thermo.update()
+            #ScalarAdv.update()
+            #MomAdv.update()
+            #ScalarTimeStepping.update()
             #VelocityTimeStepping.update()
             ScalarState.boundary_exchange()
             VelocityState.boundary_exchange()

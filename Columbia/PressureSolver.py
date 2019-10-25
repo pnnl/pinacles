@@ -31,6 +31,9 @@ class PressureSolver:
         v = self._VelocityState.get_field('v')
         w = self._VelocityState.get_field('w')
 
+
+        self._VelocityState.remove_mean('w')
+
         #u[25:-25,25:-25,25:-25] = 2.0
         #if MPI.COMM_WORLD.rank == 0: 
         #    u[5:10,5:10,5:10] = 1.0
@@ -43,6 +46,7 @@ class PressureSolver:
 
         dxs = self._Grid.dx
         n_halo = self._Grid.n_halo
+        local_start = self._Grid.local_start
 
         div = fft.DistArray(self._Grid.n, self._Grid.subcomms, dtype=np.complex)
         #First compute divergence of wind field
@@ -50,9 +54,9 @@ class PressureSolver:
         print('Divergence 1', np.amax(np.abs(div)))
         import pylab as plt
         plt.figure(11)
-        plt.contourf(div[:,:,7],200)
+        plt.contourf(div[:,:,50],200)
         plt.colorbar()
-        plt.show()
+
         div_0 = div.redistribute(0)
 
         div_hat =  fft.newDistArray(self._fft, forward_output=True)
@@ -69,6 +73,8 @@ class PressureSolver:
         self._TMDA_solve.solve(divh2_img)
 
         div_hat_2 = divh2_real + divh2_img * 1j
+        if local_start[0] == 0 and local_start[1] == 0: 
+            div_hat_2[0,0,:] = 0.0 + 0j #This only works for serial solver 
 
         div_hat = div_hat_2.redistribute(1)
 
@@ -82,14 +88,19 @@ class PressureSolver:
         self._DiagnosticState.boundary_exchange()
 
         apply_pressure(dxs, dynp, u, v, w)
-        print('W mean: ', np.mean(np.mean(w, axis=0),axis=0))
+        print('W mean: ', np.mean(np.mean(w[n_halo[0]:-n_halo[0], n_halo[1]:-n_halo[1],:], axis=0),axis=0))
         self._VelocityState.boundary_exchange()
         divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
 
         print('Divergence 2', np.amax(np.abs(div)))
 
         import pylab as plt
-        plt.contour(u[:,:,7],200)
+        plt.figure(12)
+        plt.contourf(u[:,:,50],200)
+        plt.figure(13)
+        plt.contourf(v[:,:,50],20)
+        plt.figure(14)
+        plt.contourf(w[:,:,50],20)
         plt.colorbar()
         plt.show()
 
