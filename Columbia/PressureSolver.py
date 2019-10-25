@@ -47,8 +47,12 @@ class PressureSolver:
         div = fft.DistArray(self._Grid.n, self._Grid.subcomms, dtype=np.complex)
         #First compute divergence of wind field
         divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
-
-
+        print('Divergence 1', np.amax(np.abs(div)))
+        import pylab as plt
+        plt.figure(11)
+        plt.contourf(div[:,:,7],200)
+        plt.colorbar()
+        plt.show()
         div_0 = div.redistribute(0)
 
         div_hat =  fft.newDistArray(self._fft, forward_output=True)
@@ -78,12 +82,14 @@ class PressureSolver:
         self._DiagnosticState.boundary_exchange()
 
         apply_pressure(dxs, dynp, u, v, w)
+        print('W mean: ', np.mean(np.mean(w, axis=0),axis=0))
         self._VelocityState.boundary_exchange()
         divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
-        print('Divergence', np.amax(div))
+
+        print('Divergence 2', np.amax(np.abs(div)))
 
         import pylab as plt
-        plt.contourf(u[:,:,25],200)
+        plt.contour(u[:,:,7],200)
         plt.colorbar()
         plt.show()
 

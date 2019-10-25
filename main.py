@@ -61,7 +61,7 @@ def main(namelist):
     t1 = time.time()
     print(t1 - t0)
     times = []
-    for i in range(20):
+    for i in range(1):
         print(i)
         t0 = time.time()
         for n in range(ScalarTimeStepping.n_rk_step):

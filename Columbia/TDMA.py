@@ -37,7 +37,7 @@ def PressureThomas(n_halo, dxs, rho0, rho0_edge, kx2, ky2, x, a, c):
         for j in range(shape[1]):
             #For each i and j build the diagonal
             b[0] = (rho0[n_halo[2]] * (kx2[i] + ky2[j])
-                         - (rho0[n_halo[2]])/dxs[2]/dxs[2])
+                         - (rho0_edge[n_halo[2]])/dxs[2]/dxs[2])
             for k in range(1,shape[2]-1):
                 b[k] = (rho0[k + n_halo[2]] * (kx2[i] + ky2[j])
                      - (rho0_edge[k + n_halo[2]] + rho0_edge[k + n_halo[2] -1])/dxs[2]/dxs[2])
@@ -97,7 +97,7 @@ class PressureTDMA:
         #Fill Matrix Values
         for k in range(1,nl[2]-1):
             self._a[k] = dxi[2] * dxi[2] * rho0_edge[k + n_halo[2]-1]
-            self._c[k] = dxi[2] * dxi[2] * rho0[k + n_halo[0]]
+            self._c[k] = dxi[2] * dxi[2] * rho0_edge[k + n_halo[2]]
 
         #Now set surface boundary conditions
         k = nl[2]-1
@@ -138,7 +138,7 @@ class PressureTDMA:
         if local_start[0] == 0: 
             self._kx2[0] = 0.0
         if local_start[1] == 0: 
-            self._ky2[1] == 0.0
+            self._ky2[0] = 0.0
 
         return
 
