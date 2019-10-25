@@ -14,6 +14,8 @@ class ModelState:
         self._latex_names = {}     #Store latex names, this is handy for plotting
         self._units = {}           #Store the units, this is also hand for plotting
         self._nvars = 0            #The number of 3D field stored in this model state
+        self._bcs = {}
+
 
         return
 
@@ -29,12 +31,13 @@ class ModelState:
     def get_tend_array(self): 
         return self._tend_array 
 
-    def add_variable(self, name, long_name=None, latex_name=None, units=None):
+    def add_variable(self, name, long_name=None, latex_name=None, units=None, bcs='symmetric'):
         #TODO add error handling here. For example what happens if memory has alread been allocated for this container.
         self._dofs[name] = self._nvars
         self._long_names[name] = long_name
         self._latex_names[name] = latex_name
         self._units[name] = units
+        self._bcs[name] = bcs
 
         #Increment the bumber of variables
         self._nvars += 1
@@ -59,6 +62,15 @@ class ModelState:
         self._state_array.boundary_exchange()
         return
 
+    def update_bcs(self, name): 
+
+        bc = self._bcs[name]
+        n_halo = self._Grid.n_halo
+        if bc == 'symmetric': 
+            pass
+
+        return 
+
     def get_field(self, name):
         #Return a contiguious memory slice of _state_array containing the values of name
         dof = self._dofs[name]
@@ -79,6 +91,7 @@ class ModelState:
     def mean(self, name): 
         dof = self._dofs[name]    
         return self._state_array.mean(dof)
+
 
     @property
     def names(self):
