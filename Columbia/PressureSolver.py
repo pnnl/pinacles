@@ -96,10 +96,7 @@ class PressureSolver:
 
         print('Divergence 2', np.amax(np.abs(div)))
 
-        import pylab as plt
-        #plt.figure(12)
-        #plt.contourf(u[:,:,50],200)
-        #plt.colorbar()
+
         #plt.figure(13)
         #plt.contourf(v[:,:,50],20)
         #plt.colorbar()

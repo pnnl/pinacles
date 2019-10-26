@@ -56,20 +56,22 @@ def main(namelist):
     VelocityTimeStepping.initialize()
 
     u = VelocityState.get_field('u')
+    s = ScalarState.get_field('s')
+    ut = VelocityState.get_tend('u')
     u[45:55,45:55,45:55] = 1.0
-
+    s[45:55,45:55,45:55] = 1.0
     t1 = time.time()
     print(t1 - t0)
     times = []
     PSolver.update()
-    for i in range(20):
+    for i in range(1000):
         print(i)
         t0 = time.time()
         for n in range(ScalarTimeStepping.n_rk_step):
-            #Thermo.update()
-            #ScalarAdv.update()
-            #MomAdv.update()
-            #ScalarTimeStepping.update()
+            Thermo.update()
+            ScalarAdv.update()
+            MomAdv.update()
+            ScalarTimeStepping.update()
             VelocityTimeStepping.update()
             ScalarState.boundary_exchange()
             VelocityState.boundary_exchange()
@@ -78,13 +80,13 @@ def main(namelist):
             PSolver.update()
             print(np.amax(u))
         t1 = time.time()
+        import pylab as plt
+        plt.figure(12)
+        plt.contourf(s[:,:,50],50)
+        #plt.colorbar()
+        plt.savefig('./figs/' + str(1000000 + i) + '.png')
         times.append(t1 - t0)
-    import pylab as plt 
-    plt.figure(12)
-    plt.contourf(u[:,:,50],200)
-    plt.colorbar()
-    plt.show()
-    print(np.min(times))
+    print('Timing: ', np.min(times))
 
 
     TerminalIO.end_message()

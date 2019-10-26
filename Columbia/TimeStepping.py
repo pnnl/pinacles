@@ -43,6 +43,8 @@ class RungeKutta2ndSSP(RungeKuttaBase):
             TS_impl.rk2ssp_s0(self._Tn, present_tend, self._dt )
             self._rk_step = 1 
 
+            print('NP.max tend:', np.max(present_tend))
+
         else:
             TS_impl.rk2ssp_s1(self._Tn, present_state, 
                 present_tend, self._dt)

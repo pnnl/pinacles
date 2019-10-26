@@ -124,10 +124,9 @@ class ScalarWENO5(ScalarAdvectionBase):
             #Now compute the WENO fluxes
             weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
 
-            
 
             #Now compute the flux divergences
-            flux_divergence(nhalo, self._Grid.dx[0], self._Grid.dx[1], self._Grid.dx[2],
+            flux_divergence(nhalo, self._Grid.dxi[0], self._Grid.dxi[1], self._Grid.dxi[2],
                 alpha0, fluxx, fluxy, fluxz, phi_t)
 
 

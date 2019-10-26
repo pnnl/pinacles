@@ -2,8 +2,8 @@ import numba
 from Columbia import interpolation_impl
 
 @numba.njit
-def u_advection_weno5(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz, ut):
-    shape = ut.shape
+def u_advection_weno5(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz):
+    shape = u.shape
     for i in range(2,shape[0]-3):
         for j in range(2,shape[1]-3):
             for k in range(2,shape[2]-3):
@@ -61,8 +61,8 @@ def u_advection_weno5(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz, ut):
     return
 
 @numba.njit
-def v_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz, vt):
-    shape = vt.shape
+def v_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
+    shape = v.shape
     for i in range(2,shape[0]-3):
         for j in range(2,shape[1]-3):
             for k in range(2,shape[2]-3):
@@ -120,8 +120,8 @@ def v_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz, vt):
     return
 
 @numba.njit
-def w_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz, wt):
-    shape = wt.shape
+def w_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
+    shape = w.shape
     for i in range(2,shape[0]-3):
         for j in range(2,shape[1]-3):
             for k in range(2,shape[2]-3):
@@ -180,7 +180,7 @@ def w_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz, wt):
     return
 
 @numba.njit
-def uv_flux_div(idx, idy, idz, alpha_half0, fluxx, fluxy, fluxz, uvt):
+def uv_flux_div(idx, idy, idz, alpha0, fluxx, fluxy, fluxz, uvt):
 
     shape = uvt.shape
     for i in range(1,shape[0]-1):
@@ -188,14 +188,20 @@ def uv_flux_div(idx, idy, idz, alpha_half0, fluxx, fluxy, fluxz, uvt):
             for k in range(1,shape[2]-1):
                 uvt[i,j,k] -= ((fluxx[i,j,k] - fluxx[i-1,j,k])*idx
                               + (fluxy[i,j,k] - fluxy[i,j-1,k])*idy
-                              + (fluxz[i,j,k] - fluxz[i,j,k-1])*idz) * alpha_half0[k]
+                              + (fluxz[i,j,k] - fluxz[i,j,k-1])*idz) * alpha0[k]
 
     return
 
 @numba.njit
-def w_flux_div(idx, idy, idz, fluxx, fluxy, fluxz, wt):
+def w_flux_div(idx, idy, idz, alpha0_edge, fluxx, fluxy, fluxz, wt):
 
     shape = wt.shape
+    for i in range(1,shape[0]-1):
+        for j in range(1,shape[1]-1):
+            for k in range(1,shape[2]-1):
+                wt[i,j,k] -=  ((fluxx[i,j,k] - fluxx[i-1,j,k])*idx
+                              + (fluxy[i,j,k] - fluxy[i,j-1,k])*idy
+                              + (fluxz[i,j,k] - fluxz[i,j,k-1])*idz) * alpha0_edge[k]
 
 
     return
