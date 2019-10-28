@@ -58,8 +58,10 @@ def main(namelist):
     u = VelocityState.get_field('u')
     s = ScalarState.get_field('s')
     ut = VelocityState.get_tend('u')
-    u[45:55,45:55,45:55] = 1.0
-    s[45:55,45:55,45:55] = 1.0
+    #u[45:55,55:65,4:6] = 1.0    
+    u[85:95,45:55,4:6] = -5.0
+    #s[45:55,55:65,4:6] = 25.0
+    s[85:95,45:55,4:6] = -25.0
     t1 = time.time()
     print(t1 - t0)
     times = []
@@ -68,7 +70,7 @@ def main(namelist):
         print(i)
         t0 = time.time()
         for n in range(ScalarTimeStepping.n_rk_step):
-            Thermo.update()
+            #Thermo.update()
             ScalarAdv.update()
             MomAdv.update()
             ScalarTimeStepping.update()
@@ -82,10 +84,12 @@ def main(namelist):
         t1 = time.time()
         import pylab as plt
         plt.figure(12)
-        plt.contourf(s[:,:,50],50)
-        #plt.colorbar()
+        plt.contourf(u[:,:,5],50)
+        plt.colorbar()
         plt.savefig('./figs/' + str(1000000 + i) + '.png')
         times.append(t1 - t0)
+        plt.close() 
+
     print('Timing: ', np.min(times))
 
 
