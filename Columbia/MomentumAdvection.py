@@ -42,7 +42,7 @@ class MomentumWENO5(MomentumAdvectionBase):
         #TODO Move the allocation somewhere else.
         fluxx = np.empty_like(u)
         fluxy = np.empty_like(v)
-        fluxz = np.empty_like(v)
+        fluxz = np.empty_like(w)
 
         #Here we return the fluxes. We could capture these for output
         #U Component

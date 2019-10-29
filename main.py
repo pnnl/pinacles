@@ -5,9 +5,11 @@ from Columbia import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamic
 from Columbia import ScalarAdvection, TimeStepping, ReferenceState
 from Columbia import MomentumAdvection
 from Columbia import PressureSolver
+from scipy.ndimage import laplace
 from mpi4py import MPI
 import numpy as np
 import time
+import pylab as plt
 
 def main(namelist):
     TerminalIO.start_message()
@@ -56,39 +58,73 @@ def main(namelist):
     VelocityTimeStepping.initialize()
 
     u = VelocityState.get_field('u')
+    v = VelocityState.get_field('v')
+    w = VelocityState.get_field('w')
     s = ScalarState.get_field('s')
     ut = VelocityState.get_tend('u')
-    #u[45:55,55:65,4:6] = 1.0    
-    u[85:95,45:55,4:6] = -5.0
-    #s[45:55,55:65,4:6] = 25.0
-    s[85:95,45:55,4:6] = -25.0
+    u[35:65,20:50,:] = -2.5
+    u[35:65,50:80,:] =  2.5
+
+    #laplace(u,u)
+    import pylab as plt
+    plt.figure(12)
+    plt.contourf(u[:,:,5],50)#,vmin=0.0, vmax=25.0)
+    plt.colorbar()
+    plt.show()
+    plt.close()
+
+    #u[35:66,45:55,4:6] = 5.0
+    #u.fill(-2.5)
+    #v.fill(2.5)
+    s[35:65,20:50,:]= 25.0
+    s[35:65,50:80,:] = -25.0
+    #s[85:95,45:55,4:6] = -25.0
+    #s[:,:,:] = np.arange(s.shape[1], dtype=np.double)[:,np.newaxis,np.newaxis]
     t1 = time.time()
+    #import pylab as plt
+    #plt.figure(12)
+    #plt.contourf(np.diff(s[:,:,5],axis=0),150)
+    #plt.colorbar()
+#    plt.savefig('./figs/' + str(1000000 + i) + '.png')
+#    plt.close() 
+   # plt.show() 
+
     print(t1 - t0)
     times = []
     PSolver.update()
-    for i in range(1000):
+    PSolver.update()
+    ScalarState.boundary_exchange()
+    VelocityState.boundary_exchange()
+    ScalarState.update_all_bcs()
+    VelocityState.update_all_bcs()
+    for i in range(2000):
         print(i)
         t0 = time.time()
         for n in range(ScalarTimeStepping.n_rk_step):
             #Thermo.update()
             ScalarAdv.update()
-            MomAdv.update()
+            #MomAdv.update()
             ScalarTimeStepping.update()
             VelocityTimeStepping.update()
             ScalarState.boundary_exchange()
             VelocityState.boundary_exchange()
             ScalarState.update_all_bcs()
             VelocityState.update_all_bcs()
-            PSolver.update()
-            print(np.amax(u))
+            #PSolver.update()
+            print(np.amax(w))
         t1 = time.time()
         import pylab as plt
         plt.figure(12)
-        plt.contourf(u[:,:,5],50)
+        plt.contourf(s[:,:,5],100,vmin=-25.1, vmax=25.1, cmap=plt.cm.seismic)
+        plt.clim(-25.1, 25.1)
         plt.colorbar()
         plt.savefig('./figs/' + str(1000000 + i) + '.png')
         times.append(t1 - t0)
         plt.close() 
+        print('Scalar Integral ', np.sum(s[ModelGrid.n_halo[0]:-ModelGrid.n_halo[0],
+            ModelGrid.n_halo[1]:-ModelGrid.n_halo[1],
+            ModelGrid.n_halo[2]:-ModelGrid.n_halo[2]]))
+        print('W-max', VelocityState.mean('w'))
 
     print('Timing: ', np.min(times))
 

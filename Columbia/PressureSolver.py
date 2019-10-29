@@ -26,18 +26,12 @@ class PressureSolver:
 
     def update(self):
 
+        self._VelocityState.remove_mean('w')
+
         #First get views in to the velocity components
         u = self._VelocityState.get_field('u')
         v = self._VelocityState.get_field('v')
         w = self._VelocityState.get_field('w')
-
-
-        self._VelocityState.remove_mean('w')
-
-        #u[25:-25,25:-25,25:-25] = 2.0
-        #if MPI.COMM_WORLD.rank == 0: 
-        #    u[5:10,5:10,5:10] = 1.0
-
 
         dynp = self._DiagnosticState.get_field('dynamic pressure')
 
@@ -51,11 +45,6 @@ class PressureSolver:
         div = fft.DistArray(self._Grid.n, self._Grid.subcomms, dtype=np.complex)
         #First compute divergence of wind field
         divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
-        #print('Divergence 1', np.amax(np.abs(div)))
-        #import pylab as plt
-        #plt.figure(11)
-        #plt.contourf(div[:,:,50],200)
-        #plt.colorbar()
 
         div_0 = div.redistribute(0)
 
@@ -68,13 +57,13 @@ class PressureSolver:
         divh2_real = div_hat_2.real
         divh2_img = div_hat_2.imag
 
-        #Place the pressure solve here 
+        #Place the pressure solve here
         self._TMDA_solve.solve(divh2_real)
         self._TMDA_solve.solve(divh2_img)
 
         div_hat_2 = divh2_real + divh2_img * 1j
-        if local_start[0] == 0 and local_start[1] == 0: 
-            div_hat_2[0,0,:] = 0.0 + 0j #This only works for serial solver 
+        if local_start[0] == 0 and local_start[1] == 0:
+            div_hat_2[0,0,:] = 0.0 + 0j #This only works for serial solver
 
         div_hat = div_hat_2.redistribute(1)
 
@@ -89,31 +78,12 @@ class PressureSolver:
         self._DiagnosticState._gradient_zero_bc('dynamic pressure')
 
         apply_pressure(dxs, dynp, u, v, w)
-        #print('W mean: ', np.mean(np.mean(w[n_halo[0]:-n_halo[0], n_halo[1]:-n_halo[1],:], axis=0),axis=0))
+
         self._VelocityState.boundary_exchange()
         self._VelocityState.update_all_bcs()
         divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
 
         print('Divergence 2', np.amax(np.abs(div)))
-
-
-        #plt.figure(13)
-        #plt.contourf(v[:,:,50],20)
-        #plt.colorbar()
-        #plt.figure(14)
-        #plt.contourf(w[:,:,50],20)
-        #plt.colorbar()
-        #plt.figure(15)
-        #plt.contourf(div[:,50,:],20)
-        #plt.colorbar()
-        #plt.show()
-
-
-
-        #print(np.amin(dynp), np.amax(dynp))
-        #import sys; sys.exit()
-
-
 
         return
 

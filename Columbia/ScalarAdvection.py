@@ -27,9 +27,9 @@ class ScalarAdvectionBase:
 @numba.njit
 def weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t):
     phi_shape = phi.shape
-    for i in range(nhalo[0],phi_shape[0]-nhalo[0]):
-        for j in range(nhalo[1],phi_shape[1]-nhalo[1]):
-            for k in range(nhalo[2],phi_shape[2]-nhalo[2]):
+    for i in range(2,phi_shape[1]-3):
+        for j in range(2,phi_shape[1]-3):
+            for k in range(2,phi_shape[1]-3):
                 #First compute x-advection
                 if u[i,j,k] >= 0:
                     fluxx[i,j,k] = rho0[k] * u[i,j,k] * interp_weno5(phi[i-2,j,k],
@@ -78,9 +78,9 @@ def weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, p
 def flux_divergence(nhalo, idx, idy, idzi, alpha0, fluxx, fluxy, fluxz, phi_t):
     phi_shape = phi_t.shape
     #TODO Tighten range of loops
-    for i in range(nhalo[2],phi_shape[0] - nhalo[0]):
-        for j in range(nhalo[1],phi_shape[1] - nhalo[1]):
-            for k in range(nhalo[0],phi_shape[2] - nhalo[2]):
+    for i in range(1,phi_shape[0] -1):
+        for j in range(1,phi_shape[1] -1):
+            for k in range(1,phi_shape[2] - 1):
                 phi_t[i,j,k] -= alpha0[k]*((fluxx[i,j,k] - fluxx[i-1,j,k])*idx
                                             + (fluxy[i,j,k] - fluxy[i,j-1,k])*idy
                                             + (fluxz[i,j,k] - fluxz[i,j,k-1])*idzi)

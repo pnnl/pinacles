@@ -86,16 +86,26 @@ class GhostArray(GhostArrayBase):
             nh = self._n_halo[dim]
 
             if dim == 0:
-                send_buf = np.copy(self.array[:,nh:2*nh,:,:])
-                recv_buf = np.empty_like(send_buf)
-                comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                self.array[:,-nh:,:,:] = recv_buf
+
+                if comm_size > 1:
+                    send_buf = np.copy(self.array[:,nh:2*nh,:,:])
+                    recv_buf = np.empty_like(send_buf)
+                    print('Send Buffer', send_buf)
+                    print('Recv Buffer', recv_buf)
+                    comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
+                    self.array[:,-nh:,:,:] = recv_buf
+                else:
+                    print('Serial update')
+                    self.array[:,-nh:,:,:] = self.array[:,nh:2*nh,:,:]
 
             if dim == 1:
-                send_buf = np.copy(self.array[:,:,nh:2*nh,:])
-                recv_buf = np.empty_like(send_buf)
-                comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                self.array[:,:,-nh:,:] = recv_buf
+                if comm_size > 1: 
+                    send_buf = np.copy(self.array[:,:,nh:2*nh,:])
+                    recv_buf = np.empty_like(send_buf)
+                    comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
+                    self.array[:,:,-nh:,:] = recv_buf
+                else: 
+                    self.array[:,:,-nh:,:] = self.array[:,:,nh:2*nh,:]
 
             #Now do the left exchange
             source, dest = comm.Shift(0,-1)
@@ -107,16 +117,22 @@ class GhostArray(GhostArrayBase):
                 dest = comm_size - 1
 
             if dim == 0:
-                send_buf = np.copy(self.array[:,-2*nh:-nh,:,:])
-                recv_buf = np.empty_like(send_buf)
-                comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                self.array[:,:nh,:,:] = recv_buf
+                if comm_size > 1:
+                    send_buf = np.copy(self.array[:,-2*nh:-nh,:,:])
+                    recv_buf = np.empty_like(send_buf)
+                    comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
+                    self.array[:,:nh,:,:] = recv_buf
+                else:
+                    self.array[:,:nh,:,:] = self.array[:,-2*nh:-nh,:,:]
 
             if dim == 1:
-                send_buf = np.copy(self.array[:,:,-2*nh:-nh,:])
-                recv_buf = np.empty_like(send_buf)
-                comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                self.array[:,:,:nh,:] = recv_buf
+                if comm_size > 1:
+                    send_buf = np.copy(self.array[:,:,-2*nh:-nh,:])
+                    recv_buf = np.empty_like(send_buf)
+                    comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
+                    self.array[:,:,:nh,:] = recv_buf
+                else:
+                    self.array[:,:,:nh,:] = self.array[:,:,-2*nh:-nh,:]
 
         return
 
@@ -127,7 +143,7 @@ class GhostArray(GhostArrayBase):
             :],axis=(0,1))
 
         n = self._Grid.n
-        local_sum /= n[0] * n[1]
+        local_sum /= (n[0] * n[1])
         mean = np.empty_like(local_sum)
         MPI.COMM_WORLD.Allreduce(local_sum, mean, op=MPI.SUM)
 
@@ -136,6 +152,6 @@ class GhostArray(GhostArrayBase):
     def remove_mean(self, dof):
         #TODO perhpas use numba here?
         mean = self.mean(dof)
-        self.array[dof,:,:,:] -= mean[np.newaxis, np.newaxis, :]
+        self.array[dof,:,:,:] = self.array[dof,:,:,:]  -  mean[np.newaxis, np.newaxis, :]
 
         return

@@ -32,11 +32,11 @@ def PressureThomas(n_halo, dxs, rho0, rho0_edge, kx2, ky2, x, a, c):
     shape = x.shape 
     scratch = np.empty(shape[2], dtype=np.double)
     b = np.empty(shape[2], dtype=np.double)
-    
+
     for i in range(shape[0]):
         for j in range(shape[1]):
             if i != 0 or j != 0: 
-                
+
                 #For each i and j build the diagonal
                 b[0] = (rho0[n_halo[2]] * (kx2[i] + ky2[j])
                             - (rho0_edge[n_halo[2]])/dxs[2]/dxs[2])
@@ -48,7 +48,7 @@ def PressureThomas(n_halo, dxs, rho0, rho0_edge, kx2, ky2, x, a, c):
                         - (rho0_edge[k + n_halo[2] -1])/dxs[2]/dxs[2])
 
                 #Now begin the actual algorithm solve
-                
+
                 #Upward sweep
                 scratch[0] = c[0]/b[0]
                 x[i,j,0] = x[i,j,0]/b[0]
@@ -119,6 +119,7 @@ class PressureTDMA:
 
         self._kx2 = np.zeros(nl[0], dtype=np.double)
         self._ky2 = np.zeros(nl[1], dtype=np.double)
+
         #TODO the code below feels a bit like boilerplate
         for ii in range(nl[0]): 
             i = local_start[0] + ii 

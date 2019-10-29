@@ -8,7 +8,9 @@ def u_advection_weno5(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz):
         for j in range(2,shape[1]-3):
             for k in range(2,shape[2]-3):
                #Compute advection of u by u-wind
-               up = interpolation_impl.centered_second(u[i,j,k], u[i+1,j,k])
+               up = interpolation_impl.centered_fourth(u[i-1,j,k], u[i,j,k], u[i+1,j,k], u[i+2,j,k])
+               vp = interpolation_impl.centered_fourth(v[i-1,j,k], v[i,j,k], v[i+1,j,k], v[i+2,j,k])
+               wp = interpolation_impl.centered_fourth(w[i-1,j,k], w[i,j,k], w[i+1,j,k], w[i+2,j,k] )
 
                if up >= 0.0:
                    fluxx[i,j,k] = up  * interpolation_impl.interp_weno5(
@@ -18,14 +20,15 @@ def u_advection_weno5(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz):
                                                      u[i+1,j,k],
                                                      u[i+2,j,k] ) * rho0[k]
                else:
-                   fluxx[i,j,k] = up * interpolation_impl.interp_weno5(u[i+3,j,k],
+                   fluxx[i,j,k] = up * interpolation_impl.interp_weno5(
+                                                     u[i+3,j,k],
                                                      u[i+2, j, k],
                                                      u[i+1, j, k],
                                                      u[i,j,k],
                                                      u[i-1,j,k]) * rho0[k]
 
                #Copute advection of u by v-wind
-               vp = interpolation_impl.centered_second(v[i,j,k], v[i+1,j,k])
+
                if vp >= 0.0:
                    fluxy[i,j,k] = vp  * interpolation_impl.interp_weno5(
                                                      u[i,j-2,k],
@@ -34,7 +37,8 @@ def u_advection_weno5(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz):
                                                      u[i,j+1,k],
                                                      u[i,j+2,k] ) * rho0[k]
                else:
-                   fluxy[i,j,k] = vp * interpolation_impl.interp_weno5(u[i,j+3,k],
+                   fluxy[i,j,k] = vp * interpolation_impl.interp_weno5(
+                                                     u[i,j+3,k],
                                                      u[i, j+2, k],
                                                      u[i, j+1, k],
                                                      u[i,j,k],
@@ -42,7 +46,6 @@ def u_advection_weno5(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz):
 
 
                #Compute advection of u by w-wind
-               wp = interpolation_impl.centered_second(w[i,j,k], w[i+1,j,k])
                if wp >= 0.0:
                    fluxz[i,j,k] = wp  * interpolation_impl.interp_weno5(
                                                      u[i,j,k-2],
@@ -51,7 +54,8 @@ def u_advection_weno5(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz):
                                                      u[i,j,k+1],
                                                      u[i,j,k+2] ) * rho_edge0[k]
                else:
-                   fluxz[i,j,k] = wp * interpolation_impl.interp_weno5(u[i,j,k+3],
+                   fluxz[i,j,k] = wp * interpolation_impl.interp_weno5(
+                                                    u[i,j,k+3],
                                                      u[i, j, k+2],
                                                      u[i, j, k+1],
                                                      u[i,j,k],
@@ -67,7 +71,10 @@ def v_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
         for j in range(2,shape[1]-3):
             for k in range(2,shape[2]-3):
                 #Compute v advection by the u wind
-                up = interpolation_impl.centered_second(u[i,j,k], u[i,j+1,k])
+                up = interpolation_impl.centered_fourth(u[i,j-1,k],u[i,j,k], u[i,j+1,k],u[i,j+2,k])
+                vp = interpolation_impl.centered_fourth(v[i,j-1,k],v[i,j,k], v[i,j+1,k],v[i,j+2,k])
+                wp = interpolation_impl.centered_fourth(w[i,j-1,k],w[i,j,k], w[i,j+1,k],w[i,j+2,k])
+
                 if up >= 0.0:
                     fluxx[i,j,k] = up  * interpolation_impl.interp_weno5(
                                                      v[i-2,j,k],
@@ -85,7 +92,7 @@ def v_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
 
 
                 #Compute v advection by the v wind
-                vp = interpolation_impl.centered_second(v[i,j,k], v[i,j+1,k])
+                
                 if vp >= 0.0:
                     fluxy[i,j,k] = vp * interpolation_impl.interp_weno5(
                                                      v[i,j-2,k],
@@ -102,7 +109,7 @@ def v_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
                                                      v[i,j-1,k]) * rho0[k]
 
                 #Compute v advection by the w wind
-                wp = interpolation_impl.centered_second(w[i,j,k], w[i,j+1,k])
+                
                 if wp >= 0.0:
                     fluxz[i,j,k] = wp * interpolation_impl.interp_weno5(
                                                      v[i,j,k-2],
