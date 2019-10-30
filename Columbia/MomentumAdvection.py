@@ -60,11 +60,11 @@ class MomentumWENO5(MomentumAdvectionBase):
             fluxx, fluxy, fluxz, v_t)
 
         # W Component
-        MomentumAdvection_impl.w_advection_weno5(rho0, rho0_edge
-            ,u, v, w, fluxx, fluxy, fluxz)
+        #MomentumAdvection_impl.w_advection_weno5(rho0, rho0_edge
+        #    ,u, v, w, fluxx, fluxy, fluxz)
 
-        MomentumAdvection_impl.w_flux_div(dxi[0], dxi[1], dxi[2], alpha0_edge,
-            fluxx, fluxy, fluxz, w_t)
+        #MomentumAdvection_impl.w_flux_div(dxi[0], dxi[1], dxi[2], alpha0_edge,
+        #    fluxx, fluxy, fluxz, w_t)
 
         return
 

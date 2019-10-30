@@ -138,9 +138,9 @@ class PressureTDMA:
             self._ky2[jj] = (2.0 * np.cos((2.0 * np.pi/n[1]) * yi)-2.0)/dx[1]/dx[1]
 
         #Remove the odd-ball
-        if local_start[0] == 0:
+        if local_start[0] == 0: 
             self._kx2[0] = 0.0
-        if local_start[1] == 0: 
+        if local_start[1] == 0:
             self._ky2[0] = 0.0
 
         return

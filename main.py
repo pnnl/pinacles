@@ -136,7 +136,7 @@ def main(namelist):
         plt.contourf(s[:,:,5],100,vmin=-25.1, vmax=25.1, cmap=plt.cm.seismic)
         plt.clim(-25.1, 25.1)
         plt.colorbar()
-        plt.savefig('./figs/' + str(1000000 + i) + '.png')
+        plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=200)
         times.append(t1 - t0)
         plt.close() 
         print('Scalar Integral ', np.sum(s[ModelGrid.n_halo[0]:-ModelGrid.n_halo[0],
