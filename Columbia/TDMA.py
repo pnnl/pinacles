@@ -127,7 +127,7 @@ class PressureTDMA:
                 xi = np.double(i)
             else: 
                 xi = np.double(i - n[0])
-            self._kx2[ii] = (2.0 * np.cos((2.0 * np.pi/n[0]) * xi)-2.0)/dx[0]/dx[0]        
+            self._kx2[ii] = (2.0 * np.cos((2.0 * np.pi/n[0]) * xi)-2.0)/dx[0]/dx[0]
 
         for jj in range(nl[1]): 
             j = local_start[1] + jj
@@ -135,11 +135,12 @@ class PressureTDMA:
                 yi = np.double(jj)
             else: 
                 yi = np.double(j - n[1])
-            self._ky2[jj] = (2.0 * np.cos((2.0 * np.pi/n[1]) * yi)-2.0)/dx[1]/dx[1]     
+            self._ky2[jj] = (2.0 * np.cos((2.0 * np.pi/n[1]) * yi)-2.0)/dx[1]/dx[1]
 
         #Remove the odd-ball
-        if local_start[0] == 0 and local_start[1] == 0: 
+        if local_start[0] == 0:
             self._kx2[0] = 0.0
+        if local_start[1] == 0: 
             self._ky2[0] = 0.0
 
         return

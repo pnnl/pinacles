@@ -62,22 +62,40 @@ def main(namelist):
     w = VelocityState.get_field('w')
     s = ScalarState.get_field('s')
     ut = VelocityState.get_tend('u')
-    u[35:65,20:50,:] = -2.5
-    u[35:65,50:80,:] =  2.5
+    #u[35:65,20:50,:] = -2.5
+    #u[35:65,50:80,:] =  2.5
 
     #laplace(u,u)
-    import pylab as plt
-    plt.figure(12)
-    plt.contourf(u[:,:,5],50)#,vmin=0.0, vmax=25.0)
-    plt.colorbar()
-    plt.show()
-    plt.close()
+
 
     #u[35:66,45:55,4:6] = 5.0
     #u.fill(-2.5)
     #v.fill(2.5)
-    s[35:65,20:50,:]= 25.0
-    s[35:65,50:80,:] = -25.0
+    xl = ModelGrid.x_local
+    yl = ModelGrid.y_local
+    shape = s.shape
+    for i in range(shape[0]):
+        x = xl[i] - (np.max(xl) - np.min(xl))/2.0
+        for j in range(shape[1]):
+            y = yl[j] - (np.max(yl) - np.min(yl))/2.0
+            for k in range(shape[2]):
+                if x > -225 and x <= -125 and y >= -50 and y <= 50: 
+                    s[i,j,k] = 25.0  
+                    u[i,j,k] = 2.5
+                if x >= 125 and x < 225  and y >= -100 and y <= 100: 
+                    s[i,j,k] = -25.0 
+                    u[i,j,k] = -2.5
+ 
+
+    import pylab as plt
+    plt.figure(12)
+    plt.contourf(s[:,:,5],50)#,vmin=0.0, vmax=25.0)
+    plt.colorbar()
+    plt.show()
+    plt.close()
+
+    #s[50+35:65,20:50,:]= 25.0
+    #s[35:65,50:80,:] = -25.0
     #s[85:95,45:55,4:6] = -25.0
     #s[:,:,:] = np.arange(s.shape[1], dtype=np.double)[:,np.newaxis,np.newaxis]
     t1 = time.time()
@@ -103,14 +121,14 @@ def main(namelist):
         for n in range(ScalarTimeStepping.n_rk_step):
             #Thermo.update()
             ScalarAdv.update()
-            #MomAdv.update()
+            MomAdv.update()
             ScalarTimeStepping.update()
             VelocityTimeStepping.update()
             ScalarState.boundary_exchange()
             VelocityState.boundary_exchange()
             ScalarState.update_all_bcs()
             VelocityState.update_all_bcs()
-            #PSolver.update()
+            PSolver.update()
             print(np.amax(w))
         t1 = time.time()
         import pylab as plt
