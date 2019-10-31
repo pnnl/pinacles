@@ -64,10 +64,12 @@ def PressureThomas(n_halo, dxs, rho0, rho0_edge, kx2, ky2, x, a, c):
     return 
 
 class PressureTDMA: 
-    def __init__(self, Grid, Ref):
+    def __init__(self, Grid, Ref, wavenumber_substarts, wavenumber_n):
 
         self._Grid = Grid
         self._Ref = Ref
+        self._wavenumber_substarts = wavenumber_substarts
+        self._wavenumber_n = wavenumber_n
 
         #Set up the diagonals for the solve
         self._a = None
@@ -109,40 +111,45 @@ class PressureTDMA:
         return
 
     def _compute_modified_wavenumbers(self):
-        nl = self._Grid.nl
-        local_start = self._Grid.local_start
         n_h = self._Grid.n_halo
         dx = self._Grid.dx
         n = self._Grid.n
-        xl = self._Grid.x_local[n_h[0]:-n_h[0]]
-        yl = self._Grid.y_local[n_h[1]:-n_h[1]]
 
-        self._kx2 = np.zeros(nl[0], dtype=np.double)
-        self._ky2 = np.zeros(nl[1], dtype=np.double)
+        self._kx2 = np.zeros(self._wavenumber_n[0], dtype=np.double)
+        self._ky2 = np.zeros(self._wavenumber_n[1], dtype=np.double)
 
         #TODO the code below feels a bit like boilerplate
-        for ii in range(nl[0]):
-            i = local_start[0] + ii
+        xl = []
+        for ii in range(self._wavenumber_n[0]):
+            i = self._wavenumber_substarts[0] + ii
             if i <= n[0]/2:
                 xi = np.double(i)
             else:
                 xi = np.double(i - n[0])
             self._kx2[ii] = (2.0 * np.cos((2.0 * np.pi/n[0]) * xi)-2.0)/dx[0]/dx[0]
+            xl.append(xi)
 
-        for jj in range(nl[1]):
-            j = local_start[1] + jj
+        yl = []
+
+        for jj in range(self._wavenumber_n[1]):
+            j = self._wavenumber_substarts[1] + jj
             if j <= n[1]/2:
-                yi = np.double(jj)
+                yi = np.double(j)
             else:
                 yi = np.double(j - n[1])
             self._ky2[jj] = (2.0 * np.cos((2.0 * np.pi/n[1]) * yi)-2.0)/dx[1]/dx[1]
 
+            yl.append(yi)
+
         #Remove the odd-ball
-        if local_start[0] == 0:
+        if self._wavenumber_substarts[0] == 0:
             self._kx2[0] = 0.0
-        if local_start[1] == 0:
+        if self._wavenumber_substarts[1] == 0:
             self._ky2[0] = 0.0
 
+        #print('kx2', 'wn', self._wavenumber_n[0], 'ws', self._wavenumber_substarts[0], np.min(xl), np.max(xl))
+        #print('***ky2', 'wn',  self._wavenumber_n[1], 'ws', self._wavenumber_substarts[1], np.min(yl), np.max(yl))
+        #import sys; sys.exit()
         return
 
     def solve(self, x):

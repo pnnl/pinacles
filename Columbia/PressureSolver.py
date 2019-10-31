@@ -12,6 +12,9 @@ class PressureSolver:
         self._VelocityState = VelocityState
         self._DiagnosticState = DiagnosticState
 
+        self._wavenumber_substarts = None
+        self._wavenumber_n = None
+
         #Add dynamic pressure as a diagnsotic state
         self._DiagnosticState.add_variable('dynamic pressure')
 
@@ -20,7 +23,24 @@ class PressureSolver:
         div = div.redistribute(0)
         self._fft =  fft.PFFT(self._Grid.subcomms, darray=div, axes=(1,0), transforms={})
 
-        self._TMDA_solve = PressureTDMA(self._Grid, self._Ref)
+
+        self.fft_local_starts()
+        self._TMDA_solve = PressureTDMA(self._Grid, self._Ref, self._wavenumber_substarts, self._wavenumber_n)
+
+
+        return
+
+
+    def fft_local_starts(self):
+        div = fft.DistArray(self._Grid.n, self._Grid.subcomms, dtype=np.complex)
+        div_hat =  fft.newDistArray(self._fft, forward_output=True)
+        div_hat2 = div_hat.redistribute(2)
+
+        self._wavenumber_n = div_hat2.shape
+        print(self._wavenumber_n)
+        self._wavenumber_substarts = div_hat2.substart
+
+        #import sys; sys.exit()
 
         return
 
@@ -46,12 +66,18 @@ class PressureSolver:
         #First compute divergence of wind field
         divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
 
+        #print('u', u.shape)
+
         div_0 = div.redistribute(0)
 
         div_hat =  fft.newDistArray(self._fft, forward_output=True)
         self._fft.forward(div_0, div_hat)
 
         div_hat_2 = div_hat.redistribute(2)
+        #print(div_hat_2[1,1,1], self._wavenumber_substarts)
+        #import sys; sys.exit()
+        #print('div_hat_2 ', div_hat_2.shape)
+        #import sys; sys.exit() 
 
         #The TDM solver goes here
         divh2_real = div_hat_2.real
@@ -62,7 +88,7 @@ class PressureSolver:
         self._TMDA_solve.solve(divh2_img)
 
         div_hat_2 = divh2_real + divh2_img * 1j
-        if local_start[0] == 0 and local_start[1] == 0:
+        if self._wavenumber_substarts[0] == 0 and self._wavenumber_substarts[1] == 0:
             div_hat_2[0,0,:] = 0.0 + 0j #This only works for serial solver
 
         div_hat = div_hat_2.redistribute(1)

@@ -182,6 +182,10 @@ class GridBase:
         '''
         return np.copy(self._local_axes)
 
+
+    def get_DistArray(self): 
+        return mpi4py_fft.DistArray(self._n, self.subcomms)
+
     def _create_subcomms(self):
         self.subcomms = Subcomm(MPI.COMM_WORLD, dims=[0,0,1])
         return

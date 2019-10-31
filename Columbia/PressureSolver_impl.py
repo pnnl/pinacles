@@ -2,7 +2,7 @@ import numba
 
 @numba.njit
 def divergence(n_halo, dxs, rho0, rho0_edge, u, v, w, div):
-
+    #Second order divergence
     shape = u.shape
     nh0 = n_halo[0]
     nh1 = n_halo[1]
@@ -18,6 +18,7 @@ def divergence(n_halo, dxs, rho0, rho0_edge, u, v, w, div):
 
 @numba.njit
 def  fill_pressure(n_halo, pres, dynp):
+    #Copy only the diagnosed real part of the pressure field
     shape = pres.shape
     for i in range(shape[0]):
         for j in range(shape[1]):
@@ -28,8 +29,8 @@ def  fill_pressure(n_halo, pres, dynp):
 
 @numba.njit
 def apply_pressure(dxs, dynp, u, v, w):
+    #Use the diagnosed pressure to enforce continuity
     shape = dynp.shape
-
     for i in range(shape[0]-1):
         for j in range(shape[1]-1):
             for k in range(shape[2]-1):

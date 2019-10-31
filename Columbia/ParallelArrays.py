@@ -90,12 +90,12 @@ class GhostArray(GhostArrayBase):
                 if comm_size > 1:
                     send_buf = np.copy(self.array[:,nh:2*nh,:,:])
                     recv_buf = np.empty_like(send_buf)
-                    print('Send Buffer', send_buf)
-                    print('Recv Buffer', recv_buf)
+                    #print('Send Buffer', send_buf)
+                    #print('Recv Buffer', recv_buf)
                     comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
                     self.array[:,-nh:,:,:] = recv_buf
                 else:
-                    print('Serial update')
+                    #print('Serial update')
                     self.array[:,-nh:,:,:] = self.array[:,nh:2*nh,:,:]
 
             if dim == 1:

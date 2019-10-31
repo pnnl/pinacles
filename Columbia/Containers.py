@@ -1,5 +1,6 @@
 from Columbia import ParallelArrays
 import numpy as np
+from mpi4py import MPI
 
 class ModelState:
     def __init__(self, Grid, prognostic=False, identical_bcs=False):
@@ -159,6 +160,22 @@ class ModelState:
         dof = self._dofs[name]    
         return self._state_array.mean(dof)
 
+    def get_field_slice_z(self, name, indx=0):
+
+        ls = self._Grid.local_start
+        nl = self._Grid.nl
+        nh = self._Grid.n_halo
+        ng = self._Grid.ngrid
+        local_data = self.get_field(name)[:,:,indx]
+        local_copy_of_global = np.zeros((ng[0], ng[1]), dtype=np.double)
+
+
+        local_copy_of_global[ls[0]:ls[0]+nl[0] + 2*nh[0], ls[1]:ls[1]+nl[1] + 2*nh[1]] = local_data
+        recv_buf = np.empty_like(local_copy_of_global)
+
+        MPI.COMM_WORLD.Allreduce(local_copy_of_global, recv_buf, op=MPI.SUM)
+
+        return recv_buf
 
     @property
     def names(self):

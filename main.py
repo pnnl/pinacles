@@ -87,18 +87,18 @@ def main(namelist):
                 if x >= 125 and x < 225  and y >= -100 and y <= 100: 
                     s[i,j,k] = -25.0 
                     u[i,j,k] = -2.5
- 
 
+   # v.fill(-2.0)
     #print(xl)
     #print(yl)
     #import sys; sys.exit()
 
-    import pylab as plt
-    plt.figure(12)
-    plt.contourf(s[:,:,5],50,vmin=-25.0, vmax=25.0)
-    plt.colorbar()
-    plt.show()
-    plt.close()
+   # import pylab as plt
+    #plt.figure(12)
+    #plt.contourf(s[:,:,5],50,vmin=-25.0, vmax=25.0)
+    #plt.colorbar()
+    #plt.show()
+    #plt.close()
 
     #s[50+35:65,20:50,:]= 25.0
     #s[35:65,50:80,:] = -25.0
@@ -116,11 +116,12 @@ def main(namelist):
     print(t1 - t0)
     times = []
     PSolver.update()
-    PSolver.update()
     ScalarState.boundary_exchange()
     VelocityState.boundary_exchange()
     ScalarState.update_all_bcs()
     VelocityState.update_all_bcs()
+
+
     for i in range(4000):
         print(i)
         t0 = time.time()
@@ -135,21 +136,23 @@ def main(namelist):
             ScalarState.update_all_bcs()
             VelocityState.update_all_bcs()
             PSolver.update()
-            print(np.amax(w))
+            #print(np.amax(w))
         t1 = time.time()
         import pylab as plt
-        plt.figure(12)
-        levels = np.linspace(-27.1, 27.1, 100)
-        plt.contourf(s[:,:,5],100,levels=levels, cmap=plt.cm.seismic)
-        plt.clim(-27.1, 27.1)
-        #plt.colorbar()
-        plt.savefig('./figs3/' + str(1000000 + i) + '.png', dpi=300)
-        times.append(t1 - t0)
-        plt.close() 
-        print('Scalar Integral ', np.sum(s[ModelGrid.n_halo[0]:-ModelGrid.n_halo[0],
-            ModelGrid.n_halo[1]:-ModelGrid.n_halo[1],
-            ModelGrid.n_halo[2]:-ModelGrid.n_halo[2]]))
-        print('S-min max', np.amin(s), np.amax(s))
+        s_slice = ScalarState.get_field_slice_z('s')
+        if MPI.COMM_WORLD.Get_rank() == 0: 
+            plt.figure(12)
+            levels = np.linspace(-27.1, 27.1, 100)
+            plt.contourf(s_slice[:,:],100,levels=levels, cmap=plt.cm.seismic)
+            plt.clim(-27.1, 27.1)
+            #plt.colorbar()
+            plt.savefig('./figs3/' + str(1000000 + i) + '.png', dpi=300)
+            times.append(t1 - t0)
+            plt.close() 
+            print('Scalar Integral ', np.sum(s[ModelGrid.n_halo[0]:-ModelGrid.n_halo[0],
+                ModelGrid.n_halo[1]:-ModelGrid.n_halo[1],
+                ModelGrid.n_halo[2]:-ModelGrid.n_halo[2]]))
+            print('S-min max', np.amin(s), np.amax(s))
 
     print('Timing: ', np.min(times),)
 
