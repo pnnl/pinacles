@@ -73,11 +73,13 @@ def main(namelist):
     #v.fill(2.5)
     xl = ModelGrid.x_local
     yl = ModelGrid.y_local
+    xg = ModelGrid.x_global
+    yg = ModelGrid.y_global
     shape = s.shape
     for i in range(shape[0]):
-        x = xl[i] - (np.max(xl) - np.min(xl))/2.0
+        x = xl[i] - (np.max(xg) - np.min(xg))/2.0
         for j in range(shape[1]):
-            y = yl[j] - (np.max(yl) - np.min(yl))/2.0
+            y = yl[j] - (np.max(yg) - np.min(yg))/2.0
             for k in range(shape[2]):
                 if x > -225 and x <= -125 and y >= -50 and y <= 50: 
                     s[i,j,k] = 25.0  
@@ -87,9 +89,13 @@ def main(namelist):
                     u[i,j,k] = -2.5
  
 
+    #print(xl)
+    #print(yl)
+    #import sys; sys.exit()
+
     import pylab as plt
     plt.figure(12)
-    plt.contourf(s[:,:,5],50)#,vmin=0.0, vmax=25.0)
+    plt.contourf(s[:,:,5],50,vmin=-25.0, vmax=25.0)
     plt.colorbar()
     plt.show()
     plt.close()
@@ -115,7 +121,7 @@ def main(namelist):
     VelocityState.boundary_exchange()
     ScalarState.update_all_bcs()
     VelocityState.update_all_bcs()
-    for i in range(2000):
+    for i in range(4000):
         print(i)
         t0 = time.time()
         for n in range(ScalarTimeStepping.n_rk_step):
@@ -133,18 +139,19 @@ def main(namelist):
         t1 = time.time()
         import pylab as plt
         plt.figure(12)
-        plt.contourf(s[:,:,5],100,vmin=-25.1, vmax=25.1, cmap=plt.cm.seismic)
-        plt.clim(-25.1, 25.1)
-        plt.colorbar()
-        plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=200)
+        levels = np.linspace(-27.1, 27.1, 100)
+        plt.contourf(s[:,:,5],100,levels=levels, cmap=plt.cm.seismic)
+        plt.clim(-27.1, 27.1)
+        #plt.colorbar()
+        plt.savefig('./figs3/' + str(1000000 + i) + '.png', dpi=300)
         times.append(t1 - t0)
         plt.close() 
         print('Scalar Integral ', np.sum(s[ModelGrid.n_halo[0]:-ModelGrid.n_halo[0],
             ModelGrid.n_halo[1]:-ModelGrid.n_halo[1],
             ModelGrid.n_halo[2]:-ModelGrid.n_halo[2]]))
-        print('W-max', VelocityState.mean('w'))
+        print('S-min max', np.amin(s), np.amax(s))
 
-    print('Timing: ', np.min(times))
+    print('Timing: ', np.min(times),)
 
 
     TerminalIO.end_message()

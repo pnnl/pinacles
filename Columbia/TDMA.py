@@ -113,7 +113,7 @@ class PressureTDMA:
         local_start = self._Grid.local_start
         n_h = self._Grid.n_halo
         dx = self._Grid.dx
-        n = self._Grid.n 
+        n = self._Grid.n
         xl = self._Grid.x_local[n_h[0]:-n_h[0]]
         yl = self._Grid.y_local[n_h[1]:-n_h[1]]
 
@@ -121,35 +121,35 @@ class PressureTDMA:
         self._ky2 = np.zeros(nl[1], dtype=np.double)
 
         #TODO the code below feels a bit like boilerplate
-        for ii in range(nl[0]): 
-            i = local_start[0] + ii 
-            if i <= n[0]/2: 
+        for ii in range(nl[0]):
+            i = local_start[0] + ii
+            if i <= n[0]/2:
                 xi = np.double(i)
-            else: 
+            else:
                 xi = np.double(i - n[0])
             self._kx2[ii] = (2.0 * np.cos((2.0 * np.pi/n[0]) * xi)-2.0)/dx[0]/dx[0]
 
-        for jj in range(nl[1]): 
+        for jj in range(nl[1]):
             j = local_start[1] + jj
-            if j <= n[1]/2: 
+            if j <= n[1]/2:
                 yi = np.double(jj)
-            else: 
+            else:
                 yi = np.double(j - n[1])
             self._ky2[jj] = (2.0 * np.cos((2.0 * np.pi/n[1]) * yi)-2.0)/dx[1]/dx[1]
 
         #Remove the odd-ball
-        if local_start[0] == 0: 
+        if local_start[0] == 0:
             self._kx2[0] = 0.0
         if local_start[1] == 0:
             self._ky2[0] = 0.0
 
         return
 
-    def solve(self, x): 
-        n_halo = self._Grid.n_halo 
+    def solve(self, x):
+        n_halo = self._Grid.n_halo
         dxs = self._Grid.dx
         rho0 = self._Ref.rho0
-        rho0_edge = self._Ref.rho0_edge 
+        rho0_edge = self._Ref.rho0_edge
         PressureThomas(n_halo, dxs, rho0, rho0_edge, self._kx2, self._ky2, x, self._a, self._c)
 
-        return 
+        return

@@ -27,9 +27,9 @@ class ScalarAdvectionBase:
 @numba.njit
 def weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t):
     phi_shape = phi.shape
-    for i in range(2,phi_shape[1]-3):
+    for i in range(2,phi_shape[0]-3):
         for j in range(2,phi_shape[1]-3):
-            for k in range(2,phi_shape[1]-3):
+            for k in range(2,phi_shape[2]-3):
                 #First compute x-advection
                 if u[i,j,k] >= 0:
                     fluxx[i,j,k] = rho0[k] * u[i,j,k] * interp_weno5(phi[i-2,j,k],
@@ -74,6 +74,88 @@ def weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, p
 
     return
 
+theta = 1.35
+@numba.njit
+def weno5_advection_flux_limit(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t):
+    phi_shape = phi.shape
+    for i in range(2,phi_shape[0]-3):
+        for j in range(2,phi_shape[1]-3):
+            for k in range(2,phi_shape[2]-3):
+                #First compute x-advection
+                if u[i,j,k] >= 0:
+                    fluxx[i,j,k] = rho0[k] * u[i,j,k] * interp_weno5(phi[i-2,j,k],
+                                                     phi[i-1,j,k],
+                                                     phi[i,j,k],
+                                                     phi[i+1,j,k],
+                                                     phi[i+2,j,k])
+
+                    fluxlow = rho0[k] * u[i,j,k] * phi[i,j,k]
+                else:
+                    fluxx[i,j,k] = rho0[k] * u[i,j,k] * interp_weno5(phi[i+3,j,k],
+                                                     phi[i+2, j, k],
+                                                     phi[i+1, j, k],
+                                                     phi[i,j,k],
+                                                     phi[i-1,j,k])
+                    fluxlow = rho0[k] * u[i,j,k] * phi[i+1,j,k]
+
+                denom = phi[i+1,j,k] - phi[i,j,k]
+                if denom  != 0.0:
+                    r = (phi[i,j,k] - phi[i-1,j,k])/denom
+                    flim = np.maximum(0.0, np.minimum(1,r)) #minmod
+                    #flim = np.maximum(0.0, np.minimum(theta * r, np.minimum((1 + r)/2.0, theta)))
+                    fluxx[i,j,k] = fluxlow - flim*(fluxlow - fluxx[i,j,k])
+
+                #First compute y-advection
+                if v[i,j,k] >= 0:
+                    fluxy[i,j,k] = rho0[k] * v[i,j,k] * interp_weno5(phi[i,j-2,k],
+                                                     phi[i,j-1,k],
+                                                     phi[i,j,k],
+                                                     phi[i,j+1,k],
+                                                     phi[i,j+2,k])
+                    fluxlow = rho0[k] * v[i,j,k] * phi[i,j,k]
+                else:
+                    fluxy[i,j,k] = rho0[k] * v[i,j,k] * interp_weno5(phi[i,j+3,k],
+                                                     phi[i, j+2, k],
+                                                     phi[i, j+1, k],
+                                                     phi[i,j,k],
+                                                     phi[i,j-1,k])
+                    fluxlow = rho0[k] * v[i,j,k] * phi[i,j+1,k]
+                denom = phi[i,j+1,k] - phi[i,j,k]
+                if denom  != 0.0:
+                    r = (phi[i,j,k] - phi[i,j-1,k])/denom
+                    flim =  np.maximum(0.0, np.minimum(1,r)) #minmod
+                    #flim = np.maximum(0.0, np.minimum(theta * r, np.minimum((1 + r)/2.0, theta)))
+                    fluxy[i,j,k] = fluxlow - flim*(fluxlow - fluxy[i,j,k])
+
+
+                #First compute y-advection
+                if w[i,j,k] >= 0:
+                    fluxz[i,j,k] = rho0_edge[k] * w[i,j,k] * interp_weno5(phi[i,j,k-2],
+                                                     phi[i,j,k-2],
+                                                     phi[i,j,k],
+                                                     phi[i,j,k+1],
+                                                     phi[i,j,k+2])
+                    fluxlow = rho0_edge[k] * w[i,j,k] * phi[i,j,k]
+                else:
+                    fluxz[i,j,k] = rho0_edge[k] * w[i,j,k] * interp_weno5(phi[i,j,k+3],
+                                                     phi[i, j, k+2],
+                                                     phi[i, j, k+1],
+                                                     phi[i,j,k],
+                                                     phi[i,j,k-1])
+                    fluxlow = rho0_edge[k] * w[i,j,k] * phi[i,j,k+1]
+
+                denom = phi[i,j,k+1] - phi[i,j,k]
+                if denom  != 0.0:
+                    r = (phi[i,j,k] - phi[i,j,k-1])/denom
+                    flim =  np.maximum(0.0, np.minimum(1,r)) #minmod
+                    #flim = np.maximum(0.0, np.minimum(theta * r, np.minimum((1 + r)/2.0, theta)))
+                    fluxz[i,j,k] = fluxlow - flim*(fluxlow - fluxz[i,j,k])
+
+
+    return
+
+
+
 @numba.njit
 def flux_divergence(nhalo, idx, idy, idzi, alpha0, fluxx, fluxy, fluxz, phi_t):
     phi_shape = phi_t.shape
@@ -114,6 +196,7 @@ class ScalarWENO5(ScalarAdvectionBase):
         fluxy = np.zeros_like(v)
         fluxz = np.zeros_like(w)
 
+
         nhalo = self._Grid.n_halo
         #Now iterate over the scalar variables
         for var in self._ScalarState.names:
@@ -122,7 +205,11 @@ class ScalarWENO5(ScalarAdvectionBase):
             phi_t = self._ScalarState.get_tend(var)
 
             #Now compute the WENO fluxes
-            weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
+            weno5_advection_flux_limit(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
+
+
+            #fluxx_limiter(nhalo, fluxx, fluxy, fluxz, fluxx_limit, fluxy_limit, fluxz_limit)
+            
 
 
             #Now compute the flux divergences
