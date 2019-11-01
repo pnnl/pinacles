@@ -166,11 +166,18 @@ class ModelState:
         nl = self._Grid.nl
         nh = self._Grid.n_halo
         ng = self._Grid.ngrid
-        local_data = self.get_field(name)[:,:,indx]
-        local_copy_of_global = np.zeros((ng[0], ng[1]), dtype=np.double)
+        n = self._Grid.n
+        print(n)
+        local_data = self.get_field(name)[nh[0]:-nh[0],nh[1]:-nh[1],indx]
+        local_copy_of_global = np.zeros((n[0], n[1]), dtype=np.double)
 
+        print(ls)
+        local_copy_of_global[
+            ls[0]:ls[0]+nl[0],
+            ls[1]:ls[1]+nl[1]] = local_data
 
-        local_copy_of_global[ls[0]:ls[0]+nl[0] + 2*nh[0], ls[1]:ls[1]+nl[1] + 2*nh[1]] = local_data
+        print(np.shape(local_copy_of_global))
+
         recv_buf = np.empty_like(local_copy_of_global)
 
         MPI.COMM_WORLD.Allreduce(local_copy_of_global, recv_buf, op=MPI.SUM)
