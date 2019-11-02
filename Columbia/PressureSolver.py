@@ -66,6 +66,7 @@ class PressureSolver:
         #First compute divergence of wind field
         divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
 
+
         #print('u', u.shape)
 
         div_0 = div.redistribute(0)
@@ -78,6 +79,7 @@ class PressureSolver:
         #import sys; sys.exit()
         #print('div_hat_2 ', div_hat_2.shape)
         #import sys; sys.exit() 
+
 
         #The TDM solver goes here
         divh2_real = div_hat_2.real
@@ -99,18 +101,30 @@ class PressureSolver:
 
         fill_pressure(n_halo, div, dynp)
 
+ 
+
         #TODO add single vairable exchange
         self._DiagnosticState.boundary_exchange()
         self._DiagnosticState._gradient_zero_bc('dynamic pressure')
 
         apply_pressure(dxs, dynp, u, v, w)
+        #usl = self._DiagnosticState.get_field_slice_z('dynamic pressure', 5)
+        usl = self._VelocityState.get_field_slice_z('u', 5)
+        #if MPI.COMM_WORLD.Get_rank() == 0: 
+        #    print(np.mean(usl), np.max(usl), np.min(usl), usl[7,10])
+        #    import pylab as plt
+        #    plt.contourf(usl,46)
+        #    plt.show()
+        #import sys; sys.exit()
+
 
         self._VelocityState.boundary_exchange()
         self._VelocityState.update_all_bcs()
+
         divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
 
-        print('Divergence 2', np.amax(np.abs(div)))
-
+        #print('Divergence 2', np.amax(np.abs(div)))
+ 
         return
 
 

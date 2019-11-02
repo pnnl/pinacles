@@ -62,15 +62,7 @@ def main(namelist):
     w = VelocityState.get_field('w')
     s = ScalarState.get_field('s')
     ut = VelocityState.get_tend('u')
-    #u[35:65,20:50,:] = -2.5
-    #u[35:65,50:80,:] =  2.5
 
-    #laplace(u,u)
-
-
-    #u[35:66,45:55,4:6] = 5.0
-    #u.fill(-2.5)
-    #v.fill(2.5)
     xl = ModelGrid.x_local
     yl = ModelGrid.y_local
     xg = ModelGrid.x_global
@@ -88,7 +80,7 @@ def main(namelist):
                     s[i,j,k] = -25.0 
                     u[i,j,k] = -2.5
     #u.fill(0.0)
-    #v.fill(10.0)
+    #v.fill(5.0)
 
    # v.fill(-2.0)
     #print(xl)
@@ -117,13 +109,16 @@ def main(namelist):
 
     print(t1 - t0)
     times = []
-    PSolver.update()
+
+
     ScalarState.boundary_exchange()
     VelocityState.boundary_exchange()
     ScalarState.update_all_bcs()
     VelocityState.update_all_bcs()
+    PSolver.update()
 
-
+    #v.fill(0)
+    #u.fill(-5)
     for i in range(4000):
         print(i)
         t0 = time.time()
@@ -141,14 +136,14 @@ def main(namelist):
         t1 = time.time()
         import pylab as plt
         s_slice = ScalarState.get_field_slice_z('s')
-        if MPI.COMM_WORLD.Get_rank() == 0: 
+        if MPI.COMM_WORLD.Get_rank() == 0 and np.mod(i,5) == 0:
             plt.figure(12)
             levels = np.linspace(-27.1, 27.1, 100)
             plt.contourf(s_slice[:,:],100,levels=levels, cmap=plt.cm.seismic)
             #plt.contourf(s_slice[:,:],100, cmap=plt.cm.seismic)
             plt.clim(-27.1, 27.1)
             #plt.colorbar()
-            plt.savefig('./figs3/' + str(1000000 + i) + '.png', dpi=300)
+            plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=300)
             times.append(t1 - t0)
             plt.close()
             print('Scalar Integral ', np.sum(s_slice))

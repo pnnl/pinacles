@@ -86,37 +86,6 @@ class GhostArray(GhostArrayBase):
             nh = self._n_halo[dim]
 
             if dim == 0:
-
-                if comm_size > 1:
-                    send_buf = np.copy(self.array[:,nh:2*nh,:,:])
-                    recv_buf = np.empty_like(send_buf)
-                    #print('Send Buffer', send_buf)
-                    #print('Recv Buffer', recv_buf)
-                    comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                    self.array[:,-nh:,:,:] = recv_buf
-                else:
-                    #print('Serial update')
-                    self.array[:,-nh:,:,:] = self.array[:,nh:2*nh,:,:]
-
-            if dim == 1:
-                if comm_size > 1: 
-                    send_buf = np.copy(self.array[:,:,nh:2*nh,:])
-                    recv_buf = np.empty_like(send_buf)
-                    comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                    self.array[:,:,-nh:,:] = recv_buf
-                else: 
-                    self.array[:,:,-nh:,:] = self.array[:,:,nh:2*nh,:]
-
-            #Now do the left exchange
-            source, dest = comm.Shift(0,-1)
-
-            if source == MPI.PROC_NULL:
-                source = 0
-
-            if dest == MPI.PROC_NULL:
-                dest = comm_size - 1
-
-            if dim == 0:
                 if comm_size > 1:
                     send_buf = np.copy(self.array[:,-2*nh:-nh,:,:])
                     recv_buf = np.empty_like(send_buf)
@@ -133,6 +102,34 @@ class GhostArray(GhostArrayBase):
                     self.array[:,:,:nh,:] = recv_buf
                 else:
                     self.array[:,:,:nh,:] = self.array[:,:,-2*nh:-nh,:]
+
+
+            #Now do the left exchange
+            source, dest = comm.Shift(0,-1)
+
+            if source == MPI.PROC_NULL:
+                source = 0
+
+            if dest == MPI.PROC_NULL:
+                dest = comm_size - 1
+
+            if dim == 0:
+                if comm_size > 1:
+                    send_buf = np.copy(self.array[:,nh:2*nh,:,:])
+                    recv_buf = np.empty_like(send_buf)
+                    comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
+                    self.array[:,-nh:,:,:] = recv_buf
+                else:
+                    self.array[:,-nh:,:,:] = self.array[:,nh:2*nh,:,:]
+
+            if dim == 1:
+                if comm_size > 1:
+                    send_buf = np.copy(self.array[:,:,nh:2*nh,:])
+                    recv_buf = np.empty_like(send_buf)
+                    comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
+                    self.array[:,:,-nh:,:] = recv_buf
+                else:
+                    self.array[:,:,-nh:,:] = self.array[:,:,nh:2*nh,:]
 
         return
 

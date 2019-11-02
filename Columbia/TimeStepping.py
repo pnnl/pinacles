@@ -9,7 +9,7 @@ class RungeKuttaBase:
         self.n_rk_step = 0
         self._rk_step = 0 
         self.cfl_target = 0.7
-        self._dt = 0.5
+        self._dt = 0.1 
 
         return
 
@@ -42,8 +42,6 @@ class RungeKutta2ndSSP(RungeKuttaBase):
             self._Tn = np.copy(present_state) #TODO: Replace this copy
             TS_impl.rk2ssp_s0(self._Tn, present_tend, self._dt )
             self._rk_step = 1 
-
-            print('NP.max tend:', np.max(present_tend))
 
         else:
             TS_impl.rk2ssp_s1(self._Tn, present_state, 

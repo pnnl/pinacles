@@ -26,14 +26,12 @@ def Thomas(x, a, b, c):
             for k in range(shape[2]-2,-1,-1):
                 x[i,j,k] = x[i,j,k] - scratch[k] * x[i,j,k+1]
     return
- 
+
 @numba.njit()
-def PressureThomas(n_halo, dxs, rho0, rho0_edge, kx2, ky2, x, a, c, wavenumber_substarts): 
-    shape = x.shape 
+def PressureThomas(n_halo, dxs, rho0, rho0_edge, kx2, ky2, x, a, c, wavenumber_substarts):
+    shape = x.shape
     scratch = np.empty(shape[2], dtype=np.double)
     b = np.empty(shape[2], dtype=np.double)
-    
-    #bl = []
 
     for i in range(shape[0]):
         for j in range(shape[1]):
@@ -49,7 +47,6 @@ def PressureThomas(n_halo, dxs, rho0, rho0_edge, kx2, ky2, x, a, c, wavenumber_s
                         - (rho0_edge[k + n_halo[2] -1])/dxs[2]/dxs[2])
 
                 #Now begin the actual algorithm solve
-                #bl.append(b[k])
 
                 #Upward sweep
                 scratch[0] = c[0]/b[0]
@@ -63,8 +60,7 @@ def PressureThomas(n_halo, dxs, rho0, rho0_edge, kx2, ky2, x, a, c, wavenumber_s
                 for k in range(shape[2]-2,-1,-1):
                     x[i,j,k] = x[i,j,k] - scratch[k] * x[i,j,k+1]
 
-    #print(np.min(bl), np.max(bl), np.mean(bl)); import sys; sys.exit()
-    return 
+    return
 
 class PressureTDMA: 
     def __init__(self, Grid, Ref, wavenumber_substarts, wavenumber_n):

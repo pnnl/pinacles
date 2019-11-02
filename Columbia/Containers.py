@@ -165,18 +165,14 @@ class ModelState:
         ls = self._Grid.local_start
         nl = self._Grid.nl
         nh = self._Grid.n_halo
-        ng = self._Grid.ngrid
         n = self._Grid.n
-        print(n)
+
         local_data = self.get_field(name)[nh[0]:-nh[0],nh[1]:-nh[1],indx]
         local_copy_of_global = np.zeros((n[0], n[1]), dtype=np.double)
 
-        print(ls)
         local_copy_of_global[
             ls[0]:ls[0]+nl[0],
             ls[1]:ls[1]+nl[1]] = local_data
-
-        print(np.shape(local_copy_of_global))
 
         recv_buf = np.empty_like(local_copy_of_global)
 
