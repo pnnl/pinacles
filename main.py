@@ -22,7 +22,6 @@ def main(namelist):
     ScalarTimeStepping = TimeStepping.factory(namelist, ModelGrid, ScalarState)
     VelocityTimeStepping = TimeStepping.factory(namelist, ModelGrid, VelocityState)
 
-
     # Add velocity variables
     VelocityState.add_variable('u')
     VelocityState.add_variable('v')
@@ -79,33 +78,8 @@ def main(namelist):
                 if x >= 125 and x < 225  and y >= -100 and y <= 100: 
                     s[i,j,k] = -25.0 
                     u[i,j,k] = -2.5
-    #u.fill(0.0)
-    #v.fill(5.0)
 
-   # v.fill(-2.0)
-    #print(xl)
-    #print(yl)
-    #import sys; sys.exit()
-
-   # import pylab as plt
-    #plt.figure(12)
-    #plt.contourf(s[:,:,5],50,vmin=-25.0, vmax=25.0)
-    #plt.colorbar()
-    #plt.show()
-    #plt.close()
-
-    #s[50+35:65,20:50,:]= 25.0
-    #s[35:65,50:80,:] = -25.0
-    #s[85:95,45:55,4:6] = -25.0
-    #s[:,:,:] = np.arange(s.shape[1], dtype=np.double)[:,np.newaxis,np.newaxis]
     t1 = time.time()
-    #import pylab as plt
-    #plt.figure(12)
-    #plt.contourf(np.diff(s[:,:,5],axis=0),150)
-    #plt.colorbar()
-#    plt.savefig('./figs/' + str(1000000 + i) + '.png')
-#    plt.close() 
-   # plt.show() 
 
     print(t1 - t0)
     times = []
@@ -117,8 +91,6 @@ def main(namelist):
     VelocityState.update_all_bcs()
     PSolver.update()
 
-    #v.fill(0)
-    #u.fill(-5)
     for i in range(4000):
         #print(i)
         t0 = time.time()
@@ -136,8 +108,8 @@ def main(namelist):
         t1 = time.time()
         import pylab as plt
         s_slice = ScalarState.get_field_slice_z('s')
-        if MPI.COMM_WORLD.Get_rank() == 0: 
-            print('step: ', i, ' time: ', t1 - t0) 
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            print('step: ', i, ' time: ', t1 - t0)
         if MPI.COMM_WORLD.Get_rank() == 0 and np.mod(i,5) == 0:
             plt.figure(12)
             levels = np.linspace(-27.1, 27.1, 100)
@@ -153,7 +125,6 @@ def main(namelist):
             print('S-min max', np.amin(s), np.amax(s))
 
     print('Timing: ', np.min(times),)
-
 
     TerminalIO.end_message()
 

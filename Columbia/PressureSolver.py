@@ -40,8 +40,6 @@ class PressureSolver:
         print(self._wavenumber_n)
         self._wavenumber_substarts = div_hat2.substart
 
-        #import sys; sys.exit()
-
         return
 
     def update(self):
@@ -63,11 +61,10 @@ class PressureSolver:
         local_start = self._Grid.local_start
 
         div = fft.DistArray(self._Grid.n, self._Grid.subcomms, dtype=np.complex)
+
         #First compute divergence of wind field
         divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
 
-
-        #print('u', u.shape)
 
         div_0 = div.redistribute(0)
 
@@ -75,11 +72,6 @@ class PressureSolver:
         self._fft.forward(div_0, div_hat)
 
         div_hat_2 = div_hat.redistribute(2)
-        #print(div_hat_2[1,1,1], self._wavenumber_substarts)
-        #import sys; sys.exit()
-        #print('div_hat_2 ', div_hat_2.shape)
-        #import sys; sys.exit() 
-
 
         #The TDM solver goes here
         divh2_real = div_hat_2.real
@@ -91,7 +83,7 @@ class PressureSolver:
 
         div_hat_2 = divh2_real + divh2_img * 1j
         if self._wavenumber_substarts[0] == 0 and self._wavenumber_substarts[1] == 0:
-            div_hat_2[0,0,:] = 0.0 + 0j #This only works for serial solver
+            div_hat_2[0,0,:] = 0.0 + 0j
 
         div_hat = div_hat_2.redistribute(1)
 
@@ -101,30 +93,19 @@ class PressureSolver:
 
         fill_pressure(n_halo, div, dynp)
 
- 
-
         #TODO add single vairable exchange
         self._DiagnosticState.boundary_exchange()
         self._DiagnosticState._gradient_zero_bc('dynamic pressure')
 
         apply_pressure(dxs, dynp, u, v, w)
-        #usl = self._DiagnosticState.get_field_slice_z('dynamic pressure', 5)
         usl = self._VelocityState.get_field_slice_z('u', 5)
-        #if MPI.COMM_WORLD.Get_rank() == 0: 
-        #    print(np.mean(usl), np.max(usl), np.min(usl), usl[7,10])
-        #    import pylab as plt
-        #    plt.contourf(usl,46)
-        #    plt.show()
-        #import sys; sys.exit()
+
 
 
         self._VelocityState.boundary_exchange()
         self._VelocityState.update_all_bcs()
 
         divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
-
-        #print('Divergence 2', np.amax(np.abs(div)))
- 
         return
 
 
