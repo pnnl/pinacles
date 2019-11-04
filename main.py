@@ -120,7 +120,7 @@ def main(namelist):
     #v.fill(0)
     #u.fill(-5)
     for i in range(4000):
-        print(i)
+        #print(i)
         t0 = time.time()
         for n in range(ScalarTimeStepping.n_rk_step):
             #Thermo.update()
@@ -136,6 +136,8 @@ def main(namelist):
         t1 = time.time()
         import pylab as plt
         s_slice = ScalarState.get_field_slice_z('s')
+        if MPI.COMM_WORLD.Get_rank() == 0: 
+            print('step: ', i, ' time: ', t1 - t0) 
         if MPI.COMM_WORLD.Get_rank() == 0 and np.mod(i,5) == 0:
             plt.figure(12)
             levels = np.linspace(-27.1, 27.1, 100)
