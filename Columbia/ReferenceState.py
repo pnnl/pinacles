@@ -20,6 +20,9 @@ class ReferenceBase:
         self._alpha0_edge = np.empty_like(self._P0)
         self._T0_edge = np.empty_like(self._P0)
 
+        self._exner = None
+        self._exner_edge = None
+
         return
 
     def set_surface(self, Psfc=1e5, Tsfc=293.15, qsfc=0.0):
@@ -59,6 +62,11 @@ class ReferenceBase:
 
         n_halo = self._Grid.n_halo[2]
         prof_array[-n_halo:] = prof_array[-2*n_halo-1:-n_halo-1][::-1]
+        return
+
+    def _compute_exner(self):
+        self._exner = (self._P0/parameters.P00)**(parameters.RD/parameters.CPD)
+        self._exner_edge = (self._P0/parameters.P00)**(parameters.RD/parameters.CPD)
         return
 
     @property
@@ -159,6 +167,8 @@ class ReferenceDry(ReferenceBase):
 
         #Set the ghostpoint for the reference profiles
         self.update_ref_boundaries()
+
+        self._compute_exner()
 
         return
 

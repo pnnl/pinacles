@@ -1,6 +1,6 @@
 import numpy as np
 
-CASENAMES = ['colliding_blocks']
+CASENAMES = ['colliding_blocks', 'sullivan_patton']
 
 def colliding_blocks(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
