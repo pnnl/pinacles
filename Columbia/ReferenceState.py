@@ -117,6 +117,14 @@ class ReferenceBase:
     def alpha0_edge(self):
         return np.copy(self._alpha0_edge)
 
+    @property
+    def exner(self):
+        return np.copy(self._exner)
+
+    @property
+    def exner_edge(self):
+        return np.copy(self._exner_edge)
+
 def _integrate_dry(z, lnpsfc, ssfc, n=250):
     p0_out = np.empty_like(z)
     p0_out[0] = lnpsfc
