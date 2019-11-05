@@ -48,10 +48,6 @@ def main(namelist):
     VelocityState.allocate()
     DiagnosticState.allocate()
 
-    #Integrate the reference profile.
-    Ref.set_surface()
-    Ref.integrate()
-
     PSolver.initialize() #Must be called after reference profile is integrated
 
     ScalarTimeStepping.initialize()
@@ -59,7 +55,7 @@ def main(namelist):
 
     Initializaiton.initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState)
     s = ScalarState.get_field('s')
-
+    w = VelocityState.get_field('w')
     t1 = time.time()
 
     print(t1 - t0)
@@ -75,7 +71,7 @@ def main(namelist):
         #print(i)
         t0 = time.time()
         for n in range(ScalarTimeStepping.n_rk_step):
-            #Thermo.update()
+            Thermo.update()
             ScalarAdv.update()
             MomAdv.update()
             ScalarTimeStepping.update()
@@ -87,21 +83,21 @@ def main(namelist):
             PSolver.update()
         t1 = time.time()
         import pylab as plt
-        s_slice = ScalarState.get_field_slice_z('s')
+        s_slice = VelocityState.get_field_slice_z('w', indx=5)
         if MPI.COMM_WORLD.Get_rank() == 0:
             print('step: ', i, ' time: ', t1 - t0)
         if MPI.COMM_WORLD.Get_rank() == 0 and np.mod(i,5) == 0:
             plt.figure(12)
-            levels = np.linspace(-27.1, 27.1, 100)
-            plt.contourf(s_slice[:,:],100,levels=levels, cmap=plt.cm.seismic)
-            plt.clim(-27.1, 27.1)
+            #evels = np.linspace(299, 27.1, 100)
+            plt.contourf(s_slice[:,:],100)#,levels=levels, cmap=plt.cm.seismic)
+            #plt.clim(-27.1, 27.1)
             #plt.colorbar()
             plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=300)
             times.append(t1 - t0)
             plt.close()
             print('Scalar Integral ', np.sum(s_slice))
 
-            print('S-min max', np.amin(s), np.amax(s))
+            print('S-min max', np.amin(w), np.amax(w))
 
     print('Timing: ', np.min(times),)
 

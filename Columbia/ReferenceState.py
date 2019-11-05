@@ -67,6 +67,8 @@ class ReferenceBase:
     def _compute_exner(self):
         self._exner = (self._P0/parameters.P00)**(parameters.RD/parameters.CPD)
         self._exner_edge = (self._P0/parameters.P00)**(parameters.RD/parameters.CPD)
+
+        print(self._exner_edge)
         return
 
     @property
