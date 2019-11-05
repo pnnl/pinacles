@@ -22,6 +22,10 @@ def main(namelist):
     ScalarTimeStepping = TimeStepping.factory(namelist, ModelGrid, ScalarState)
     VelocityTimeStepping = TimeStepping.factory(namelist, ModelGrid, VelocityState)
 
+    # Set up the reference state class
+    Ref =  ReferenceState.factory(namelist, ModelGrid)
+
+
     # Add velocity variables
     VelocityState.add_variable('u')
     VelocityState.add_variable('v')
@@ -30,16 +34,10 @@ def main(namelist):
     for i in range(1):
         ScalarState.add_variable(str(i))
 
-    # Set up the reference state class
-    Ref =  ReferenceState.factory(namelist, ModelGrid)
-    Ref.set_surface()
-    Ref.integrate()
-
     # Set up the thermodynamics class
     Thermo = Thermodynamics.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState)
 
-    # In the futhre the microphyics should be initialized here
-
+    # In the future the microphyics should be initialized here
 
     #Setup the scalar advection calss
     ScalarAdv = ScalarAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState)
@@ -52,6 +50,13 @@ def main(namelist):
     ScalarState.allocate()
     VelocityState.allocate()
     DiagnosticState.allocate()
+
+    #Integrate the reference profile.
+    Ref.set_surface()
+    Ref.integrate()
+
+
+    PSolver.initialize()
 
     ScalarTimeStepping.initialize()
     VelocityTimeStepping.initialize()
@@ -72,11 +77,11 @@ def main(namelist):
         for j in range(shape[1]):
             y = yl[j] - (np.max(yg) - np.min(yg))/2.0
             for k in range(shape[2]):
-                if x > -225 and x <= -125 and y >= -50 and y <= 50: 
-                    s[i,j,k] = 25.0  
+                if x > -225 and x <= -125 and y >= -50 and y <= 50:
+                    s[i,j,k] = 25.0
                     u[i,j,k] = 2.5
-                if x >= 125 and x < 225  and y >= -100 and y <= 100: 
-                    s[i,j,k] = -25.0 
+                if x >= 125 and x < 225  and y >= -100 and y <= 100:
+                    s[i,j,k] = -25.0
                     u[i,j,k] = -2.5
 
     t1 = time.time()
@@ -114,7 +119,6 @@ def main(namelist):
             plt.figure(12)
             levels = np.linspace(-27.1, 27.1, 100)
             plt.contourf(s_slice[:,:],100,levels=levels, cmap=plt.cm.seismic)
-            #plt.contourf(s_slice[:,:],100, cmap=plt.cm.seismic)
             plt.clim(-27.1, 27.1)
             #plt.colorbar()
             plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=300)
@@ -138,5 +142,4 @@ if __name__ == '__main__':
 
     with open(args.inputfile, 'r') as namelist_h:
         namelist = json.load(namelist_h)
-        #cProfile.run('main(namelist)_h')
         main(namelist)

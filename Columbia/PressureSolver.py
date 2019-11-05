@@ -23,11 +23,12 @@ class PressureSolver:
         div = div.redistribute(0)
         self._fft =  fft.PFFT(self._Grid.subcomms, darray=div, axes=(1,0), transforms={})
 
-
         self.fft_local_starts()
+
+        return
+
+    def initialize(self):
         self._TMDA_solve = PressureTDMA(self._Grid, self._Ref, self._wavenumber_substarts, self._wavenumber_n)
-
-
         return
 
 

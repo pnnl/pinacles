@@ -92,7 +92,6 @@ def v_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
 
 
                 #Compute v advection by the v wind
-                
                 if vp >= 0.0:
                     fluxy[i,j,k] = vp * interpolation_impl.interp_weno5(
                                                      v[i,j-2,k],
@@ -109,7 +108,6 @@ def v_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
                                                      v[i,j-1,k]) * rho0[k]
 
                 #Compute v advection by the w wind
-                
                 if wp >= 0.0:
                     fluxz[i,j,k] = wp * interpolation_impl.interp_weno5(
                                                      v[i,j,k-2],
