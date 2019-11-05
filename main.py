@@ -1,6 +1,7 @@
-import numba 
+import numba
 import json
 import argparse
+from Columbia import Initializaiton
 from Columbia import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
 from Columbia import ScalarAdvection, TimeStepping, ReferenceState
 from Columbia import MomentumAdvection
@@ -25,14 +26,10 @@ def main(namelist):
     # Set up the reference state class
     Ref =  ReferenceState.factory(namelist, ModelGrid)
 
-
     # Add velocity variables
     VelocityState.add_variable('u')
     VelocityState.add_variable('v')
     VelocityState.add_variable('w', bcs='value zero')
-
-    for i in range(1):
-        ScalarState.add_variable(str(i))
 
     # Set up the thermodynamics class
     Thermo = Thermodynamics.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState)
@@ -55,40 +52,18 @@ def main(namelist):
     Ref.set_surface()
     Ref.integrate()
 
-
-    PSolver.initialize()
+    PSolver.initialize() #Must be called after reference profile is integrated
 
     ScalarTimeStepping.initialize()
     VelocityTimeStepping.initialize()
 
-    u = VelocityState.get_field('u')
-    v = VelocityState.get_field('v')
-    w = VelocityState.get_field('w')
+    Initializaiton.initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState)
     s = ScalarState.get_field('s')
-    ut = VelocityState.get_tend('u')
-
-    xl = ModelGrid.x_local
-    yl = ModelGrid.y_local
-    xg = ModelGrid.x_global
-    yg = ModelGrid.y_global
-    shape = s.shape
-    for i in range(shape[0]):
-        x = xl[i] - (np.max(xg) - np.min(xg))/2.0
-        for j in range(shape[1]):
-            y = yl[j] - (np.max(yg) - np.min(yg))/2.0
-            for k in range(shape[2]):
-                if x > -225 and x <= -125 and y >= -50 and y <= 50:
-                    s[i,j,k] = 25.0
-                    u[i,j,k] = 2.5
-                if x >= 125 and x < 225  and y >= -100 and y <= 100:
-                    s[i,j,k] = -25.0
-                    u[i,j,k] = -2.5
 
     t1 = time.time()
 
     print(t1 - t0)
     times = []
-
 
     ScalarState.boundary_exchange()
     VelocityState.boundary_exchange()
