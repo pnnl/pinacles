@@ -107,6 +107,7 @@ class PressureSolver:
         self._VelocityState.update_all_bcs()
 
         divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
+        print('divergence: ', np.max(np.abs(div)))
         return
 
 

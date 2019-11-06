@@ -48,12 +48,13 @@ def main(namelist):
     VelocityState.allocate()
     DiagnosticState.allocate()
 
-    PSolver.initialize() #Must be called after reference profile is integrated
-
     ScalarTimeStepping.initialize()
     VelocityTimeStepping.initialize()
 
     Initializaiton.initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState)
+
+    PSolver.initialize() #Must be called after reference profile is integrated
+
     s = ScalarState.get_field('s')
     w = VelocityState.get_field('w')
     t1 = time.time()
@@ -83,13 +84,13 @@ def main(namelist):
             PSolver.update()
         t1 = time.time()
         import pylab as plt
-        s_slice = VelocityState.get_field_slice_z('w', indx=5)
+        s_slice = ScalarState.get_field_slice_z('s', indx=5)
         if MPI.COMM_WORLD.Get_rank() == 0:
             print('step: ', i, ' time: ', t1 - t0)
         if MPI.COMM_WORLD.Get_rank() == 0 and np.mod(i,5) == 0:
             plt.figure(12)
             #evels = np.linspace(299, 27.1, 100)
-            plt.contourf(s_slice[:,:],100)#,levels=levels, cmap=plt.cm.seismic)
+            plt.contourf(w[:,10,:].T,100)#,levels=levels, cmap=plt.cm.seismic)
             #plt.clim(-27.1, 27.1)
             #plt.colorbar()
             plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=300)
