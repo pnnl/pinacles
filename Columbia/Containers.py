@@ -39,7 +39,7 @@ class ModelState:
     def identical_bcs(self):
         return self._identical_bcs
 
-    def add_variable(self, name, long_name=None, latex_name=None, units=None, bcs='gradient zero', loc=('x','y','z')):
+    def add_variable(self, name, long_name=None, latex_name=None, units=None, bcs='gradient zero', loc='c'):
 
         #Do some correctness checks and warn for some behavior
         assert(bcs in  ['gradient zero', 'value zero'])
@@ -179,6 +179,10 @@ class ModelState:
         MPI.COMM_WORLD.Allreduce(local_copy_of_global, recv_buf, op=MPI.SUM)
 
         return recv_buf
+
+
+    def get_loc(self, var): 
+        return self._loc[var]
 
     @property
     def names(self):

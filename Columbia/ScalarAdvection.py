@@ -61,7 +61,7 @@ def weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, p
                 #First compute y-advection
                 if w[i,j,k] >= 0:
                     fluxz[i,j,k] = rho0_edge[k] * w[i,j,k] * interp_weno5(phi[i,j,k-2],
-                                                     phi[i,j,k-2],
+                                                     phi[i,j,k-1],
                                                      phi[i,j,k],
                                                      phi[i,j,k+1],
                                                      phi[i,j,k+2])
@@ -131,7 +131,7 @@ def weno5_advection_flux_limit(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, flux
                 #First compute y-advection
                 if w[i,j,k] >= 0:
                     fluxz[i,j,k] = rho0_edge[k] * w[i,j,k] * interp_weno5(phi[i,j,k-2],
-                                                     phi[i,j,k-2],
+                                                     phi[i,j,k-1],
                                                      phi[i,j,k],
                                                      phi[i,j,k+1],
                                                      phi[i,j,k+2])
@@ -205,7 +205,7 @@ class ScalarWENO5(ScalarAdvectionBase):
             phi_t = self._ScalarState.get_tend(var)
 
             #Now compute the WENO fluxes
-            weno5_advection_flux_limit(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
+            weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
 
 
             #fluxx_limiter(nhalo, fluxx, fluxy, fluxz, fluxx_limit, fluxy_limit, fluxz_limit)

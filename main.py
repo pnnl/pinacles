@@ -6,6 +6,7 @@ from Columbia import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamic
 from Columbia import ScalarAdvection, TimeStepping, ReferenceState
 from Columbia import MomentumAdvection
 from Columbia import PressureSolver
+from Columbia import Damping
 from scipy.ndimage import laplace
 from mpi4py import MPI
 import numpy as np
@@ -22,6 +23,9 @@ def main(namelist):
     DiagnosticState = Containers.ModelState(ModelGrid)
     ScalarTimeStepping = TimeStepping.factory(namelist, ModelGrid, ScalarState)
     VelocityTimeStepping = TimeStepping.factory(namelist, ModelGrid, VelocityState)
+    RayleighDamping = Damping.Rayleigh(namelist, ModelGrid)
+    RayleighDamping.add_state(VelocityState)
+    RayleighDamping.add_state(ScalarState)
 
     # Set up the reference state class
     Ref =  ReferenceState.factory(namelist, ModelGrid)
@@ -29,7 +33,7 @@ def main(namelist):
     # Add velocity variables
     VelocityState.add_variable('u')
     VelocityState.add_variable('v')
-    VelocityState.add_variable('w', bcs='value zero')
+    VelocityState.add_variable('w', loc='z', bcs='value zero')
 
     # Set up the thermodynamics class
     Thermo = Thermodynamics.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState)
@@ -51,6 +55,7 @@ def main(namelist):
     ScalarTimeStepping.initialize()
     VelocityTimeStepping.initialize()
 
+
     Initializaiton.initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
     PSolver.initialize() #Must be called after reference profile is integrated
@@ -68,31 +73,50 @@ def main(namelist):
     VelocityState.update_all_bcs()
     PSolver.update()
 
+
     for i in range(4000):
         #print(i)
         t0 = time.time()
         for n in range(ScalarTimeStepping.n_rk_step):
+            #Update Thermodynamics
             Thermo.update()
+
+            #Update scalar advection
             ScalarAdv.update()
             MomAdv.update()
+
+            #Do Damping
+            RayleighDamping.update()
+
+            #Do time stepping
             ScalarTimeStepping.update()
             VelocityTimeStepping.update()
+
+            #Update boundary conditions
             ScalarState.boundary_exchange()
             VelocityState.boundary_exchange()
             ScalarState.update_all_bcs()
             VelocityState.update_all_bcs()
+
+            #Call pressure solver
             PSolver.update()
+
         t1 = time.time()
         import pylab as plt
-        s_slice = ScalarState.get_field_slice_z('s', indx=5)
+        s_slice = ScalarState.get_field_slice_z('s', indx=16)
+        print('w mean', np.mean(w[3:-3, 3:-3,:], axis=(0,1)))
+        b = DiagnosticState.get_field('T')
+        theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         if MPI.COMM_WORLD.Get_rank() == 0:
             print('step: ', i, ' time: ', t1 - t0)
         if MPI.COMM_WORLD.Get_rank() == 0 and np.mod(i,5) == 0:
             plt.figure(12)
             #evels = np.linspace(299, 27.1, 100)
-            plt.contourf(w[:,10,:].T,100)#,levels=levels, cmap=plt.cm.seismic)
-            #plt.clim(-27.1, 27.1)
-            #plt.colorbar()
+            levels = np.linspace(-2.0, 2.0, 100)
+            plt.contourf(w[:,10,:].T,levels=levels, cmap=plt.cm.seismic)
+            #plt.contourf(w[:,:,16], levels=levels, cmap=plt.cm.seismic)
+            #plt.clim(-2.0, 2.0)
+            plt.colorbar()
             plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=300)
             times.append(t1 - t0)
             plt.close()

@@ -1,19 +1,75 @@
+import numpy as np
 from Columbia import Damping_impl
 
-class Damping: 
-    def __init__(self, namelist): 
+class Damping:
+    def __init__(self, namelist, Grid):
 
-        return 
+        self._vars = namelist['damping']['vars']
+        self._states = []
+        self._Grid = Grid
 
-    def update(self): 
+        return
+
+    def update(self):
 
         return
 
-class Rayleigh(Damping): 
-    def __init__(self, namelist):
+    def add_state(self, State):
+        self._states.append(State)
+        return
 
-        return 
+    @property
+    def vars(self):
+        return self._vars
 
-    def update(self): 
+
+class Rayleigh(Damping):
+    def __init__(self, namelist, Grid):
+        Damping.__init__(self,namelist, Grid)
+        self._depth = namelist['damping']['depth']
+        self._timescale = namelist['damping']['timescale']
+
+        self._timescale_profile = None
+        self._timescale_profile_edge = None
+
+        self._compute_timescale_profile()
+        return
+
+    def update(self):
+
+        #First loop over all of the variables
+        for var in self._vars:
+            for state in self._states:
+                if var in state.names:
+                    field = state.get_field(var)
+                    tend = state.get_tend(var)
+                    loc = state.get_loc(var)
+
+                    mean = state.mean(var)
+
+                    if loc == 'c':
+                        Damping_impl.rayleigh(self._timescale_profile, mean, field, tend)
+                    elif loc == 'z':
+                        Damping_impl.rayleigh(self._timescale_profile_edge, mean, field, tend)
 
         return
+
+    def _compute_timescale_profile(self):
+
+        self._timescale_profile = np.zeros(self._Grid.ngrid[2], dtype=np.double)
+        self._timescale_profile_edge = np.zeros_like(self._timescale_profile)
+
+        z = self._Grid.z_global
+        z_edge = self._Grid.z_global_edge
+
+        z_top = self._Grid.l[2]
+        for k in range(self._Grid.ngrid[2]):
+            if z[k] >= z_top - self._depth:
+                self._timescale_profile[k] = (1.0/self._timescale) * np.sin((np.pi / 2.0) * (1.0 - (z_top - z[k]) / self._depth))**2.0
+                self._timescale_profile_edge[k] = (1.0/self._timescale) * np.sin((np.pi / 2.0) * (1.0 - (z_top - z_edge[k]) / self._depth))**2.0
+
+        return
+
+    @property
+    def depth(self):
+        return self._depth

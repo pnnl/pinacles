@@ -61,29 +61,33 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     exner = Ref.exner
 
     #Wind is uniform initiall
-    u.fill(1.0)
+    u.fill(0.0)
     v.fill(0.0)
     w.fill(0.0)
 
     shape = s.shape
 
     perts = np.random.randn(shape[0],shape[1],shape[2]) * 0.1
+
+    tp  = []
+
     for i in range(shape[0]):
         for j in range(shape[1]):
             for k in range(shape[2]):
                 t = 0.0
                 if zl[k] < 974.0:
-                    t = 300.0*exner[k]
+                    t = 300.0
+                    t*=exner[k]
                 elif 974.0 <= zl[k] and zl[k] < 1074.0:
-                    t = 300.0*exner[k] + (zl[k] - 974.0) * 0.08
+                    t = 300.0 + (zl[k] - 974.0) * 0.08
+                    t *= exner[k]
                 else:
-                    t = 308.0*exner[k] + (zl[k] - 1074.0) * 0.003
-
+                    t = 308.0 + (zl[k] - 1074.0) * 0.003
+                    t *= exner[k]
                 if zl[k] < 50.0:
-                    t += perts[i,j,k]
+                    t += perts[i,j,k] 
 
                 s[i,j,k] = DryThermo.s(zl[k], t)
-
 
     return
 

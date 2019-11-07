@@ -53,6 +53,11 @@ def sullivan_and_patton():
     #Set the domain length, dx will be determined from n and L
     input_dict[key]['l'] = [5120.0, 5120.0, 2048.0]
 
+    key = 'damping'
+    input_dict[key] = {}
+    input_dict[key]['vars'] = ['u', 'v', 'w', 's']
+    input_dict[key]['depth'] = 250.0
+    input_dict[key]['timescale'] = 50.0
 
     return input_dict
 

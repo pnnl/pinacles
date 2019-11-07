@@ -65,10 +65,8 @@ class ReferenceBase:
         return
 
     def _compute_exner(self):
-        self._exner = (self._P0/parameters.P00)**(parameters.RD/parameters.CPD)
-        self._exner_edge = (self._P0/parameters.P00)**(parameters.RD/parameters.CPD)
-
-        print(self._exner_edge)
+        self._exner = (self._P0/parameters.P00)**(parameters.KAPPA)
+        self._exner_edge = (self._P0/parameters.P00)**(parameters.KAPPA)
         return
 
     @property
@@ -143,6 +141,20 @@ def _integrate_dry(z, lnpsfc, ssfc, n=250):
 
     return np.exp(p0_out)
 
+def _integrate_dry_bouss(z, lnpsfc, ssfc, n=250):
+    p0_out = np.empty_like(z)
+    p0_out[0] = np.exp(lnpsfc)
+    for i in range(z.shape[0]-1):
+        zis  = z[i]
+        zie  = z[i+1]
+        dz = (zie - zis)/n
+        lnpi = p0_out[i]
+        for li in range(n):
+            dlnp = -parameters.G 
+            lnpi = lnpi + dlnp * dz
+        p0_out[i+1] = lnpi
+    return p0_out
+
 class ReferenceDry(ReferenceBase):
     def __init__(self, namelist, Grid):
 
@@ -160,8 +172,9 @@ class ReferenceDry(ReferenceBase):
         z = np.append([0.0],self._Grid.z_global[nhalo:-nhalo] )
 
         #Compute reference pressure profiles
-        self._P0[nhalo:-nhalo] = _integrate_dry(z, lnp_sfc, self.ssfc)[1:]
-        self._P0_edge[nhalo-1:-nhalo] = _integrate_dry(self._Grid.z_global_edge[nhalo-1:-nhalo], lnp_sfc, self.ssfc)
+        self._P0[nhalo:-nhalo] = _integrate_dry_bouss(z, lnp_sfc, self.ssfc)[1:]
+        self._P0_edge[nhalo-1:-nhalo] = _integrate_dry_bouss(self._Grid.z_global_edge[nhalo-1:-nhalo], lnp_sfc, self.ssfc)
+
 
         #Compute reference temperature profiles
         self._T0[nhalo:-nhalo] = ThermodynamicsDry_impl.T(z, self.ssfc)[1:]
@@ -179,6 +192,8 @@ class ReferenceDry(ReferenceBase):
         self.update_ref_boundaries()
 
         self._compute_exner()
+
+
 
         return
 
