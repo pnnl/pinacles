@@ -51,17 +51,15 @@ class ReferenceBase:
 
     def _boundary_update(self, prof_array):
         n_halo = self._Grid.n_halo[2]
-        prof_array[:n_halo] = prof_array[n_halo:2*n_halo][::-1]
-        prof_array[-n_halo:] = prof_array[-2*n_halo:-n_halo][::-1]
+        prof_array[:n_halo] = prof_array[2 * n_halo - 1:n_halo - 1:-1]
+        prof_array[-n_halo:] = prof_array[-n_halo - 1:-2 * n_halo - 1:-1]
 
         return
 
     def _boundary_update_edge(self, prof_array):
-        n_halo = self._Grid.n_halo[2] -1
-        prof_array[:n_halo] = prof_array[n_halo+1:2*n_halo+1][::-1]
-
         n_halo = self._Grid.n_halo[2]
-        prof_array[-n_halo:] = prof_array[-2*n_halo-1:-n_halo-1][::-1]
+        prof_array[:n_halo - 1] = prof_array[2*n_halo - 2:n_halo - 1:-1]
+        prof_array[-n_halo + 1:] = prof_array[-n_halo - 1:-2 * n_halo:-1]
         return
 
     def _compute_exner(self):
@@ -172,29 +170,25 @@ class ReferenceDry(ReferenceBase):
         z = np.append([0.0],self._Grid.z_global[nhalo:-nhalo] )
 
         #Compute reference pressure profiles
-        self._P0[nhalo:-nhalo] = _integrate_dry_bouss(z, lnp_sfc, self.ssfc)[1:]
-        self._P0_edge[nhalo-1:-nhalo] = _integrate_dry_bouss(self._Grid.z_global_edge[nhalo-1:-nhalo], lnp_sfc, self.ssfc)
-
+        self._P0[nhalo:-nhalo] = _integrate_dry(z, lnp_sfc, self.ssfc)[1:]
+        self._P0_edge[nhalo-1:-nhalo+1] = _integrate_dry(self._Grid.z_global_edge[nhalo-1:-nhalo+1], lnp_sfc, self.ssfc)
 
         #Compute reference temperature profiles
         self._T0[nhalo:-nhalo] = ThermodynamicsDry_impl.T(z, self.ssfc)[1:]
-        self._T0_edge[nhalo:-nhalo] = ThermodynamicsDry_impl.T(self._Grid.z_global_edge[nhalo:-nhalo], self.ssfc)
+        self._T0_edge[nhalo-1:-nhalo+1] = ThermodynamicsDry_impl.T(self._Grid.z_global_edge[nhalo-1:-nhalo+1], self.ssfc)
 
         #Cmopute reference density profiles
-        self._rho0[nhalo:-nhalo] = 1.0 #ThermodynamicsDry_impl.rho(self._P0[nhalo:-nhalo], self._T0[nhalo:-nhalo])
-        self._rho0_edge[nhalo-1:-nhalo]=1.0 #ThermodynamicsDry_impl.rho(self._P0_edge[nhalo-1:-nhalo], self._T0_edge[nhalo-1:-nhalo])
+        self._rho0[nhalo:-nhalo] = ThermodynamicsDry_impl.rho(self._P0[nhalo:-nhalo], self._T0[nhalo:-nhalo])
+        self._rho0_edge[nhalo-1:-nhalo+1] = ThermodynamicsDry_impl.rho(self._P0_edge[nhalo-1:-nhalo+1], self._T0_edge[nhalo-1:-nhalo+1])
 
         #Compute reference specifi volume profiles
-        self._alpha0[nhalo:-nhalo] = 1.0 #ThermodynamicsDry_impl.alpha(self._P0[nhalo:-nhalo], self._T0[nhalo:-nhalo])
-        self._alpha0_edge[nhalo-1:-nhalo] = 1.0 #ThermodynamicsDry_impl.alpha(self._P0_edge[nhalo-1:-nhalo], self._T0_edge[nhalo-1:-nhalo])
+        self._alpha0[nhalo:-nhalo] = ThermodynamicsDry_impl.alpha(self._P0[nhalo:-nhalo], self._T0[nhalo:-nhalo])
+        self._alpha0_edge[nhalo-1:-nhalo+1]= ThermodynamicsDry_impl.alpha(self._P0_edge[nhalo-1:-nhalo+1], self._T0_edge[nhalo-1:-nhalo+1])
 
         #Set the ghostpoint for the reference profiles
         self.update_ref_boundaries()
 
         self._compute_exner()
-
-
-
         return
 
 def factory(namelist, Grid):

@@ -62,7 +62,7 @@ def PressureThomas(n_halo, dxs, rho0, rho0_edge, kx2, ky2, x, a, c, wavenumber_s
 
     return
 
-class PressureTDMA: 
+class PressureTDMA:
     def __init__(self, Grid, Ref, wavenumber_substarts, wavenumber_n):
 
         self._Grid = Grid
@@ -97,8 +97,8 @@ class PressureTDMA:
         self._a = np.zeros(self._Grid.n[2], dtype=np.double)
         self._c = np.zeros(self._Grid.n[2], dtype=np.double)
 
-        #First set the lower boundary condition 
-        self._a[0] = 0.0 
+        #First set the lower boundary condition
+        self._a[0] = 0.0
         self._c[0] = dxi[2] * dxi[2] * rho0_edge[n_halo[2]]
 
         #Fill Matrix Values
