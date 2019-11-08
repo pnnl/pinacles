@@ -133,10 +133,12 @@ class ModelState:
         field[:,:,nh2-1] = 0.0
 
         #Second set the top boundary
-        field[:,:,-(nh2-1):] = -field[:,:,(-2*nh2+1):(-2*nh2+1)+(nh2-1)][:,:,::-1]
-        field[:,:,-nh2] = 0.0
+        #field[:,:,-(nh2-1):] = -field[:,:,(-2*nh2+1):-nh2][:,:,::-1] #-field[:,:,(-2*nh2+1):(-2*nh2+1)+(nh2-1)][:,:,::-1]
 
+        field[:,:,-nh2:]=-field[:,:,-2*nh2-1:-nh2-1][:,:,::-1]
+        field[:,:,-nh2-1] = 0.0
 
+    
         return
 
     def get_field(self, name):

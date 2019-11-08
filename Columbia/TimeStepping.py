@@ -9,7 +9,7 @@ class RungeKuttaBase:
         self.n_rk_step = 0
         self._rk_step = 0 
         self.cfl_target = 0.7
-        self._dt = 5.0
+        self._dt = 1.0
 
         return
 

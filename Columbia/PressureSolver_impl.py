@@ -10,9 +10,9 @@ def divergence(n_halo, dxs, rho0, rho0_edge, u, v, w, div):
     for i in range(nh0,shape[0]-nh0):
         for j in range(nh1,shape[1]-nh1):
             for k in range(nh2,shape[2]-nh2):
-                div[i-nh0,j-nh1,k-nh2] = ((u[i,j,k]-u[i-1,j,k])/dxs[0]/rho0[k]
-                    + (v[i,j,k] - v[i,j-1,k])/dxs[1]/rho0[k]
-                    + (w[i,j,k]/rho0_edge[k] - w[i,j,k-1]/rho0_edge[k-1])/dxs[2])
+                div[i-nh0,j-nh1,k-nh2] = ((u[i,j,k]-u[i-1,j,k])/dxs[0]*rho0[k]
+                    + (v[i,j,k] - v[i,j-1,k])/dxs[1]*rho0[k]
+                    + (w[i,j,k]*rho0_edge[k] - w[i,j,k-1]*rho0_edge[k-1])/dxs[2])
 
     return
 
