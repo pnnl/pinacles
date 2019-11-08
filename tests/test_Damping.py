@@ -10,10 +10,10 @@ def mock_grid(n=16, nhalo=3):
     namelist['grid']['n_halo'] = [nhalo, nhalo, nhalo]
     namelist['grid']['l'] = [1000.0, 1000.0, 1000.0]
 
-    namelist['Damping'] = {}
-    namelist['Damping']['Vars'] = ['P1','P2']
-    namelist['Damping']['depth'] = 500.0
-    namelist['Damping']['timescale'] = 100.0
+    namelist['damping'] = {}
+    namelist['damping']['vars'] = ['P1','P2']
+    namelist['damping']['depth'] = 500.0
+    namelist['damping']['timescale'] = 100.0
 
     return namelist, RegularCartesian(namelist)
 

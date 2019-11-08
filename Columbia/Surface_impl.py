@@ -37,7 +37,7 @@ def psi_h_stable(zeta, zeta0):
 def compute_ustar(windspeed, buoyancy_flux, z0, zb):
     logz = np.log(zb/z0)
     #use neutral condition as first guess
-    ustar0 = windspeed * VKB/logz  
+    ustar0 = windspeed * VKB/logz 
     if(np.abs(buoyancy_flux) > 1.0e-20):
         lmo = -ustar0 * ustar0 * ustar0/(buoyancy_flux * VKB)
         zeta = zb/lmo
