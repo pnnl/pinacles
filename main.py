@@ -113,7 +113,7 @@ def main(namelist):
             plt.figure(12)
             #evels = np.linspace(299, 27.1, 100)
             levels = np.linspace(-2.0, 2.0, 100)
-            plt.contourf(w[:,10,:].T,levels=levels, cmap=plt.cm.seismic)
+            plt.contourf(w[:,:,10].T,levels=levels, cmap=plt.cm.seismic)
             #plt.contourf(w[:,:,16], levels=levels, cmap=plt.cm.seismic)
             #plt.clim(-2.0, 2.0)
             plt.colorbar()
