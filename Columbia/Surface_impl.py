@@ -5,12 +5,15 @@ from Columbia import Surface_impl
 GAMMA_M = 15.0
 GAMMA_H = 9.0 
 VKB = 0.35
+PR0 = 0.74
+BETA_M = 4.7 
+BETA_H = BETA_M/PR0
 
 @numba.njit
 def psi_m_unstable(zeta, zeta0):
     x = (1.0 - GAMMA_M * zeta)**0.25
     x0 = (1.0 - GAMMA_H * zeta0)**0.25
-    psi_m = 2.0 * np.log((1.0 + x)/(1.0 + x0)) + np.log((1.0 + x*x)/(1.0 + x0 * x0))-2.0*np.atan(x)+2.0*np.atan(x0)
+    psi_m = 2.0 * np.log((1.0 + x)/(1.0 + x0)) + np.log((1.0 + x*x)/(1.0 + x0 * x0))-2.0*np.arctan(x)+2.0*np.arctan(x0)
 
     return psi_m
 
@@ -25,19 +28,19 @@ def psi_h_unstable(zeta, zeta0):
 
 @numba.njit
 def psi_m_stable(zeta, zeta0):
-    psi_m = -beta_m * (zeta - zeta0)
+    psi_m = -BETA_M * (zeta - zeta0)
     return psi_m
 
 @numba.njit
 def psi_h_stable(zeta, zeta0):
-    psi_h = -beta_h * (zeta - zeta0)
+    psi_h = -BETA_H * (zeta - zeta0)
     return psi_h
 
 @numba.njit
 def compute_ustar(windspeed, buoyancy_flux, z0, zb):
     logz = np.log(zb/z0)
     #use neutral condition as first guess
-    ustar0 = windspeed * VKB/logz 
+    ustar0 = windspeed * VKB/logz
     if(np.abs(buoyancy_flux) > 1.0e-20):
         lmo = -ustar0 * ustar0 * ustar0/(buoyancy_flux * VKB)
         zeta = zb/lmo
