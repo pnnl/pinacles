@@ -67,7 +67,6 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     shape = s.shape
 
-    np.random.seed(seed=10)
     perts = np.random.randn(shape[0],shape[1],shape[2]) * 0.001
 
     tp  = []
