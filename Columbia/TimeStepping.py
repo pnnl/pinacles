@@ -26,7 +26,7 @@ class RungeKutta2ndSSP(RungeKuttaBase):
         RungeKuttaBase.__init__(self, namelist, Grid, PrognosticState)
         self.Tn = None 
         self.n_rk_step = 2 
-        self._rk_step = 0.0 
+        self._rk_step = 0
         return 
 
     def initialize(self): 
