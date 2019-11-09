@@ -79,6 +79,10 @@ class GridBase:
         return self._ngrid
 
     @property
+    def ngrid_local(self): 
+        return self._ngrid_local
+
+    @property
     def local_shape(self): 
         return self._local_shape
 

@@ -7,7 +7,7 @@ from Columbia import ScalarAdvection, TimeStepping, ReferenceState
 from Columbia import MomentumAdvection
 from Columbia import PressureSolver
 from Columbia import Damping
-from scipy.ndimage import laplace
+from Columbia import SurfaceFactory
 from mpi4py import MPI
 import numpy as np
 import time
@@ -58,10 +58,12 @@ def main(namelist):
 
     Initializaiton.initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
+    Surf = SurfaceFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState)
     PSolver.initialize() #Must be called after reference profile is integrated
 
     s = ScalarState.get_field('s')
     w = VelocityState.get_field('w')
+    u = VelocityState.get_field('u')
     t1 = time.time()
 
     print(t1 - t0)
@@ -80,6 +82,9 @@ def main(namelist):
         for n in range(ScalarTimeStepping.n_rk_step):
             #Update Thermodynamics
             Thermo.update()
+
+            #Update the surface
+            Surf.update()
 
             #Update scalar advection
             ScalarAdv.update()
@@ -103,17 +108,18 @@ def main(namelist):
 
         t1 = time.time()
         import pylab as plt
-        s_slice = ScalarState.get_field_slice_z('s', indx=16)
+        s_slice = DiagnosticState.get_field_slice_z('T', indx=32)
         print('w mean', np.mean(w[3:-3, 3:-3,:], axis=(0,1)))
         b = DiagnosticState.get_field('T')
         theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         if MPI.COMM_WORLD.Get_rank() == 0:
             print('step: ', i, ' time: ', t1 - t0)
-        if MPI.COMM_WORLD.Get_rank() == 0 and np.mod(i,5) == 0:
+        if MPI.COMM_WORLD.Get_rank() == 0 and np.mod(i,1) == 0:
             plt.figure(12)
             #evels = np.linspace(299, 27.1, 100)
-            levels = np.linspace(-2.0, 2.0, 100)
-            plt.contourf(w[:,:,10].T,levels=levels, cmap=plt.cm.seismic)
+           #levels = np.linspace(-5.0, 5.0, 100)
+            levels = np.linspace(-2.0, 2.0,100)
+            plt.contourf(s_slice - np.mean(s_slice),levels=levels, cmap=plt.cm.seismic)
             #plt.contourf(w[:,:,16], levels=levels, cmap=plt.cm.seismic)
             #plt.clim(-2.0, 2.0)
             plt.colorbar()
@@ -122,7 +128,7 @@ def main(namelist):
             plt.close()
             print('Scalar Integral ', np.sum(s_slice))
 
-            print('S-min max', np.amin(w), np.amax(w))
+        print('S-min max', np.amin(u), np.amax(u))
 
     print('Timing: ', np.min(times),)
 
