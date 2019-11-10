@@ -1,5 +1,6 @@
 import numpy as np 
 from Columbia import TimeStepping_impl as TS_impl 
+from Columbia import UtilitiesParallel
 from mpi4py import MPI 
 
 class RungeKuttaBase: 
@@ -92,7 +93,12 @@ class TimeSteppingController:
             w = self._VelocityState.get_field('w')
 
             cfl_max = 0.0 
-            cfl_max_local = TS_impl.comput_local_cfl_max(nhalo, dxi, u, v, w)
+            cfl_max_local, umax, vmax, wmax = TS_impl.comput_local_cfl_max(nhalo, dxi, u, v, w)
+
+
+            umax = UtilitiesParallel.ScalarAllReduce(umax, op=MPI.MAX)
+            vmax = UtilitiesParallel.ScalarAllReduce(vmax, op=MPI.MAX)
+            wmax = UtilitiesParallel.ScalarAllReduce(wmax, op=MPI.MAX)
 
             recv_buffer = np.zeros((1,), dtype=np.double)
             MPI.COMM_WORLD.Allreduce(np.array([cfl_max_local], dtype=np.double), recv_buffer, op=MPI.MAX)
@@ -103,12 +109,14 @@ class TimeSteppingController:
             self.match_time()
             
 
+
             for Stepper in self._TimeStepper: 
                 Stepper._dt = self._dt
 
             if MPI.COMM_WORLD.Get_rank() == 0: 
                 print('Time:', self._time, 'CFL Before Adjustment:', self._cfl_current, 
                     'CFL After Adjustment:', cfl_max * self._dt, 'dt:', self._dt )
+                print('\t umax: ', umax, '\t vmax:', vmax, '\t wmax:', wmax)
 
         return
 
