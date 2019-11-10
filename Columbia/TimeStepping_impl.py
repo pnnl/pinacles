@@ -24,7 +24,7 @@ def rk2ssp_s1(state_0, state_1, tend_1, dt):
                     tend_1[n,i,j,k] = 0.0
     return
 
-#@numba.njit
+@numba.njit
 def comput_local_cfl_max(nhalo, dxi, u, v, w): 
     shape = u.shape
     cfl_max = -1e6
