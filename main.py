@@ -23,10 +23,14 @@ def main(namelist):
     DiagnosticState = Containers.ModelState(ModelGrid)
     ScalarTimeStepping = TimeStepping.factory(namelist, ModelGrid, ScalarState)
     VelocityTimeStepping = TimeStepping.factory(namelist, ModelGrid, VelocityState)
+    TimeSteppingController = TimeStepping.TimeSteppingController(namelist, ModelGrid, VelocityState)
     RayleighDamping = Damping.Rayleigh(namelist, ModelGrid)
     RayleighDamping.add_state(VelocityState)
     RayleighDamping.add_state(ScalarState)
 
+    TimeSteppingController.add_timestepper(ScalarTimeStepping)
+    TimeSteppingController.add_timestepper(VelocityTimeStepping)
+    TimeSteppingController.add_timematch(1.0)
     # Set up the reference state class
     Ref =  ReferenceState.factory(namelist, ModelGrid)
 
@@ -80,6 +84,8 @@ def main(namelist):
         #print(i)
         t0 = time.time()
         for n in range(ScalarTimeStepping.n_rk_step):
+            TimeSteppingController.adjust_timestep(n)
+
             #Update Thermodynamics
             Thermo.update()
 
@@ -106,15 +112,14 @@ def main(namelist):
             #Call pressure solver
             PSolver.update()
 
+
         t1 = time.time()
-        import pylab as plt
-        s_slice = DiagnosticState.get_field_slice_z('T', indx=32)
-        print('w mean', np.mean(w[3:-3, 3:-3,:], axis=(0,1)))
+        s_slice = DiagnosticState.get_field_slice_z('T', indx=64)
         b = DiagnosticState.get_field('T')
         theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         if MPI.COMM_WORLD.Get_rank() == 0:
             print('step: ', i, ' time: ', t1 - t0)
-        if MPI.COMM_WORLD.Get_rank() == 0 and np.mod(i,1) == 0:
+        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%1.0,0.0):
             plt.figure(12)
             #evels = np.linspace(299, 27.1, 100)
            #levels = np.linspace(-5.0, 5.0, 100)
@@ -128,7 +133,7 @@ def main(namelist):
             plt.close()
             print('Scalar Integral ', np.sum(s_slice))
 
-        print('S-min max', np.amin(u), np.amax(u))
+            print('S-min max', np.amin(w), np.amax(w))
 
     print('Timing: ', np.min(times),)
 
