@@ -131,9 +131,9 @@ def w_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
         for j in range(2,shape[1]-3):
             for k in range(2,shape[2]-3):
                 #Compute w advection by the u wind
-                up = interpolation_impl.centered_second(u[i,j,k], u[i,j,k+1])
-                vp = interpolation_impl.centered_second(v[i,j,k], v[i,j,k+1])
-                wp = interpolation_impl.centered_second(w[i,j,k], w[i,j,k+1])
+                up = interpolation_impl.centered_fourth(u[i,j,k-1],u[i,j,k], u[i,j,k+1],u[i,j,k+1])
+                vp = interpolation_impl.centered_fourth(v[i,j,k-1],v[i,j,k], v[i,j,k+1],v[i,j,k+2])
+                wp = interpolation_impl.centered_fourth(w[i,j,k-1],w[i,j,k], w[i,j,k+1],w[i,j,k+2],)
                 if up >= 0.0:
                     fluxx[i,j,k] = up  * interpolation_impl.interp_weno5(
                                                      w[i-2,j,k],
