@@ -34,6 +34,10 @@ def colliding_blocks():
     #Set the domain length, dx will be determined from n and L
     input_dict[key]['l'] = [1000.0, 1000.0, 1000.0]
 
+    key = 'time'
+    input_dict[key] = {}
+    input_dict[key]['cfl'] = 0.6
+
     return input_dict
 
 
@@ -59,6 +63,10 @@ def sullivan_and_patton():
     input_dict[key]['depth'] = 250.0
     input_dict[key]['timescale'] = 50.0
 
+    key = 'time'
+    input_dict[key] = {}
+    input_dict[key]['cfl'] = 0.6
+    
     return input_dict
 
 LIST_OF_CASES = ['colliding_blocks',

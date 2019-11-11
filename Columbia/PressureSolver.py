@@ -64,7 +64,6 @@ class PressureSolver:
 
         #First compute divergence of wind field
         divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
-        print('divergence: ', np.max(np.abs(div)))
 
         div_0 = div.redistribute(0)
 
@@ -102,9 +101,6 @@ class PressureSolver:
         self._VelocityState.boundary_exchange()
         self._VelocityState.update_all_bcs()
 
-        divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
-        print('divergence: ', np.max(np.abs(div)))
-        #import sys; sys.exit()
         return
 
 

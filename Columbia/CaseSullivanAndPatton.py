@@ -28,6 +28,7 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
 
         nh = self._Grid.n_halo
         dxi2 = self._Grid.dxi[2]
+        z_edge = self._Grid.z_global_edge
 
         alpha0 = self._Ref.alpha0
         alpha0_edge = self._Ref.alpha0_edge
@@ -57,9 +58,14 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
         Surface_impl.tau_given_ustar(self._ustar_sfc, usfc, vsfc, self._windspeed_sfc, self._taux_sfc, self._tauy_sfc)
 
         #Add the tendencies
-        utsfc += self._taux_sfc * dxi2 * alpha0[nh[2]]/alpha0_edge[nh[2]-1]
-        vtsfc += self._tauy_sfc * dxi2 * alpha0[nh[2]]/alpha0_edge[nh[2]-1]
-        stsfc +=  self._theta_flux * parameters.CPD*exner_edge[nh[2]-1] * dxi2 * alpha0[nh[2]]/alpha0_edge[nh[2]-1]
+        #utsfc += self._taux_sfc * dxi2 * alpha0[nh[2]]/alpha0_edge[nh[2]-1]
+        #vtsfc += self._tauy_sfc * dxi2 * alpha0[nh[2]]/alpha0_edge[nh[2]-1]
+        #stsfc +=  self._theta_flux * parameters.CPD*exner_edge[nh[2]-1] * dxi2 * alpha0[nh[2]]/alpha0_edge[nh[2]-1]
 
+        shf = np.zeros_like(self._taux_sfc) + self._theta_flux * parameters.CPD*exner_edge[nh[2]-1] * dxi2 * alpha0[nh[2]]/alpha0_edge[nh[2]-1]
+
+        Surface_impl.iles_surface_flux_application(50.0, z_edge, dxi2, nh, alpha0, alpha0_edge, 100.0, self._taux_sfc, ut)
+        Surface_impl.iles_surface_flux_application(50.0, z_edge, dxi2, nh, alpha0, alpha0_edge, 100.0, self._tauy_sfc, vt)
+        Surface_impl.iles_surface_flux_application(50.0, z_edge, dxi2, nh, alpha0, alpha0_edge, 100.0, shf, st)
 
         return

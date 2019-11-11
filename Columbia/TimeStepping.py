@@ -1,5 +1,8 @@
 import numpy as np 
 from Columbia import TimeStepping_impl as TS_impl 
+from Columbia import UtilitiesParallel
+from mpi4py import MPI 
+
 class RungeKuttaBase: 
 
     def __init__(self, namelist, Grid, PrognosticState): 
@@ -10,6 +13,7 @@ class RungeKuttaBase:
         self._rk_step = 0 
         self.cfl_target = 0.7
         self._dt = 1.0
+
 
         return
 
@@ -54,3 +58,72 @@ class RungeKutta2ndSSP(RungeKuttaBase):
 def factory(namelist, Grid, PrognosticState): 
     
     return RungeKutta2ndSSP(namelist, Grid, PrognosticState)
+
+class TimeSteppingController: 
+    def __init__(self, namelist, Grid, VelocityState): 
+        self._Grid = Grid
+        self._VelocityState = VelocityState
+        self._TimeStepper = []
+        self._times_to_match = [] 
+        self._dt = 0.0
+        self._dt_max = 10.0
+        self._cfl_target = namelist['time']['cfl'] 
+        self._time = 0.0
+        return
+
+    def add_timestepper(self, TimeStepper):
+        self._TimeStepper.append(TimeStepper)
+        return
+
+    def add_timematch(self, delta_time): 
+        self._times_to_match.append(delta_time)
+        return
+
+    def adjust_timestep(self, n_rk_step): 
+        if n_rk_step == 0: 
+            #Get the current model time 
+            self._time += self._dt
+
+            nhalo = self._Grid.n_halo
+            dxi = self._Grid.dxi
+
+            #Get velocity components
+            u = self._VelocityState.get_field('u')
+            v = self._VelocityState.get_field('v')
+            w = self._VelocityState.get_field('w')
+
+            cfl_max = 0.0 
+            cfl_max_local, umax, vmax, wmax = TS_impl.comput_local_cfl_max(nhalo, dxi, u, v, w)
+
+
+            umax = UtilitiesParallel.ScalarAllReduce(umax, op=MPI.MAX)
+            vmax = UtilitiesParallel.ScalarAllReduce(vmax, op=MPI.MAX)
+            wmax = UtilitiesParallel.ScalarAllReduce(wmax, op=MPI.MAX)
+
+            recv_buffer = np.zeros((1,), dtype=np.double)
+            MPI.COMM_WORLD.Allreduce(np.array([cfl_max_local], dtype=np.double), recv_buffer, op=MPI.MAX)
+            cfl_max = recv_buffer[0]
+            self._cfl_current = self._dt * cfl_max 
+            self._dt = min(self._cfl_target / cfl_max, self._dt_max)
+                 
+            self.match_time()
+            
+
+
+            for Stepper in self._TimeStepper: 
+                Stepper._dt = self._dt
+
+            if MPI.COMM_WORLD.Get_rank() == 0: 
+                print('Time:', self._time, 'CFL Before Adjustment:', self._cfl_current, 
+                    'CFL After Adjustment:', cfl_max * self._dt, 'dt:', self._dt )
+                print('\t umax: ', umax, '\t vmax:', vmax, '\t wmax:', wmax)
+
+        return
+
+    def match_time(self): 
+        #Must be called after dt is computed
+        for match in self._times_to_match:
+            if self._time//match < (self._time + self._dt)//match: 
+                self._dt = min(match*(1.0+self._time//match) - self._time, self._dt)
+
+        return
