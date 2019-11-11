@@ -132,6 +132,8 @@ def w_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
             for k in range(2,shape[2]-3):
                 #Compute w advection by the u wind
                 up = interpolation_impl.centered_second(u[i,j,k], u[i,j,k+1])
+                vp = interpolation_impl.centered_second(v[i,j,k], v[i,j,k+1])
+                wp = interpolation_impl.centered_second(w[i,j,k], w[i,j,k+1])
                 if up >= 0.0:
                     fluxx[i,j,k] = up  * interpolation_impl.interp_weno5(
                                                      w[i-2,j,k],
@@ -141,14 +143,14 @@ def w_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
                                                      w[i+2,j,k] ) * rho0_edge[k]
                 else:
                     fluxx[i,j,k] = up  * interpolation_impl.interp_weno5(
-                                                     w[i-2,j,k],
-                                                     w[i-1,j,k],
-                                                     w[i,j,k],
+                                                     w[i+3,j,k],
+                                                     w[i+2,j,k],
                                                      w[i+1,j,k],
-                                                     w[i+2,j,k] ) * rho0_edge[k]
+                                                     w[i,j,k],
+                                                     w[i-1,j,k] ) * rho0_edge[k]
 
                 #Compute w advection by the v wind
-                vp = interpolation_impl.centered_second(v[i,j,k], v[i,j,k+1])
+
                 if vp >= 0.0:
                     fluxy[i,j,k] = vp * interpolation_impl.interp_weno5(
                                                      w[i,j-2,k],
@@ -166,7 +168,6 @@ def w_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
 
 
                 #Compute w advection by the w wind
-                wp = interpolation_impl.centered_second(w[i,j,k], w[i,j,k+1])
                 if wp >= 0.0:
                     fluxz[i,j,k] = wp * interpolation_impl.interp_weno5(
                                                      w[i,j,k-2],

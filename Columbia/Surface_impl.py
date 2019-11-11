@@ -127,3 +127,14 @@ def tau_given_ustar(ustar_sfc, usfc, vsfc, windspeed_sfc, taux_sfc, tauy_sfc):
             tauy_sfc[i,j] = -(ustar_at_v * ustar_at_v)/windspeed_at_v * vsfc[i,j]
 
     return
+
+@numba.njit
+def iles_surface_flux_application(hd, z_edge, dxi2, nh, alpha0, alpha0_edge, zmax, flux, tend):
+    shape = tend.shape
+    for i in range(1, shape[0]-1): 
+        for j in range(1, shape[1]-1): 
+            for k in range(1, shape[1]-1):
+                if z_edge[k] <= zmax:
+                    tend[i,j,k] += flux[i,j] * np.exp(-z_edge[k]/hd)* dxi2 * alpha0[k]/alpha0_edge[nh[2]-1]
+    
+    return 

@@ -30,7 +30,7 @@ def main(namelist):
 
     TimeSteppingController.add_timestepper(ScalarTimeStepping)
     TimeSteppingController.add_timestepper(VelocityTimeStepping)
-    TimeSteppingController.add_timematch(1.0)
+    TimeSteppingController.add_timematch(5.0)
     # Set up the reference state class
     Ref =  ReferenceState.factory(namelist, ModelGrid)
 
@@ -114,21 +114,22 @@ def main(namelist):
 
 
         t1 = time.time()
-        s_slice = DiagnosticState.get_field_slice_z('T', indx=64)
+        #s_slice = DiagnosticState.get_field_slice_z('T', indx=16)
+        s_slice = VelocityState.get_field_slice_z('w', indx=16)
         b = DiagnosticState.get_field('T')
         #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         if MPI.COMM_WORLD.Get_rank() == 0:
             #print('step: ', i, ' time: ', t1 - t0)
-            if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%1.0,0.0):
+            if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%5.0,0.0):
                 plt.figure(12)
             #evels = np.linspace(299, 27.1, 100)
            #levels = np.linspace(-5.0, 5.0, 100)
-                levels = np.linspace(-2.0, 2.0,100)
+                levels = np.linspace(-4.0, 4.0,100)
                 plt.contourf(s_slice - np.mean(s_slice),levels=levels, cmap=plt.cm.seismic)
             #plt.contourf(w[:,:,16], levels=levels, cmap=plt.cm.seismic)
-            #plt.clim(-2.0, 2.0)
+                plt.clim(-4.0, 4.0)
                 plt.colorbar()
-                plt.savefig('/compyfs/pres026/dcbl/' + str(1000000 + i) + '.png', dpi=300)
+                plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=300)
                 times.append(t1 - t0)
                 plt.close()
                 print('Scalar Integral ', np.sum(s_slice))
