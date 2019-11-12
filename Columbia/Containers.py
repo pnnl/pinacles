@@ -138,7 +138,6 @@ class ModelState:
         field[:,:,-nh2:]=-field[:,:,-2*nh2-1:-nh2-1][:,:,::-1]
         field[:,:,-nh2-1] = 0.0
 
-    
         return
 
     def get_field(self, name):
@@ -152,14 +151,14 @@ class ModelState:
         dof = self._dofs[name]
         return self._tend_array.array[dof,:,:,:]
 
-    def remove_mean(self, name): 
-        #This removes the mean from a field 
+    def remove_mean(self, name):
+        #This removes the mean from a field
         dof = self._dofs[name]
         self._state_array.remove_mean(dof)
-        return 
+        return
 
-    def mean(self, name): 
-        dof = self._dofs[name]    
+    def mean(self, name):
+        dof = self._dofs[name]
         return self._state_array.mean(dof)
 
     def get_field_slice_z(self, name, indx=0):
@@ -183,7 +182,7 @@ class ModelState:
         return recv_buf
 
 
-    def get_loc(self, var): 
+    def get_loc(self, var):
         return self._loc[var]
 
     @property
@@ -197,3 +196,8 @@ class ModelState:
     @property
     def tend_array(self):
         return self._tend_array.array[:,:,:,:]
+
+    @property
+    def stats_io_init(self):
+
+        return

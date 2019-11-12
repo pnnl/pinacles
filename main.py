@@ -8,6 +8,7 @@ from Columbia import MomentumAdvection
 from Columbia import PressureSolver
 from Columbia import Damping
 from Columbia import SurfaceFactory
+from Columbia.Stats import Stats
 from mpi4py import MPI
 import numpy as np
 import time
@@ -65,6 +66,11 @@ def main(namelist):
     Surf = SurfaceFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState)
     PSolver.initialize() #Must be called after reference profile is integrated
 
+    #Setup Stats-IO
+    StatsIO = Stats(namelist, ModelGrid, Ref, TimeSteppingController)
+
+
+
     s = ScalarState.get_field('s')
     w = VelocityState.get_field('w')
     u = VelocityState.get_field('u')
@@ -79,6 +85,7 @@ def main(namelist):
     VelocityState.update_all_bcs()
     PSolver.update()
 
+    #Call stats for the first time
 
     for i in range(4*3600*10):
         #print(i)
