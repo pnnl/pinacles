@@ -19,9 +19,9 @@ def main(namelist):
 
     t0 = time.time()
     ModelGrid = Grid.RegularCartesian(namelist)
-    ScalarState = Containers.ModelState(ModelGrid, prognostic=True)
-    VelocityState = Containers.ModelState(ModelGrid, prognostic=True)
-    DiagnosticState = Containers.ModelState(ModelGrid)
+    ScalarState = Containers.ModelState(ModelGrid, container_name='ScalarState', prognostic=True)
+    VelocityState = Containers.ModelState(ModelGrid, container_name='VelocityState', prognostic=True)
+    DiagnosticState = Containers.ModelState(ModelGrid, container_name='DiagnosticState')
     ScalarTimeStepping = TimeStepping.factory(namelist, ModelGrid, ScalarState)
     VelocityTimeStepping = TimeStepping.factory(namelist, ModelGrid, VelocityState)
     TimeSteppingController = TimeStepping.TimeSteppingController(namelist, ModelGrid, VelocityState)
@@ -67,8 +67,13 @@ def main(namelist):
     PSolver.initialize() #Must be called after reference profile is integrated
 
     #Setup Stats-IO
-    StatsIO = Stats(namelist, ModelGrid, Ref, TimeSteppingController)
+    StatsIO = Stats(namelist, TimeSteppingController)
 
+    StatsIO.add_class(VelocityState)
+    StatsIO.add_class(ScalarState)
+    StatsIO.add_class(DiagnosticState)
+
+    StatsIO.initialize()
 
 
     s = ScalarState.get_field('s')
@@ -121,8 +126,12 @@ def main(namelist):
 
 
         t1 = time.time()
+        MPI.COMM_WORLD.barrier()
+        if MPI.COMM_WORLD.Get_rank() == 0:
+
+            print(t1 -t0)
         #s_slice = DiagnosticState.get_field_slice_z('T', indx=16)
-        s_slice = VelocityState.get_field_slice_z('w', indx=16)
+        s_slice = VelocityState.get_field_slice_z('w', indx=8)
         b = DiagnosticState.get_field('T')
         #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         if MPI.COMM_WORLD.Get_rank() == 0:

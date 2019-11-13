@@ -86,7 +86,6 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                     t *= exner[k]
                 if zl[k] < 200.0:
                     t += perts[i,j,k]
-                    #u[i,j,k] += perts[i,j,k]
                 s[i,j,k] = DryThermo.s(zl[k], t)
 
     return

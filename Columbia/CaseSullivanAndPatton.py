@@ -32,7 +32,7 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
 
         alpha0 = self._Ref.alpha0
         alpha0_edge = self._Ref.alpha0_edge
-        
+
         exner_edge = self._Ref.exner_edge
 
         #Get Fields

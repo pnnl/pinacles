@@ -3,7 +3,7 @@ import numpy as np
 from mpi4py import MPI
 
 class ModelState:
-    def __init__(self, Grid, prognostic=False, identical_bcs=False):
+    def __init__(self, Grid, container_name, prognostic=False, identical_bcs=False):
 
         self._Grid = Grid          #The grid to use for this ModelState container
         self._prognostic = prognostic  #Is prognostic, if True we will allocate a tendency array
@@ -18,6 +18,9 @@ class ModelState:
         self._bcs = {}
         self._loc = {}
         self._identical_bcs = identical_bcs
+
+
+        self.name = container_name
 
         return
 

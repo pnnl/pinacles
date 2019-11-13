@@ -6,8 +6,6 @@ def factory(namelist, Grid, Ref, ScalarState, VelocityState):
 
     return ScalarWENO5(Grid, Ref, ScalarState, VelocityState)
 
-
-
 class ScalarAdvectionBase:
 
     def __init__(self, Grid, Ref, ScalarState, VelocityState):
@@ -21,8 +19,6 @@ class ScalarAdvectionBase:
     def update(self):
 
         return
-
-
 
 @numba.njit
 def weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t):

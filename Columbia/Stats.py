@@ -3,31 +3,40 @@ import os
 from mpi4py import MPI
 
 class Stats:
-    def __init__(self, namelist, Grid, Ref, TimeSteppingController):
+    def __init__(self, namelist, TimeSteppingController):
 
         self._frequency = namelist['stats']['frequency']
-        self._ouput_root = namelist['meta']['output_directory']
-        self._casename = namelist['meta']['casename']
+        self._ouput_root = str(namelist['meta']['output_directory'])
+        self._casename = str(namelist['meta']['casename'])
+
+        self._classes = {}
 
         try:
-            self._customname = namelist['meta']['customname']
+            self._customname = str(namelist['meta']['customname'])
         except:
             self._customname = self._casename
 
         self._output_path = os.path.join(self._ouput_root, self._casename)
-
-        self._Grid = Grid
-        self._Ref = Ref
+        self._stats_file = os.path.join(self._output_path, 'stats.nc')
         self._TimeSteppingController = TimeSteppingController
 
+        self._rt_grp = None
 
         self.setup_directories()
 
         return
 
-    def update(self):
+    def add_class(self, aclass):
+        assert(aclass not in self._classes)
+        self._classes[aclass.name] = aclass
+        return
 
+    def initialize(self):
+        self._rt_grp = nc.Dataset(self._stats_file, 'w')
+        for aclass in self._classes:
+            self._rt_grp.createGroup(aclass)
 
+        self._rt_grp.sync()
         return
 
     def setup_directories(self):
