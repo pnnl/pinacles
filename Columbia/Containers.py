@@ -230,12 +230,12 @@ class ModelState:
         for var in self._dofs:
             if self._loc[var] != 'z':
                 profiles_grp.createVariable(var, np.double, dimensions=('time', 'z',))
-                profiles_grp.createVariable(var + 'squared', np.double, dimensions=('time', 'z',))
+                profiles_grp.createVariable(var + '_squared', np.double, dimensions=('time', 'z',))
                 profiles_grp.createVariable(var + '_min', np.double, dimensions=('time', 'z',))
                 profiles_grp.createVariable(var + '_max', np.double, dimensions=('time', 'z',))
             else:
                 profiles_grp.createVariable(var, np.double, dimensions=('time', 'z_edge',))
-                profiles_grp.createVariable(var + 'squared', np.double, dimensions=('time', 'z_edge',))
+                profiles_grp.createVariable(var + '_squared', np.double, dimensions=('time', 'z_edge',))
                 profiles_grp.createVariable(var + '_min', np.double, dimensions=('time', 'z_edge'))
                 profiles_grp.createVariable(var + '_max', np.double, dimensions=('time', 'z_edge'))
 
@@ -272,7 +272,7 @@ class ModelState:
             #Only write from rank zero
             if my_rank == 0:
                 profiles_grp[var][-1,:] = var_mean
-                profiles_grp[var][-1,:] = var_mean_squared
+                profiles_grp[var + '_squared'][-1,:] = var_mean_squared
                 profiles_grp[var + '_max'][-1,:] = var_max
                 profiles_grp[var + '_min'][-1,:] = var_min
 
