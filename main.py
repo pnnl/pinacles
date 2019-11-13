@@ -31,7 +31,7 @@ def main(namelist):
 
     TimeSteppingController.add_timestepper(ScalarTimeStepping)
     TimeSteppingController.add_timestepper(VelocityTimeStepping)
-    TimeSteppingController.add_timematch(5.0)
+    #TimeSteppingController.add_timematch(5.0)
     # Set up the reference state class
     Ref =  ReferenceState.factory(namelist, ModelGrid)
 
@@ -67,7 +67,7 @@ def main(namelist):
     PSolver.initialize() #Must be called after reference profile is integrated
 
     #Setup Stats-IO
-    StatsIO = Stats(namelist, TimeSteppingController)
+    StatsIO = Stats(namelist, ModelGrid, Ref, TimeSteppingController)
 
     StatsIO.add_class(VelocityState)
     StatsIO.add_class(ScalarState)
@@ -101,6 +101,11 @@ def main(namelist):
             #Update Thermodynamics
             Thermo.update()
 
+            #Do StatsIO if it is time
+            if n == 0: 
+                StatsIO.update()
+                MPI.COMM_WORLD.barrier()
+
             #Update the surface
             Surf.update()
 
@@ -130,26 +135,26 @@ def main(namelist):
         if MPI.COMM_WORLD.Get_rank() == 0:
 
             print(t1 -t0)
-        #s_slice = DiagnosticState.get_field_slice_z('T', indx=16)
-        s_slice = VelocityState.get_field_slice_z('w', indx=8)
-        b = DiagnosticState.get_field('T')
-        #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
-        if MPI.COMM_WORLD.Get_rank() == 0:
-            #print('step: ', i, ' time: ', t1 - t0)
-            if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%5.0,0.0):
-                plt.figure(12)
-            #evels = np.linspace(299, 27.1, 100)
-           #levels = np.linspace(-5.0, 5.0, 100)
-                levels = np.linspace(-4.0, 4.0,100)
-                plt.contourf(s_slice - np.mean(s_slice),levels=levels, cmap=plt.cm.seismic)
-            #plt.contourf(w[:,:,16], levels=levels, cmap=plt.cm.seismic)
-                plt.clim(-4.0, 4.0)
-                plt.colorbar()
-                plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=300)
-                times.append(t1 - t0)
-                plt.close()
-                print('Scalar Integral ', np.sum(s_slice))
-                print('S-min max', np.amin(w), np.amax(w))
+        # #s_slice = DiagnosticState.get_field_slice_z('T', indx=16)
+        # s_slice = VelocityState.get_field_slice_z('w', indx=8)
+        # b = DiagnosticState.get_field('T')
+        # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
+        # if MPI.COMM_WORLD.Get_rank() == 0:
+        #     #print('step: ', i, ' time: ', t1 - t0)
+        #     if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%5.0,0.0):
+        #         plt.figure(12)
+        #     #evels = np.linspace(299, 27.1, 100)
+        #    #levels = np.linspace(-5.0, 5.0, 100)
+        #         levels = np.linspace(-4.0, 4.0,100)
+        #         plt.contourf(s_slice - np.mean(s_slice),levels=levels, cmap=plt.cm.seismic)
+        #     #plt.contourf(w[:,:,16], levels=levels, cmap=plt.cm.seismic)
+        #         plt.clim(-4.0, 4.0)
+        #         plt.colorbar()
+        #         plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=300)
+        #         times.append(t1 - t0)
+        #         plt.close()
+        #         print('Scalar Integral ', np.sum(s_slice))
+        #         print('S-min max', np.amin(w), np.amax(w))
 
     print('Timing: ', np.min(times),)
 

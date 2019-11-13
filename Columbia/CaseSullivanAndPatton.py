@@ -28,7 +28,7 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
 
         nh = self._Grid.n_halo
         dxi2 = self._Grid.dxi[2]
-        z_edge = self._Grid.z_global_edge
+        z_edge = self._Grid.z_edge_global
 
         alpha0 = self._Ref.alpha0
         alpha0_edge = self._Ref.alpha0_edge

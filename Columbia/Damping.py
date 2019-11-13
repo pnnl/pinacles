@@ -60,7 +60,7 @@ class Rayleigh(Damping):
         self._timescale_profile_edge = np.zeros_like(self._timescale_profile)
 
         z = self._Grid.z_global
-        z_edge = self._Grid.z_global_edge
+        z_edge = self._Grid.z_edge_global
 
         z_top = self._Grid.l[2]
         for k in range(self._Grid.ngrid[2]):

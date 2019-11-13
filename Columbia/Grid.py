@@ -23,6 +23,7 @@ class GridBase:
 
         #The global x,y,z coordiantes
         self._global_axes  = None
+        self._global_axes_edge = None
         self._local_axes = None
 
         #Set the grid spacing
@@ -52,7 +53,7 @@ class GridBase:
         """
         Returns an array containing the number of halo points in 
         each of the coordinate directions. 
-        
+
         Returns:
             n_halo : float ndarray of shape (3,)
         """
@@ -62,7 +63,7 @@ class GridBase:
     def l(self):
         """The length of the LES domain in each of the coordinate 
         directions.
-        
+
         Returns:
             l : float ndarray of shape (3,)
         """
@@ -72,7 +73,7 @@ class GridBase:
     def ngrid(self):
         """Returns the total number of points in the global 
         domain including ghost points.
-        
+
         Returns:
             ngrid : float ndarray of shape (3,)
         """
@@ -94,10 +95,6 @@ class GridBase:
     @property
     def local_start(self): 
         return self._local_start 
-
-    @property
-    def ngrid_local(self):
-        return self._ngrid_local
 
     @property
     def dx(self):
@@ -132,7 +129,7 @@ class GridBase:
         return np.copy(self._global_axes[2])
 
     @property
-    def z_global_edge(self):
+    def z_edge_global(self):
         ''' Copy here is forced to keep _global_axes externally immutable,
         if performace becomes an issue we can provide a property that return a
         view so that copy occurs.

@@ -204,3 +204,27 @@ class ModelState:
     def stats_io_init(self):
 
         return
+
+    def io_initialize(self, nc_grp):
+
+        timeseries_grp = nc_grp['timeseries']
+        profiles_grp = nc_grp['profiles']
+
+        #Now loop over variables creating profiles for each
+        for var in self._dofs:
+            if self._loc[var] != 'z':
+                profiles_grp.createVariable(var, np.double, dimensions=('z',))
+            else:
+                profiles_grp.createVariable(var, np.double, dimensions=('z_edge'))
+
+        #Now loop over variables createing domain max/min timeseries for each 
+        for var in self._dofs:
+            timeseries_grp.createVariable(var + '_max', np.double, dimensions=('time',))
+            timeseries_grp.createVariable(var + '_min', np.double, dimensions=('time',))
+
+        return
+
+
+    def io_update(self, nc_grp):
+
+        return
