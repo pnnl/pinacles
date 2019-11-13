@@ -98,12 +98,9 @@ class Stats:
         return
 
     def update(self):
-        if MPI.COMM_WORLD.Get_rank() != 0:
-            return
 
-        if  not (self._last_io_time == 0 or np.allclose(self._TimeSteppingController._time - self._last_io_time, self._frequency)):
+        if  not  np.allclose(self._TimeSteppingController._time%self._frequency,0.0):
             return
-
 
         #Increment time for all groups
         for aclass in self._classes:
@@ -112,8 +109,16 @@ class Stats:
                 time = this_grp[grp]['time']
                 time[time.shape[0]] = self._TimeSteppingController._time
 
+        self._rt_grp.sync()
+        #Call io for all of the classes
+        for aclass in self._classes:
+            this_grp = self._rt_grp[aclass]
+            self._classes[aclass].io_update(this_grp)
+
+        self._rt_grp.sync()
 
         self._last_io_time = self._TimeSteppingController._time
+
 
         return
 
