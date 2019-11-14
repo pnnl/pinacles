@@ -21,9 +21,9 @@ def interp_weno5(phim2, phim1,  phi, phip1, phip2):
     beta0 = (13.0/12.0 * (phim2 - 2.0 * phim1 + phi)*(phim2 - 2.0 * phim1 + phi)
                         + 0.25 * (phim2 - 4.0 * phim1 + 3.0 * phi)*(phim2 - 4.0 * phim1 + 3.0 * phi))
 
-    alpha0 = 0.1/((beta0 + 1e-5) * (beta0 + 1e-5))
-    alpha1 = 0.6/((beta1 + 1e-5) * (beta1 + 1e-5))
-    alpha2 = 0.3/((beta2 + 1e-5) * (beta2 + 1e-5))
+    alpha0 = 0.1/((beta0 + 1e-10) * (beta0 + 1e-10))
+    alpha1 = 0.6/((beta1 + 1e-10) * (beta1 + 1e-10))
+    alpha2 = 0.3/((beta2 + 1e-10) * (beta2 + 1e-10))
 
     alpha_sum_inv = 1.0/(alpha0 + alpha1 + alpha2)
     w0 = alpha0 * alpha_sum_inv

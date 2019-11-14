@@ -94,6 +94,7 @@ class Stats:
             self._classes[aclass].io_initialize(this_grp)
 
         self._rt_grp.sync()
+        self._rt_grp.close()
 
         return
 
@@ -101,6 +102,8 @@ class Stats:
 
         if  not  np.allclose(self._TimeSteppingController._time%self._frequency,0.0):
             return
+
+        self._rt_grp = nc.Dataset(self._stats_file, 'r+')
 
         #Increment time for all groups
         for aclass in self._classes:
@@ -116,9 +119,9 @@ class Stats:
             self._classes[aclass].io_update(this_grp)
 
         self._rt_grp.sync()
+        self._rt_grp.close()
 
         self._last_io_time = self._TimeSteppingController._time
-
 
         return
 

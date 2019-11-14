@@ -174,14 +174,14 @@ def w_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
                                                      w[i,j,k-1],
                                                      w[i,j,k],
                                                      w[i,j,k+1],
-                                                     w[i,j,k+2] ) * rho0[k]
+                                                     w[i,j,k+2] ) * rho0[k+1]
                 else:
                      fluxz[i,j,k] = wp * interpolation_impl.interp_weno5(
                                                      w[i,j,k+3],
                                                      w[i, j, k+2],
                                                      w[i, j, k+1],
                                                      w[i,j,k],
-                                                     w[i,j,k-1]) * rho0[k]
+                                                     w[i,j,k-1]) * rho0[k+1]
 
     return
 
