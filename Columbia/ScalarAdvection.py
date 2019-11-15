@@ -23,10 +23,12 @@ class ScalarAdvectionBase:
 @numba.njit
 def weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t):
     phi_shape = phi.shape
+    phi /= (1004.0 * 300.)
     for i in range(2,phi_shape[0]-3):
         for j in range(2,phi_shape[1]-3):
             for k in range(2,phi_shape[2]-3):
                 #First compute x-advection
+                
                 if u[i,j,k] >= 0:
                     fluxx[i,j,k] = rho0[k] * u[i,j,k] * interp_weno5(phi[i-2,j,k],
                                                      phi[i-1,j,k],
@@ -67,6 +69,7 @@ def weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, p
                                                      phi[i, j, k+1],
                                                      phi[i,j,k],
                                                      phi[i,j,k-1])
+    phi *= (1004.0 * 300.)
     return
 
 theta = 1.35
@@ -160,7 +163,7 @@ def flux_divergence(nhalo, idx, idy, idzi, alpha0, fluxx, fluxy, fluxz, phi_t):
             for k in range(1,phi_shape[2] - 1):
                 phi_t[i,j,k] -= alpha0[k]*((fluxx[i,j,k] - fluxx[i-1,j,k])*idx
                                             + (fluxy[i,j,k] - fluxy[i,j-1,k])*idy
-                                            + (fluxz[i,j,k] - fluxz[i,j,k-1])*idzi)
+                                            + (fluxz[i,j,k] - fluxz[i,j,k-1])*idzi) * (1004.0 * 300.)
 
     return
 

@@ -31,7 +31,7 @@ def main(namelist):
 
     TimeSteppingController.add_timestepper(ScalarTimeStepping)
     TimeSteppingController.add_timestepper(VelocityTimeStepping)
-    #TimeSteppingController.add_timematch(5.0)
+    #TimeSteppingController.add_timematch(60.0)
     # Set up the reference state class
     Ref =  ReferenceState.factory(namelist, ModelGrid)
 
@@ -103,7 +103,7 @@ def main(namelist):
 
             #Do StatsIO if it is time
             if n == 0: 
-                #StatsIO.update()
+                StatsIO.update()
                 MPI.COMM_WORLD.barrier()
 
             #Update the surface
@@ -143,7 +143,7 @@ def main(namelist):
         zl = ModelGrid.z_local
         if MPI.COMM_WORLD.Get_rank() == 0:
         #     #print('step: ', i, ' time: ', t1 - t0)
-             if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%1.0,0.0):
+             if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%60.0,0.0):
                  plt.figure(12)
         #     #evels = np.linspace(299, 27.1, 100)
                  levels = np.linspace(-6, 6, 100)
