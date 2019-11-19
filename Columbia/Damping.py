@@ -33,6 +33,7 @@ class Rayleigh(Damping):
         self._timescale_profile_edge = None
 
         self._compute_timescale_profile()
+
         return
 
     def update(self):

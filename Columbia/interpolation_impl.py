@@ -6,7 +6,7 @@ def centered_second(phi, phip1):
 
 @numba.njit
 def centered_fourth(phim1, phi, phip1, phip2):
-    return (9.0/16.0)*(phi + phip1 ) -(1.0/16.0)*(phim1 + phip2);
+    return (9.0/16.0)*(phi + phip1 ) -(1.0/16.0)*(phim1 + phip2)
 
 @numba.njit()
 def interp_weno5(phim2, phim1,  phi, phip1, phip2):
