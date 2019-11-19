@@ -133,8 +133,8 @@ def iles_surface_flux_application(hd, z_edge, dxi2, nh, alpha0, alpha0_edge, zma
     shape = tend.shape
     for i in range(1, shape[0]-1): 
         for j in range(1, shape[1]-1): 
-            for k in range(1, shape[1]-1):
+            for k in range(1, shape[2]-1):
                 if z_edge[k] <= zmax:
-                    tend[i,j,k] += flux[i,j] * np.exp(-z_edge[k]/hd)* dxi2 * alpha0[k]
+                    tend[i,j,k] -= flux[i,j] * (np.exp(-z_edge[k]/hd)*alpha0_edge[k] - np.exp(-z_edge[k-1]/hd)*alpha0_edge[k-1])* dxi2 * alpha0[k]
     
     return 

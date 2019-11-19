@@ -27,7 +27,7 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
 
         ThermodynamicsDry_impl.eos(z, p0, alpha0, s, T, alpha, buoyancy)
         #ThermodynamicsDry_impl.eos_theta(z, T0, exner, p0, alpha0, s, T, alpha, buoyancy)
-        p = (1.0/alpha)*parameters.RD * T
+        #p = (1.0/alpha)*parameters.RD * T
         #buoyancy[:,:,:] = parameters.G * ((T-T0[np.newaxis,np.newaxis,:])/T0[np.newaxis,np.newaxis,:] - (p - p0[np.newaxis,np.newaxis,:])/p0[np.newaxis,np.newaxis,:])
         ThermodynamicsDry_impl.apply_buoyancy(buoyancy, w_t)
 

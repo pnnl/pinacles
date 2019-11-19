@@ -3,7 +3,6 @@ import numba
 from Columbia import Surface, Surface_impl
 from Columbia import parameters
 
-
 class SurfaceSullivanAndPatton(Surface.SurfaceBase):
 
     def __init__(self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState):
@@ -63,10 +62,10 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
         #vtsfc += self._tauy_sfc * dxi2 * alpha0[nh[2]]/alpha0_edge[nh[2]-1]
         #stsfc +=  self._theta_flux * parameters.CPD*exner_edge[nh[2]-1] * dxi2 * alpha0[nh[2]]/alpha0_edge[nh[2]-1]
 
-        shf = np.zeros_like(self._taux_sfc) + self._theta_flux * parameters.CPD*exner_edge[nh[2]-1]*rho0_edge[nh[2]-1]
+        shf = np.zeros_like(self._taux_sfc) + self._theta_flux * parameters.CPD*exner_edge[nh[2]-1]
 
-        Surface_impl.iles_surface_flux_application(50.0, z_edge, dxi2, nh, alpha0, alpha0_edge, 100.0, self._taux_sfc, ut)
-        Surface_impl.iles_surface_flux_application(50.0, z_edge, dxi2, nh, alpha0, alpha0_edge, 100.0, self._tauy_sfc, vt)
-        Surface_impl.iles_surface_flux_application(50.0, z_edge, dxi2, nh, alpha0, alpha0_edge, 100.0, shf, st)
+        Surface_impl.iles_surface_flux_application(1.0, z_edge, dxi2, nh, alpha0, alpha0_edge, 100.0, self._taux_sfc, ut)
+        Surface_impl.iles_surface_flux_application(1.0, z_edge, dxi2, nh, alpha0, alpha0_edge, 100.0, self._tauy_sfc, vt)
+        Surface_impl.iles_surface_flux_application(1.0, z_edge, dxi2, nh, alpha0, alpha0_edge, 100.0, shf, st)
 
         return

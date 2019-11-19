@@ -103,7 +103,7 @@ def main(namelist):
 
             #Do StatsIO if it is time
             if n == 0: 
-                #StatsIO.update()
+                StatsIO.update()
                 MPI.COMM_WORLD.barrier()
 
             #Update the surface
