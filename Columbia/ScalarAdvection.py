@@ -201,7 +201,7 @@ class ScalarWENO5(ScalarAdvectionBase):
             phi_t = self._ScalarState.get_tend(var)
 
             #Now compute the WENO fluxes
-            weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
+            weno5_advection_flux_limit(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
 
             #Now compute the flux divergences
             flux_divergence(nhalo, self._Grid.dxi[0], self._Grid.dxi[1], self._Grid.dxi[2],

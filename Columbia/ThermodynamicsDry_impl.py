@@ -3,11 +3,11 @@ from Columbia import parameters
 
 @numba.njit()
 def s(z, T): 
-    return parameters.CPD * T + parameters.G*z
+    return  T + parameters.G*z/parameters.CPD 
 
 @numba.njit()
 def T(z, s): 
-    return (s - parameters.G * z)*parameters.ICPD
+    return (s - parameters.G * z*parameters.ICPD)
 
 @numba.njit()
 def rho(P, T): 

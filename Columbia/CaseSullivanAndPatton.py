@@ -62,7 +62,7 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
         #vtsfc += self._tauy_sfc * dxi2 * alpha0[nh[2]]/alpha0_edge[nh[2]-1]
         #stsfc +=  self._theta_flux * parameters.CPD*exner_edge[nh[2]-1] * dxi2 * alpha0[nh[2]]/alpha0_edge[nh[2]-1]
 
-        shf = np.zeros_like(self._taux_sfc) + self._theta_flux * parameters.CPD*exner_edge[nh[2]-1]
+        shf = np.zeros_like(self._taux_sfc) + self._theta_flux * exner_edge[nh[2]-1]
 
         Surface_impl.iles_surface_flux_application(25.0, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._taux_sfc, ut)
         Surface_impl.iles_surface_flux_application(25.0, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tauy_sfc, vt)
