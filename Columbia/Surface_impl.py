@@ -131,14 +131,10 @@ def tau_given_ustar(ustar_sfc, usfc, vsfc, windspeed_sfc, taux_sfc, tauy_sfc):
 @numba.njit
 def iles_surface_flux_application(hd, z_edge, dxi2, nh, alpha0, alpha0_edge, zmax, flux, tend):
     shape = tend.shape
-    for i in range(1, shape[0]-1): 
-        for j in range(1, shape[1]-1): 
+    for i in range(1, shape[0]-1):
+        for j in range(1, shape[1]-1):
             for k in range(1, shape[2]-1):
                 if z_edge[k] <= zmax:
-<<<<<<< HEAD
-                    tend[i,j,k] -= (flux[i,j] * ( np.exp(-z_edge[k]/hd) - np.exp(-z_edge[k-1]/hd))* dxi2) * alpha0[k]
-=======
-                    tend[i,j,k] -= flux[i,j] * (np.exp(-z_edge[k]/hd)*alpha0_edge[k] - np.exp(-z_edge[k-1]/hd)*alpha0_edge[k-1])* dxi2 * alpha0[k]
->>>>>>> 3af67d9f441353f8effd2aad9904cdd7e997dc80
-    
-    return 
+                    tend[i,j,k] -= (flux[i,j] * ( np.exp(-z_edge[k]/hd)/alpha0_edge[k] - np.exp(-z_edge[k-1]/hd))/alpha0_edge[k-1] * dxi2) * alpha0[k]
+
+    return

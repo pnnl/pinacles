@@ -8,6 +8,7 @@ from Columbia import MomentumAdvection
 from Columbia import PressureSolver
 from Columbia import Damping
 from Columbia import SurfaceFactory
+from Columbia import ForcingFactory
 from Columbia.Stats import Stats
 from mpi4py import MPI
 import numpy as np
@@ -25,7 +26,7 @@ def main(namelist):
     ScalarTimeStepping = TimeStepping.factory(namelist, ModelGrid, ScalarState)
     VelocityTimeStepping = TimeStepping.factory(namelist, ModelGrid, VelocityState)
     TimeSteppingController = TimeStepping.TimeSteppingController(namelist, ModelGrid, VelocityState)
-    RayleighDamping = Damping.Rayleigh(namelist, ModelGrid)
+    RayleighDamping = Damping.RayleighInitial(namelist, ModelGrid)
     RayleighDamping.add_state(VelocityState)
     RayleighDamping.add_state(ScalarState)
 
@@ -63,7 +64,9 @@ def main(namelist):
 
     Initializaiton.initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
+    RayleighDamping.init_means()
     Surf = SurfaceFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState)
+    Force = ForcingFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState)
     PSolver.initialize() #Must be called after reference profile is integrated
 
     #Setup Stats-IO
@@ -109,6 +112,9 @@ def main(namelist):
             #Update the surface
             Surf.update()
 
+            #Update the forcing 
+            Force.update()
+
             #Update scalar advection
             ScalarAdv.update()
             MomAdv.update()
@@ -136,7 +142,7 @@ def main(namelist):
 
             print(t1 -t0)
         #s_slice = DiagnosticState.get_field_slice_z('T', indx=16)
-        s_slice = VelocityState.get_field_slice_z('w', indx=11)
+        s_slice = VelocityState.get_field_slice_z('w', indx=19)
         # b = DiagnosticState.get_field('T')
         # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         xl = ModelGrid.x_local
@@ -146,11 +152,11 @@ def main(namelist):
              if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%60.0,0.0):
                  plt.figure(12)
         #     #evels = np.linspace(299, 27.1, 100)
-                 levels = np.linspace(-6, 6, 100)
+                 levels = np.linspace(-7, 7, 100)
         #        levels = np.linspace(-4.0, 4.0,100)
                  plt.contourf(s_slice,cmap=plt.cm.seismic, levels=levels) #,levels=levels, cmap=plt.cm.seismic)
         #     #plt.contourf(w[:,:,16], levels=levels, cmap=plt.cm.seismic)
-                 plt.clim(-6,6)
+                 plt.clim(-7,7)
                  plt.colorbar()
                 # plt.ylim(0.0*1000,4.0*1000)
                 # plt.xlim(25.6*1000,40.0*1000)
