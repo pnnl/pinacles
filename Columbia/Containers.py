@@ -3,7 +3,7 @@ import numpy as np
 from mpi4py import MPI
 
 class ModelState:
-    def __init__(self, Grid, prognostic=False, identical_bcs=False):
+    def __init__(self, Grid, container_name, prognostic=False, identical_bcs=False):
 
         self._Grid = Grid          #The grid to use for this ModelState container
         self._prognostic = prognostic  #Is prognostic, if True we will allocate a tendency array
@@ -18,6 +18,9 @@ class ModelState:
         self._bcs = {}
         self._loc = {}
         self._identical_bcs = identical_bcs
+
+
+        self.name = container_name
 
         return
 
@@ -138,7 +141,6 @@ class ModelState:
         field[:,:,-nh2:]=-field[:,:,-2*nh2-1:-nh2-1][:,:,::-1]
         field[:,:,-nh2-1] = 0.0
 
-    
         return
 
     def get_field(self, name):
@@ -152,15 +154,31 @@ class ModelState:
         dof = self._dofs[name]
         return self._tend_array.array[dof,:,:,:]
 
-    def remove_mean(self, name): 
-        #This removes the mean from a field 
+    def remove_mean(self, name):
+        #This removes the mean from a field
         dof = self._dofs[name]
         self._state_array.remove_mean(dof)
-        return 
+        return
 
-    def mean(self, name): 
-        dof = self._dofs[name]    
-        return self._state_array.mean(dof)
+    def mean(self, name, pow=1.0):
+        dof = self._dofs[name]
+        return self._state_array.mean(dof, pow=pow)
+
+    def max_prof(self, name):
+        dof = self._dofs[name]
+        return self._state_array.max_prof(dof)
+
+    def max(self, name):
+        dof = self._dofs[name]
+        return self._state_array.max(dof)
+
+    def min_prof(self, name):
+        dof = self._dofs[name]
+        return self._state_array.min_prof(dof)
+
+    def min(self, name):
+        dof = self._dofs[name]
+        return self._state_array.min(dof)
 
     def get_field_slice_z(self, name, indx=0):
 
@@ -183,7 +201,7 @@ class ModelState:
         return recv_buf
 
 
-    def get_loc(self, var): 
+    def get_loc(self, var):
         return self._loc[var]
 
     @property
@@ -197,3 +215,75 @@ class ModelState:
     @property
     def tend_array(self):
         return self._tend_array.array[:,:,:,:]
+
+    @property
+    def stats_io_init(self):
+
+        return
+
+    def io_initialize(self, nc_grp):
+
+        timeseries_grp = nc_grp['timeseries']
+        profiles_grp = nc_grp['profiles']
+
+        #Now loop over variables creating profiles for each
+        for var in self._dofs:
+            if self._loc[var] != 'z':
+                profiles_grp.createVariable(var, np.double, dimensions=('time', 'z',))
+                profiles_grp.createVariable(var + '_squared', np.double, dimensions=('time', 'z',))
+                profiles_grp.createVariable(var + '_min', np.double, dimensions=('time', 'z',))
+                profiles_grp.createVariable(var + '_max', np.double, dimensions=('time', 'z',))
+            else:
+                profiles_grp.createVariable(var, np.double, dimensions=('time', 'z_edge',))
+                profiles_grp.createVariable(var + '_squared', np.double, dimensions=('time', 'z_edge',))
+                profiles_grp.createVariable(var + '_min', np.double, dimensions=('time', 'z_edge'))
+                profiles_grp.createVariable(var + '_max', np.double, dimensions=('time', 'z_edge'))
+
+        #Now loop over variables createing domain max/min timeseries for each
+        for var in self._dofs:
+            timeseries_grp.createVariable(var + '_max', np.double, dimensions=('time',))
+            timeseries_grp.createVariable(var + '_min', np.double, dimensions=('time',))
+
+        return
+
+
+    def io_update(self, nc_grp):
+
+        my_rank = MPI.COMM_WORLD.Get_rank()
+        nh = self._Grid.n_halo
+
+        timeseries_grp = nc_grp['timeseries']
+        profiles_grp = nc_grp['profiles']
+
+
+        #Loop over variables and write  profiles
+        for var in self._dofs:
+            if self._loc[var] != 'z':
+                var_mean = self.mean(var)[nh[2]:-nh[2]]
+                var_mean_squared = self.mean(var, pow=2.0)[nh[2]:-nh[2]]
+                var_max = self.max_prof(var)[nh[2]:-nh[2]]
+                var_min = self.min_prof(var)[nh[2]:-nh[2]]
+            else:
+                var_mean = self.mean(var)[nh[2]-1:-nh[2]]
+                var_mean_squared = self.mean(var, pow=2.0)[nh[2]-1:-nh[2]]
+                var_max = self.max_prof(var)[nh[2]-1:-nh[2]]
+                var_min = self.min_prof(var)[nh[2]-1:-nh[2]]
+
+            #Only write from rank zero
+            if my_rank == 0:
+                profiles_grp[var][-1,:] = var_mean
+                profiles_grp[var + '_squared'][-1,:] = var_mean_squared
+                profiles_grp[var + '_max'][-1,:] = var_max
+                profiles_grp[var + '_min'][-1,:] = var_min
+
+
+        #Loop over variables and time series
+        for var in self._dofs:
+            var_max = self.max(var)
+            #var_min = self.min(var)
+
+            #Only write from rank zero
+            if my_rank == 0:
+                timeseries_grp[var + '_max'][-1] = var_max
+
+        return

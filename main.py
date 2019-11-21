@@ -8,6 +8,8 @@ from Columbia import MomentumAdvection
 from Columbia import PressureSolver
 from Columbia import Damping
 from Columbia import SurfaceFactory
+from Columbia import ForcingFactory
+from Columbia.Stats import Stats
 from mpi4py import MPI
 import numpy as np
 import time
@@ -18,19 +20,19 @@ def main(namelist):
 
     t0 = time.time()
     ModelGrid = Grid.RegularCartesian(namelist)
-    ScalarState = Containers.ModelState(ModelGrid, prognostic=True)
-    VelocityState = Containers.ModelState(ModelGrid, prognostic=True)
-    DiagnosticState = Containers.ModelState(ModelGrid)
+    ScalarState = Containers.ModelState(ModelGrid, container_name='ScalarState', prognostic=True)
+    VelocityState = Containers.ModelState(ModelGrid, container_name='VelocityState', prognostic=True)
+    DiagnosticState = Containers.ModelState(ModelGrid, container_name='DiagnosticState')
     ScalarTimeStepping = TimeStepping.factory(namelist, ModelGrid, ScalarState)
     VelocityTimeStepping = TimeStepping.factory(namelist, ModelGrid, VelocityState)
     TimeSteppingController = TimeStepping.TimeSteppingController(namelist, ModelGrid, VelocityState)
-    RayleighDamping = Damping.Rayleigh(namelist, ModelGrid)
+    RayleighDamping = Damping.RayleighInitial(namelist, ModelGrid)
     RayleighDamping.add_state(VelocityState)
     RayleighDamping.add_state(ScalarState)
 
     TimeSteppingController.add_timestepper(ScalarTimeStepping)
     TimeSteppingController.add_timestepper(VelocityTimeStepping)
-    TimeSteppingController.add_timematch(5.0)
+    #TimeSteppingController.add_timematch(60.0)
     # Set up the reference state class
     Ref =  ReferenceState.factory(namelist, ModelGrid)
 
@@ -62,8 +64,20 @@ def main(namelist):
 
     Initializaiton.initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
+    RayleighDamping.init_means()
     Surf = SurfaceFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState)
+    Force = ForcingFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState)
     PSolver.initialize() #Must be called after reference profile is integrated
+
+    #Setup Stats-IO
+    StatsIO = Stats(namelist, ModelGrid, Ref, TimeSteppingController)
+
+    StatsIO.add_class(VelocityState)
+    StatsIO.add_class(ScalarState)
+    StatsIO.add_class(DiagnosticState)
+
+    StatsIO.initialize()
+
 
     s = ScalarState.get_field('s')
     w = VelocityState.get_field('w')
@@ -79,6 +93,7 @@ def main(namelist):
     VelocityState.update_all_bcs()
     PSolver.update()
 
+    #Call stats for the first time
 
     for i in range(4*3600*10):
         #print(i)
@@ -89,8 +104,16 @@ def main(namelist):
             #Update Thermodynamics
             Thermo.update()
 
+            #Do StatsIO if it is time
+            if n == 0: 
+                StatsIO.update()
+                MPI.COMM_WORLD.barrier()
+
             #Update the surface
             Surf.update()
+
+            #Update the forcing 
+            Force.update()
 
             #Update scalar advection
             ScalarAdv.update()
@@ -114,26 +137,34 @@ def main(namelist):
 
 
         t1 = time.time()
-        #s_slice = DiagnosticState.get_field_slice_z('T', indx=16)
-        s_slice = VelocityState.get_field_slice_z('w', indx=16)
-        b = DiagnosticState.get_field('T')
-        #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
+        MPI.COMM_WORLD.barrier()
         if MPI.COMM_WORLD.Get_rank() == 0:
-            #print('step: ', i, ' time: ', t1 - t0)
-            if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%5.0,0.0):
-                plt.figure(12)
-            #evels = np.linspace(299, 27.1, 100)
-           #levels = np.linspace(-5.0, 5.0, 100)
-                levels = np.linspace(-4.0, 4.0,100)
-                plt.contourf(s_slice - np.mean(s_slice),levels=levels, cmap=plt.cm.seismic)
-            #plt.contourf(w[:,:,16], levels=levels, cmap=plt.cm.seismic)
-                plt.clim(-4.0, 4.0)
-                plt.colorbar()
-                plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=300)
-                times.append(t1 - t0)
-                plt.close()
-                print('Scalar Integral ', np.sum(s_slice))
-                print('S-min max', np.amin(w), np.amax(w))
+
+            print(t1 -t0)
+        #s_slice = DiagnosticState.get_field_slice_z('T', indx=16)
+        s_slice = VelocityState.get_field_slice_z('w', indx=19)
+        # b = DiagnosticState.get_field('T')
+        # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
+        xl = ModelGrid.x_local
+        zl = ModelGrid.z_local
+        if MPI.COMM_WORLD.Get_rank() == 0:
+        #     #print('step: ', i, ' time: ', t1 - t0)
+             if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%60.0,0.0):
+                 plt.figure(12)
+        #     #evels = np.linspace(299, 27.1, 100)
+                 levels = np.linspace(-7, 7, 100)
+        #        levels = np.linspace(-4.0, 4.0,100)
+                 plt.contourf(s_slice,cmap=plt.cm.seismic, levels=levels) #,levels=levels, cmap=plt.cm.seismic)
+        #     #plt.contourf(w[:,:,16], levels=levels, cmap=plt.cm.seismic)
+                 plt.clim(-7,7)
+                 plt.colorbar()
+                # plt.ylim(0.0*1000,4.0*1000)
+                # plt.xlim(25.6*1000,40.0*1000)
+                 plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=300)
+        #         times.append(t1 - t0)
+                 plt.close()
+        #         print('Scalar Integral ', np.sum(s_slice))
+        #         print('S-min max', np.amin(w), np.amax(w))
 
     print('Timing: ', np.min(times),)
 

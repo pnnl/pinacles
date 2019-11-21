@@ -33,6 +33,6 @@ class SurfaceBase:
 
         nh = self._Grid.n_halo
         nh2 = nh[2]
-        self._buoyancy_flux = self._theta_flux * self._Ref.exner_edge[nh2] * parameters.G/self._Ref.T0_edge[nh2]
+        self._buoyancy_flux = self._theta_flux * self._Ref.exner_edge[nh2-1] * parameters.G/self._Ref.T0_edge[nh2-1]
 
         return

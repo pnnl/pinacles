@@ -171,11 +171,11 @@ class ReferenceDry(ReferenceBase):
 
         #Compute reference pressure profiles
         self._P0[nhalo:-nhalo] = _integrate_dry(z, lnp_sfc, self.ssfc)[1:]
-        self._P0_edge[nhalo-1:-nhalo+1] = _integrate_dry(self._Grid.z_global_edge[nhalo-1:-nhalo+1], lnp_sfc, self.ssfc)
+        self._P0_edge[nhalo-1:-nhalo+1] = _integrate_dry(self._Grid.z_edge_global[nhalo-1:-nhalo+1], lnp_sfc, self.ssfc)
 
         #Compute reference temperature profiles
         self._T0[nhalo:-nhalo] = ThermodynamicsDry_impl.T(z, self.ssfc)[1:]
-        self._T0_edge[nhalo-1:-nhalo+1] = ThermodynamicsDry_impl.T(self._Grid.z_global_edge[nhalo-1:-nhalo+1], self.ssfc)
+        self._T0_edge[nhalo-1:-nhalo+1] = ThermodynamicsDry_impl.T(self._Grid.z_edge_global[nhalo-1:-nhalo+1], self.ssfc)
 
         #Cmopute reference density profiles
         self._rho0[nhalo:-nhalo] = ThermodynamicsDry_impl.rho(self._P0[nhalo:-nhalo], self._T0[nhalo:-nhalo])
@@ -189,6 +189,42 @@ class ReferenceDry(ReferenceBase):
         self.update_ref_boundaries()
 
         self._compute_exner()
+        return
+
+
+    def write_stats(self, nc_ref_grp):
+
+        nh = self._Grid.n_halo
+        P0 = nc_ref_grp.createVariable('P0', np.double, dimensions=('z'))
+        P0[:] = self._P0[nh[2]:-nh[2]]
+
+        P0_edge = nc_ref_grp.createVariable('P0_edge', np.double, dimensions=('z_edge'))
+        P0_edge[:] = self._P0_edge[nh[2]-1:-nh[2]]
+
+        T0 = nc_ref_grp.createVariable('T0', np.double, dimensions=('z'))
+        T0[:] = self._T0[nh[2]:-nh[2]]
+
+        T0_edge = nc_ref_grp.createVariable('T0_edge', np.double, dimensions=('z_edge'))
+        T0_edge[:] = self._T0_edge[nh[2]-1:-nh[2]]
+
+        rho0 = nc_ref_grp.createVariable('rho0', np.double, dimensions=('z'))
+        rho0[:] = self._rho0[nh[2]:-nh[2]]
+
+        rho0_edge = nc_ref_grp.createVariable('rho0_edge', np.double, dimensions=('z_edge'))
+        rho0_edge[:] = self._rho0_edge[nh[2]-1:-nh[2]]
+
+        alpha0 = nc_ref_grp.createVariable('alpha0', np.double, dimensions=('z'))
+        alpha0[:] = self._alpha0[nh[2]:-nh[2]]
+
+        alpha0_edge = nc_ref_grp.createVariable('alpha0_edge', np.double, dimensions=('z_edge'))
+        alpha0_edge[:] = self._alpha0_edge[nh[2]-1:-nh[2]]
+
+        exner = nc_ref_grp.createVariable('exner', np.double, dimensions=('z'))
+        exner[:] = self._exner[nh[2]:-nh[2]]
+
+        exner_edge = nc_ref_grp.createVariable('exner_edge', np.double, dimensions=('z_edge'))
+        exner_edge[:] = self._exner_edge[nh[2]-1:-nh[2]]
+
         return
 
 def factory(namelist, Grid):

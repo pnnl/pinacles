@@ -133,11 +133,17 @@ class GhostArray(GhostArrayBase):
 
         return
 
-    def mean(self, dof=0):
-        local_sum = np.sum(self.array[dof,
-            self._n_halo[0]:-self._n_halo[0],
-            self._n_halo[1]:-self._n_halo[1],
-            :],axis=(0,1))
+    def mean(self, dof=0, pow=1.0):
+        if pow == 1.0: 
+            local_sum = np.sum(self.array[dof,
+                self._n_halo[0]:-self._n_halo[0],
+                self._n_halo[1]:-self._n_halo[1],
+                :],axis=(0,1))
+        else: 
+            local_sum = np.sum(self.array[dof,
+                self._n_halo[0]:-self._n_halo[0],
+                self._n_halo[1]:-self._n_halo[1],
+                :]**pow,axis=(0,1))
 
         n = self._Grid.n
         local_sum /= (n[0] * n[1])
@@ -145,6 +151,28 @@ class GhostArray(GhostArrayBase):
         MPI.COMM_WORLD.Allreduce(local_sum, mean, op=MPI.SUM)
 
         return mean
+
+    def max_prof(self, dof=0):
+        local_max = np.max(self.array[dof,
+            self._n_halo[0]:-self._n_halo[0],
+            self._n_halo[1]:-self._n_halo[1],
+            :],axis=(0,1))
+
+        max = np.empty_like(local_max)
+        MPI.COMM_WORLD.Allreduce(local_max, max, op=MPI.MAX)
+
+        return max
+
+    def min_prof(self, dof=0):
+        local_min = np.min(self.array[dof,
+            self._n_halo[0]:-self._n_halo[0],
+            self._n_halo[1]:-self._n_halo[1],
+            :],axis=(0,1))
+
+        min = np.empty_like(local_min)
+        MPI.COMM_WORLD.Allreduce(local_min, min, op=MPI.MIN)
+
+        return min
 
     def remove_mean(self, dof):
         #TODO perhpas use numba here?

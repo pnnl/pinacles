@@ -3,20 +3,20 @@ from Columbia import parameters
 from Columbia import parameters
 import numpy as np
 
-class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase): 
+class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
     def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState):
         Thermodynamics.ThermodynamicsBase.__init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState)
 
-        return  
+        return
 
-    def update(self): 
+    def update(self):
 
         z = self._Grid.z_global
-        p0 = self._Ref.p0 
+        p0 = self._Ref.p0
         alpha0 = self._Ref.alpha0
         T0 = self._Ref.T0
         exner = self._Ref.exner
-        
+
         TH0 = T0/exner
 
         s = self._ScalarState.get_field('s')
@@ -26,8 +26,10 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         w_t = self._VelocityState.get_tend('w')
 
         ThermodynamicsDry_impl.eos(z, p0, alpha0, s, T, alpha, buoyancy)
-        buoyancy[:,:,:] = parameters.G * (T/exner[np.newaxis, np.newaxis,:] - TH0[np.newaxis, np.newaxis,:])/TH0[np.newaxis, np.newaxis,:]
+        #ThermodynamicsDry_impl.eos_theta(z, T0, exner, p0, alpha0, s, T, alpha, buoyancy)
+        #p = (1.0/alpha)*parameters.RD * T
+        #buoyancy[:,:,:] = parameters.G * ((T-T0[np.newaxis,np.newaxis,:])/T0[np.newaxis,np.newaxis,:] - (p - p0[np.newaxis,np.newaxis,:])/p0[np.newaxis,np.newaxis,:])
         ThermodynamicsDry_impl.apply_buoyancy(buoyancy, w_t)
 
-        return 
+        return
 

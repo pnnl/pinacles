@@ -54,6 +54,7 @@ def test_SullivanAndPatton():
 
     VelState.add_variable('u')
     VelState.add_variable('v')
+    ScalarState.add_variable('s')
 
     VelState.allocate()
     ScalarState.allocate()
