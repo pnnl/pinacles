@@ -10,6 +10,7 @@ from Columbia import Damping
 from Columbia import SurfaceFactory
 from Columbia import ForcingFactory
 from Columbia.Stats import Stats
+from Columbia import WRF_Micro_Kessler
 from mpi4py import MPI
 import numpy as np
 import time
@@ -52,6 +53,9 @@ def main(namelist):
 
     #Setup the pressure solver
     PSolver = PressureSolver.factory(namelist, ModelGrid, Ref, VelocityState, DiagnosticState)
+    Micro = WRF_Micro_Kessler.MicroKessler(ModelGrid, Ref, ScalarState, DiagnosticState)
+
+
 
     # Allocate all of the big parallel arrays needed for the container classes
     ScalarState.allocate()
@@ -103,6 +107,7 @@ def main(namelist):
 
             #Update Thermodynamics
             Thermo.update()
+            Micro.update()
 
             #Do StatsIO if it is time
             if n == 0: 
