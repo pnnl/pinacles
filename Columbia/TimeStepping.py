@@ -127,3 +127,7 @@ class TimeSteppingController:
                 self._dt = min(match*(1.0+self._time//match) - self._time, self._dt)
 
         return
+
+    @property
+    def dt(self): 
+        return self._dt

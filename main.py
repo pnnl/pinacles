@@ -53,7 +53,7 @@ def main(namelist):
 
     #Setup the pressure solver
     PSolver = PressureSolver.factory(namelist, ModelGrid, Ref, VelocityState, DiagnosticState)
-    Micro = WRF_Micro_Kessler.MicroKessler(ModelGrid, Ref, ScalarState, DiagnosticState)
+    Micro = WRF_Micro_Kessler.MicroKessler(ModelGrid, Ref, ScalarState, DiagnosticState, TimeSteppingController)
 
 
 
@@ -84,6 +84,9 @@ def main(namelist):
 
 
     s = ScalarState.get_field('s')
+    qv = ScalarState.get_field('qv')
+    qr = ScalarState.get_field('qr')
+    qc = ScalarState.get_field('qc')
     w = VelocityState.get_field('w')
     u = VelocityState.get_field('u')
     t1 = time.time()
@@ -147,21 +150,23 @@ def main(namelist):
 
             print(t1 -t0)
         #s_slice = DiagnosticState.get_field_slice_z('T', indx=16)
-        s_slice = VelocityState.get_field_slice_z('w', indx=19)
+        s_slice = VelocityState.get_field_slice_z('w', indx=10)
         # b = DiagnosticState.get_field('T')
         # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         xl = ModelGrid.x_local
         zl = ModelGrid.z_local
         if MPI.COMM_WORLD.Get_rank() == 0:
         #     #print('step: ', i, ' time: ', t1 - t0)
-             if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%60.0,0.0):
+             if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%1.0,0.0):
                  plt.figure(12)
         #     #evels = np.linspace(299, 27.1, 100)
-                 levels = np.linspace(-7, 7, 100)
+                 levels = np.linspace(-4,4, 100)
         #        levels = np.linspace(-4.0, 4.0,100)
-                 plt.contourf(s_slice,cmap=plt.cm.seismic, levels=levels) #,levels=levels, cmap=plt.cm.seismic)
+                 #plt.contourf(s_slice,cmap=plt.cm.seismic, levels=levels) #,levels=levels, cmap=plt.cm.seismic)
+                 #plt.contourf(w[3:-3,16,3:-3].T,100,cmap=plt.cm.seismic) 
+                 plt.contourf(s_slice, levels=levels,cmap=plt.cm.seismic) 
         #     #plt.contourf(w[:,:,16], levels=levels, cmap=plt.cm.seismic)
-                 plt.clim(-7,7)
+                 plt.clim(-4,5)
                  plt.colorbar()
                 # plt.ylim(0.0*1000,4.0*1000)
                 # plt.xlim(25.6*1000,40.0*1000)
