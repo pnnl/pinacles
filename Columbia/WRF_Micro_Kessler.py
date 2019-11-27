@@ -118,20 +118,16 @@ class MicroKessler():
         ep2 = 287./461.6
         svp1 = 0.6112
         svp2 = 17.67
-        svp3 = 29.65  
+        svp3 = 29.65
         svpT0 = 273.15
         rhow = 1000.0
 
-        
         ids = 1; jds = 1; kds = 1
         iide = 1; jde = 1; kde = 1
-        ims=1; jms = 1; kms = 1      
+        ims=1; jms = 1; kms = 1
         ime=wrf_dims[0]; jme=wrf_dims[2]; kme=wrf_dims[1]
         its=1; jts=1; kts=1
         ite=ime; jte=jme; kte=kme
-         
-
-        print('Here Again!')
 
         to_wrf_order(nhalo, T/self._Ref.exner[np.newaxis,np.newaxis,:], T_wrf)
 
@@ -143,7 +139,6 @@ class MicroKessler():
         #print('Print 4!')
         to_wrf_order(nhalo, qr, qr_wrf)
         #print('Print 5!')
-        
         #import pylab as plt
        # plt.figure(1)
        # plt.plot(qv_wrf[5,:,5])
@@ -151,15 +146,15 @@ class MicroKessler():
 
         #Convert T to potential temperature (Flip order here)
         #T_wrf = T_wrf / exner[np.newaxis,::-1,np.newaxis]
-        
+
         #print('Here 1')
-        kessler.module_mp_kessler.kessler(T_wrf, qv_wrf, qc_wrf, qr_wrf, rho_wrf, exner_wrf, 
-            dt, z, xlv, cp, 
-            ep2, svp1, svp2, svp3, svpT0, rhow, 
-            dz_wrf, 
-            RAINNC, RAINNCV, 
+        kessler.module_mp_kessler.kessler(T_wrf, qv_wrf, qc_wrf, qr_wrf, rho_wrf, exner_wrf,
+            dt, z, xlv, cp,
+            ep2, svp1, svp2, svp3, svpT0, rhow,
+            dz_wrf,
+            RAINNC, RAINNCV,
             ids,iide, jds,jde, kds,kde,
-            ims,ime, jms,jme, kms,kme, 
+            ims,ime, jms,jme, kms,kme,
             its,ite, jts,jte, kts,kte)
         #print('Here 2')
 
@@ -167,15 +162,15 @@ class MicroKessler():
         wrf_theta_tend_to_our_tend(nhalo, dt, exner, T_wrf, T, s_tend)
         #print(np.amax(s_tend - s_b4))
         wrf_tend_to_our_tend(nhalo, dt, qv_wrf, qv, qv_tend)
-        wrf_tend_to_our_tend(nhalo, dt, qc_wrf, qc, qc_tend) 
-        print('qc', np.amax(qc), np.amax(qc_tend))
+        wrf_tend_to_our_tend(nhalo, dt, qc_wrf, qc, qc_tend)
+        #print('qc', np.amax(qc), np.amax(qc_tend))
         wrf_tend_to_our_tend(nhalo,dt, qr_wrf, qr, qr_tend)
-        print('qr', np.amax(qr), np.amax(qr_tend))
+        #print('qr', np.amax(qr), np.amax(qr_tend))
 
 
-        pressure = np.zeros_like(qv) + self._Ref.p0[np.newaxis, np.newaxis,:]
-        rh = compute_rh(qv, T, pressure)
-        print('RH: ', np.amax(rh))
+        #pressure = np.zeros_like(qv) + self._Ref.p0[np.newaxis, np.newaxis,:]
+        #rh = compute_rh(qv, T, pressure)
+        #print('RH: ', np.amax(rh))
 
         #plt.plot(T[8,8,nhalo[0]:-nhalo[0]]/exner[nhalo[0]:-nhalo[0]])
         #plt.plot(T_wrf[5,:,5])
