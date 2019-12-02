@@ -88,13 +88,13 @@ def compute_ustar(windspeed, buoyancy_flux, z0, zb):
     return ustar
 
 @numba.njit()
-def compute_windspeed_sfc(u, v, gustiness, windspeed):
+def compute_windspeed_sfc(u, v, u0, v0, gustiness, windspeed):
 
     shape = windspeed.shape
     for i in range(1,shape[0]):
         for j in range(1,shape[1]):
-            ui = 0.5 * (u[i-1,j] + u[i,j])
-            vi = 0.5 * (v[i,j-1] + v[i,j])
+            ui = 0.5 * (u[i-1,j] + u[i,j]) + u0
+            vi = 0.5 * (v[i,j-1] + v[i,j]) + v0
             spd = np.sqrt(ui*ui + vi*vi)
             windspeed[i,j] = max(spd, gustiness)
 
@@ -112,7 +112,7 @@ def compute_ustar_sfc(windspeed_sfc, buoyancy_flux_sfc, z0, zb, ustar_sfc):
 
 
 @numba.njit()
-def tau_given_ustar(ustar_sfc, usfc, vsfc, windspeed_sfc, taux_sfc, tauy_sfc):
+def tau_given_ustar(ustar_sfc, usfc, vsfc, u0, v0, windspeed_sfc, taux_sfc, tauy_sfc):
     shape = ustar_sfc.shape
     for i in range(1,shape[0]-1):
         for j in range(1, shape[1]-1):
@@ -123,8 +123,8 @@ def tau_given_ustar(ustar_sfc, usfc, vsfc, windspeed_sfc, taux_sfc, tauy_sfc):
             windspeed_at_u = 0.5 * (windspeed_sfc[i,j] +windspeed_sfc[i+1,j])
             windspeed_at_v = 0.5 * (windspeed_sfc[i,j] +windspeed_sfc[i,j+1])
 
-            taux_sfc[i,j] = -(ustar_at_u * ustar_at_u)/windspeed_at_u * usfc[i,j]
-            tauy_sfc[i,j] = -(ustar_at_v * ustar_at_v)/windspeed_at_v * vsfc[i,j]
+            taux_sfc[i,j] = -(ustar_at_u * ustar_at_u)/windspeed_at_u * (usfc[i,j] + u0)
+            tauy_sfc[i,j] = -(ustar_at_v * ustar_at_v)/windspeed_at_v * (vsfc[i,j] + v0)
 
     return
 

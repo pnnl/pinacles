@@ -94,7 +94,7 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 def bomex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     #Integrate the reference profile.
-    Ref.set_surface(Tsfc=300.4)
+    Ref.set_surface(Tsfc=300.4, u0=-8.75, v0=0.0)
     Ref.integrate()
 
     u = VelocityState.get_field('u')
@@ -119,9 +119,10 @@ def bomex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     shape = s.shape
 
-    perts = np.random.uniform(-0.1, 0.1,(shape[0],shape[1],shape[2]))
+    perts = np.random.randn(shape[0],shape[1],shape[2])*0.01
     for i in range(shape[0]):
         for j in range(shape[1]):
+            u700 = 0
             for k in range(shape[2]):
                 t = 0.0
                 z = zl[k]
@@ -137,7 +138,6 @@ def bomex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                 elif z > 2000.0:
                     t = 308.2 + (z - 2000.0) * (311.85 - 308.2)/(3000.0 - 2000.0)
                     qv[i,j,k] = 4.2 + (z- 2000.0) * (3.0 - 4.2)/(3000.0  - 2000.0)
-                
 
                 t *= exner[k]
                 if zl[k] < 200.0:
@@ -147,7 +147,10 @@ def bomex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                 if z <= 700.0: 
                     u[i,j,k] = -8.75
                 else: 
-                    u[i,j,k] = -8.75 + (z- 700.0) * (-4.61 - -8.75)/(3000.0 - 700.0)
+                    u[i,j,k] = -8.75 + (z- 700.0) * 1.8e-3
+
+    u -= Ref.u0
+    v -= Ref.v0
 
     #u.fill(0.0)
     qv /= 1000.0

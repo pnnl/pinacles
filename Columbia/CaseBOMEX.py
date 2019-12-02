@@ -59,8 +59,8 @@ class SurfaceBOMEX(Surface.SurfaceBase):
 
 
 
-        Surface_impl.compute_windspeed_sfc(usfc, vsfc, self.gustiness, self._windspeed_sfc)
-        Surface_impl.tau_given_ustar(self._ustar_sfc, usfc, vsfc, self._windspeed_sfc, self._taux_sfc, self._tauy_sfc)
+        Surface_impl.compute_windspeed_sfc(usfc, vsfc, self._Ref.u0, self._Ref.v0, self.gustiness, self._windspeed_sfc)
+        Surface_impl.tau_given_ustar(self._ustar_sfc, usfc, vsfc, self._Ref.u0, self._Ref.v0, self._windspeed_sfc, self._taux_sfc, self._tauy_sfc)
 
         shf = np.zeros_like(self._taux_sfc) + self._theta_flux * exner_edge[nh[2]-1]
         qv_flx_sf = np.zeros_like(self._taux_sfc) + self._qv_flux
@@ -92,7 +92,6 @@ class ForcingBOMEX(Forcing.ForcingBase):
             self._ug[k] = self._ug[k] = -10.0 + (1.8e-3)*zl[k]
         self._vg = np.zeros_like(self._ug)
 
-
         #Set heating rate
         self._heating_rate = np.zeros_like(self._Grid.z_global)
 
@@ -120,6 +119,11 @@ class ForcingBOMEX(Forcing.ForcingBase):
         #Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, vt, ut)
         st += self._heating_rate[np.newaxis, np.newaxis, :]
 
-        Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, vt, ut)
+        vt_old = np.copy(vt)
+        Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, self._Ref.u0, self._Ref.v0,u, v, vt, ut)
+        #vt_diff = vt  - vt_old
+
+
+        #print(np.mean(vt_diff[3:-3,3:-3,3:-3],axis=(0,1)))
 
         return 

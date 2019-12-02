@@ -25,11 +25,13 @@ class ReferenceBase:
 
         return
 
-    def set_surface(self, Psfc=1e5, Tsfc=293.15, qsfc=0.0):
+    def set_surface(self, Psfc=1e5, Tsfc=293.15, qsfc=0.0, u0=0.0, v0=0.0):
 
         self._Psfc = Psfc
         self._Tsfc = Tsfc
         self._qsfc = qsfc
+        self._u0 = u0
+        self._v0 = v0
 
         return
 
@@ -66,6 +68,14 @@ class ReferenceBase:
         self._exner = (self._P0/parameters.P00)**(parameters.KAPPA)
         self._exner_edge = (self._P0/parameters.P00)**(parameters.KAPPA)
         return
+
+    @property
+    def u0(self):
+        return self._u0
+
+    @property
+    def v0(self):
+        return self._v0
 
     @property
     def Psfc(self):
