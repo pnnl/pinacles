@@ -25,14 +25,14 @@ def rk2ssp_s1(state_0, state_1, tend_1, dt):
     return
 
 @numba.njit
-def comput_local_cfl_max(nhalo, dxi, u, v, w): 
+def comput_local_cfl_max(nhalo, dxi, u, v, w):
     shape = u.shape
     cfl_max = -1e6
     umax = -1e6
     vmax = -1e6
     wmax = -1e6
-    for i in range(nhalo[0],shape[0]-nhalo[0]): 
-        for j in range(nhalo[1],shape[0]-nhalo[0]): 
+    for i in range(nhalo[0],shape[0]-nhalo[0]):
+        for j in range(nhalo[1],shape[0]-nhalo[0]):
             for k in range(nhalo[2], shape[2]-nhalo[2]):
                 xcfl = np.abs(u[i,j,k]*dxi[0])
                 ycfl = np.abs(v[i,j,k]*dxi[1])

@@ -44,7 +44,7 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
 
     #Integrate the reference profile.
-    Ref.set_surface(Tsfc=300.0)
+    Ref.set_surface(Tsfc=300.0, u0=1.0, v0=0.0)
     Ref.integrate()
 
     u = VelocityState.get_field('u')
@@ -65,6 +65,9 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     v.fill(0.0)
     w.fill(0.0)
 
+    u -= Ref.u0
+    v -= Ref.v0
+
     shape = s.shape
 
     perts = np.random.uniform(-0.1, 0.1,(shape[0],shape[1],shape[2]))
@@ -77,7 +80,7 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                 t = 0.0
                 if zl[k] < 974.0:
                     t = 300.0
-                    t*=exner[k]
+                    t *=exner[k]
                 elif 974.0 <= zl[k] and zl[k] < 1074.0:
                     t = 300.0 + (zl[k] - 974.0) * 0.08
                     t *= exner[k]

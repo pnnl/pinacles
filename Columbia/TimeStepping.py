@@ -44,7 +44,7 @@ class RungeKutta2ndSSP(RungeKuttaBase):
 
         if self._rk_step == 0: 
             self._Tn = np.copy(present_state) #TODO: Replace this copy
-            TS_impl.rk2ssp_s0(self._Tn, present_tend, self._dt )
+            TS_impl.rk2ssp_s0(present_state, present_tend, self._dt )
             self._rk_step = 1 
 
         else:
