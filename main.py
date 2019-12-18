@@ -16,6 +16,9 @@ import numpy as np
 import time
 import pylab as plt
 
+import os 
+os.environ["HDF5_USE_FILE_LOCKING"]="FALSE"
+
 def main(namelist):
     TerminalIO.start_message()
 
@@ -150,7 +153,7 @@ def main(namelist):
 
             print(t1 -t0)
         #s_slice = DiagnosticState.get_field_slice_z('T', indx=16)
-        s_slice = ScalarState.get_field_slice_z('qv', indx=10)
+        s_slice = VelocityState.get_field_slice_z('w', indx=5)
         # b = DiagnosticState.get_field('T')
         # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         xl = ModelGrid.x_local

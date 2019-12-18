@@ -39,6 +39,8 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
         u = self._VelocityState.get_field('u')
         v = self._VelocityState.get_field('v')
 
+        u0 = self._Ref.u0
+        v0 = self._Ref.v0 
 
         #Get Tendnecies
         ut = self._VelocityState.get_tend('u')
@@ -53,9 +55,9 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
         stsfc = st[:,:,nh[2]]
 
         #Compute the windspeed, friction velocity, and surface stresses
-        Surface_impl.compute_windspeed_sfc(usfc, vsfc, self.gustiness, self._windspeed_sfc)
+        Surface_impl.compute_windspeed_sfc(usfc, vsfc, u0, v0, self.gustiness, self._windspeed_sfc)
         Surface_impl.compute_ustar_sfc(self._windspeed_sfc, self._bflx_sfc, self._z0, self._Grid.dx[2]/2.0, self._ustar_sfc)
-        Surface_impl.tau_given_ustar(self._ustar_sfc, usfc, vsfc, self._windspeed_sfc, self._taux_sfc, self._tauy_sfc)
+        Surface_impl.tau_given_ustar(self._ustar_sfc, usfc, vsfc, u0, v0, self._windspeed_sfc, self._taux_sfc, self._tauy_sfc)
 
         #Add the tendencies
         #utsfc += self._taux_sfc * dxi2 * alpha0[nh[2]]/alpha0_edge[nh[2]-1]
@@ -90,5 +92,8 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
         ut = self._VelocityState.get_tend('u')
         vt = self._VelocityState.get_tend('v')
 
-        Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, vt, ut)
+        u0 = self._Ref.u0
+        v0 = self._Ref.v0 
+
+        Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, u0, v0, vt, ut)
         return

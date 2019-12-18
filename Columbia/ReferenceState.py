@@ -33,6 +33,9 @@ class ReferenceBase:
         self._u0 = u0
         self._v0 = v0
 
+        self._u0 = u0
+        self._v0 = v0
+
         return
 
     def update_ref_boundaries(self):
@@ -141,7 +144,7 @@ def _integrate_dry(z, lnpsfc, ssfc, n=250):
         zie  = z[i+1]
         dz = (zie - zis)/n
         lnpi = p0_out[i]
-        for li in range(n):
+        for li in range(n+1):
             T = ThermodynamicsDry_impl.T(z[i] + dz*li, ssfc)
             dlnp = -parameters.G / (parameters.RD * T)
             lnpi = lnpi + dlnp * dz

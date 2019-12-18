@@ -67,6 +67,7 @@ class Stats:
 
         #Loop over classes and create grpus and dimensions
         for aclass in self._classes:
+            print(aclass)
             this_grp = self._rt_grp.createGroup(aclass)
 
             #Create subgroups for profiles and timeseries
