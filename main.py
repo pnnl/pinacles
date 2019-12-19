@@ -10,6 +10,7 @@ from Columbia import Damping
 from Columbia import SurfaceFactory
 from Columbia import ForcingFactory
 from Columbia.Stats import Stats
+from Columbia import DumpFields
 from Columbia import WRF_Micro_Kessler
 from mpi4py import MPI
 import numpy as np
@@ -21,6 +22,7 @@ os.environ["HDF5_USE_FILE_LOCKING"]="FALSE"
 
 def main(namelist):
     TerminalIO.start_message()
+
 
     t0 = time.time()
     ModelGrid = Grid.RegularCartesian(namelist)
@@ -82,6 +84,11 @@ def main(namelist):
     StatsIO.add_class(VelocityState)
     StatsIO.add_class(ScalarState)
     StatsIO.add_class(DiagnosticState)
+
+
+    FieldsIO = DumpFields.DumpFields(namelist, ModelGrid, TimeSteppingController)
+    FieldsIO.add_class(ScalarState)
+    FieldsIO.add_class(VelocityState)
 
     StatsIO.initialize()
 
@@ -160,17 +167,18 @@ def main(namelist):
         zl = ModelGrid.z_local
         if MPI.COMM_WORLD.Get_rank() == 0:
         #     #print('step: ', i, ' time: ', t1 - t0)
-             if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%1.0,0.0):
+             if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%120.0,0.0):
+                 FieldsIO.update()
                  plt.figure(12)
         #     #evels = np.linspace(299, 27.1, 100)
                  #levels = np.linspace(-4,4, 100)
-        #        levels = np.linspace(-4.0, 4.0,100)
+                 levels = np.linspace(-1e-5, 0.001,100)
                  #plt.contourf(s_slice,cmap=plt.cm.seismic, levels=levels) #,levels=levels, cmap=plt.cm.seismic)
-                 #plt.contourf(w[3:-3,16,3:-3].T,100,cmap=plt.cm.seismic) 
-                 plt.contourf(s_slice, 100,cmap=plt.cm.seismic) 
+                 plt.contourf(qc[3:-3,16,3:-3].T,levels,cmap=plt.cm.Blues_r) 
+                 #plt.contourf(s_slice, 100,cmap=plt.cm.seismic) 
         #     #plt.contourf(w[:,:,16], levels=levels, cmap=plt.cm.seismic)
                  #plt.clim(-4,5)
-                 plt.colorbar()
+                 #plt.colorbar()
                 # plt.ylim(0.0*1000,4.0*1000)
                 # plt.xlim(25.6*1000,40.0*1000)
                  plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=300)

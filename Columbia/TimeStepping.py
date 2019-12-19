@@ -129,5 +129,9 @@ class TimeSteppingController:
         return
 
     @property
-    def dt(self): 
+    def dt(self):
         return self._dt
+
+    @property
+    def time(self):
+        return self._time
