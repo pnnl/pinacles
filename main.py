@@ -168,10 +168,10 @@ def main(namelist):
         # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         xl = ModelGrid.x_local
         zl = ModelGrid.z_local
-        if MPI.COMM_WORLD.Get_rank() == 0:
+        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%120.0,0.0):
+            FieldsIO.update()
+            if MPI.COMM_WORLD.Get_rank() == 0:
         #     #print('step: ', i, ' time: ', t1 - t0)
-             if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%120.0,0.0):
-                 FieldsIO.update()
                  plt.figure(12)
         #     #evels = np.linspace(299, 27.1, 100)
                  #levels = np.linspace(-4,4, 100)
