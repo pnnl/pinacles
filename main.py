@@ -123,14 +123,14 @@ def main(namelist):
             Micro.update()
 
             #Do StatsIO if it is time
-            if n == 0: 
+            if n == 0:
                 StatsIO.update()
                 MPI.COMM_WORLD.barrier()
 
             #Update the surface
             Surf.update()
 
-            #Update the forcing 
+            #Update the forcing
             Force.update()
 
             #Update scalar advection
@@ -154,6 +154,9 @@ def main(namelist):
             PSolver.update()
 
 
+
+
+
         t1 = time.time()
         MPI.COMM_WORLD.barrier()
         if MPI.COMM_WORLD.Get_rank() == 0:
@@ -172,9 +175,9 @@ def main(namelist):
                  plt.figure(12)
         #     #evels = np.linspace(299, 27.1, 100)
                  #levels = np.linspace(-4,4, 100)
-                 levels = np.linspace(-1e-5, 0.001,100)
+                 levels = np.linspace(-5, 5,100)
                  #plt.contourf(s_slice,cmap=plt.cm.seismic, levels=levels) #,levels=levels, cmap=plt.cm.seismic)
-                 plt.contourf(qc[3:-3,16,3:-3].T,levels,cmap=plt.cm.Blues_r) 
+                 plt.contourf((s[3:-3,16,3:-3]) .T ,100,cmap=plt.cm.seismic) 
                  #plt.contourf(s_slice, 100,cmap=plt.cm.seismic) 
         #     #plt.contourf(w[:,:,16], levels=levels, cmap=plt.cm.seismic)
                  #plt.clim(-4,5)

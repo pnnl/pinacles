@@ -72,7 +72,7 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     v -= Ref.v0
 
     shape = s.shape
-
+    np.random.seed(1)
     perts = np.random.uniform(-0.01, 0.01,(shape[0],shape[1],shape[2]))
 
     for i in range(shape[0]):
