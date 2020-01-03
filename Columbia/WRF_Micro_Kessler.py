@@ -1,5 +1,8 @@
+from Columbia.Microphysics import MicrophysicsBase, water_path, water_fraction
 from Columbia.wrf_physics import kessler
+from Columbia import UtilitiesParallel
 from Columbia import parameters
+from mpi4py import MPI
 import numpy as np
 import numba 
 
@@ -53,23 +56,28 @@ def compute_rh(qv, temp, pressure):
     return qv/qvs
 
 
-class MicroKessler():
+class MicroKessler(MicrophysicsBase):
     def __init__(self, Grid, Ref, ScalarState, DiagnosticState, TimeSteppingController):
-       
-        self._Grid = Grid
-        self._Ref = Ref
-        self._ScalarState = ScalarState
-        self._DiagnosticState = DiagnosticState
-        self._TimeSteppingController = TimeSteppingController
+
+        MicrophysicsBase.__init__(self, Grid, Ref, ScalarState, DiagnosticState, TimeSteppingController)
 
         self._ScalarState.add_variable('qv')
-        self._ScalarState.add_variable('qc') 
+        self._ScalarState.add_variable('qc')
         self._ScalarState.add_variable('qr')
 
+        nhalo = self._Grid.n_halo
+        self._our_dims = self._Grid.ngrid_local
+        nhalo = self._Grid.n_halo
+        self._wrf_dims = (self._our_dims[0] -2*nhalo[0], self._our_dims[2]-2*nhalo[2], self._our_dims[1]-2*nhalo[1])
+
+
+        self._RAINNC = np.zeros((self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order='F')
+        self._RAINNCV =  np.zeros_like(self._RAINNC)
+
+        self._rain_rate = 0.0
         return 
 
     def update(self): 
-
 
         #Get variables from the model state
         T = self._DiagnosticState.get_field('T')
@@ -86,21 +94,21 @@ class MicroKessler():
 
         #Build arrays from reference state make sure these are properly Fortran/WRF
         #ordered 
-        our_dims= self._Grid.ngrid_local
+       # our_dims= self._Grid.ngrid_local
         nhalo = self._Grid.n_halo
-        wrf_dims = (our_dims[0] -2*nhalo[0], our_dims[2]-2*nhalo[2], our_dims[1]-2*nhalo[1])
+       # wrf_dims = (self._our_dims[0] -2*nhalo[0], self_our_dims[2]-2*nhalo[2], self._our_dims[1]-2*nhalo[1])
     
         #Some of the memory allocation could be done at init
 
-        rho_wrf = np.empty(wrf_dims, dtype=np.double, order='F')
+        rho_wrf = np.empty(self._wrf_dims, dtype=np.double, order='F')
         exner_wrf = np.empty_like(rho_wrf) 
         T_wrf = np.empty_like(rho_wrf)
         qv_wrf = np.empty_like(rho_wrf)
         qc_wrf = np.empty_like(rho_wrf)
         qr_wrf = np.empty_like(rho_wrf)
 
-        RAINNC = np.empty((wrf_dims[0], wrf_dims[2]), dtype=np.double, order='F')
-        RAINNCV = np.empty_like(RAINNC)
+        #RAINNC = np.empty((self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order='F')
+        #RAINNCV = np.empty_like(RAINNC)
 
         dz_wrf = np.empty_like(rho_wrf)
         z = np.empty_like(rho_wrf)
@@ -125,7 +133,7 @@ class MicroKessler():
         ids = 1; jds = 1; kds = 1
         iide = 1; jde = 1; kde = 1
         ims=1; jms = 1; kms = 1
-        ime=wrf_dims[0]; jme=wrf_dims[2]; kme=wrf_dims[1]
+        ime=self._wrf_dims[0]; jme=self._wrf_dims[2]; kme=self._wrf_dims[1]
         its=1; jts=1; kts=1
         ite=ime; jte=jme; kte=kme
 
@@ -148,14 +156,17 @@ class MicroKessler():
         #T_wrf = T_wrf / exner[np.newaxis,::-1,np.newaxis]
 
         #print('Here 1')
+        rain_accum_old = np.sum(self._RAINNC)
         kessler.module_mp_kessler.kessler(T_wrf, qv_wrf, qc_wrf, qr_wrf, rho_wrf, exner_wrf,
             dt, z, xlv, cp,
             ep2, svp1, svp2, svp3, svpT0, rhow,
             dz_wrf,
-            RAINNC, RAINNCV,
+            self._RAINNC, self._RAINNCV,
             ids,iide, jds,jde, kds,kde,
             ims,ime, jms,jme, kms,kme,
             its,ite, jts,jte, kts,kte)
+
+        self._rain_rate = (np.sum(self._RAINNC) - rain_accum_old)/dt
         #print('Here 2')
 
         s_b4 = np.copy(s_tend)
@@ -176,5 +187,74 @@ class MicroKessler():
         #plt.plot(T_wrf[5,:,5])
         #plt.show()
         #import sys; sys.exit()
+
+        return
+
+    def io_initialize(self, nc_grp):
+        timeseries_grp = nc_grp['timeseries']
+
+        timeseries_grp.createVariable('CF', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('LWP', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('RWP', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('VWP', np.double, dimensions=('time',))
+
+
+        timeseries_grp.createVariable('RAINNC', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('RAINNCV', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('rain_rate', np.double, dimensions=('time',))
+        return
+
+    def io_update(self, nc_grp):
+
+        my_rank = MPI.COMM_WORLD.Get_rank()
+
+
+
+        n_halo = self._Grid.n_halo
+        dz = self._Grid.dx[2]
+        rho = self._Ref.rho0
+        npts = self._Grid.n[0] * self._Grid.n[1]
+
+        qc = self._ScalarState.get_field('qc')
+        qv = self._ScalarState.get_field('qv')
+        qr = self._ScalarState.get_field('qr')
+
+        #First compute liqud water path
+        lwp = water_path(n_halo, dz, npts, rho, qc)
+        lwp = UtilitiesParallel.ScalarAllReduce(lwp)
+
+        rwp = water_path(n_halo, dz, npts, rho, qr)
+        rwp = UtilitiesParallel.ScalarAllReduce(rwp)
+
+        vwp = water_path(n_halo, dz, npts, rho, qv)
+        vwp = UtilitiesParallel.ScalarAllReduce(vwp)
+
+        #Compute cloud and rain fraction
+        cf = water_fraction(n_halo, npts, qc)
+        cf = UtilitiesParallel.ScalarAllReduce(cf)
+
+        rf = water_fraction(n_halo, npts, qc)
+        rf = UtilitiesParallel.ScalarAllReduce(rf)
+
+
+        rainnc = np.sum(self._RAINNC)/npts
+        rainnc = UtilitiesParallel.ScalarAllReduce(rainnc)
+        rainncv = np.sum(self._RAINNCV)/npts
+        rainncv = UtilitiesParallel.ScalarAllReduce(rainncv)
+
+        rr = UtilitiesParallel.ScalarAllReduce(self._rain_rate/npts)
+
+        if my_rank == 0:
+            timeseries_grp = nc_grp['timeseries']
+
+            timeseries_grp['CF'][-1] = cf
+            timeseries_grp['RF'][-1] = rf
+            timeseries_grp['LWP'][-1] = lwp
+            timeseries_grp['RWP'][-1] = rwp
+            timeseries_grp['VWP'][-1] = vwp
+
+            timeseries_grp['RAINNC'][-1] = rainnc
+            timeseries_grp['RAINNCV'][-1] = rainncv
+            timeseries_grp['rain_rate'][-1] = rr
 
         return

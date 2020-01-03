@@ -84,6 +84,7 @@ def main(namelist):
     StatsIO.add_class(VelocityState)
     StatsIO.add_class(ScalarState)
     StatsIO.add_class(DiagnosticState)
+    StatsIO.add_class(Micro)
 
 
     FieldsIO = DumpFields.DumpFields(namelist, ModelGrid, TimeSteppingController)
@@ -122,12 +123,14 @@ def main(namelist):
 
             #Update Thermodynamics
             Thermo.update()
-            Micro.update()
 
             #Do StatsIO if it is time
             if n == 0:
                 StatsIO.update()
                 MPI.COMM_WORLD.barrier()
+
+            #Update microphysics
+            Micro.update()
 
             #Update the surface
             Surf.update()
