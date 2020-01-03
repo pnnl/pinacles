@@ -112,7 +112,9 @@ def main(namelist):
 
     #Call stats for the first time
 
-    for i in range(4*3600*10):
+    #for i in range(4*3600*10):
+    i = 0
+    while TimeSteppingController.time <= TimeSteppingController.time_max:
         #print(i)
         t0 = time.time()
         for n in range(ScalarTimeStepping.n_rk_step):
@@ -152,10 +154,7 @@ def main(namelist):
 
             #Call pressure solver
             PSolver.update()
-
-
-
-
+        i += 1
 
         t1 = time.time()
         MPI.COMM_WORLD.barrier()

@@ -47,6 +47,7 @@ def stable_bubble():
 
     key = 'time'
     input_dict[key] = {}
+    input_dict[key]['time_max'] = 600.0
     input_dict[key]['cfl'] = 0.6
 
     key = 'stats'
@@ -77,6 +78,7 @@ def colliding_blocks():
     key = 'time'
     input_dict[key] = {}
     input_dict[key]['cfl'] = 0.6
+    input_dict[key]['time_max'] = 600.0
 
     return input_dict
 
@@ -107,11 +109,13 @@ def sullivan_and_patton():
     key = 'time'
     input_dict[key] = {}
     input_dict[key]['cfl'] = 0.6
-
+    input_dict[key]['time_max'] = 3600.0 * 3.0
+ 
     key = 'stats'
     input_dict[key] = {}
     input_dict[key]['frequency'] = 60.0
     input_dict[key]['modules'] = []
+
 
     return input_dict
 
@@ -141,6 +145,7 @@ def bomex():
     key = 'time'
     input_dict[key] = {}
     input_dict[key]['cfl'] = 0.6
+    input_dict[key]['time_max'] = 3600.0 * 6.0
 
     key = 'stats'
     input_dict[key] = {}
