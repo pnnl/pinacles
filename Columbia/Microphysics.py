@@ -1,4 +1,3 @@
-from Columbia import WRF_Micro_Kessler
 import numba
 
 @numba.njit()
@@ -47,3 +46,4 @@ class MicrophysicsBase:
 
     def io_update(self, nc_grp):
         return
+

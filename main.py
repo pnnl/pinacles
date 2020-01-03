@@ -11,7 +11,7 @@ from Columbia import SurfaceFactory
 from Columbia import ForcingFactory
 from Columbia.Stats import Stats
 from Columbia import DumpFields
-from Columbia import WRF_Micro_Kessler
+from Columbia import MicrophysicsFactory
 from mpi4py import MPI
 import numpy as np
 import time
@@ -58,7 +58,7 @@ def main(namelist):
 
     #Setup the pressure solver
     PSolver = PressureSolver.factory(namelist, ModelGrid, Ref, VelocityState, DiagnosticState)
-    Micro = WRF_Micro_Kessler.MicroKessler(ModelGrid, Ref, ScalarState, DiagnosticState, TimeSteppingController)
+    Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, DiagnosticState, TimeSteppingController)
 
 
 

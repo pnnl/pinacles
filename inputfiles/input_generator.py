@@ -106,6 +106,10 @@ def sullivan_and_patton():
     input_dict[key]['depth'] = 250.0
     input_dict[key]['timescale'] = 50.0
 
+    key = 'microphysics'
+    input_dict[key] = {} 
+    input_dict[key]['scheme'] = 'base'
+
     key = 'time'
     input_dict[key] = {}
     input_dict[key]['cfl'] = 0.6
@@ -135,6 +139,10 @@ def bomex():
     input_dict[key]['n_halo'] = [3, 3, 3]
     #Set the domain length, dx will be determined from n and L
     input_dict[key]['l'] = [6400.0, 6400.0, 4000.0]
+
+    key = 'microphysics'
+    input_dict[key] = {} 
+    input_dict[key]['scheme'] = 'kessler'
 
     key = 'damping'
     input_dict[key] = {}

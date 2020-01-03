@@ -194,6 +194,7 @@ class MicroKessler(MicrophysicsBase):
         timeseries_grp = nc_grp['timeseries']
 
         timeseries_grp.createVariable('CF', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('RF', np.double, dimensions=('time',))
         timeseries_grp.createVariable('LWP', np.double, dimensions=('time',))
         timeseries_grp.createVariable('RWP', np.double, dimensions=('time',))
         timeseries_grp.createVariable('VWP', np.double, dimensions=('time',))
@@ -233,7 +234,7 @@ class MicroKessler(MicrophysicsBase):
         cf = water_fraction(n_halo, npts, qc)
         cf = UtilitiesParallel.ScalarAllReduce(cf)
 
-        rf = water_fraction(n_halo, npts, qc)
+        rf = water_fraction(n_halo, npts, qr)
         rf = UtilitiesParallel.ScalarAllReduce(rf)
 
 
