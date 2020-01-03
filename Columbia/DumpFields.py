@@ -38,6 +38,7 @@ class DumpFields:
             if not os.path.exists(output_here):
                 os.makedirs(output_here)
 
+        MPI.COMM_WORLD.barrier()
         rt_grp = nc.Dataset(os.path.join(output_here, str(self._this_rank) + '.nc'), 'w', format="NETCDF4_CLASSIC")
 
         self.setup_nc_dims(rt_grp)

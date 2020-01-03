@@ -32,7 +32,7 @@ def comput_local_cfl_max(nhalo, dxi, u, v, w):
     vmax = -1e6
     wmax = -1e6
     for i in range(nhalo[0],shape[0]-nhalo[0]):
-        for j in range(nhalo[1],shape[0]-nhalo[0]):
+        for j in range(nhalo[1],shape[1]-nhalo[1]):
             for k in range(nhalo[2], shape[2]-nhalo[2]):
                 xcfl = np.abs(u[i,j,k]*dxi[0])
                 ycfl = np.abs(v[i,j,k]*dxi[1])
