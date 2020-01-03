@@ -139,7 +139,7 @@ def bomex():
     key = 'damping'
     input_dict[key] = {}
     input_dict[key]['vars'] = ['u', 'v', 'w', 's']
-    input_dict[key]['depth'] = 250.0
+    input_dict[key]['depth'] = 1000.0
     input_dict[key]['timescale'] = 5.0
 
     key = 'time'
