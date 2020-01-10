@@ -11,3 +11,6 @@ KAPPA = RD/CPD
 EPSV = RD/RV
 EPSVI = 1.0/EPSV
 OMEGA = 7.2921151467064e-5  #Earth's Rotation Rate
+LV = 2.5014e6
+LS = 2.8440e6
+LF = 0.336e6 

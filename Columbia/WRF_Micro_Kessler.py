@@ -178,6 +178,8 @@ class MicroKessler(MicrophysicsBase):
         wrf_tend_to_our_tend(nhalo,dt, qr_wrf, qr, qr_tend)
         #print('qr', np.amax(qr), np.amax(qr_tend))
 
+        #Add in tendencies
+        s_tend -= parameters.LV*parameters.ICPD * np.add(qc_tend, qr_tend)
 
         #pressure = np.zeros_like(qv) + self._Ref.p0[np.newaxis, np.newaxis,:]
         #rh = compute_rh(qv, T, pressure)

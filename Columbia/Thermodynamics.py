@@ -18,6 +18,7 @@ class ThermodynamicsBase:
         return
 
 from Columbia import ThermodynamicsDry
+from Columbia import ThermodynamicsMoist
 def factory(namelist, Grid, Ref, ScalarState, VelocityState, DiagnosticState):
-    return ThermodynamicsDry.ThermodynamicsDry(Grid, Ref, ScalarState, VelocityState,
+    return ThermodynamicsMoist.ThermodynamicsMoist(Grid, Ref, ScalarState, VelocityState,
                                                 DiagnosticState)
