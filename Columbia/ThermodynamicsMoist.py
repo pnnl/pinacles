@@ -1,8 +1,8 @@
-from Columbia import Thermodynamics, ThermodynamicsDry_impl
+from Columbia import Thermodynamics, ThermodynamicsMoist_impl
 from Columbia import parameters
 import numpy as np
 
-class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
+class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
     def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState):
         Thermodynamics.ThermodynamicsBase.__init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState)
 
@@ -19,13 +19,17 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         TH0 = T0/exner
 
         s = self._ScalarState.get_field('s')
+        qc = self._ScalarState.get_field('qc')
+        qr = self._ScalarState.get_field('qr')
+        ql = np.add(qc, qr)
+        qi = np.zeros_like(ql)
+
         T = self._DiagnosticState.get_field('T')
         alpha = self._DiagnosticState.get_field('alpha')
         buoyancy = self._DiagnosticState.get_field('buoyancy')
         w_t = self._VelocityState.get_tend('w')
 
-        ThermodynamicsDry_impl.eos(z, p0, alpha0, s, T, alpha, buoyancy)
-        ThermodynamicsDry_impl.apply_buoyancy(buoyancy, w_t)
+        ThermodynamicsMoist_impl.eos(z, p0, alpha0, s, ql, qi, T, alpha, buoyancy)
+        ThermodynamicsMoist_impl.apply_buoyancy(buoyancy, w_t)
 
         return
-

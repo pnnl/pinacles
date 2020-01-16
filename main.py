@@ -10,6 +10,8 @@ from Columbia import Damping
 from Columbia import SurfaceFactory
 from Columbia import ForcingFactory
 from Columbia.Stats import Stats
+from Columbia import DumpFields
+from Columbia import MicrophysicsFactory
 from mpi4py import MPI
 import numpy as np
 import time
@@ -20,6 +22,7 @@ os.environ["HDF5_USE_FILE_LOCKING"]="FALSE"
 
 def main(namelist):
     TerminalIO.start_message()
+
 
     t0 = time.time()
     ModelGrid = Grid.RegularCartesian(namelist)
@@ -55,6 +58,9 @@ def main(namelist):
 
     #Setup the pressure solver
     PSolver = PressureSolver.factory(namelist, ModelGrid, Ref, VelocityState, DiagnosticState)
+    Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, DiagnosticState, TimeSteppingController)
+
+
 
     # Allocate all of the big parallel arrays needed for the container classes
     ScalarState.allocate()
@@ -78,11 +84,20 @@ def main(namelist):
     StatsIO.add_class(VelocityState)
     StatsIO.add_class(ScalarState)
     StatsIO.add_class(DiagnosticState)
+    StatsIO.add_class(Micro)
+
+
+    FieldsIO = DumpFields.DumpFields(namelist, ModelGrid, TimeSteppingController)
+    FieldsIO.add_class(ScalarState)
+    FieldsIO.add_class(VelocityState)
 
     StatsIO.initialize()
 
 
     s = ScalarState.get_field('s')
+    qv = ScalarState.get_field('qv')
+    qr = ScalarState.get_field('qr')
+    qc = ScalarState.get_field('qc')
     w = VelocityState.get_field('w')
     u = VelocityState.get_field('u')
     t1 = time.time()
@@ -98,7 +113,9 @@ def main(namelist):
 
     #Call stats for the first time
 
-    for i in range(4*3600*10):
+    #for i in range(4*3600*10):
+    i = 0
+    while TimeSteppingController.time <= TimeSteppingController.time_max:
         #print(i)
         t0 = time.time()
         for n in range(ScalarTimeStepping.n_rk_step):
@@ -108,14 +125,17 @@ def main(namelist):
             Thermo.update()
 
             #Do StatsIO if it is time
-            if n == 0: 
+            if n == 0:
                 StatsIO.update()
                 MPI.COMM_WORLD.barrier()
+
+            #Update microphysics
+            Micro.update()
 
             #Update the surface
             Surf.update()
 
-            #Update the forcing 
+            #Update the forcing
             Force.update()
 
             #Update scalar advection
@@ -137,7 +157,7 @@ def main(namelist):
 
             #Call pressure solver
             PSolver.update()
-
+        i += 1
 
         t1 = time.time()
         MPI.COMM_WORLD.barrier()
@@ -150,17 +170,20 @@ def main(namelist):
         # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         xl = ModelGrid.x_local
         zl = ModelGrid.z_local
-        if MPI.COMM_WORLD.Get_rank() == 0:
+        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%120.0,0.0):
+            FieldsIO.update()
+            if MPI.COMM_WORLD.Get_rank() == 0:
         #     #print('step: ', i, ' time: ', t1 - t0)
-             if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%60.0,0.0):
                  plt.figure(12)
         #     #evels = np.linspace(299, 27.1, 100)
-                 levels = np.linspace(-7, 7, 100)
-        #        levels = np.linspace(-4.0, 4.0,100)
-                 plt.contourf(s_slice,cmap=plt.cm.seismic, levels=levels) #,levels=levels, cmap=plt.cm.seismic)
+                 #levels = np.linspace(-4,4, 100)
+                 levels = np.linspace(-5, 5,100)
+                 #plt.contourf(s_slice,cmap=plt.cm.seismic, levels=levels) #,levels=levels, cmap=plt.cm.seismic)
+                 plt.contourf((s[3:-3,16,3:-3]) .T ,100,cmap=plt.cm.seismic) 
+                 #plt.contourf(s_slice, 100,cmap=plt.cm.seismic) 
         #     #plt.contourf(w[:,:,16], levels=levels, cmap=plt.cm.seismic)
-                 plt.clim(-7,7)
-                 plt.colorbar()
+                 #plt.clim(-4,5)
+                 #plt.colorbar()
                 # plt.ylim(0.0*1000,4.0*1000)
                 # plt.xlim(25.6*1000,40.0*1000)
                  plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=300)

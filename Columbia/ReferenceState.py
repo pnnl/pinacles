@@ -30,6 +30,8 @@ class ReferenceBase:
         self._Psfc = Psfc
         self._Tsfc = Tsfc
         self._qsfc = qsfc
+        self._u0 = u0
+        self._v0 = v0
 
         self._u0 = u0
         self._v0 = v0

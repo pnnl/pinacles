@@ -252,10 +252,6 @@ class ModelState:
         my_rank = MPI.COMM_WORLD.Get_rank()
         nh = self._Grid.n_halo
 
-        timeseries_grp = nc_grp['timeseries']
-        profiles_grp = nc_grp['profiles']
-
-
         #Loop over variables and write  profiles
         for var in self._dofs:
             if self._loc[var] != 'z':
@@ -271,6 +267,8 @@ class ModelState:
 
             #Only write from rank zero
             if my_rank == 0:
+                profiles_grp = nc_grp['profiles']
+
                 profiles_grp[var][-1,:] = var_mean
                 profiles_grp[var + '_squared'][-1,:] = var_mean_squared
                 profiles_grp[var + '_max'][-1,:] = var_max
@@ -284,6 +282,7 @@ class ModelState:
 
             #Only write from rank zero
             if my_rank == 0:
+                timeseries_grp = nc_grp['timeseries']
                 timeseries_grp[var + '_max'][-1] = var_max
 
         return

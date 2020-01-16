@@ -80,7 +80,7 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
 
         self._ug = np.zeros_like(self._Grid.z_global) + 1.0
         self._vg = np.zeros_like(self._ug)
-
+        
         return
 
 

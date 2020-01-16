@@ -3,6 +3,8 @@ import netCDF4 as nc
 import os
 from mpi4py import MPI
 
+os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
+
 class Stats:
     def __init__(self, namelist, Grid, Ref, TimeSteppingController):
 
@@ -104,23 +106,33 @@ class Stats:
         if  not  np.allclose(self._TimeSteppingController._time%self._frequency,0.0):
             return
 
-        self._rt_grp = nc.Dataset(self._stats_file, 'r+')
+        if MPI.COMM_WORLD.Get_rank() == 0: 
+            self._rt_grp = nc.Dataset(self._stats_file, 'r+')
+        else: 
+            self._rt_grp = None
 
         #Increment time for all groups
         for aclass in self._classes:
             for grp in ['timeseries', 'profiles']:
-                this_grp = self._rt_grp[aclass]
-                time = this_grp[grp]['time']
-                time[time.shape[0]] = self._TimeSteppingController._time
-
-        self._rt_grp.sync()
+                if MPI.COMM_WORLD.Get_rank() == 0: 
+                    this_grp = self._rt_grp[aclass]
+                    time = this_grp[grp]['time']
+                    time[time.shape[0]] = self._TimeSteppingController._time
+        if MPI.COMM_WORLD.Get_rank() == 0: 
+            self._rt_grp.sync()
+       
         #Call io for all of the classes
         for aclass in self._classes:
-            this_grp = self._rt_grp[aclass]
+            if MPI.COMM_WORLD.Get_rank() == 0: 
+                this_grp = self._rt_grp[aclass]
+            else:
+                this_grp = None    
             self._classes[aclass].io_update(this_grp)
 
-        self._rt_grp.sync()
-        self._rt_grp.close()
+
+        if MPI.COMM_WORLD.Get_rank() == 0: 
+            self._rt_grp.sync()
+            self._rt_grp.close()
 
         self._last_io_time = self._TimeSteppingController._time
 

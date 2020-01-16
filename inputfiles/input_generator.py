@@ -9,6 +9,8 @@ def main(casename):
         input_dict = sullivan_and_patton()
     elif casename == 'stable_bubble':
         input_dict = stable_bubble()
+    elif casename == 'bomex':
+        input_dict = bomex()
 
     write_file(casename, input_dict)
 
@@ -45,6 +47,7 @@ def stable_bubble():
 
     key = 'time'
     input_dict[key] = {}
+    input_dict[key]['time_max'] = 600.0
     input_dict[key]['cfl'] = 0.6
 
     key = 'stats'
@@ -75,6 +78,7 @@ def colliding_blocks():
     key = 'time'
     input_dict[key] = {}
     input_dict[key]['cfl'] = 0.6
+    input_dict[key]['time_max'] = 600.0
 
     return input_dict
 
@@ -102,9 +106,54 @@ def sullivan_and_patton():
     input_dict[key]['depth'] = 250.0
     input_dict[key]['timescale'] = 50.0
 
+    key = 'microphysics'
+    input_dict[key] = {} 
+    input_dict[key]['scheme'] = 'base'
+
     key = 'time'
     input_dict[key] = {}
     input_dict[key]['cfl'] = 0.6
+    input_dict[key]['time_max'] = 3600.0 * 3.0
+ 
+    key = 'stats'
+    input_dict[key] = {}
+    input_dict[key]['frequency'] = 60.0
+    input_dict[key]['modules'] = []
+
+
+    return input_dict
+
+def bomex():
+    input_dict = {}
+
+    key = 'meta'
+    input_dict[key] = {}
+    input_dict[key]['casename'] = 'bomex'
+    input_dict[key]['output_directory'] = './'
+
+    key = 'grid'
+    input_dict[key] = {}
+    #Set the number of grid points in the domain
+    input_dict[key]['n'] = [64, 64, 100]
+    #Set the number of halo points in each direct
+    input_dict[key]['n_halo'] = [3, 3, 3]
+    #Set the domain length, dx will be determined from n and L
+    input_dict[key]['l'] = [6400.0, 6400.0, 4000.0]
+
+    key = 'microphysics'
+    input_dict[key] = {} 
+    input_dict[key]['scheme'] = 'kessler'
+
+    key = 'damping'
+    input_dict[key] = {}
+    input_dict[key]['vars'] = ['u', 'v', 'w', 's']
+    input_dict[key]['depth'] = 1000.0
+    input_dict[key]['timescale'] = 5.0
+
+    key = 'time'
+    input_dict[key] = {}
+    input_dict[key]['cfl'] = 0.6
+    input_dict[key]['time_max'] = 3600.0 * 6.0
 
     key = 'stats'
     input_dict[key] = {}
@@ -115,7 +164,8 @@ def sullivan_and_patton():
 
 LIST_OF_CASES = ['colliding_blocks',
                  'stable_bubble',
-                'sullivan_and_patton']
+                'sullivan_and_patton', 
+                'bomex']
 
 if __name__ == '__main__':
 
