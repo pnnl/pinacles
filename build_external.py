@@ -2,7 +2,7 @@ import subprocess
 import os
 
 def main():
-    
+    f2py_file('Columbia/wrf_physics/', 'module_mp_p3.f95', 'p3')
     f2py_file('Columbia/wrf_physics/', 'module_mp_kessler.f95', 'kessler')
 
     return 
