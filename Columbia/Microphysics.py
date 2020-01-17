@@ -25,11 +25,12 @@ def water_fraction(n_halo, npts, q):
     return frac/npts
 
 class MicrophysicsBase:
-    def __init__(self, Grid, Ref, ScalarState, DiagnosticState, TimeSteppingController):
+    def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController):
 
         self._Grid = Grid
         self._Ref = Ref
         self._ScalarState = ScalarState
+        self._VelocityState = VelocityState
         self._DiagnosticState = DiagnosticState
         self._TimeSteppingController = TimeSteppingController
 
