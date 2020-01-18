@@ -174,8 +174,6 @@ class MicroKessler(MicrophysicsBase):
 
         my_rank = MPI.COMM_WORLD.Get_rank()
 
-
-
         n_halo = self._Grid.n_halo
         dz = self._Grid.dx[2]
         rho = self._Ref.rho0
@@ -196,7 +194,7 @@ class MicroKessler(MicrophysicsBase):
         vwp = UtilitiesParallel.ScalarAllReduce(vwp)
 
         #Compute cloud and rain fraction
-        cf = water_fraction(n_halo, npts, qc)
+        cf = water_fraction(n_halo, npts, qc, threshold=1e-5)
         cf = UtilitiesParallel.ScalarAllReduce(cf)
 
         rf = water_fraction(n_halo, npts, qr)

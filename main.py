@@ -90,6 +90,8 @@ def main(namelist):
     FieldsIO = DumpFields.DumpFields(namelist, ModelGrid, TimeSteppingController)
     FieldsIO.add_class(ScalarState)
     FieldsIO.add_class(VelocityState)
+    FieldsIO.add_class(DiagnosticState)
+
 
     StatsIO.initialize()
 

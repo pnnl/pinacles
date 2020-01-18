@@ -1,7 +1,8 @@
-from Columbia.Microphysics import MicrophysicsBase
+from Columbia.Microphysics import MicrophysicsBase, water_path, water_fraction
+from Columbia.wrf_physics import kessler
 from Columbia.wrf_physics import p3
 from Columbia import UtilitiesParallel
-from Columbia.WRFUtil import to_wrf_order, wrf_tend_to_our_tend, wrf_theta_tend_to_our_tend
+from Columbia.WRFUtil import to_wrf_order, wrf_tend_to_our_tend, wrf_theta_tend_to_our_tend, to_our_order
 from Columbia import parameters
 from mpi4py import MPI
 import numba
@@ -13,7 +14,7 @@ class MicroP3(MicrophysicsBase):
             MicrophysicsBase.__init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
 
 
-            lookup_file_dir = '/Users/pres026/ColumbiaDev/Columbia/Columbia/wrf_physics/data'
+            lookup_file_dir = '/Users/pres026/Columbia/Columbia/wrf_physics/data'
             nCat = 1
             stat = 1
             abort_on_err = False
@@ -32,6 +33,8 @@ class MicroP3(MicrophysicsBase):
             self._ScalarState.add_variable('qni1')
             self._ScalarState.add_variable('qir1')
             self._ScalarState.add_variable('qib1')
+
+            self._DiagnosticState.add_variable('reflectivity')
 
             nhalo = self._Grid.n_halo
             self._our_dims = self._Grid.ngrid_local
@@ -66,6 +69,8 @@ class MicroP3(MicrophysicsBase):
 
         w = self._VelocityState.get_field('w')
 
+        reflectivity = self._DiagnosticState.get_field('reflectivity')
+
         s_tend = self._ScalarState.get_tend('s')
         qv_tend = self._ScalarState.get_tend('qv')
         qc_tend = self._ScalarState.get_tend('qc')
@@ -77,7 +82,7 @@ class MicroP3(MicrophysicsBase):
         qir1_tend = self._ScalarState.get_tend('qir1')
         qib1_tend = self._ScalarState.get_tend('qib1')
 
-
+        
 
         exner = self._Ref.exner
         p0 = self._Ref.p0
@@ -99,7 +104,7 @@ class MicroP3(MicrophysicsBase):
         w_wrf = np.empty_like(rho_wrf)
 
 
-        diag_zdbz = np.empty_like(rho_wrf)
+        reflectivity_wrf = np.empty_like(rho_wrf)
         diag_effc = np.empty_like(rho_wrf)
         diag_effi = np.empty_like(rho_wrf)
         diag_vmi = np.empty_like(rho_wrf)
@@ -165,7 +170,7 @@ class MicroP3(MicrophysicsBase):
                                 ids, ide, jds, jde, kds, kde ,
                                 ims, ime, jms, jme, kms, kme ,
                                 its, ite, jts, jte, kts, kte ,
-                                diag_zdbz,diag_effc,diag_effi,
+                                reflectivity_wrf,diag_effc,diag_effi,
                                 diag_vmi,diag_di,diag_rhopo,
                                 qi1_wrf,qni1_wrf,qir1_wrf,qib1_wrf,nc_wrf)
 
@@ -180,6 +185,7 @@ class MicroP3(MicrophysicsBase):
         wrf_tend_to_our_tend(nhalo, dt, qni1_wrf, qni1, qni1_tend)
         wrf_tend_to_our_tend(nhalo, dt, nc_wrf, nc, nc_tend)
 
+        to_our_order(nhalo, reflectivity_wrf, reflectivity)
 
         #Add in tendencies
         s_tend -= parameters.LV*parameters.ICPD * np.add(qc_tend, qr_tend) 
@@ -188,9 +194,66 @@ class MicroP3(MicrophysicsBase):
         return
 
     def io_initialize(self, nc_grp):
+        timeseries_grp = nc_grp['timeseries']
+
+
+        timeseries_grp.createVariable('CF', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('RF', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('LWP', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('RWP', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('VWP', np.double, dimensions=('time',))
+
+        timeseries_grp.createVariable('RAINNC', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('RAINNCV', np.double, dimensions=('time',))
 
         return
 
     def io_update(self, nc_grp):
+
+        my_rank = MPI.COMM_WORLD.Get_rank()
+
+        n_halo = self._Grid.n_halo
+        dz = self._Grid.dx[2]
+        rho = self._Ref.rho0
+        npts = self._Grid.n[0] * self._Grid.n[1]
+
+        qc = self._ScalarState.get_field('qc')
+        qv = self._ScalarState.get_field('qv')
+        qr = self._ScalarState.get_field('qr')
+
+        #First compute liqud water path
+        lwp = water_path(n_halo, dz, npts, rho, qc)
+        lwp = UtilitiesParallel.ScalarAllReduce(lwp)
+
+        rwp = water_path(n_halo, dz, npts, rho, qr)
+        rwp = UtilitiesParallel.ScalarAllReduce(rwp)
+
+        vwp = water_path(n_halo, dz, npts, rho, qv)
+        vwp = UtilitiesParallel.ScalarAllReduce(vwp)
+
+        #Compute cloud and rain fraction
+        cf = water_fraction(n_halo, npts, qc, threshold=1e-5)
+        cf = UtilitiesParallel.ScalarAllReduce(cf)
+
+        rf = water_fraction(n_halo, npts, qr)
+        rf = UtilitiesParallel.ScalarAllReduce(rf)
+
+        rainnc = np.sum(self._RAINNC)/npts
+        rainnc = UtilitiesParallel.ScalarAllReduce(rainnc)
+        
+        rainncv = np.sum(self._RAINNCV)/npts
+        rainncv = UtilitiesParallel.ScalarAllReduce(rainncv)
+
+        if my_rank == 0:
+            timeseries_grp = nc_grp['timeseries']
+
+            timeseries_grp['CF'][-1] = cf
+            timeseries_grp['RF'][-1] = rf
+            timeseries_grp['LWP'][-1] = lwp
+            timeseries_grp['RWP'][-1] = rwp
+            timeseries_grp['VWP'][-1] = vwp
+
+            timeseries_grp['RAINNC'][-1] = rainnc
+            timeseries_grp['RAINNCV'][-1] = rainncv
 
         return
