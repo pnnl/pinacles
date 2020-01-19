@@ -48,7 +48,6 @@ class DumpFields:
             #Loop over all variables
             ac = self._classes[ac]
             for v in ac._dofs:
-                print(v)
                 v_nc = rt_grp.createVariable(v, np.double, dimensions=('time','X','Y','Z'))
 
                 v_nc[0,:,:,:] =  ac.get_field(v)[nhalo[0]:-nhalo[0],
