@@ -9,10 +9,10 @@ def main(namelist):
 
     n = 2
     gcm_res = 50*1e3
-    couple_dt = 120.0
+    couple_dt = 600.0
     forced_fields = ['qv', 's']
     domains = []
-    uls = 5.0
+    uls = 10.0
     for i in range(n):
         namelist["meta"]["output_directory"] = './couple_' + str(i)
         domains.append(SimulationClass.Simulation(namelist, i))
@@ -37,7 +37,7 @@ def main(namelist):
     for couple_time in np.arange(couple_dt,21600.0+couple_dt, couple_dt):
         print(couple_time)
 
-    for couple_time in np.arange(couple_dt,21600.0+couple_dt, couple_dt):
+    for couple_time in np.arange(couple_dt,36000.0+couple_dt, couple_dt):
         for i in range(n):
             for v in forced_fields: 
                 ls_forcing[i][v] = (ls_state[i][v] - domains[i].ScalarState.mean(v) )/couple_dt
