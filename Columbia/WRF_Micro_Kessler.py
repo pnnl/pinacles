@@ -43,18 +43,23 @@ def wrf_tend_to_our_tend(nhalo, dt, wrf_out, our_in, tend):
                 tend[i,j,k] += (wrf_out[i_wrf,k_wrf,j_wrf] - our_in[i,j,k])/dt
     return
 
+
 @numba.njit
-def compute_rh(qv, temp, pressure): 
+def compute_qvs(temp, pressure):
     ep2 = 287./461.6
     svp1 = 0.6112
     svp2 = 17.67
-    svp3 = 29.65  
+    svp3 = 29.65
     svpt0 = 273.15
-    
     es        = 1000.*svp1*np.exp(svp2*(temp-svpt0)/(temp-svp3))
     qvs       = ep2*es/(pressure-es)
-    return qv/qvs
 
+    return qvs
+
+
+@numba.njit
+def compute_rh(qv, temp, pressure):
+    return qv/compute_qvs(temp, pressure)
 
 class MicroKessler(MicrophysicsBase):
     def __init__(self, Grid, Ref, ScalarState, DiagnosticState, TimeSteppingController):
