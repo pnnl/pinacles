@@ -1,8 +1,7 @@
 from Columbia import Microphysics
 from Columbia import WRF_Micro_Kessler
-from Columbia import WRF_Micro_P3
 
-def factory(namelist, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController):
+def factory(namelist, Grid, Ref, ScalarState, DiagnosticState, TimeSteppingController):
 
     try:
         scheme = namelist['microphysics']['scheme']
@@ -10,10 +9,8 @@ def factory(namelist, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Ti
         scheme = 'base'
 
     if scheme == 'base':
-        return Microphysics.MicrophysicsBase(Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
+        return Microphysics.MicrophysicsBase(Grid, Ref, ScalarState, DiagnosticState, TimeSteppingController)
     elif scheme == 'kessler':
-        return WRF_Micro_Kessler.MicroKessler(Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
-    elif scheme == 'p3':
-        return WRF_Micro_P3.MicroP3(Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
+        return WRF_Micro_Kessler.MicroKessler(Grid, Ref, ScalarState, DiagnosticState, TimeSteppingController)
 
     return
