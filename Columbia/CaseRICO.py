@@ -65,20 +65,21 @@ class SurfaceRICO(Surface.SurfaceBase):
         Surface_impl.compute_windspeed_sfc(usfc, vsfc, self._Ref.u0, self._Ref.v0, self.gustiness, self._windspeed_sfc)
         #Surface_impl.tau_given_ustar(self._ustar_sfc, usfc, vsfc, self._Ref.u0, self._Ref.v0, self._windspeed_sfc, self._taux_sfc, self._tauy_sfc)
         
-        #TODO Not optimixed code!
+        #TODO Not not optimized code
         shf = - self._ch * self._windspeed_sfc * (Ssfc - self._T0)
         qv_flx_sfc = - self._cq * self._windspeed_sfc * (qvsfc - self._qs0)
-        self._taux_sfc = self._cm * self._windspeed_sfc * usfc
-        self._taux_sfc = self._cm * self._windspeed_sfc * vsfc
+        Surface_impl.momentum_bulk_aero(self._windspeed_sfc, self._cm, usfc, vsfc, self._Ref.u0, self._Ref.v0, self._taux_sfc, self._tauy_sfc)
+        self._taux_sfc = -self._cm * self._windspeed_sfc * (usfc + self._Ref.u0)
+        self._tauy_sfc = -self._cm * self._windspeed_sfc * (vsfc + self._Ref.v0)
 
         #print(shf)
 
         #shf = np.zeros_like(self._taux_sfc) + self._theta_flux * exner_edge[nh[2]-1]
         #qv_flx_sf = np.zeros_like(self._taux_sfc) + self._qv_flux
-        Surface_impl.iles_surface_flux_application(10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._taux_sfc, ut)
-        Surface_impl.iles_surface_flux_application(10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._tauy_sfc, vt)
-        Surface_impl.iles_surface_flux_application(10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, shf, st)
-        Surface_impl.iles_surface_flux_application(10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, qv_flx_sfc , qvt)
+        Surface_impl.iles_surface_flux_application(20, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._taux_sfc, ut)
+        Surface_impl.iles_surface_flux_application(20, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._tauy_sfc, vt)
+        Surface_impl.iles_surface_flux_application(20, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, shf, st)
+        Surface_impl.iles_surface_flux_application(20, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, qv_flx_sfc , qvt)
 
         return
 

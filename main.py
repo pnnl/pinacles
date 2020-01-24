@@ -58,7 +58,7 @@ def main(namelist):
 
     #Setup the pressure solver
     PSolver = PressureSolver.factory(namelist, ModelGrid, Ref, VelocityState, DiagnosticState)
-    Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, DiagnosticState, TimeSteppingController)
+    Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
 
 
 
@@ -90,15 +90,17 @@ def main(namelist):
     FieldsIO = DumpFields.DumpFields(namelist, ModelGrid, TimeSteppingController)
     FieldsIO.add_class(ScalarState)
     FieldsIO.add_class(VelocityState)
+    FieldsIO.add_class(DiagnosticState)
+
 
     StatsIO.initialize()
 
 
     s = ScalarState.get_field('s')
     qv = ScalarState.get_field('qv')
-    qr = ScalarState.get_field('qr')
-    qc = ScalarState.get_field('qc')
-    w = VelocityState.get_field('w')
+    #qr = ScalarState.get_field('qr')
+    #qc = ScalarState.get_field('qc')
+    #w = VelocityState.get_field('w')
     u = VelocityState.get_field('u')
     t1 = time.time()
 
@@ -179,7 +181,7 @@ def main(namelist):
                  #levels = np.linspace(-4,4, 100)
                  levels = np.linspace(-5, 5,100)
                  #plt.contourf(s_slice,cmap=plt.cm.seismic, levels=levels) #,levels=levels, cmap=plt.cm.seismic)
-                 plt.contourf((w[3:-3,4,3:-3]) .T ,100,cmap=plt.cm.seismic) 
+                 plt.contourf((qv[3:-3,4,3:-3]) .T ,100,cmap=plt.cm.seismic) 
                  #plt.contourf(s_slice, 100,cmap=plt.cm.seismic) 
         #     #plt.contourf(w[:,:,16], levels=levels, cmap=plt.cm.seismic)
                  #plt.clim(-4,5)

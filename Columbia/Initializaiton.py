@@ -190,7 +190,7 @@ def rico(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     shape = s.shape
 
-    perts = np.random.randn(shape[0],shape[1],shape[2])*0.01
+    perts = np.random.randn(shape[0],shape[1],shape[2])*0.1 
     for i in range(shape[0]):
         for j in range(shape[1]):
             for k in range(shape[2]):
