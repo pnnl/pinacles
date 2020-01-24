@@ -212,5 +212,4 @@ class ScalarWENO5(ScalarAdvectionBase):
             flux_divergence(nhalo, self._Grid.dxi[0], self._Grid.dxi[1], self._Grid.dxi[2],
                 alpha0, fluxx, fluxy, fluxz, phi_t)
 
-
         return

@@ -14,7 +14,7 @@ class MicroP3(MicrophysicsBase):
             MicrophysicsBase.__init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
 
 
-            lookup_file_dir = '/Users/pres026/Columbia/Columbia/wrf_physics/data'
+            lookup_file_dir = '/Users/pres026/ColumbiaDev/Columbia/Columbia/wrf_physics/data'
             nCat = 1
             stat = 1
             abort_on_err = False

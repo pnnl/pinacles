@@ -3416,54 +3416,54 @@ END subroutine p3_init
 
        else  !1-moment cloud:
 
-          substep_sedi_c1: do while (dt_left.gt.1.e-4)
+         !  substep_sedi_c1: do while (dt_left.gt.1.e-4)
 
-             Co_max  = 0.
-             V_qc(:) = 0.
+         !     Co_max  = 0.
+         !     V_qc(:) = 0.
 
-             kloop_sedi_c1: do k = k_qxtop,k_qxbot,-kdir
+         !     kloop_sedi_c1: do k = k_qxtop,k_qxbot,-kdir
 
-                qc_notsmall_c1: if (qc(i,k)*iSCF(k)>qsmall) then
-                   call get_cloud_dsd2(qc(i,k)*iSCF(k),nc(i,k),mu_c(i,k),rho(i,k),nu(i,k),dnu,   &
-                                       lamc(i,k),lammin,lammax,tmp1,tmp2,iSCF(k))
-                   dum = 1./lamc(i,k)**bcn
-                   V_qc(k) = acn(i,k)*gamma(4.+bcn+mu_c(i,k))*dum/(gamma(mu_c(i,k)+4.))
-                endif qc_notsmall_c1
+         !        qc_notsmall_c1: if (qc(i,k)*iSCF(k)>qsmall) then
+         !           call get_cloud_dsd2(qc(i,k)*iSCF(k),nc(i,k),mu_c(i,k),rho(i,k),nu(i,k),dnu,   &
+         !                               lamc(i,k),lammin,lammax,tmp1,tmp2,iSCF(k))
+         !           dum = 1./lamc(i,k)**bcn
+         !           V_qc(k) = acn(i,k)*gamma(4.+bcn+mu_c(i,k))*dum/(gamma(mu_c(i,k)+4.))
+         !        endif qc_notsmall_c1
 
-                Co_max = max(Co_max, V_qc(k)*dt_left*inv_dzq(i,k))
+         !        Co_max = max(Co_max, V_qc(k)*dt_left*inv_dzq(i,k))
 
-             enddo kloop_sedi_c1
+         !     enddo kloop_sedi_c1
 
-             tmpint1 = int(Co_max+1.)    !number of substeps remaining if dt_sub were constant
-             dt_sub  = min(dt_left, dt_left/float(tmpint1))
+         !     tmpint1 = int(Co_max+1.)    !number of substeps remaining if dt_sub were constant
+         !     dt_sub  = min(dt_left, dt_left/float(tmpint1))
 
-             if (k_qxbot.eq.kbot) then
-                k_temp = k_qxbot
-             else
-                k_temp = k_qxbot-kdir
-             endif
+         !     if (k_qxbot.eq.kbot) then
+         !        k_temp = k_qxbot
+         !     else
+         !        k_temp = k_qxbot-kdir
+         !     endif
 
-             do k = k_temp,k_qxtop,kdir
-                flux_qx(k) = V_qc(k)*qc(i,k)*rho(i,k)
-             enddo
+         !     do k = k_temp,k_qxtop,kdir
+         !        flux_qx(k) = V_qc(k)*qc(i,k)*rho(i,k)
+         !     enddo
 
-             !accumulated precip during time step
-             if (k_qxbot.eq.kbot) prt_accum = prt_accum + flux_qx(kbot)*dt_sub
+         !     !accumulated precip during time step
+         !     if (k_qxbot.eq.kbot) prt_accum = prt_accum + flux_qx(kbot)*dt_sub
 
-             !-- for top level only (since flux is 0 above)
-             k = k_qxtop
-             fluxdiv_qx = -flux_qx(k)*inv_dzq(i,k)
-             qc(i,k) = qc(i,k) + fluxdiv_qx*dt_sub*inv_rho(i,k)
+         !     !-- for top level only (since flux is 0 above)
+         !     k = k_qxtop
+         !     fluxdiv_qx = -flux_qx(k)*inv_dzq(i,k)
+         !     qc(i,k) = qc(i,k) + fluxdiv_qx*dt_sub*inv_rho(i,k)
 
-             do k = k_qxtop-kdir,k_temp,-kdir
-                fluxdiv_qx = (flux_qx(k+kdir) - flux_qx(k))*inv_dzq(i,k)
-                qc(i,k) = qc(i,k) + fluxdiv_qx*dt_sub*inv_rho(i,k)
-             enddo
+         !     do k = k_qxtop-kdir,k_temp,-kdir
+         !        fluxdiv_qx = (flux_qx(k+kdir) - flux_qx(k))*inv_dzq(i,k)
+         !        qc(i,k) = qc(i,k) + fluxdiv_qx*dt_sub*inv_rho(i,k)
+         !     enddo
 
-             dt_left = dt_left - dt_sub  !update time remaining for sedimentation
-             if (k_qxbot.ne.kbot) k_qxbot = k_qxbot - kdir
+         !     dt_left = dt_left - dt_sub  !update time remaining for sedimentation
+         !     if (k_qxbot.ne.kbot) k_qxbot = k_qxbot - kdir
 
-          enddo substep_sedi_c1
+         !  enddo substep_sedi_c1
 
        ENDIF two_moment
 
