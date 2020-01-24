@@ -93,34 +93,48 @@ class ForcingRICO(Forcing.ForcingBase):
 
         #Set Geostrophic wind
         self._ug = np.zeros_like(self._Grid.z_global)
+        self._subsidence = np.zeros_like(self._Grid.z_global)
+        self._ls_mositure = np.zeros_like(self._Grid.z_global)
+        
         for k in range(zl.shape[0]):
             self._ug[k] = -9.9 + 2.0e-3*zl[k]
+            if zl[k] <= 2260.0:
+                self._subsidence[k] = -(0.005/2260.0) * zl[k]
+            else:
+                self._subsidence[k] = -0.005
+
+            if zl[k] <= 2980.0:
+                self._ls_mositure[k] = (-1.0 + 1.3456/2980.0 * zl[k])/86400.0/1000.0
+            else:
+                self._ls_mositure[k] = 0.3456/86400.0/1000.0
         self._vg = np.zeros_like(self._ug)-3.8
 
         #Set heating rate
         self._heating_rate = np.zeros_like(self._Grid.z_global) -2.5/86400.0 * exner
 
 
+        return
 
-        return 
-
-    def update(self): 
+    def update(self):
 
         u = self._VelocityState.get_field('u')
         v = self._VelocityState.get_field('v')
+        s = self._ScalarState.get_field('s')
+        qv = self._ScalarState.get_field('qv')
 
         ut = self._VelocityState.get_tend('u')
         vt = self._VelocityState.get_tend('v')
         st = self._ScalarState.get_tend('s')
+        qvt = self._ScalarState.get_tend('qv')
 
         #Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, vt, ut)
         st += self._heating_rate[np.newaxis, np.newaxis, :]
+        qvt += self._ls_mositure[np.newaxis, np.newaxis, :]
 
-        vt_old = np.copy(vt)
         Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f ,u, v, self._Ref.u0, self._Ref.v0, vt, ut)
-        #vt_diff = vt  - vt_old
 
 
-        #print(np.mean(vt_diff[3:-3,3:-3,3:-3],axis=(0,1)))
-
+        #Now ad large scale subsidence
+        Forcing_impl.apply_subsidence(self._subsidence, self._Grid.dxi[2],s, st)
+        Forcing_impl.apply_subsidence(self._subsidence, self._Grid.dxi[2],qv, qvt)
         return 
