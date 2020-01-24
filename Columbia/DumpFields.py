@@ -48,7 +48,7 @@ class DumpFields:
             #Loop over all variables
             ac = self._classes[ac]
             for v in ac._dofs:
-                v_nc = rt_grp.createVariable(v, np.double, dimensions=('T','X','Y','Z'))
+                v_nc = rt_grp.createVariable(v, np.double, dimensions=('time','X','Y','Z'))
 
                 v_nc[0,:,:,:] =  ac.get_field(v)[nhalo[0]:-nhalo[0],
                     nhalo[1]:-nhalo[1],
@@ -65,14 +65,14 @@ class DumpFields:
     def setup_nc_dims(self, rt_grp):
 
 
-        rt_grp.createDimension('T', size=1)
+        rt_grp.createDimension('time', size=1)
         rt_grp.createDimension('X', size=self._Grid.local_shape[0])
         rt_grp.createDimension('Y', size=self._Grid.local_shape[1])
         rt_grp.createDimension('Z', size=self._Grid.n[2])
 
         nhalo = self._Grid.n_halo
 
-        T = rt_grp.createVariable('T', np.double, dimensions=('T'))
+        T = rt_grp.createVariable('time', np.double, dimensions=('time'))
         T[0] =  self._TimeSteppingController.time
         X = rt_grp.createVariable('X', np.double, dimensions=('X'))
         X[:] = self._Grid.x_local[nhalo[0]:-nhalo[0]]
