@@ -134,8 +134,8 @@ def iles_surface_flux_application(hd, z_edge, dxi2, nh, alpha0, alpha0_edge, zma
     for i in range(1, shape[0]-1):
         for j in range(1, shape[1]-1):
             for k in range(1, shape[2]-1):
-                #if z_edge[k] <= zmax:
-                tend[i,j,k] -= (flux[i,j] * (np.exp(-z_edge[k]/hd)/alpha0_edge[k] - np.exp(-z_edge[k-1]/hd)/alpha0_edge[k-1])) * alpha0[k] * dxi2
+                if z_edge[k] <= zmax:
+                    tend[i,j,k] -= (flux[i,j] * (np.exp(-z_edge[k]/hd)/alpha0_edge[k] - np.exp(-z_edge[k-1]/hd)/alpha0_edge[k-1])) * alpha0[k] * dxi2
 
     return
 
@@ -151,4 +151,4 @@ def momentum_bulk_aero(windspeed_sfc, cm, u, v, u0, v0, taux, tauy):
             taux[i,j] = -cm * windspeed_at_u  * (u[i,j] + u0)
             tauy[i,j] = -cm * windspeed_at_v  * (v[i,j] + v0)
 
-    return d
+    return

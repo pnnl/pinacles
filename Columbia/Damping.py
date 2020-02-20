@@ -137,7 +137,7 @@ class RayleighInitial(Damping):
                 self._timescale_profile[k] = (1.0/self._timescale) * np.sin((np.pi / 2.0) * (1.0 - (z_top - z[k]) / self._depth))**2.0
                 self._timescale_profile_edge[k] = (1.0/self._timescale) * np.sin((np.pi / 2.0) * (1.0 - (z_top - z_edge[k]) / self._depth))**2.0
 
-        #print(self._timescale_profile)
+        print(self._timescale_profile)
        # import sys; sys.exit()
 
         return

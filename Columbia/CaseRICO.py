@@ -72,10 +72,10 @@ class SurfaceRICO(Surface.SurfaceBase):
         self._taux_sfc = -self._cm * self._windspeed_sfc * (usfc + self._Ref.u0)
         self._tauy_sfc = -self._cm * self._windspeed_sfc * (vsfc + self._Ref.v0)
 
-        #print(shf)
 
         #shf = np.zeros_like(self._taux_sfc) + self._theta_flux * exner_edge[nh[2]-1]
         #qv_flx_sf = np.zeros_like(self._taux_sfc) + self._qv_flux
+        
         Surface_impl.iles_surface_flux_application(20, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._taux_sfc, ut)
         Surface_impl.iles_surface_flux_application(20, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._tauy_sfc, vt)
         Surface_impl.iles_surface_flux_application(20, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, shf, st)
