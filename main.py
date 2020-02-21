@@ -123,6 +123,14 @@ def main(namelist):
         for n in range(ScalarTimeStepping.n_rk_step):
             TimeSteppingController.adjust_timestep(n)
 
+            if n== 0: 
+                #Update microphysics
+                Thermo.update(apply_buoyancy=False)
+                Micro.update()
+                ScalarState.boundary_exchange()  #Todo... remove this?
+                ScalarState.update_all_bcs()
+
+
             #Update Thermodynamics
             Thermo.update()
 
@@ -130,9 +138,6 @@ def main(namelist):
             if n == 0:
                 StatsIO.update()
                 MPI.COMM_WORLD.barrier()
-
-            #Update microphysics
-            Micro.update()
 
             #Update the surface
             Surf.update()

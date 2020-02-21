@@ -1,7 +1,7 @@
 from Columbia.Microphysics import MicrophysicsBase, water_path, water_fraction
 from Columbia.wrf_physics import kessler
 from Columbia import UtilitiesParallel
-from Columbia.WRFUtil import to_wrf_order, wrf_tend_to_our_tend, wrf_theta_tend_to_our_tend
+from Columbia.WRFUtil import to_wrf_order, wrf_tend_to_our_tend, wrf_theta_tend_to_our_tend, to_our_order
 from Columbia import parameters
 from mpi4py import MPI
 import numpy as np
@@ -45,6 +45,7 @@ class MicroKessler(MicrophysicsBase):
 
         #Get variables from the model state
         T = self._DiagnosticState.get_field('T')
+        s = self._ScalarState.get_field('s')
         qv = self._ScalarState.get_field('qv')
         qc = self._ScalarState.get_field('qc')
         qr = self._ScalarState.get_field('qr')
@@ -130,19 +131,28 @@ class MicroKessler(MicrophysicsBase):
             ims,ime, jms,jme, kms,kme,
             its,ite, jts,jte, kts,kte)
 
+        to_our_order(nhalo, qv_wrf, qv)
+        to_our_order(nhalo, qc_wrf, qc)
+        to_our_order(nhalo, qr_wrf, qr)
+
+        T_wrf *= self._Ref.exner[np.newaxis,nhalo[2]:-nhalo[2],np.newaxis]
+        s_wrf = T_wrf + (parameters.G*z- parameters.LV*(qc_wrf + qr_wrf))*parameters.ICPD
+        to_our_order(nhalo, s_wrf, s)
+
+
         self._rain_rate = (np.sum(self._RAINNC) - rain_accum_old)/dt
         #print('Here 2')
 
-        wrf_theta_tend_to_our_tend(nhalo, dt, exner, T_wrf, T, s_tend)
+       # wrf_theta_tend_to_our_tend(nhalo, dt, exner, T_wrf, T, s_tend)
         #print(np.amax(s_tend - s_b4))
-        wrf_tend_to_our_tend(nhalo, dt, qv_wrf, qv, qv_tend)
-        wrf_tend_to_our_tend(nhalo, dt, qc_wrf, qc, qc_tend)
+        #wrf_tend_to_our_tend(nhalo, dt, qv_wrf, qv, qv_tend)
+        #wrf_tend_to_our_tend(nhalo, dt, qc_wrf, qc, qc_tend)
         #print('qc', np.amax(qc), np.amax(qc_tend))
-        wrf_tend_to_our_tend(nhalo,dt, qr_wrf, qr, qr_tend)
+        #wrf_tend_to_our_tend(nhalo,dt, qr_wrf, qr, qr_tend)
         #print('qr', np.amax(qr), np.amax(qr_tend))
 
         #Add in tendencies
-        s_tend -= parameters.LV*parameters.ICPD * np.add(qc_tend, qr_tend)
+        #s_tend -= parameters.LV*parameters.ICPD * np.add(qc_tend, qr_tend)
 
         #pressure = np.zeros_like(qv) + self._Ref.p0[np.newaxis, np.newaxis,:]
         #rh = compute_rh(qv, T, pressure)
