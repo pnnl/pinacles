@@ -57,6 +57,7 @@ class MicroP3(MicrophysicsBase):
 
         #Get variables from the model state
         T = self._DiagnosticState.get_field('T')
+        s = self._ScalarState.get_field('s')
         qv = self._ScalarState.get_field('qv')
         qc = self._ScalarState.get_field('qc')
         qr = self._ScalarState.get_field('qr')
@@ -70,19 +71,6 @@ class MicroP3(MicrophysicsBase):
         w = self._VelocityState.get_field('w')
 
         reflectivity = self._DiagnosticState.get_field('reflectivity')
-
-        s_tend = self._ScalarState.get_tend('s')
-        qv_tend = self._ScalarState.get_tend('qv')
-        qc_tend = self._ScalarState.get_tend('qc')
-        qr_tend = self._ScalarState.get_tend('qr')
-        qnr_tend = self._ScalarState.get_tend('qnr')
-        nc_tend = self._ScalarState.get_tend('nc')
-        qi1_tend = self._ScalarState.get_tend('qi1')
-        qni1_tend = self._ScalarState.get_tend('qni1')
-        qir1_tend = self._ScalarState.get_tend('qir1')
-        qib1_tend = self._ScalarState.get_tend('qib1')
-
-        
 
         exner = self._Ref.exner
         p0 = self._Ref.p0
@@ -147,20 +135,6 @@ class MicroP3(MicrophysicsBase):
         qv_old = np.copy(qv_wrf, order='F')
 
         n_iceCat = 1
-        # var = [T_wrf,qv_wrf,qc_wrf,qr_wrf,qnr_wrf                            &
-        #                         th_old, qv_old,
-        #                         exner_wrf, p0_wrf, dz_wrf, w, dt, self._itimestep,
-        #                         self._RAINNC,self._RAINNCV,self._SR,self._SNOWNC,self._SNOWNCV,n_iceCat,
-        #                         ids, ide, jds, jde, kds, kde ,
-        #                         ims, ime, jms, jme, kms, kme ,
-        #                         its, ite, jts, jte, kts, kte ,
-        #                         diag_zdbz,diag_effc,diag_effi,
-        #                         diag_vmi,diag_di,diag_rhopo,
-        #                         qi1,qni1,qir1,qib1]
-
-        # for v in var:
-        #     print(type(v))
-
 
         #T_wrf,qv_wrf,qc_wrf,qr_wrf,qnr_wrf)
         p3.module_mp_p3.mp_p3_wrapper_wrf(T_wrf,qv_wrf,qc_wrf,qr_wrf,qnr_wrf,
@@ -175,20 +149,35 @@ class MicroP3(MicrophysicsBase):
                                 qi1_wrf,qni1_wrf,qir1_wrf,qib1_wrf,nc_wrf)
 
 
+        #Update prognosed fields
+        to_our_order(nhalo, qv_wrf, qv)
+        to_our_order(nhalo, qc_wrf, qc)
+        to_our_order(nhalo, qr_wrf, qr)
+        to_our_order(nhalo, qnr_wrf, qnr)
+        to_our_order(nhalo, qi1_wrf, qi1)
+        to_our_order(nhalo, qni1_wrf, qni1)
+        to_our_order(nhalo, nc_wrf, nc)
 
-        wrf_theta_tend_to_our_tend(nhalo, dt, exner, T_wrf, T, s_tend)
-        wrf_tend_to_our_tend(nhalo, dt, qv_wrf, qv, qv_tend)
-        wrf_tend_to_our_tend(nhalo, dt, qc_wrf, qc, qc_tend)
-        wrf_tend_to_our_tend(nhalo, dt, qr_wrf, qr, qr_tend)
-        wrf_tend_to_our_tend(nhalo, dt, qnr_wrf, qnr, qnr_tend)
-        wrf_tend_to_our_tend(nhalo, dt, qi1_wrf, qi1, qi1_tend)
-        wrf_tend_to_our_tend(nhalo, dt, qni1_wrf, qni1, qni1_tend)
-        wrf_tend_to_our_tend(nhalo, dt, nc_wrf, nc, nc_tend)
+
+        #Update the energys (TODO Move this to numba)
+        T_wrf *= self._Ref.exner[np.newaxis,nhalo[2]:-nhalo[2],np.newaxis]
+        s_wrf = T_wrf + (parameters.G*z- parameters.LV*(qc_wrf + qr_wrf) - parameters.LS*(qi1_wrf))*parameters.ICPD
+        to_our_order(nhalo, s_wrf, s)
+
+
+        #wrf_theta_tend_to_our_tend(nhalo, dt, exner, T_wrf, T, s_tend)
+        #wrf_tend_to_our_tend(nhalo, dt, qv_wrf, qv, qv_tend)
+        #wrf_tend_to_our_tend(nhalo, dt, qc_wrf, qc, qc_tend)
+        #wrf_tend_to_our_tend(nhalo, dt, qr_wrf, qr, qr_tend)
+        #wrf_tend_to_our_tend(nhalo, dt, qnr_wrf, qnr, qnr_tend)
+        #wrf_tend_to_our_tend(nhalo, dt, qi1_wrf, qi1, qi1_tend)
+        #wrf_tend_to_our_tend(nhalo, dt, qni1_wrf, qni1, qni1_tend)
+        #wrf_tend_to_our_tend(nhalo, dt, nc_wrf, nc, nc_tend)
 
         to_our_order(nhalo, reflectivity_wrf, reflectivity)
 
         #Add in tendencies
-        s_tend -= parameters.LV*parameters.ICPD * np.add(qc_tend, qr_tend) 
+        #s_tend -= parameters.LV*parameters.ICPD * np.add(qc_tend, qr_tend)
 
         self._itimestep += 1
         return
