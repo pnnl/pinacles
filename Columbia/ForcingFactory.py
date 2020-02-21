@@ -1,6 +1,5 @@
 from Columbia import CaseSullivanAndPatton
 from Columbia import CaseBOMEX
-from Columbia import CaseRICO
 from Columbia import Forcing
 
 def factory(namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState):
@@ -9,7 +8,5 @@ def factory(namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState):
         return CaseSullivanAndPatton.ForcingSullivanAndPatton(namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState)
     if casename == 'bomex': 
         return CaseBOMEX.ForcingBOMEX(namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState)
-    if casename == 'rico': 
-        return CaseRICO.ForcingRICO(namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState)
     else: 
         return Forcing.ForcingBase(namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState)
