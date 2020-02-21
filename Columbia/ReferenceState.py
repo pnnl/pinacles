@@ -57,14 +57,17 @@ class ReferenceBase:
     def _boundary_update(self, prof_array):
         n_halo = self._Grid.n_halo[2]
         prof_array[:n_halo] = prof_array[2 * n_halo - 1:n_halo - 1:-1]
-        prof_array[-n_halo:] = prof_array[-n_halo - 1:-2 * n_halo - 1:-1]
+        prof_array[-n_halo:] = prof_array[-n_halo - 2:-2 * n_halo -2:-1]
 
         return
 
     def _boundary_update_edge(self, prof_array):
         n_halo = self._Grid.n_halo[2]
+
         prof_array[:n_halo - 1] = prof_array[2*n_halo - 2:n_halo - 1:-1]
-        prof_array[-n_halo + 1:] = prof_array[-n_halo - 1:-2 * n_halo:-1]
+        prof_array[-n_halo:] = prof_array[-2*n_halo-1:-2*n_halo+n_halo-1][::-1]
+
+
         return
 
     def _compute_exner(self):

@@ -21,11 +21,11 @@ def to_wrf_order(nhalo, our_array, wrf_array):
 @numba.njit
 def wrf_theta_tend_to_our_tend(nhalo, dt, exner, wrf_out, our_in, stend):
     shape = stend.shape
-    for i in range(nhalo[0],shape[0]-nhalo[0]): 
-        for j in range(nhalo[1],shape[1]-nhalo[1]): 
+    for i in range(nhalo[0],shape[0]-nhalo[0]):
+        for j in range(nhalo[1],shape[1]-nhalo[1]):
             for k in range(nhalo[2], shape[2]- nhalo[2]):
-                i_wrf = i  -nhalo[0] 
-                j_wrf = j - nhalo[1]  
+                i_wrf = i  -nhalo[0]
+                j_wrf = j - nhalo[1]
                 k_wrf = k - nhalo[2] #shape[2] - 1 - k
                 stend[i,j,k] += (wrf_out[i_wrf,k_wrf,j_wrf]*exner[k]- our_in[i,j,k])/dt
 
@@ -34,27 +34,32 @@ def wrf_theta_tend_to_our_tend(nhalo, dt, exner, wrf_out, our_in, stend):
 @numba.njit
 def wrf_tend_to_our_tend(nhalo, dt, wrf_out, our_in, tend):
     shape = tend.shape
-    for i in range(nhalo[0],shape[0]-nhalo[0]): 
-        for j in range(nhalo[1],shape[1]-nhalo[1]): 
+    for i in range(nhalo[0],shape[0]-nhalo[0]):
+        for j in range(nhalo[1],shape[1]-nhalo[1]):
             for k in range(nhalo[2], shape[2]- nhalo[2]):
-                i_wrf = i  -nhalo[0]  
-                j_wrf = j - nhalo[1]  
+                i_wrf = i  -nhalo[0]
+                j_wrf = j - nhalo[1]
                 k_wrf = k - nhalo[2]#shape[2] - 1 - k
                 tend[i,j,k] += (wrf_out[i_wrf,k_wrf,j_wrf] - our_in[i,j,k])/dt
     return
 
+
 @numba.njit
-def compute_rh(qv, temp, pressure): 
+def compute_qvs(temp, pressure):
     ep2 = 287./461.6
     svp1 = 0.6112
     svp2 = 17.67
     svp3 = 29.65  
     svpt0 = 273.15
-    
     es        = 1000.*svp1*np.exp(svp2*(temp-svpt0)/(temp-svp3))
     qvs       = ep2*es/(pressure-es)
-    return qv/qvs
 
+    return qvs
+
+
+@numba.njit
+def compute_rh(qv, temp, pressure):
+    return qv/compute_qvs(temp, pressure)
 
 class MicroKessler(MicrophysicsBase):
     def __init__(self, Grid, Ref, ScalarState, DiagnosticState, TimeSteppingController):

@@ -96,8 +96,8 @@ def main(namelist):
 
     s = ScalarState.get_field('s')
     qv = ScalarState.get_field('qv')
-    qr = ScalarState.get_field('qr')
-    qc = ScalarState.get_field('qc')
+    #qr = ScalarState.get_field('qr')
+    #qc = ScalarState.get_field('qc') 
     w = VelocityState.get_field('w')
     u = VelocityState.get_field('u')
     t1 = time.time()
@@ -170,7 +170,7 @@ def main(namelist):
         # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         xl = ModelGrid.x_local
         zl = ModelGrid.z_local
-        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%120.0,0.0):
+        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%60.0,0.0):
             FieldsIO.update()
             if MPI.COMM_WORLD.Get_rank() == 0:
         #     #print('step: ', i, ' time: ', t1 - t0)
@@ -179,7 +179,7 @@ def main(namelist):
                  #levels = np.linspace(-4,4, 100)
                  levels = np.linspace(-5, 5,100)
                  #plt.contourf(s_slice,cmap=plt.cm.seismic, levels=levels) #,levels=levels, cmap=plt.cm.seismic)
-                 plt.contourf((s[3:-3,16,3:-3]) .T ,100,cmap=plt.cm.seismic) 
+                 plt.contourf((w[3:-3,4,3:-3]) .T ,100,cmap=plt.cm.seismic) 
                  #plt.contourf(s_slice, 100,cmap=plt.cm.seismic) 
         #     #plt.contourf(w[:,:,16], levels=levels, cmap=plt.cm.seismic)
                  #plt.clim(-4,5)
