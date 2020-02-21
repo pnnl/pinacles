@@ -1,11 +1,10 @@
 from Columbia.Microphysics import MicrophysicsBase, water_path, water_fraction
 from Columbia.wrf_physics import kessler
 from Columbia import UtilitiesParallel
-from Columbia.WRFUtil import to_wrf_order, wrf_tend_to_our_tend, wrf_theta_tend_to_our_tend
 from Columbia import parameters
 from mpi4py import MPI
 import numpy as np
-import numba
+import numba 
 
 @numba.njit
 def to_wrf_order(nhalo, our_array, wrf_array): 
@@ -50,7 +49,7 @@ def compute_qvs(temp, pressure):
     ep2 = 287./461.6
     svp1 = 0.6112
     svp2 = 17.67
-    svp3 = 29.65
+    svp3 = 29.65  
     svpt0 = 273.15
     es        = 1000.*svp1*np.exp(svp2*(temp-svpt0)/(temp-svp3))
     qvs       = ep2*es/(pressure-es)
@@ -63,9 +62,9 @@ def compute_rh(qv, temp, pressure):
     return qv/compute_qvs(temp, pressure)
 
 class MicroKessler(MicrophysicsBase):
-    def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController):
+    def __init__(self, Grid, Ref, ScalarState, DiagnosticState, TimeSteppingController):
 
-        MicrophysicsBase.__init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
+        MicrophysicsBase.__init__(self, Grid, Ref, ScalarState, DiagnosticState, TimeSteppingController)
 
         self._ScalarState.add_variable('qv')
         self._ScalarState.add_variable('qc')
@@ -175,6 +174,7 @@ class MicroKessler(MicrophysicsBase):
         self._rain_rate = (np.sum(self._RAINNC) - rain_accum_old)/dt
         #print('Here 2')
 
+        s_b4 = np.copy(s_tend)
         wrf_theta_tend_to_our_tend(nhalo, dt, exner, T_wrf, T, s_tend)
         #print(np.amax(s_tend - s_b4))
         wrf_tend_to_our_tend(nhalo, dt, qv_wrf, qv, qv_tend)
@@ -216,6 +216,8 @@ class MicroKessler(MicrophysicsBase):
 
         my_rank = MPI.COMM_WORLD.Get_rank()
 
+
+
         n_halo = self._Grid.n_halo
         dz = self._Grid.dx[2]
         rho = self._Ref.rho0
@@ -236,7 +238,7 @@ class MicroKessler(MicrophysicsBase):
         vwp = UtilitiesParallel.ScalarAllReduce(vwp)
 
         #Compute cloud and rain fraction
-        cf = water_fraction(n_halo, npts, qc, threshold=1e-5)
+        cf = water_fraction(n_halo, npts, qc)
         cf = UtilitiesParallel.ScalarAllReduce(cf)
 
         rf = water_fraction(n_halo, npts, qr)

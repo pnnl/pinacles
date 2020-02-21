@@ -58,7 +58,7 @@ def main(namelist):
 
     #Setup the pressure solver
     PSolver = PressureSolver.factory(namelist, ModelGrid, Ref, VelocityState, DiagnosticState)
-    Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
+    Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, DiagnosticState, TimeSteppingController)
 
 
 
@@ -90,8 +90,6 @@ def main(namelist):
     FieldsIO = DumpFields.DumpFields(namelist, ModelGrid, TimeSteppingController)
     FieldsIO.add_class(ScalarState)
     FieldsIO.add_class(VelocityState)
-    FieldsIO.add_class(DiagnosticState)
-
 
     StatsIO.initialize()
 
