@@ -94,14 +94,14 @@ module module_mp_SBM_BreakUp
      implicit none
    
      integer,intent(in):: NKR
-     real(kind=r4size),intent(in) :: 	DTwrf,XL(:),DROPRADII(:)
-     real(kind=r8size),intent(out) :: Prob(:), Gain_Var_New(:,:), NND(:,:)
+     DOUBLE PRECISION,intent(in) :: 	DTwrf,XL(:),DROPRADII(:)
+     DOUBLE PRECISION,intent(out) :: Prob(:), Gain_Var_New(:,:), NND(:,:)
    
    ! ... Locals
-     real(kind=r8size) :: diameter(nkr), ratio_new, q_m, gain_var(nkr,nkr), dtime_spon_break, &
+     DOUBLE PRECISION :: diameter(nkr), ratio_new, q_m, gain_var(nkr,nkr), dtime_spon_break, &
                             DROPRADII_dp(nkr),XL_dp(nkr)
      integer :: kr,i,j, ikr_spon_break
-     real(kind=r8size),parameter :: gamma = 0.453d0
+     DOUBLE PRECISION,parameter :: gamma = 0.453d0
      character*256 :: wrf_err_message
    ! ... Locals
    
@@ -178,15 +178,15 @@ module module_mp_SBM_BreakUp
      implicit none
    
      integer,intent(in) :: NKR, IKR_Spon_Break
-     real(kind=r8size),intent(INOUT) :: FF1R(:)
-     real(kind=r8size),intent(IN) ::XL(:),Prob(:),Gain_Var_New(:,:),NND(:,:)
-     real(kind=r4size),intent(in) :: DTwrf
+     DOUBLE PRECISION,intent(INOUT) :: FF1R(:)
+     DOUBLE PRECISION,intent(IN) ::XL(:),Prob(:),Gain_Var_New(:,:),NND(:,:)
+     DOUBLE PRECISION,intent(in) :: DTwrf
    
    ! ... Local
-     real(kind=r8size) :: dm, deg01, tmp_1, tmp_2, tmp_3
-     real(kind=r8size),dimension(nkr) :: dropconc_bf, dropconc_af, drops_break, psi1, dropradii
+     DOUBLE PRECISION :: dm, deg01, tmp_1, tmp_2, tmp_3
+     DOUBLE PRECISION,dimension(nkr) :: dropconc_bf, dropconc_af, drops_break, psi1, dropradii
      integer :: kr,i,imax,j
-     real(kind=r4size) :: start_time, end_time, dtime_spon_break
+     DOUBLE PRECISION :: start_time, end_time, dtime_spon_break
    ! ... Local
    
     dtime_spon_break = DTwrf
@@ -275,12 +275,12 @@ module module_mp_SBM_BreakUp
       IMPLICIT NONE
    
       INTEGER,INTENT(in) :: NKR
-      real(kind=r8size),INTENT(inout) :: F(:),FL(:),RF(:)
-      real(kind=r8size),INTENT(in) :: X(:)
-      real(kind=r4size),INTENT(in) :: Tin
+      DOUBLE PRECISION,INTENT(inout) :: F(:),FL(:),RF(:)
+      DOUBLE PRECISION,INTENT(in) :: X(:)
+      DOUBLE PRECISION,INTENT(in) :: Tin
    
    ! ... Locals
-      real(kind=r8size) :: G(NKR),GLW(NKR),GRM(NKR),DEL_GLW(NKR),DEL_GRM(NKR), BREAK_SNOW(NKR), &
+      DOUBLE PRECISION :: G(NKR),GLW(NKR),GRM(NKR),DEL_GLW(NKR),DEL_GRM(NKR), BREAK_SNOW(NKR), &
                                 A,GLW_MAX, FLW_MAX, GRM_MAX, FRM_MAX, GMAX
       INTEGER :: KR,K,KMAX,KMIN
    ! ... Locals
@@ -426,7 +426,7 @@ module module_mp_SBM_BreakUp
      INTEGER, PARAMETER, PRIVATE:: R8SIZE = 8
      INTEGER, PARAMETER, PRIVATE:: R4SIZE = 4
      integer,parameter :: kp_flux_max = 44
-     real(kind=r8size), parameter :: G_LIM = 1.0D-16 ! [g/cm^3]
+     DOUBLE PRECISION, parameter :: G_LIM = 1.0D-16 ! [g/cm^3]
      integer,parameter :: kr_sgs_max = 20 ! rg(20)=218.88 mkm
    
     contains
@@ -436,13 +436,13 @@ module module_mp_SBM_BreakUp
       implicit none
    
       integer,intent(in) :: nkr
-      real(kind=r8size),intent(inout) :: gy(:),gx(:),fly(:),flx(:)
-      real(kind=r8size),intent(in) :: ckxy(:,:),x(:),y(:),c(:,:)
+      DOUBLE PRECISION,intent(inout) :: gy(:),gx(:),fly(:),flx(:)
+      DOUBLE PRECISION,intent(in) :: ckxy(:,:),x(:),y(:),c(:,:)
       integer,intent(in) :: ima(:,:)
-      real(kind=r8size),intent(in) :: prdkrn
+      DOUBLE PRECISION,intent(in) :: prdkrn
    
    ! ... Locals
-    real(kind=r8size) :: gmin,ckxy_ji,x01,x02,x03,gsi,gsj,gsk,gsi_w,gsj_w,gsk_w,gk,gk_w,&
+    DOUBLE PRECISION :: gmin,ckxy_ji,x01,x02,x03,gsi,gsj,gsk,gsi_w,gsj_w,gsk_w,gk,gk_w,&
                          fl_gk,fl_gsk,flux,x1,flux_w,gy_k_w,gy_kp_old,gy_kp_w
     integer :: j,jx0,jx1,i,iy0,iy1,jmin,indc,k,kp
    ! ... Locals
@@ -625,13 +625,13 @@ module module_mp_SBM_BreakUp
        implicit none
    
        integer,intent(in) :: nkr
-       real(kind=r8size),intent(inout) :: g(:),fl(:)
-       real(kind=r8size),intent(in) ::	ckxx(:,:),x(:), c(:,:)
+       DOUBLE PRECISION,intent(inout) :: g(:),fl(:)
+       DOUBLE PRECISION,intent(in) ::	ckxx(:,:),x(:), c(:,:)
        integer,intent(in) :: ima(:,:)
-       real(kind=r8size),intent(in) :: prdkrn
+       DOUBLE PRECISION,intent(in) :: prdkrn
    
    ! ... Locals
-      real(kind=r8size):: gmin,x01,x02,x03,gsi,gsj,gsk,gsi_w,gsj_w,gsk_w,gk, &
+      DOUBLE PRECISION:: gmin,x01,x02,x03,gsi,gsj,gsk,gsi_w,gsj_w,gsk_w,gk, &
                           gk_w,fl_gk,fl_gsk,flux,x1,flux_w,g_k_w,g_kp_old,g_kp_w
       integer :: i,ix0,ix1,j,k,kp
    ! ... Locals
@@ -802,12 +802,12 @@ module module_mp_SBM_BreakUp
       implicit none
    
       integer,intent(in) :: nkr
-      real(kind=r8size),intent(inout) :: gy(:),gx(:),fly(:),flx(:),dm_rime(:)
-      real(kind=r8size),intent(in) :: ckxy(:,:),x(:),y(:),c(:,:),prdkrn
+      DOUBLE PRECISION,intent(inout) :: gy(:),gx(:),fly(:),flx(:),dm_rime(:)
+      DOUBLE PRECISION,intent(in) :: ckxy(:,:),x(:),y(:),c(:,:),prdkrn
       integer,intent(in) :: ima(:,:)
    
    ! ... Locals
-      real(kind=r8size) :: gmin,x01,x02,x03,gsi,gsj,gsk,gk,flux,x1,gsi_w,gsj_w,gsk_w, &
+      DOUBLE PRECISION :: gmin,x01,x02,x03,gsi,gsj,gsk,gk,flux,x1,gsi_w,gsj_w,gsk_w, &
                           gk_w,fl_gk,fl_gsk,flux_w,gx_k_w,gx_kp_old,gx_kp_w,frac_split
       integer :: j, jx0, jx1, i, iy0, iy1, jmin, indc, k, kp
    ! ... Locals
@@ -1006,13 +1006,13 @@ module module_mp_SBM_BreakUp
     implicit none
    
     integer,intent(in) :: nkr
-    real(kind=r8size),intent(inout) :: gx(:),gy(:),gz(:),flx(:),fly(:),flz(:)
-    real(kind=r8size),intent(in) :: ckxy(:,:),x(:),y(:),c(:,:)
+    DOUBLE PRECISION,intent(inout) :: gx(:),gy(:),gz(:),flx(:),fly(:),flz(:)
+    DOUBLE PRECISION,intent(in) :: ckxy(:,:),x(:),y(:),c(:,:)
     integer,intent(in) :: ima(:,:)
-    real(kind=r8size),intent(in) :: prdkrn
+    DOUBLE PRECISION,intent(in) :: prdkrn
    
    ! ... Locals
-    real(kind=r8size) :: gmin,ckxy_ji,x01,x02,x03,gsi,gsj,gsk,gsi_w,gsj_w,gsk_w,gk, &
+    DOUBLE PRECISION :: gmin,ckxy_ji,x01,x02,x03,gsi,gsj,gsk,gsi_w,gsj_w,gsk_w,gk, &
                          gk_w,fl_gk,fl_gsk,flux,x1,flux_w,gz_k_w,gz_kp_old,gz_kp_w
    integer :: j,jx0,jx1,i,iy0,iy1,jmin,indc,k,kp
    ! ... Locals
@@ -1212,13 +1212,13 @@ module module_mp_SBM_BreakUp
      implicit none
    
      integer,intent(in) :: nkr
-     real(kind=r8size),intent(inout):: gx(nkr),gy(nkr),flx(nkr),fly(nkr)
-     real(kind=r8size),intent(in) :: x(nkr),ckxx(nkr,nkr),c(nkr,nkr)
-     real(kind=r8size),intent(in) :: prdkrn
+     DOUBLE PRECISION,intent(inout):: gx(nkr),gy(nkr),flx(nkr),fly(nkr)
+     DOUBLE PRECISION,intent(in) :: x(nkr),ckxx(nkr,nkr),c(nkr,nkr)
+     DOUBLE PRECISION,intent(in) :: prdkrn
      integer,intent(in) :: ima(nkr,nkr)
    
    ! ... Locals
-     real(kind=r8size) :: gmin,ckxx_ij,x01,x02,x03,gsi,gsj,gsk,gsi_w,gsj_w,gsk_w, &
+     DOUBLE PRECISION :: gmin,ckxx_ij,x01,x02,x03,gsi,gsj,gsk,gsi_w,gsj_w,gsk_w, &
                           gk,gk_w,flux,flux_w,fl_gk,fl_gsk,x1,gy_k_w,gy_kp_w, &
                           gy_kp_old
      integer::i,ix0,ix1,j,k,kp
@@ -1335,17 +1335,17 @@ module module_mp_SBM_BreakUp
    
                   implicit none
    
-                  real(kind=r8size),intent(in) :: tt, pp
-             real(kind=r8size),intent(inout) :: qq
-                  real(kind=r4size),intent(in) :: ttcoal, rho
-                  real(kind=r8size),intent(out) :: factor_t
+                  DOUBLE PRECISION,intent(in) :: tt, pp
+             DOUBLE PRECISION,intent(inout) :: qq
+                  DOUBLE PRECISION,intent(in) :: ttcoal, rho
+                  DOUBLE PRECISION,intent(out) :: factor_t
                   integer :: ICase, Iin, Jin, Kin, Icondition
    
-                  real(kind=r8size) :: satq2, temp, epsf, tc, ttt1, ttt, qs2, qq1, dele, tc_min, &
+                  DOUBLE PRECISION :: satq2, temp, epsf, tc, ttt1, ttt, qs2, qq1, dele, tc_min, &
                                        tc_max, factor_max, factor_min, f, t, a, b, c, p, d
-                  real(kind=r8size) :: at, bt, ct, dt
-                  real(kind=r8size) :: AA,BB,CC,DD,Es,Ew,AA1_MY,BB1_MY
-                  real(kind=r4size) :: tt_r
+                  DOUBLE PRECISION :: at, bt, ct, dt
+                  DOUBLE PRECISION :: AA,BB,CC,DD,Es,Ew,AA1_MY,BB1_MY
+                  DOUBLE PRECISION :: tt_r
    
                   satq2(t,p) = 3.80d3*(10**(9.76421d0-2667.1d0/t))/p
                   temp(a,b,c,d,t) = d*t*t*t+c*t*t+b*t+a
@@ -1423,17 +1423,17 @@ module module_mp_SBM_BreakUp
        implicit none
      ! ... Interface
        integer,intent(in) :: jmax, jbreak, NKRInput, NKR
-       real(kind=r8size),intent(in) :: xt_mg(:), dt
-       real(kind=r4size),intent(in) :: pkij(:,:,:),qkj(:,:)
-       real(kind=r8size),intent(inout) :: gt_mg(:)
+       DOUBLE PRECISION,intent(in) :: xt_mg(:), dt
+       DOUBLE PRECISION,intent(in) :: pkij(:,:,:),qkj(:,:)
+       DOUBLE PRECISION,intent(inout) :: gt_mg(:)
      ! ... Interface
    
      ! ... Locals
      ! ke = jbreak
      integer,parameter :: ia=1, ja=1, ka=1
      integer :: ie, je, ke, nkrdiff, jdiff, k, i, j
-     real(kind=r8size),parameter :: eps = 1.0d-20
-     real(kind=r8size) :: gt(jmax), xt(jmax+1), ft(jmax), fa(jmax), dg(jmax), df(jmax), dbreak(jbreak) &
+     DOUBLE PRECISION,parameter :: eps = 1.0d-20
+     DOUBLE PRECISION :: gt(jmax), xt(jmax+1), ft(jmax), fa(jmax), dg(jmax), df(jmax), dbreak(jbreak) &
                         ,amweight(jbreak), gain, aloss
      ! ... Locals
    
@@ -1553,14 +1553,14 @@ module module_mp_SBM_BreakUp
        implicit none
    
        integer,intent(in) :: nkr
-       real,intent(in) :: xl(:)
-       real(kind=r8size),intent(inout) :: chucm(:,:)
+       double precision ,intent(in) :: xl(:)
+       DOUBLE PRECISION,intent(inout) :: chucm(:,:)
        integer,intent(inout) :: ima(:,:)
-       real(kind=r8size),intent(in) :: scal
+       DOUBLE PRECISION,intent(in) :: scal
    
        ! ... Locals
        integer :: k, kk, j, i
-       real(kind=r8size) :: x0, xl_mg(nkr), dlnr
+       DOUBLE PRECISION :: x0, xl_mg(nkr), dlnr
        ! ... Locals
    
        ! ima(i,j) - k-category number,
@@ -1610,7 +1610,7 @@ module module_mp_SBM_BreakUp
    
     private
     public :: POLYSVP, JERRATE_KS, JERTIMESC_KS, JERSUPSAT_KS, &
-                 JERDFUN_KS, JERDFUN_NEW_KS, Relaxation_Time
+                 JERDFUN_KS, JERDFUN_NEW_KS, Relaxation_Time, jernewf_ks
    
     ! Kind paramater
     INTEGER, PARAMETER, PRIVATE:: R8SIZE = 8
@@ -1641,25 +1641,25 @@ module module_mp_SBM_BreakUp
    
          IMPLICIT NONE
    
-         REAL DUM
-         REAL T
+         double precision  DUM
+         double precision  T
          INTEGER TYPE
    ! ice
-         real a0i,a1i,a2i,a3i,a4i,a5i,a6i,a7i,a8i
+         double precision a0i,a1i,a2i,a3i,a4i,a5i,a6i,a7i,a8i
          data a0i,a1i,a2i,a3i,a4i,a5i,a6i,a7i,a8i /&
       6.11147274, 0.503160820, 0.188439774e-1, &
            0.420895665e-3, 0.615021634e-5,0.602588177e-7, &
            0.385852041e-9, 0.146898966e-11, 0.252751365e-14/
    
    ! liquid
-         real a0,a1,a2,a3,a4,a5,a6,a7,a8
+           double precision  a0,a1,a2,a3,a4,a5,a6,a7,a8
    
    ! V1.7
          data a0,a1,a2,a3,a4,a5,a6,a7,a8 /&
       6.11239921, 0.443987641, 0.142986287e-1, &
            0.264847430e-3, 0.302950461e-5, 0.206739458e-7, &
            0.640689451e-10,-0.952447341e-13,-0.976195544e-15/
-         real dt
+           double precision  dt
    
    ! ICE
    
@@ -1691,22 +1691,22 @@ module module_mp_SBM_BreakUp
          IMPLICIT NONE
    ! ... Interface
          INTEGER,INTENT(IN) :: ID, IN, NKR, ICEMAX
-         REAL(KIND=r4size),INTENT(IN) :: RO1BL(NKR,ID),RIEC(NKR,ID),FL1(NKR)
-         REAL(KIND=r4size),INTENT(INOUT) :: B11_MY(NKR,ID)
-         REAL(KIND=r8size),INTENT(IN) :: PP, TP, xlS(NKR,ID),Vxl(NKR,ID)
+         DOUBLE PRECISION,INTENT(IN) :: RO1BL(NKR,ID),RIEC(NKR,ID),FL1(NKR)
+         DOUBLE PRECISION,INTENT(INOUT) :: B11_MY(NKR,ID)
+         DOUBLE PRECISION,INTENT(IN) :: PP, TP, xlS(NKR,ID),Vxl(NKR,ID)
    ! ... Interface
    ! ... Locals
          INTEGER :: KR, nskin(nkr), ICE
-         REAL(KIND=r4size) :: VENTPLM(NKR), FD1(NKR,ICEMAX),FK1(NKR,ICEMAX), xl_MY1(NKR,ICEMAX), &
+         DOUBLE PRECISION :: VENTPLM(NKR), FD1(NKR,ICEMAX),FK1(NKR,ICEMAX), xl_MY1(NKR,ICEMAX), &
                                AL1_MY(2),ESAT1(2), TPreal
-         REAL(KIND=r8size) :: PZERO, TZERO, CONST, D_MY, COEFF_VISCOUS, SHMIDT_NUMBER,     &
+         DOUBLE PRECISION :: PZERO, TZERO, CONST, D_MY, COEFF_VISCOUS, SHMIDT_NUMBER,     &
                                    A, B, RVT, SHMIDT_NUMBER03, XLS_KR_ICE, RO1BL_KR_ICE, VXL_KR_ICE, REINOLDS_NUMBER, &
                                    RESHM, VENTPL, CONSTL, DETL
    
-         REAL(KIND=r4size) :: deg01,deg03
+         DOUBLE PRECISION :: deg01,deg03
    
    ! A1L_MY - CONSTANTS FOR "MAXWELL": MKS
-         REAL(KIND=r8size),parameter:: RV_MY=461.5D4, CF_MY=2.4D3, D_MYIN=0.211D0
+         DOUBLE PRECISION,parameter:: RV_MY=461.5D4, CF_MY=2.4D3, D_MYIN=0.211D0
    
    ! CGS :
    
@@ -1870,14 +1870,14 @@ module module_mp_SBM_BreakUp
    
    ! ... Interface
       INTEGER,INTENT(IN) :: ID,NKR,ICEMAX
-      REAL(KIND=r4size),INTENT(in) :: B11_MY(NKR,ID), FI1(NKR,ID), COL, CF
-      REAL(KIND=r8size),INTENT(in) :: X1(NKR,ID)
-      REAL(KIND=r4size),INTENT(out) :: SFN11(ID)
+      DOUBLE PRECISION,INTENT(in) :: B11_MY(NKR,ID), FI1(NKR,ID), COL, CF
+      DOUBLE PRECISION,INTENT(in) :: X1(NKR,ID)
+      DOUBLE PRECISION,INTENT(out) :: SFN11(ID)
    ! ... Interface
    
    ! ... Locals
       INTEGER :: ICE, KR
-      REAL(KIND=r4size) :: SFN11S, FK, DELM, FUN, B11
+      DOUBLE PRECISION :: SFN11S, FK, DELM, FUN, B11
    ! ... Locals
    
       DO ICE=1,ID
@@ -1912,13 +1912,13 @@ module module_mp_SBM_BreakUp
          IMPLICIT NONE
    ! ... Interface
          INTEGER,INTENT(INOUT) :: 		ISYM1, ISYM2(:), ISYM3, ISYM4, ISYM5
-         REAL(KIND=r4size),INTENT(IN) ::   DT, DYN1, DYN2
-         REAL(KIND=r8size),INTENT(IN) :: 	DEL1, DEL2
-         REAL(KIND=r8size),INTENT(INOUT) :: DEL1N,DEL2N,DEL1INT,DEL2INT,RW, PW, RI, PI
+         DOUBLE PRECISION,INTENT(IN) ::   DT, DYN1, DYN2
+         DOUBLE PRECISION,INTENT(IN) :: 	DEL1, DEL2
+         DOUBLE PRECISION,INTENT(INOUT) :: DEL1N,DEL2N,DEL1INT,DEL2INT,RW, PW, RI, PI
    ! ... Interface
    ! ... Locals
          INTEGER :: I, ISYMICE
-         REAL(KIND=r8size) :: X, EXPM1, DETER, EXPR, EXPP, A, ALFA, BETA, GAMA, G31, G32, G2, EXPB, EXPG, &
+         DOUBLE PRECISION :: X, EXPM1, DETER, EXPR, EXPP, A, ALFA, BETA, GAMA, G31, G32, G2, EXPB, EXPG, &
                        C11, C21, C12, C22, A1DEL1N, A2DEL1N, A3DEL1N, A4DEL1N, A1DEL1INT, A2DEL1INT, &
                         A3DEL1INT, A4DEL1INT, A1DEL2N, A2DEL2N, A3DEL2N , A4DEL2N, A1DEL2INT, A2DEL2INT, &
                         A3DEL2INT, A4DEL2INT, A5DEL2INT
@@ -2264,16 +2264,16 @@ module module_mp_SBM_BreakUp
    ! ... Interface
       INTEGER,INTENT(IN) :: ISYM2, IND, ITYPE, NKR, ICEMAX, Ihydro, Iin, Jin ,Kin, Itimestep
       INTEGER,INTENT(INOUT) :: IDROP
-      REAL(kind=R4SIZE),INTENT(IN) :: B21_MY(:), FI2(:), FR_LIM(:), FRH_LIM(:), &
+      DOUBLE PRECISION,INTENT(IN) :: B21_MY(:), FI2(:), FR_LIM(:), FRH_LIM(:), &
                                  DEL2N, COL
-      REAL(kind=R8SIZE),INTENT(IN) :: TPN, xi(:)
-      REAL(kind=R8SIZE),INTENT(INOUT) :: xiN(:)
-      REAL(kind=R4SIZE),INTENT(INOUT) :: PSI2(:), FL2(:)
+      DOUBLE PRECISION,INTENT(IN) :: TPN, xi(:)
+      DOUBLE PRECISION,INTENT(INOUT) :: xiN(:)
+      DOUBLE PRECISION,INTENT(INOUT) :: PSI2(:), FL2(:)
    ! ... Interface
    
    ! ... Locals
       INTEGER :: ITYP, KR, NR, ICE, K, IDSD_Negative
-      REAL(kind=R8SIZE) :: FL2_NEW(NKR), FI2R(NKR), PSI2R(NKR), C, DEGREE1, DEGREE2, DEGREE3, D, RATEXI, &
+      DOUBLE PRECISION :: FL2_NEW(NKR), FI2R(NKR), PSI2R(NKR), C, DEGREE1, DEGREE2, DEGREE3, D, RATEXI, &
                                 B, A, xiR(NKR),xiNR(NKR), FR_LIM_KR
    ! ... Locals
    
@@ -2373,15 +2373,15 @@ module module_mp_SBM_BreakUp
    ! ... Interface
          INTEGER,INTENT(IN) :: NRX, I3POINT, NKR, Ihydro, Iin, Jin, Kin, Itimestep
          INTEGER,INTENT(INOUT) :: IDROP, IDSD_Negative
-         real(kind=R8SIZE),INTENT(IN) :: TPN
-         real(kind=R4SIZE),INTENT(IN) :: COL
-         real(kind=R8SIZE),INTENT(INOUT) :: PSI(:), RN(:), FI(:), RR(:)
+         DOUBLE PRECISION,INTENT(IN) :: TPN
+         DOUBLE PRECISION,INTENT(IN) :: COL
+         DOUBLE PRECISION,INTENT(INOUT) :: PSI(:), RN(:), FI(:), RR(:)
    ! ... Interface
    
    ! ... Locals
          INTEGER :: KMAX, KR, I, K , NRXP, ISIGN_DIFFUSIONAL_GROWTH, NRX1,  &
                  I3POINT_CONDEVAP, IEvap
-         real(kind=R8SIZE) :: RNTMP,RRTMP,RRP,RRM,RNTMP2,RRTMP2,RRP2,RRM2, GN1,GN2, &
+         DOUBLE PRECISION :: RNTMP,RRTMP,RRP,RRM,RNTMP2,RRTMP2,RRP2,RRM2, GN1,GN2, &
                   GN3,GN1P,GMAT,GMAT2, &
                          CDROP(NRX),DELTA_CDROP(NRX),RRS(NRX+1),PSINEW(NRX+1), &
                          PSI_IM,PSI_I,PSI_IP, AOLDCON, ANEWCON, AOLDMASS, ANEWMASS
@@ -2690,15 +2690,15 @@ module module_mp_SBM_BreakUp
    ! ... Interface
       INTEGER,INTENT(INOUT) :: IDROP, NKR
       INTEGER,INTENT(IN) :: Ihydro,Iin,Jin,Kin,Itimestep
-      REAL(kind=R4SIZE),intent(IN) :: FI2(:), B21_MY(:), FR_LIM(:), COL
-      REAL(kind=R8SIZE), INTENT(IN) :: TPN, xi(:)
-      REAL(kind=R4SIZE),INTENT(INOUT) :: PSI2(:)
-      REAL(kind=R8SIZE),INTENT(INOUT) :: xiN(:)
+      DOUBLE PRECISION,intent(IN) :: FI2(:), B21_MY(:), FR_LIM(:), COL
+      DOUBLE PRECISION, INTENT(IN) :: TPN, xi(:)
+      DOUBLE PRECISION,INTENT(INOUT) :: PSI2(:)
+      DOUBLE PRECISION,INTENT(INOUT) :: xiN(:)
    ! ... Interface
    
    ! ... Locals
       INTEGER :: NR, KR, IDSD_Negative
-      REAL(kind=R8SIZE) :: C, DEGREE1, DEGREE2, DEGREE3, D, RATEXI, B, A, &
+      DOUBLE PRECISION :: C, DEGREE1, DEGREE2, DEGREE3, D, RATEXI, B, A, &
                                 xiR(NKR),FI2R(NKR),PSI2R(NKR),xiNR(NKR)
    ! ... Locals
    
@@ -2769,24 +2769,24 @@ module module_mp_SBM_BreakUp
    ! ... Interface
       integer,intent(in) :: NKR,ICEMAX
       integer,intent(out) :: NCOND
-      real(kind=R4SIZE),intent(in) :: R1(:),FF1in(:),RLEC(:),RO1BL(:), &
+      DOUBLE PRECISION,intent(in) :: R1(:),FF1in(:),RLEC(:),RO1BL(:), &
                      R2(:,:),FF2in(:,:),RIEC(:,:),RO2BL(:,:), &
                      R3(NKR),FF3in(:),RSEC(:),RO3BL(:), &
                      R4(NKR),FF4in(:),RGEC(:),RO4BL(:), &
                      R5(NKR),FF5in(:),RHEC(:),RO5BL(:), &
                      ROR,COL,DTdyn,VR1(:),VR2(:,:),VR3(:),VR4(:),VR5(:)
-     real(kind=R8SIZE),intent(in) :: TPS,QPS,PP,DEL1S,DEL2S
-     real(kind=R4SIZE),intent(out) :: DTCOND
+     DOUBLE PRECISION,intent(in) :: TPS,QPS,PP,DEL1S,DEL2S
+     DOUBLE PRECISION,intent(out) :: DTCOND
    ! ... Interface
    ! ... Local
       integer :: ISYM1, ISYM2(ICEMAX), ISYM3, ISYM4, ISYM5, ISYM_SUM, ICM
-     real(kind=R8SIZE),parameter :: AA1_MY = 2.53D12, BB1_MY = 5.42D3, AA2_MY = 3.41D13, &
+     DOUBLE PRECISION,parameter :: AA1_MY = 2.53D12, BB1_MY = 5.42D3, AA2_MY = 3.41D13, &
                                     BB2_MY = 6.13E3, AL1 = 2500.0, AL2 = 2834.0
-      real(kind=R8SIZE),parameter :: TAU_Min = 0.1 ! [s]
-      real(kind=R8SIZE) :: OPER2, AR1, TAU_RELAX, B5L, B5I, &
+      DOUBLE PRECISION,parameter :: TAU_Min = 0.1 ! [s]
+      DOUBLE PRECISION :: OPER2, AR1, TAU_RELAX, B5L, B5I, &
                                 R1D(NKR), R2D(NKR,ICEMAX), R3D(NKR), R4D(NKR), R5D(NKR), &
                           VR1_d(nkr),VR2_d(nkr,icemax),VR3_d(nkr),VR4_d(nkr),VR5_d(nkr)
-      real(kind=R4SIZE) :: B11_MY(NKR), B21_MY(NKR,ICEMAX), B31_MY(NKR), &
+      DOUBLE PRECISION :: B11_MY(NKR), B21_MY(NKR,ICEMAX), B31_MY(NKR), &
                              B41_MY(NKR), B51_MY(NKR), FL1(NKR), FL3(NKR), FL4(NKR), FL5(NKR), &
                           SFNDUMMY(3), SFN11, SFNI1(ICEMAX), SFNII1, SFN21, SFN31, SFN41, SFN51, SFNI, SFNL, B8L, B8I, RI, PW, &
                            DOPL, DOPI, TAU_w, TAU_i, phi, RW, PI
@@ -2939,15 +2939,16 @@ module module_mp_SBM_BreakUp
     USE module_mp_SBM_Auxiliary,ONLY:POLYSVP
    
     private
-    public JERNUCL01_KS, LogNormal_modes_Aerosol_ACPC
+    public JERNUCL01_KS, LogNormal_modes_Aerosol_ACPC, water_nucleation, ice_nucl, &
+     cloud_base_super, supmax_coeff
    
    ! Kind paramater
        INTEGER, PARAMETER, PRIVATE:: R8SIZE = 8
        INTEGER, PARAMETER, PRIVATE:: R4SIZE = 4
    
       INTEGER,PARAMETER :: Use_cloud_base_nuc = 1
-      real(kind=r8size),PARAMETER::T_NUCL_DROP_MIN = -60.0D0
-      real(kind=r8size),PARAMETER::T_NUCL_ICE_MIN = -37.0D0
+      DOUBLE PRECISION,PARAMETER::T_NUCL_DROP_MIN = -60.0D0
+      DOUBLE PRECISION,PARAMETER::T_NUCL_ICE_MIN = -37.0D0
    ! Ice nucleation method
    ! using MEYERS method : ice_nucl_method == 0
    ! using DE_MOTT method : ice_nucl_method == 1
@@ -2972,21 +2973,21 @@ module module_mp_SBM_BreakUp
       implicit none
    
        integer,intent(in) :: 	 Kin, Jin, Iin, NKR, NKR_aerosol, ICEMAX, ICEPROCS, Is_This_CloudBase,IONS
-       real(kind=r4size),intent(in) :: XL_r(:), XI_r(:,:), ROR_r, PP_r, COL_r, Win_r, &
+       DOUBLE PRECISION,intent(in) :: XL_r(:), XI_r(:,:), ROR_r, PP_r, COL_r, Win_r, &
                                      SUP2_OLD_r, DSUPICE_XYZ_r, RCCN_r(:), DROPRADII_r(:)
-       real(kind=r4size),intent(in) ::	 	   MWAERO, RO_SOLUTE
-       real(kind=r4size),intent(inout) :: 	 PSI1_r(:),PSI2_r(:,:),FCCNR_r(:), lh_homo, lh_ice_nucl
-       real(kind=r8size),intent(inout) :: TT, QQ, SUP1,SUP2
+       DOUBLE PRECISION,intent(in) ::	 	   MWAERO, RO_SOLUTE
+       DOUBLE PRECISION,intent(inout) :: 	 PSI1_r(:),PSI2_r(:,:),FCCNR_r(:), lh_homo, lh_ice_nucl
+       DOUBLE PRECISION,intent(inout) :: TT, QQ, SUP1,SUP2
    
     ! ... Locals
        integer :: KR, ICE, K
-       real(kind=r8size) :: DROPCONCN(NKR), ARG_1, COL3, RORI, TPN, QPN, TPC, AR1, AR2, OPER3,           &
+       DOUBLE PRECISION :: DROPCONCN(NKR), ARG_1, COL3, RORI, TPN, QPN, TPC, AR1, AR2, OPER3,           &
                                 SUM_ICE, DEL2N, FI2(NKR,ICEMAX), TFREEZ_OLD, DTFREEZXZ, RMASSIAA_NUCL, RMASSIBB_NUCL, &
                             FI2_K, xi_K, FI2R2, DELMASSICE_NUCL, ES1N, ES2N, EW1N
-     real(kind=r8size),parameter :: AL2 = 2834.0D0
-     real(kind=r8size) :: PSI1(NKR),PSI2(NKR,ICEMAX),FCCNR(NKR_aerosol),ROR,XL(NKR),XI(NKR,ICEMAX),PP,COL, &
+     DOUBLE PRECISION,parameter :: AL2 = 2834.0D0
+     DOUBLE PRECISION :: PSI1(NKR),PSI2(NKR,ICEMAX),FCCNR(NKR_aerosol),ROR,XL(NKR),XI(NKR,ICEMAX),PP,COL, &
                                 SUP2_OLD,DSUPICE_XYZ,Win, RCCN(NKR_aerosol),DROPRADII(NKR)
-      real(kind=r4size) :: TPNreal
+      DOUBLE PRECISION :: TPNreal
     ! ... Locals
    
        OPER3(AR1,AR2) = AR1*AR2/(0.622D0+0.378D0*AR1)
@@ -3135,16 +3136,16 @@ module module_mp_SBM_BreakUp
    ! xl((KR), g        - drop bin masses
    
      integer,intent(in) :: 			Is_This_CloudBase, NKR, IONS
-     real(kind=r8size),intent(in) :: 	xl(:), ROR, PP, Win, RCCN(:), COL
-     real(kind=r8size),intent(inout) :: FCCNR(:), PSI1(:), DROPCONCN(:), QQ, TT, SUP1
-     real(kind=r4size),intent(in) :: 	 RO_SOLUTE, MWAERO
+     DOUBLE PRECISION,intent(in) :: 	xl(:), ROR, PP, Win, RCCN(:), COL
+     DOUBLE PRECISION,intent(inout) :: FCCNR(:), PSI1(:), DROPCONCN(:), QQ, TT, SUP1
+     DOUBLE PRECISION,intent(in) :: 	 RO_SOLUTE, MWAERO
    
      ! ... Locals
        integer :: 			IMAX, I, NCRITI, KR
-       real(kind=r8size) :: DX,AR2,RCRITI,DEG01,RORI,CCNCONC(NKR),AKOE,BKOE, AR1, OPER3, RCCN_MINIMUM, &
+       DOUBLE PRECISION :: DX,AR2,RCRITI,DEG01,RORI,CCNCONC(NKR),AKOE,BKOE, AR1, OPER3, RCCN_MINIMUM, &
                                   DLN1, DLN2, RMASSL_NUCL, ES1N, EW1N
-      real(kind=r8size),parameter :: AL1 = 2500.0D0
-       real(kind=r4size) :: TTreal
+      DOUBLE PRECISION,parameter :: AL1 = 2500.0D0
+       DOUBLE PRECISION :: TTreal
      ! ... Locals
    
        OPER3(AR1,AR2)=AR1*AR2/(0.622D0+0.378D0*AR1)
@@ -3268,20 +3269,20 @@ module module_mp_SBM_BreakUp
       implicit none
    
       integer,intent(in) :: NKR, ICEMAX
-      real(kind=r8size),intent(in) :: xi(:,:), DSUPICE_XYZ, COL
-      real(kind=r8size),intent(inout) :: PSI2(:,:),TT,SUP2,SUP2_OLD
+      DOUBLE PRECISION,intent(in) :: xi(:,:), DSUPICE_XYZ, COL
+      DOUBLE PRECISION,intent(inout) :: PSI2(:,:),TT,SUP2,SUP2_OLD
    
       ! ... Locals
       integer :: KR,ICE,ITYPE
-      real(kind=r8size) :: FI2(NKR,ICEMAX), CONCI_BFNUCL(ICEMAX), CONCI_AFNUCL(ICEMAX)
-      real(kind=r8size),parameter :: A1 = -0.639D0, B1 = 0.1296D0, A2 = -2.8D0, B2 = 0.262D0, &
+      DOUBLE PRECISION :: FI2(NKR,ICEMAX), CONCI_BFNUCL(ICEMAX), CONCI_AFNUCL(ICEMAX)
+      DOUBLE PRECISION,parameter :: A1 = -0.639D0, B1 = 0.1296D0, A2 = -2.8D0, B2 = 0.262D0, &
                                             TEMP1 = -5.0D0, TEMP2 = -2.0D0, TEMP3 = -20.0D0
    
       ! C1_MEY=0.001 1/cm^3
-      real(kind=r8size),PARAMETER::C1_MEY = 1.0D-3
-      real(kind=r8size),PARAMETER::C2_MEY = 0.0D0
+      DOUBLE PRECISION,PARAMETER::C1_MEY = 1.0D-3
+      DOUBLE PRECISION,PARAMETER::C2_MEY = 0.0D0
       INTEGER,PARAMETER :: NRGI = 2
-      real(kind=r8size) :: C1,C2,TPC,DEL2N,DEL2NN,HELEK1,HELEK2,FF1BN,FACT,DSUP2N,DELTACD,DELTAF, &
+      DOUBLE PRECISION :: C1,C2,TPC,DEL2N,DEL2NN,HELEK1,HELEK2,FF1BN,FACT,DSUP2N,DELTACD,DELTAF, &
                              ADDF,DELCONCI_AFNUCL,TPCC,DX
       ! ... Locals
    
@@ -3413,13 +3414,13 @@ module module_mp_SBM_BreakUp
    !                     distribution function in point with X,Z
    !                     coordinates, KR=1,...,NKR
       integer,intent(in) :: 				   NKR, IONS
-      real(kind=r8size),intent(in) ::  TT, PP, Wbase, RCCN(:), COL
-      real(kind=r8size),intent(inout) :: 	FCCNR(:), RCRITI
-      real(kind=r4size),intent(in) ::  MWAERO, RO_SOLUTE
+      DOUBLE PRECISION,intent(in) ::  TT, PP, Wbase, RCCN(:), COL
+      DOUBLE PRECISION,intent(inout) :: 	FCCNR(:), RCRITI
+      DOUBLE PRECISION,intent(in) ::  MWAERO, RO_SOLUTE
    
       ! ... Locals
         integer :: NR, NN, KR
-        real(kind=r8size) :: PL(NKR), supmax(NKR), AKOE, BKOE, C3, PR, CCNCONACT, DL1, DL2, &
+        DOUBLE PRECISION :: PL(NKR), supmax(NKR), AKOE, BKOE, C3, PR, CCNCONACT, DL1, DL2, &
                                    TPC
       ! ... Locals
    
@@ -3507,14 +3508,14 @@ module module_mp_SBM_BreakUp
    ! TT, (K)- temperature
    
      integer,intent(in) :: IONS
-      real(kind=r8size) ,intent(in) :: 	PP, TT
-      real(kind=r8size) ,intent(out) :: AKOE, BKOE, C3
-      real,intent(in) :: 				MWAERO, RO_SOLUTE
+      DOUBLE PRECISION ,intent(in) :: 	PP, TT
+      DOUBLE PRECISION ,intent(out) :: AKOE, BKOE, C3
+      double precision ,intent(in) :: 				MWAERO, RO_SOLUTE
    
       ! ... Local
-         real(kind=r8size) ,parameter :: RV_MY = 461.5D4, CP = 1005.0D4, G = 9.8D2, RD_MY = 287.0D4, & ![cgs]
+         DOUBLE PRECISION ,parameter :: RV_MY = 461.5D4, CP = 1005.0D4, G = 9.8D2, RD_MY = 287.0D4, & ![cgs]
                                                 PI = 3.141593D0
-       real(kind=r8size) :: PZERO,TZERO,ALW1,SW,RO_W,HC,EW,RO_V,DV,RO_A,FL,FR,F,TPC,QV,A1,A2, &
+       DOUBLE PRECISION :: PZERO,TZERO,ALW1,SW,RO_W,HC,EW,RO_V,DV,RO_A,FL,FR,F,TPC,QV,A1,A2, &
                                    C1,C2,DEG01,DEG02
       ! ... Local
    
@@ -3663,26 +3664,26 @@ module module_mp_SBM_BreakUp
       implicit none
    ! ... Interface
          integer,intent(in) :: NKR
-         real(kind=r4size) ,intent(in) :: XL(:), COL, RO_SOLUTE, Scale_Fa
-         real(kind=r8size) ,intent(out) :: FCCNR_OUT(:)
-         real(kind=r4size) ,intent(out) :: XCCN(:),RCCN(:)
+         DOUBLE PRECISION ,intent(in) :: XL(:), COL, RO_SOLUTE, Scale_Fa
+         DOUBLE PRECISION ,intent(out) :: FCCNR_OUT(:)
+         DOUBLE PRECISION ,intent(out) :: XCCN(:),RCCN(:)
    ! ... Interface
    ! ... Local
          integer :: mode_num, KR, NKR_local
          integer,parameter :: modemax = 1
-         real(kind=r8size)  :: ccncon1, ccncon2, ccncon3, radius_mean1, radius_mean2, radius_mean3, &
+         DOUBLE PRECISION  :: ccncon1, ccncon2, ccncon3, radius_mean1, radius_mean2, radius_mean3, &
                                     sig1, sig2, sig3,													 &
                                     ccncon(modemax), sig(modemax), radius_mean(modemax)
-         real(kind=r8size)  :: CONCCCNIN, FCCNR1, FCCNR2, FCCNR(NKR), DEG01, X0DROP, &
+         DOUBLE PRECISION  :: CONCCCNIN, FCCNR1, FCCNR2, FCCNR(NKR), DEG01, X0DROP, &
                                  XOCCN, X0, R0, RCCN_MICRON, S_KR, S(NKR), X0CCN, ROCCN(NKR), &
                                 RO_SOLUTE_Ammon, RO_SOLUTE_NaCl
    
    
-         real(kind=r8size) ,PARAMETER :: RCCN_MAX = 0.4D-4         ! [cm]
-         real(kind=r8size) ,PARAMETER :: RCCN_MIN = 0.003D-4		! [cm]
+         DOUBLE PRECISION ,PARAMETER :: RCCN_MAX = 0.4D-4         ! [cm]
+         DOUBLE PRECISION ,PARAMETER :: RCCN_MIN = 0.003D-4		! [cm]
          ! ... Minimal radii for dry aerosol for the 3 log normal distribution
-          real(kind=r8size) ,PARAMETER :: RCCN_MIN_3LN = 0.00048D-4 ! [cm]
-         real(kind=r8size) ,PARAMETER :: PI = 3.14159265D0
+          DOUBLE PRECISION ,PARAMETER :: RCCN_MIN_3LN = 0.00048D-4 ! [cm]
+         DOUBLE PRECISION ,PARAMETER :: PI = 3.14159265D0
    ! ... Local
    
       NKR_local = 33 ! NOTE: we use 43 bins for aerosols
@@ -3754,23 +3755,23 @@ module module_mp_SBM_BreakUp
    
      !USE module_state_description,ONLY:  p_ff1i01,p_ff1i33,p_ff5i01,p_ff5i33, &
      !                                    p_ff6i01,p_ff6i33,p_ff8i01,p_ff8i33
-
-
-
+   
     PRIVATE
    
-    PUBLIC FAST_SBM,FAST_HUCMINIT
+    PUBLIC FAST_SBM,FAST_HUCMINIT, falfluxhucm_z, ckern_z, j_w_melt,  coal_bott_new, & 
+    breakinit_ks, ecoalmass, ecoaldiam, ecoallowlist, ecoalochs, vtbeard, collenergy, onecond3, &
+    onecond2, onecond1, freez,  kernals_ks
    
     ! Kind paramater
     INTEGER, PARAMETER, PRIVATE:: R8SIZE = 8
     INTEGER, PARAMETER, PRIVATE:: R16SIZE = 16
     INTEGER, PARAMETER, PRIVATE:: R4SIZE = 4
    
-   
-    ! Polar radar indices ([KS] >> Should be read automatically from "module_state_description")
-    INTEGER, PRIVATE,PARAMETER ::  p_ff1i01=1,p_ff1i33=1,p_ff5i01=1,p_ff5i33=1
-    INTEGER, PRIVATE,PARAMETER ::  p_ff6i01=1,p_ff6i33=1,p_ff8i01=1,p_ff8i33=1
+    
+    INTEGER, PRIVATE,PARAMETER :: p_ff1i01=1,p_ff1i33=1,p_ff5i01=1,p_ff5i33=1, &
+                                        p_ff6i01=1,p_ff6i33=1,p_ff8i01=1,p_ff8i33=1
 
+    ! Polar radar indices ([KS] >> Should be read automatically from "module_state_description")
     INTEGER, PRIVATE,PARAMETER :: r_p_ff1i01=2, r_p_ff1i06=07,r_p_ff2i01=08,r_p_ff2i06=13,r_p_ff3i01=14,&
                    r_p_ff3i06=19,r_p_ff4i01=20,r_p_ff4i06=25,r_p_ff5i01=26,r_p_ff5i06=31,r_p_ff6i01=32,r_p_ff6i06=37,&
                    r_p_ff7i01=38,r_p_ff7i06=43,r_p_ff8i01=44,r_p_ff8i06=49,r_p_ff9i01=50,r_p_ff9i06=55
@@ -3784,8 +3785,8 @@ module module_mp_SBM_BreakUp
     INTEGER,PARAMETER :: hail_opt = 1
     INTEGER,PARAMETER :: ILogNormal_modes_Aerosol_ACPC = 1, do_case_CLN = 0, do_case_POL = 1
    
-    REAL,PARAMETER :: DX_BOUND = 1555
-    REAL(kind=r8size), PARAMETER :: SCAL = 1.d0
+    double precision ,PARAMETER :: DX_BOUND = 1555
+    DOUBLE PRECISION, PARAMETER :: SCAL = 1.d0
     INTEGER,PARAMETER :: ICEPROCS = 0 ! CK 
     INTEGER,PARAMETER :: ICETURB = 0, LIQTURB = 0
    
@@ -3799,48 +3800,48 @@ module module_mp_SBM_BreakUp
                        !,NKR=43,JMAX=43,NRG=2,JBREAK=28,BR_MAX=43,KRMIN_BREAKUP=31,NKR_aerosol=43   ! 43 bins
                        ,NKR=33,JMAX=33,NRG=2,JBREAK=18,BR_MAX=33,KRMIN_BREAKUP=31,NKR_aerosol=33    ! 33 bins
    
-    REAL(kind=r4size) :: dt_coll
-    REAL,PARAMETER :: C1_MEY=0.00033,C2_MEY=0.0,COL=0.23105, &
+    DOUBLE PRECISION :: dt_coll
+    double precision ,PARAMETER :: C1_MEY=0.00033,C2_MEY=0.0,COL=0.23105, &
                       p1=1000000.0,p2=750000.0,p3=500000.0,  &
                       ALCR = 0.5, &
                       ALCR_G = 100.0 ! ... [KS] forcing no transition from graupel to hail in this version
     INTEGER :: NCOND, NCOLL
     INTEGER,PARAMETER :: kr_icempl=9
    
-    REAL(kind=r4size) :: &
+    DOUBLE PRECISION :: &
                     RADXX(NKR,NHYDR-1),MASSXX(NKR,NHYDR-1),DENXX(NKR,NHYDR-1) &
                    ,MASSXXO(NKR,NHYDRO),DENXXO(NKR,NHYDRO),VRI(NKR)           &
                        ,XX(nkr),ROCCN(nkr),FCCNR_MIX(NKR),FCCNR(NKR)
    
-    REAL(kind=r8size),DIMENSION (NKR) :: FF1R_D,XL_D,VR1_D &
+    DOUBLE PRECISION,DIMENSION (NKR) :: FF1R_D,XL_D,VR1_D &
                          ,FF3R_D,XS_D,VR3_D,VTS_D,FLIQFR_SD,RO3BL_D &
                          ,FF4R_D,XG_D,VR4_D,VTG_D,FLIQFR_GD,RO4BL_D &
                          ,FF5R_D,XH_D,VR5_D,VTH_D,FLIQFR_HD,RO5BL_D &
                          ,XS_MELT_D,XG_MELT_D,XH_MELT_D,VR_TEST,FRIMFR_SD,RF3R
    
     ! ... SBMRADAR VARIABLES
-    REAL(kind=r8size),DIMENSION (nkr,icemax) :: XI_MELT_D &
+    DOUBLE PRECISION,DIMENSION (nkr,icemax) :: XI_MELT_D &
                         ,FF2R_D,XI_D,VR2_D,VTC_D,FLIQFR_ID,RO2BL_D
-    REAL(kind=r8size) :: T_NEW_D,rhocgs_D,pcgs_D,DT_D,qv_old_D,qv_d
+    DOUBLE PRECISION :: T_NEW_D,rhocgs_D,pcgs_D,DT_D,qv_old_D,qv_d
    
-    REAL(kind=r4size),private :: C2,C3,C4
-    REAL(kind=r8size),private ::  &
+    DOUBLE PRECISION,private :: C2,C3,C4
+    DOUBLE PRECISION,private ::  &
                    xl_mg(nkr),xs_mg(nkr),xg_mg(nkr),xh_mg(nkr) &
                    ,xi1_mg(nkr),xi2_mg(nkr),xi3_mg(nkr)
    
     ! ----------------------------------------------------------------------------------+
     ! ... WRFsbm_Init
     ! ... Holding Lookup tables and memory arrays for the FAST_SBM module
-            REAL (KIND=R8SIZE), ALLOCATABLE, DIMENSION(:)::                             &
+            DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:)::                             &
                                              bin_mass,tab_colum,tab_dendr,tab_snow,bin_log
-            REAL (KIND=R4SIZE), ALLOCATABLE, DIMENSION(:) ::                            &
+            DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:) ::                            &
                                              RLEC,RSEC,RGEC,RHEC,XL,XS,XG,XH,VR1,VR3,VR4,VR5
-            REAL (KIND=R4SIZE), ALLOCATABLE, DIMENSION(:,:)::                           &
+            DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:)::                           &
                                              RIEC,XI,VR2
-            REAL (KIND=R4SIZE), ALLOCATABLE ::                              &
+            DOUBLE PRECISION, ALLOCATABLE ::                              &
                                              COEFIN(:),SLIC(:,:),TLIC(:,:), &
                                              YWLL_1000MB(:,:),YWLL_750MB(:,:),YWLL_500MB(:,:)
-            REAL (KIND=R4SIZE), ALLOCATABLE ::                              &
+            DOUBLE PRECISION, ALLOCATABLE ::                              &
                                             YWLI_300MB(:,:,:),YWLI_500MB(:,:,:),YWLI_750MB(:,:,:),              &
                                             YWLG_300MB(:,:),YWLG_500MB(:,:),YWLG_750MB(:,:),YWLG(:,:),          &
                                             YWLH_300MB(:,:),YWLH_500MB(:,:),YWLH_750MB(:,:),                    &
@@ -3851,18 +3852,18 @@ module module_mp_SBM_BreakUp
                                             YWSG_300MB(:,:),YWSG_500MB(:,:),YWSG_750MB(:,:),                    &
                                             YWSS_300MB(:,:),YWSS_500MB(:,:),YWSS_750MB(:,:)
    
-            REAL (KIND=R4SIZE), ALLOCATABLE ::                  &
+            DOUBLE PRECISION, ALLOCATABLE ::                  &
                                             RO1BL(:), RO2BL(:,:), RO3BL(:), RO4BL(:), RO5BL(:),                 &
                                             RADXXO(:,:)
    
             INTEGER,ALLOCATABLE ::              ima(:,:)
-            REAL (KIND=R8SIZE), ALLOCATABLE ::  chucm(:,:)
+            DOUBLE PRECISION, ALLOCATABLE ::  chucm(:,:)
    
-            REAL (KIND=R8SIZE), ALLOCATABLE ::  BRKWEIGHT(:),ECOALMASSM(:,:), Prob(:),Gain_Var_New(:,:),NND(:,:)
-            REAL (KIND=R4SIZE), ALLOCATABLE ::  DROPRADII(:),PKIJ(:,:,:),QKJ(:,:)
+            DOUBLE PRECISION, ALLOCATABLE ::  BRKWEIGHT(:),ECOALMASSM(:,:), Prob(:),Gain_Var_New(:,:),NND(:,:)
+            DOUBLE PRECISION, ALLOCATABLE ::  DROPRADII(:),PKIJ(:,:,:),QKJ(:,:)
             INTEGER ::          ikr_spon_break
    
-            REAL (KIND=R8SIZE), ALLOCATABLE ::  cwll(:,:), &
+            DOUBLE PRECISION, ALLOCATABLE ::  cwll(:,:), &
                                                 cwli_1(:,:),cwli_2(:,:),cwli_3(:,:),        &
                                                 cwil_1(:,:),cwil_2(:,:),cwil_3(:,:),        &
                                                 cwlg(:,:),cwlh(:,:),cwls(:,:),              &
@@ -3875,8 +3876,8 @@ module module_mp_SBM_BreakUp
                                                 cwig_1(:,:),cwig_2(:,:),cwig_3(:,:),        &
                                                 cwih_1(:,:),cwih_2(:,:),cwih_3(:,:),        &
                                                 cwsg(:,:),cwss(:,:)
-            REAL(kind=r8size),ALLOCATABLE ::  FCCNR_ACPC_Norm(:)
-            REAL(kind=r4size),ALLOCATABLE :: Scale_CCN_Factor,XCCN(:),RCCN(:),FCCN(:)
+            DOUBLE PRECISION,ALLOCATABLE ::  FCCNR_ACPC_Norm(:)
+            DOUBLE PRECISION,ALLOCATABLE :: Scale_CCN_Factor,XCCN(:),RCCN(:),FCCN(:)
    
     ! ... WRFsbm_Init
     ! --------------------------------------------------------------------------------+
@@ -3885,49 +3886,41 @@ module module_mp_SBM_BreakUp
    
     ! ### (KS) - CCN related
     ! -----------------------------------------------------------------------
-    !REAL (KIND=R4SIZE), parameter :: mwaero = 22.9 + 35.5 ! sea salt
-    real(kind=r4size),parameter :: mwaero = 115.0
+    !DOUBLE PRECISION, parameter :: mwaero = 22.9 + 35.5 ! sea salt
+    DOUBLE PRECISION,parameter :: mwaero = 115.0
     !integer,parameter :: ions = 2        	! sea salt
     integer,parameter  :: ions = 3         ! ammonium-sulfate
-    !real(KIND=R4SIZE),parameter :: RO_SOLUTE = 2.16   	! sea salt
-    real(kind=r4size),parameter ::  RO_SOLUTE = 1.79  	! ammonium-sulfate
+    !DOUBLE PRECISION,parameter :: RO_SOLUTE = 2.16   	! sea salt
+    DOUBLE PRECISION,parameter ::  RO_SOLUTE = 1.79  	! ammonium-sulfate
     ! -------------------------------------------------------------------------
-    REAL (KIND=R4SIZE) :: FR_LIM(NKR), FRH_LIM(NKR), lh_ce_1, lh_ce_2, lh_ce_3,  &
+    DOUBLE PRECISION :: FR_LIM(NKR), FRH_LIM(NKR), lh_ce_1, lh_ce_2, lh_ce_3,  &
                           lh_frz, lh_mlt, lh_rime, lh_homo, ce_bf, ce_af, ds_bf, &
                           ds_af, mlt_bf, mlt_af, frz_af, frz_bf, cldnucl_af,     &
-                          cldnucl_bf, icenucl_af, icenucl_bf, lh_ice_nucl
-   !---YZ2020-----------------------------------------------
-    real ttdiffl, automass_ch, autonum_ch, nrautonum 
-   !--------------------------------------------------------
-
-       
+                          cldnucl_bf, icenucl_af, icenucl_bf, lh_ice_nucl, ttdiffl,&
+                        automass_ch, autonum_ch, nrautonum 
       CONTAINS
     !-----------------------------------------------------------------------
           SUBROUTINE FAST_SBM (w,u,v,th_old,                                &
-                               chem_new,n_chem,                            &
-                               itimestep,DT,DX,DY,                         &
-                               dz8w,rho_phy,p_phy,pi_phy,th_phy,           &
-                               xland,ivgtyp,xlat,xlong,                    &
-                               QV,QC,QR,QI,QS,QG,QV_OLD,                   &
-                               QNC,QNR,QNI,QNS,QNG,QNA,                    &
-                               ids,ide, jds,jde, kds,kde,		        	 &
-                               ims,ime, jms,jme, kms,kme,		        	 &
-                               its,ite, jts,jte, kts,kte,                  &
-                               diagflag,      	                         &
-                               sbmradar,num_sbmradar,                      &
-                               RAINNC,RAINNCV,SNOWNC,SNOWNCV,GRAUPELNC,GRAUPELNCV,SR,       &
-                               MA,LH_rate,CE_rate,DS_rate,Melt_rate,Frz_rate,CldNucl_rate, IceNucl_rate)
-         !---YZ2020: Output warm rain process rate--------------------------------@
-!#ifdef SBM_DIAG
-!                           ,difful_tend   &  !liquid mass change rate due to droplet diffusional growth (kg/kg/s)
-!                           ,diffur_tend   &  !rain mass change rate due to droplet diffusional growth (kg/kg/s)
-!                           ,tempdiffl     &  !latent heat rate due to droplet diffusional growth (K/s)
-!                           ,automass_tend &  !cloud droplet mass change due to collision-coalescence (kg/kg/s)
-!                           ,autonum_tend  &  !cloud droplet number change due to collision-coalescence (#/kg/s)
-!                           ,nprc_tend     &  !rain number change due to collision-coalescence (#/kg/s)
-!#endif
-!-----------------------------------------------------------------------@
-!         )
+         &                      chem_new,n_chem,                            &
+         &                      itimestep,DT,DX,DY,                         &
+         &                      dz8w,rho_phy,p_phy,pi_phy,th_phy,           &
+         &                      xland,ivgtyp,xlat,xlong,                    &
+         &                      QV,QC,QR,QI,QS,QG,QV_OLD,                   &
+         &                      QNC,QNR,QNI,QNS,QNG,QNA,                    &
+         &                      ids,ide, jds,jde, kds,kde,		        	 &
+         &                      ims,ime, jms,jme, kms,kme,		        	 &
+         &                      its,ite, jts,jte, kts,kte,                  &
+         &                      diagflag,      	                         &
+         &                      sbmradar,num_sbmradar,                      &
+         &                      RAINNC,RAINNCV,SNOWNC,SNOWNCV,GRAUPELNC,GRAUPELNCV,SR,       &
+         &                      MA,LH_rate,CE_rate,DS_rate,Melt_rate,Frz_rate,CldNucl_rate, IceNucl_rate &
+     &                      ,difful_tend   &  !liquid mass change rate due to droplet diffusional growth (kg/kg/s)
+     &                      ,diffur_tend   &  !rain mass change rate due to droplet diffusional growth (kg/kg/s)
+     &                      ,tempdiffl     &  !latent heat rate due to droplet diffusional growth (K/s)
+     &                      ,automass_tend &  !cloud droplet mass change due to collision-coalescence (kg/kg/s)
+     &                      ,autonum_tend  &  !cloud droplet number change due to collision-coalescence (#/kg/s)
+     &                      ,nprc_tend     &  !rain number change due to collision-coalescence (#/kg/s)
+         )
    
     !---------------------------------------------------------------------------------
           IMPLICIT NONE
@@ -3935,20 +3928,20 @@ module module_mp_SBM_BreakUp
        INTEGER :: KR,IKL,ICE
    
        INTEGER,INTENT(IN) :: IDS,IDE,JDS,JDE,KDS,KDE                     &
-                            ,IMS,IME,JMS,JME,KMS,KME                    &
-                            ,ITS,ITE,JTS,JTE,KTS,KTE                    &
-                            ,ITIMESTEP,N_CHEM,NUM_SBMRADAR
+       &                     ,IMS,IME,JMS,JME,KMS,KME                    &
+       &                     ,ITS,ITE,JTS,JTE,KTS,KTE                    &
+       &                     ,ITIMESTEP,N_CHEM,NUM_SBMRADAR
    
-       REAL, INTENT(IN) 	    :: DT,DX,DY
-       REAL,  DIMENSION( ims:ime , kms:kme , jms:jme ), &
+       double precision , INTENT(IN) 	    :: DT,DX,DY
+       double precision ,  DIMENSION( ims:ime , kms:kme , jms:jme ), &
        INTENT(IN   ) ::                                 &
                            U, &
                            V, &
                            W
    
-       REAL    ,DIMENSION(ims:ime,kms:kme,jms:jme,n_chem),INTENT(INOUT)   :: chem_new
-       REAL    ,DIMENSION(ims:ime,kms:kme,jms:jme,num_sbmradar),INTENT(INOUT)   :: sbmradar
-       REAL,    DIMENSION( ims:ime , kms:kme , jms:jme ),               &
+       double precision     ,DIMENSION(ims:ime,kms:kme,jms:jme,n_chem),INTENT(INOUT)   :: chem_new
+       double precision     ,DIMENSION(ims:ime,kms:kme,jms:jme,num_sbmradar),INTENT(INOUT)   :: sbmradar
+       double precision ,    DIMENSION( ims:ime , kms:kme , jms:jme ),               &
                 INTENT(INOUT) ::                                          &
                              qv, 		&
                              qv_old, 	&
@@ -3967,20 +3960,20 @@ module module_mp_SBM_BreakUp
                              MA,LH_rate,CE_rate,DS_rate,Melt_rate,Frz_rate,CldNucl_rate, &
                              IceNucl_rate
    
-          REAL , DIMENSION( ims:ime , jms:jme ) , INTENT(IN)   :: XLAND
+          double precision  , DIMENSION( ims:ime , jms:jme ) , INTENT(IN)   :: XLAND
           LOGICAL, OPTIONAL, INTENT(IN) :: diagflag
    
           INTEGER, DIMENSION( ims:ime , jms:jme ), INTENT(IN)::   IVGTYP
-          REAL, DIMENSION( ims:ime, jms:jme ), INTENT(IN   )    :: XLAT, XLONG
-          REAL, INTENT(IN),     DIMENSION(ims:ime, kms:kme, jms:jme)::      &
-                               dz8w,p_phy,pi_phy,rho_phy
-          REAL, INTENT(INOUT),  DIMENSION(ims:ime, kms:kme, jms:jme)::      &
-                               th_phy
-          REAL, INTENT(INOUT),  DIMENSION(ims:ime,jms:jme), OPTIONAL ::     &
-               RAINNC,RAINNCV,SNOWNC,SNOWNCV,GRAUPELNC,GRAUPELNCV,SR
+          double precision , DIMENSION( ims:ime, jms:jme ), INTENT(IN   )    :: XLAT, XLONG
+          double precision , INTENT(IN),     DIMENSION(ims:ime, kms:kme, jms:jme)::      &
+         &                      dz8w,p_phy,pi_phy,rho_phy
+          double precision , INTENT(INOUT),  DIMENSION(ims:ime, kms:kme, jms:jme)::      &
+         &                      th_phy
+          double precision , INTENT(INOUT),  DIMENSION(ims:ime,jms:jme), OPTIONAL ::     &
+         &      RAINNC,RAINNCV,SNOWNC,SNOWNCV,GRAUPELNC,GRAUPELNCV,SR
     !-----YZ2020:Define arrays for diagnostics------------------------@
 #ifdef SBM_DIAG
-      REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(INOUT)::  &
+      double precision , DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(INOUT)::  &
       difful_tend,diffur_tend,tempdiffl,automass_tend,autonum_tend,nprc_tend
 #endif
     !-----------------------------------------------------------------@
@@ -3989,139 +3982,139 @@ module module_mp_SBM_BreakUp
     !     LOCAL VARS
     !-----------------------------------------------------------------------
    
-          REAL (KIND=R4SIZE),  DIMENSION(its-1:ite+1, kts:kte, jts-1:jte+1)::  &
+          DOUBLE PRECISION,  DIMENSION(its-1:ite+1, kts:kte, jts-1:jte+1)::  &
                                                      t_new,t_old,zcgs,rhocgs,pcgs
    
           INTEGER :: I,J,K,KFLIP
           INTEGER :: KRFREEZ
    
-          REAL (KIND=R4SIZE),PARAMETER :: Z0IN=2.0E5,ZMIN=2.0E5
+          DOUBLE PRECISION,PARAMETER :: Z0IN=2.0E5,ZMIN=2.0E5
    
-          REAL (KIND=R4SIZE) :: EPSF2D, &
-                 TAUR1,TAUR2,EPS_R1,EPS_R2,ANC1IN, &
-                 PEPL,PEPI,PERL,PERI,ANC1,ANC2,PARSP, &
-                 AFREEZMY,BFREEZMY,BFREEZMAX, &
-                 TCRIT,TTCOAL, &
-                 EPSF1,EPSF3,EPSF4, &
-                 SUP2_OLD, DSUPICEXZ,TFREEZ_OLD,DTFREEZXZ, &
-                 AA1_MY,BB1_MY,AA2_MY,BB2_MY, &
-                 DTIME,DTCOND,DTNEW,DTCOLL, &
-                 A1_MYN, BB1_MYN, A2_MYN, BB2_MYN
+          DOUBLE PRECISION :: EPSF2D, &
+         &        TAUR1,TAUR2,EPS_R1,EPS_R2,ANC1IN, &
+         &        PEPL,PEPI,PERL,PERI,ANC1,ANC2,PARSP, &
+         &        AFREEZMY,BFREEZMY,BFREEZMAX, &
+         &        TCRIT,TTCOAL, &
+         &        EPSF1,EPSF3,EPSF4, &
+         &        SUP2_OLD, DSUPICEXZ,TFREEZ_OLD,DTFREEZXZ, &
+         &        AA1_MY,BB1_MY,AA2_MY,BB2_MY, &
+         &        DTIME,DTCOND,DTNEW,DTCOLL, &
+         &        A1_MYN, BB1_MYN, A2_MYN, BB2_MYN
          DATA A1_MYN, BB1_MYN, A2_MYN, BB2_MYN  &
-               /2.53,5.42,3.41E1,6.13/
+         &      /2.53,5.42,3.41E1,6.13/
          DATA AA1_MY,BB1_MY,AA2_MY,BB2_MY/2.53E12,5.42E3,3.41E13,6.13E3/
                 !QSUM,ISUM,QSUM1,QSUM2,CCNSUM1,CCNSUM2
          DATA KRFREEZ,BFREEZMAX,ANC1,ANC2,PARSP,PEPL,PEPI,PERL,PERI, &
-           TAUR1,TAUR2,EPS_R1,EPS_R2,TTCOAL,AFREEZMY,&
-           BFREEZMY,EPSF1,EPSF3,EPSF4,TCRIT/21,&
-           0.6600E00, &
-           1.0000E02,1.0000E02,0.9000E02, &
-           0.6000E00,0.6000E00,1.0000E-03,1.0000E-03, &
-           0.5000E00,0.8000E00,0.1500E09,0.1500E09, &
-           2.3315E02,0.3333E-04,0.6600E00, &
-           0.1000E-02,0.1000E-05,0.1000E-05, &
-           2.7015E02/
+         &  TAUR1,TAUR2,EPS_R1,EPS_R2,TTCOAL,AFREEZMY,&
+         &  BFREEZMY,EPSF1,EPSF3,EPSF4,TCRIT/21,&
+         &  0.6600E00, &
+         &  1.0000E02,1.0000E02,0.9000E02, &
+         &  0.6000E00,0.6000E00,1.0000E-03,1.0000E-03, &
+         &  0.5000E00,0.8000E00,0.1500E09,0.1500E09, &
+         &  2.3315E02,0.3333E-04,0.6600E00, &
+         &  0.1000E-02,0.1000E-05,0.1000E-05, &
+         &  2.7015E02/
    
-         REAL (KIND=R4SIZE),DIMENSION (nkr) :: FF1IN,FF3IN,FF4IN,FF5IN,&
+         DOUBLE PRECISION,DIMENSION (nkr) :: FF1IN,FF3IN,FF4IN,FF5IN,&
          &              FF1R,FF3R,FF4R,FF5R,FLIQFR_S,FRIMFR_S,FLIQFR_G,FLIQFR_H, &
          &              FF1R_NEW,FF3R_NEW,FF4R_NEW,FF5R_NEW
-         REAL (KIND=R4SIZE),DIMENSION (nkr) :: FL3R,FL4R,FL5R,FL3R_NEW,FL4R_NEW,FL5R_NEW
+         DOUBLE PRECISION,DIMENSION (nkr) :: FL3R,FL4R,FL5R,FL3R_NEW,FL4R_NEW,FL5R_NEW
    
-         REAL (KIND=R4SIZE),DIMENSION (nkr,icemax) :: FF2IN,FF2R,FLIQFR_I
+         DOUBLE PRECISION,DIMENSION (nkr,icemax) :: FF2IN,FF2R,FLIQFR_I
    
-         REAL (KIND=R4SIZE) :: XI_MELT(NKR,ICEMAX),XS_MELT(NKR),XG_MELT(NKR),XH_MELT(NKR)
+         DOUBLE PRECISION :: XI_MELT(NKR,ICEMAX),XS_MELT(NKR),XG_MELT(NKR),XH_MELT(NKR)
     !!!! NOTE: ZCGS AND OTHER VARIABLES ARE ALSO DIMENSIONED IN FALFLUXHUCM
-         REAL (KIND=R8SIZE) :: DEL1NR,DEL2NR,DEL12R,DEL12RD,ES1N,ES2N,EW1N,EW1PN
-         REAL (KIND=R8SIZE) :: DELSUP1,DELSUP2,DELDIV1,DELDIV2
-         REAL (KIND=R8SIZE) :: TT,QQ,TTA,QQA,PP,DPSA,DELTATEMP,DELTAQ
-         REAL (KIND=R8SIZE) :: DIV1,DIV2,DIV3,DIV4,DEL1IN,DEL2IN,DEL1AD,DEL2AD
-         REAL (KIND=R4SIZE) :: DEL_BB,DEL_BBN,DEL_BBR, TTA_r
-         REAL (KIND=R4SIZE) :: FACTZ,CONCCCN_XZ,CONCDROP
-         REAL (KIND=R4SIZE) :: SUPICE(KTE),AR1,AR2, &
+         DOUBLE PRECISION :: DEL1NR,DEL2NR,DEL12R,DEL12RD,ES1N,ES2N,EW1N,EW1PN
+         DOUBLE PRECISION :: DELSUP1,DELSUP2,DELDIV1,DELDIV2
+         DOUBLE PRECISION :: TT,QQ,TTA,QQA,PP,DPSA,DELTATEMP,DELTAQ
+         DOUBLE PRECISION :: DIV1,DIV2,DIV3,DIV4,DEL1IN,DEL2IN,DEL1AD,DEL2AD
+         DOUBLE PRECISION :: DEL_BB,DEL_BBN,DEL_BBR, TTA_r
+         DOUBLE PRECISION :: FACTZ,CONCCCN_XZ,CONCDROP
+         DOUBLE PRECISION :: SUPICE(KTE),AR1,AR2, &
                         & DERIVT_X,DERIVT_Y,DERIVT_Z,DERIVS_X,DERIVS_Y,DERIVS_Z, &
                         & ES2NPLSX,ES2NPLSY,EW1NPLSX,EW1NPLSY,UX,VX, &
                         & DEL2INPLSX,DEL2INPLSY,DZZ(KTE)
         INTEGER KRR,I_START,I_END,J_START,J_END
-         REAL (KIND=R4SIZE) :: DTFREEZ_XYZ(ITE,KTE,JTE),DSUPICE_XYZ(ITE,KTE,JTE)
+         DOUBLE PRECISION :: DTFREEZ_XYZ(ITE,KTE,JTE),DSUPICE_XYZ(ITE,KTE,JTE)
    
-         REAL (KIND=R4SIZE) :: DXHUCM,DYHUCM
-         REAL (KIND=R4SIZE) :: FMAX1,FMAX2(ICEMAX),FMAX3,FMAX4,FMAX5
+         DOUBLE PRECISION :: DXHUCM,DYHUCM
+         DOUBLE PRECISION :: FMAX1,FMAX2(ICEMAX),FMAX3,FMAX4,FMAX5
        INTEGER ISYM1,ISYM2(ICEMAX),ISYM3,ISYM4,ISYM5
        INTEGER DIFFU
-       REAL (KIND=R4SIZE) :: DELTAW
-       REAL (KIND=R4SIZE) :: zcgs_z(kts:kte),pcgs_z(kts:kte),rhocgs_z(kts:kte),ffx_z(kts:kte,nkr)
-       REAL (KIND=R4SIZE) :: z_full
-       REAL (KIND=R4SIZE) :: VRX(kts:kte,NKR)
+       DOUBLE PRECISION :: DELTAW
+       DOUBLE PRECISION :: zcgs_z(kts:kte),pcgs_z(kts:kte),rhocgs_z(kts:kte),ffx_z(kts:kte,nkr)
+       DOUBLE PRECISION :: z_full
+       DOUBLE PRECISION :: VRX(kts:kte,NKR)
    
-       REAL (KIND=R4SIZE) :: VR1_Z(NKR,KTS:KTE), FACTOR_P
-       REAL (KIND=R4SIZE) :: VR2_ZC(NKR,KTS:KTE), VR2_Z(NKR,ICEMAX)
-       REAL (KIND=R4SIZE) :: VR2_ZP(NKR,KTS:KTE)
-       REAL (KIND=R4SIZE) :: VR2_ZD(NKR,KTS:KTE)
-       REAL (KIND=R4SIZE) :: VR3_Z(NKR,KTS:KTE), VR3_Z3D(NKR,ITS:ITE,KTS:KTE,JTS:JTE)
-       REAL (KIND=R4SIZE) :: VR4_Z(NKR,KTS:KTE), VR4_Z3D(NKR,ITS:ITE,KTS:KTE,JTS:JTE)
-       REAL (KIND=R4SIZE) :: VR5_Z(NKR,KTS:KTE), VR5_Z3D(NKR,ITS:ITE,KTS:KTE,JTS:JTE)
-       REAL (KIND=R4SIZE) :: BulkDen_Snow(NKR,ITS:ITE,KTS:KTE,JTS:JTE) ! Local array for snow density
+       DOUBLE PRECISION :: VR1_Z(NKR,KTS:KTE), FACTOR_P
+       DOUBLE PRECISION :: VR2_ZC(NKR,KTS:KTE), VR2_Z(NKR,ICEMAX)
+       DOUBLE PRECISION :: VR2_ZP(NKR,KTS:KTE)
+       DOUBLE PRECISION :: VR2_ZD(NKR,KTS:KTE)
+       DOUBLE PRECISION :: VR3_Z(NKR,KTS:KTE), VR3_Z3D(NKR,ITS:ITE,KTS:KTE,JTS:JTE)
+       DOUBLE PRECISION :: VR4_Z(NKR,KTS:KTE), VR4_Z3D(NKR,ITS:ITE,KTS:KTE,JTS:JTE)
+       DOUBLE PRECISION :: VR5_Z(NKR,KTS:KTE), VR5_Z3D(NKR,ITS:ITE,KTS:KTE,JTS:JTE)
+       DOUBLE PRECISION :: BulkDen_Snow(NKR,ITS:ITE,KTS:KTE,JTS:JTE) ! Local array for snow density
    
-       REAL (KIND=R4SIZE), PARAMETER :: RON=8.E6, GON=5.E7,PI=3.14159265359
-       REAL (KIND=R4SIZE) :: EFF_N,EFF_D
-        REAL (KIND=R4SIZE) :: EFF_NI(its:ite,kts:kte,jts:jte),eff_di(its:ite,kts:kte,jts:jte)
-       REAL (KIND=R4SIZE) :: EFF_NQIC,eff_DQIC
-       REAL (KIND=R4SIZE) :: EFF_NQIP,eff_DQIP
-       REAL (KIND=R4SIZE) :: EFF_NQID,eff_DQID
-       REAL (KIND=R4SIZE) :: lambda,chi0,xi1,xi2,xi3,xi4,xi5,r_e,chi_3,f1,f2,volume,surface_area,xi6,ft,chi_e,ft_bin
-       REAL (KIND=R4SIZE), DIMENSION(kts:kte)::                            &
+       DOUBLE PRECISION, PARAMETER :: RON=8.E6, GON=5.E7,PI=3.14159265359
+       DOUBLE PRECISION :: EFF_N,EFF_D
+        DOUBLE PRECISION :: EFF_NI(its:ite,kts:kte,jts:jte),eff_di(its:ite,kts:kte,jts:jte)
+       DOUBLE PRECISION :: EFF_NQIC,eff_DQIC
+       DOUBLE PRECISION :: EFF_NQIP,eff_DQIP
+       DOUBLE PRECISION :: EFF_NQID,eff_DQID
+       DOUBLE PRECISION :: lambda,chi0,xi1,xi2,xi3,xi4,xi5,r_e,chi_3,f1,f2,volume,surface_area,xi6,ft,chi_e,ft_bin
+       DOUBLE PRECISION, DIMENSION(kts:kte)::                            &
                         qv1d, qr1d, nr1d, qs1d, ns1d, qg1d, ng1d, t1d, p1d
-       REAL (KIND=R4SIZE), DIMENSION(kts:kte):: dBZ
+       DOUBLE PRECISION, DIMENSION(kts:kte):: dBZ
    
-       REAL (KIND=R4SIZE) :: nzero,son,nzero_less
+       DOUBLE PRECISION :: nzero,son,nzero_less
        parameter (son=2.E7)
-       REAL (KIND=R4SIZE) :: raddumb(nkr),massdumb(nkr)
-       REAL (KIND=R4SIZE) :: hydrosum
+       DOUBLE PRECISION :: raddumb(nkr),massdumb(nkr)
+       DOUBLE PRECISION :: hydrosum
    
        integer imax,kmax,jmax
-       REAL (KIND=R4SIZE) :: gmax,tmax,qmax,divmax,rainmax,qnmax,inmax,knmax,hydro,difmax, tdif, tt_old, w_stag, w_stag_my, qq_old
-       REAL (KIND=R4SIZE) :: teten,es
+       DOUBLE PRECISION :: gmax,tmax,qmax,divmax,rainmax,qnmax,inmax,knmax,hydro,difmax, tdif, & 
+                            tt_old, w_stag, w_stag_my, qq_old,teten,es
        integer  print_int
        parameter (print_int=300)
    
        integer t_print,i_print,j_print,k_print
-       REAL (KIND=R8SIZE), DIMENSION(kts:kte):: zmks_1d
-       REAL (KIND=R8SIZE) :: dx_dbl, dy_dbl
+       DOUBLE PRECISION, DIMENSION(kts:kte):: zmks_1d
+       DOUBLE PRECISION :: dx_dbl, dy_dbl
        INTEGER,DIMENSION (nkr) :: melt_snow,melt_graupel,melt_hail,melt_ice
        !DOUBLE PRECISION,DIMENSION (nkr) :: dmelt_snow,dmelt_graupel,dmelt_hail,dmelt_ice
        INTEGER ihucm_flag
-       REAL (KIND=R4SIZE) :: NSNOW_ADD
+       DOUBLE PRECISION :: NSNOW_ADD
    
        ! ... Polar-HUCM
        INTEGER,PARAMETER :: n_radar = 10
        integer :: ijk, Mod_Flag
-       REAL (KIND=R8SIZE),PARAMETER :: wavelength = 11.0D0 ! ### (KS) - wavelength (NEXRAD)
+       DOUBLE PRECISION,PARAMETER :: wavelength = 11.0D0 ! ### (KS) - wavelength (NEXRAD)
        INTEGER :: IWL
-       REAL (KIND=R4SIZE) :: DIST_SING
-       REAL (KIND=R8SIZE) :: BKDEN_Snow(NKR)
-       REAL (KIND=R8SIZE) ::  DISTANCE,FL1_FD(NKR),BULK(NKR), BulkDens_Snow(NKR)
-       REAL (KIND=R8SIZE) ::  FF1_FD(NKR),FFL_FD(NKR),OUT1(n_radar),OUT2(n_radar),OUT3(n_radar),OUT4(n_radar),OUT5(n_radar), &
+       DOUBLE PRECISION :: DIST_SING
+       DOUBLE PRECISION :: BKDEN_Snow(NKR)
+       DOUBLE PRECISION ::  DISTANCE,FL1_FD(NKR),BULK(NKR), BulkDens_Snow(NKR)
+       DOUBLE PRECISION ::  FF1_FD(NKR),FFL_FD(NKR),OUT1(n_radar),OUT2(n_radar),OUT3(n_radar),OUT4(n_radar),OUT5(n_radar), &
                          OUT6(n_radar),OUT7(n_radar),OUT8(n_radar),OUT9(n_radar), FL1R_FD(NKR)
-       REAL (KIND=R8SIZE) :: rate_shed_per_grau_grampersec(NKR), rate_shed_per_hail_grampersec(NKR), rhoair_max
+       DOUBLE PRECISION :: rate_shed_per_grau_grampersec(NKR), rate_shed_per_hail_grampersec(NKR), rhoair_max
    
        integer :: count_H, count_G, count_S_l, count_S_r
    
-       REAL (KIND=R8SIZE) :: RMin_G
+       DOUBLE PRECISION :: RMin_G
        integer :: KR_GRAUP_MAX_BLAHAK, KR_G_TO_H
    
        ! ... Cloud Base .........................................................
-       REAL (KIND=R8SIZE) ::	SUP_WATER, ES1N_KS, ES1N_dummy, ES2N_dummy
+       DOUBLE PRECISION ::	SUP_WATER, ES1N_KS, ES1N_dummy, ES2N_dummy
        logical :: K_found
        integer ::	KZ_Cloud_Base(its:ite,jts:jte), IS_THIS_CLOUDBASE,KR_Small_Ice
        ! ........................................................................
-       REAL (KIND=R4SIZE) :: qna0(its:ite,kts:kte,jts:jte), fr_hom, w_stagm, CollEff_out, FACT
-       REAL (KIND=R4SIZE) :: FACTZ_new(KMS:KME,NKR), TT_r, Nbl, Nft
+       DOUBLE PRECISION :: qna0(its:ite,kts:kte,jts:jte), fr_hom, w_stagm, CollEff_out, FACT
+       DOUBLE PRECISION :: FACTZ_new(KMS:KME,NKR), TT_r, Nbl, Nft
     ! ### (KS) ............................................................................................
        INTEGER :: NZ,NZZ,II,JJ
        CHARACTER (LEN=256) :: dbg_msg
        
      !---YZ2020:Arrays for process rate calculation---------------------@
-       REAL totlbf_diffu, totlaf_diffu, totrbf_diffu, totraf_diffu
+       double precision  totlbf_diffu, totlaf_diffu, totrbf_diffu, totraf_diffu
      !------------------------------------------------------------------@
 
    
@@ -4134,8 +4127,8 @@ module module_mp_SBM_BreakUp
    
      NCOND = 3
      NCOLL = 1
-     DTCOND = DT/REAL(NCOND)
-     DTCOLL = DT/REAL(NCOLL)
+     DTCOND = DT/DBLE(NCOND)
+     DTCOLL = DT/DBLE(NCOLL)
      dt_coll = DTCOLL
    
      DEL_BB=BB2_MY-BB1_MY
@@ -4341,8 +4334,8 @@ module module_mp_SBM_BreakUp
                     else
                        w_stag_my = 100*w(i,k,j)
                     end if
-                   if(SUP_WATER > 0.0D0 .and. w_stag_my > 0.1*1.0D2 .and. .NOT. & 
-                       K_found .and. K > 2 .and. zcgs(I,K,J) < 3.0*1.0D5)then
+                   if(SUP_WATER > 0.0D0 .and. w_stag_my > 0.1*1.0D2 .and. .NOT. K_found .and. &
+                    K > 2 .and. zcgs(I,K,J) < 3.0*1.0D5)then
                       KZ_Cloud_Base(I,J) = K ! K-level index of cloud base
                       K_found = .TRUE.
                    endif
@@ -5432,12 +5425,12 @@ module module_mp_SBM_BreakUp
         IMPLICIT NONE
    
           integer,intent(in) :: kts,kte,nkr
-          real(kind=r4size),intent(inout) :: chem_new(:,:)
-          real(kind=r4size),intent(in) :: rhocgs(:),pcgs(:),zcgs(:),VR1(:,:),DT
+          DOUBLE PRECISION,intent(inout) :: chem_new(:,:)
+          DOUBLE PRECISION,intent(in) :: rhocgs(:),pcgs(:),zcgs(:),VR1(:,:),DT
    
          ! ... Locals
          integer :: I,J,K,KR
-       real(kind=r4size) :: TFALL,DTFALL,VFALL(KTE),DWFLUX(KTE)
+       DOUBLE PRECISION :: TFALL,DTFALL,VFALL(KTE),DWFLUX(KTE)
        integer :: IFALL,N,NSUB
    
     ! FALLING FLUXES FOR EACH KIND OF CLOUD PARTICLES: C.G.S. UNIT
@@ -5495,13 +5488,13 @@ module module_mp_SBM_BreakUp
    
          IMPLICIT NONE
    
-       real(kind=r4size),intent(in) :: DT
+       DOUBLE PRECISION,intent(in) :: DT
    
        LOGICAL , EXTERNAL      :: wrf_dm_on_monitor
        LOGICAL :: opened
        CHARACTER*80 errmess
        integer :: I,J,KR,IType,HUJISBM_UNIT1
-       real(kind=r4size) :: dlnr,ax,deg01,CONCCCNIN,CONTCCNIN
+       DOUBLE PRECISION :: dlnr,ax,deg01,CONCCCNIN,CONTCCNIN
    
          character(len=256),parameter :: dir_43 = "SBM_input_43", dir_33 = "SBM_input_33"
          character(len=256) :: input_dir,Fname
@@ -5535,7 +5528,7 @@ module module_mp_SBM_BreakUp
        ENDIF
    
 #if defined(DM_PARALLEL)
-          CALL wrf_dm_bcast_bytes( hujisbm_unit1 , IWORDSIZE )
+          !CALL wrf_dm_bcast_bytes( hujisbm_unit1 , IWORDSIZE )
 #endif
        IF ( hujisbm_unit1 < 0 ) THEN
            CALL wrf_error_fatal ( 'module_mp_FAST-SBM: Table-1 -- FAST_SBM_INIT: '// 			&
@@ -5596,7 +5589,7 @@ module module_mp_SBM_BreakUp
         ENDIF
    
 #if defined(DM_PARALLEL)
-       CALL wrf_dm_bcast_bytes ( hujisbm_unit1 , IWORDSIZE )
+       !CALL wrf_dm_bcast_bytes ( hujisbm_unit1 , IWORDSIZE )
 #endif
         IF ( hujisbm_unit1 < 0 ) THEN
             CALL wrf_error_fatal ( 'module_mp_FAST-SBM: Table-2 -- FAST_SBM_INIT: '// 			&
@@ -5651,7 +5644,7 @@ module module_mp_SBM_BreakUp
         ENDIF
    
 #if defined(DM_PARALLEL)
-        CALL wrf_dm_bcast_bytes ( hujisbm_unit1, IWORDSIZE )
+        !CALL wrf_dm_bcast_bytes ( hujisbm_unit1, IWORDSIZE )
 #endif
    
         IF ( hujisbm_unit1 < 0 ) THEN
@@ -5707,7 +5700,7 @@ module module_mp_SBM_BreakUp
         ENDIF
    
 #if defined(DM_PARALLEL)
-        CALL wrf_dm_bcast_bytes ( hujisbm_unit1 , IWORDSIZE )
+        !CALL wrf_dm_bcast_bytes ( hujisbm_unit1 , IWORDSIZE )
 #endif
         IF ( hujisbm_unit1 < 0 ) THEN
             CALL wrf_error_fatal ( 'module_mp_FAST_SBM: Table-4 -- FAST_SBM_INIT: '// 										&
@@ -5761,7 +5754,7 @@ module module_mp_SBM_BreakUp
         ENDIF
    
 #if defined(DM_PARALLEL)
-          CALL wrf_dm_bcast_bytes ( hujisbm_unit1 , IWORDSIZE )
+          !CALL wrf_dm_bcast_bytes ( hujisbm_unit1 , IWORDSIZE )
 #endif
    
         IF ( hujisbm_unit1 < 0 ) THEN
@@ -5812,7 +5805,7 @@ module module_mp_SBM_BreakUp
         ENDIF
    
 #if defined(DM_PARALLEL)
-          CALL wrf_dm_bcast_bytes ( hujisbm_unit1 , IWORDSIZE )
+          !CALL wrf_dm_bcast_bytes ( hujisbm_unit1 , IWORDSIZE )
 #endif
         IF ( hujisbm_unit1 < 0 ) THEN
             CALL wrf_error_fatal ( 'module_mp_FAST_SBM: Table-6 -- FAST_SBM_INIT: '// 			&
@@ -5910,7 +5903,7 @@ module module_mp_SBM_BreakUp
         ENDIF
    
 #if defined(DM_PARALLEL)
-        CALL wrf_dm_bcast_bytes ( hujisbm_unit1 , IWORDSIZE )
+        !CALL wrf_dm_bcast_bytes ( hujisbm_unit1 , IWORDSIZE )
 #endif
     IF ( hujisbm_unit1 < 0 ) THEN
        CALL wrf_error_fatal ( 'module_mp_FAST_SBM: Table-7 -- FAST_SBM_INIT: '// 			&
@@ -6138,7 +6131,7 @@ module module_mp_SBM_BreakUp
         ENDIF
    
 #if defined(DM_PARALLEL)
-        CALL wrf_dm_bcast_bytes ( hujisbm_unit1 , IWORDSIZE )
+        !CALL wrf_dm_bcast_bytes ( hujisbm_unit1 , IWORDSIZE )
 #endif
         IF ( hujisbm_unit1 < 0 ) THEN
             CALL wrf_error_fatal ( 'module_mp_FAST_SBM: Table-8 -- FAST_SBM_INIT: '// 			&
@@ -6185,7 +6178,7 @@ module module_mp_SBM_BreakUp
         2069     CONTINUE
         ENDIF
 #if defined(DM_PARALLEL)
-          CALL wrf_dm_bcast_bytes ( hujisbm_unit1 , IWORDSIZE )
+          !CALL wrf_dm_bcast_bytes ( hujisbm_unit1 , IWORDSIZE )
 #endif
         IF ( hujisbm_unit1 < 0 ) THEN
          CALL wrf_error_fatal ( 'module_mp_FAST_SBM: Table-9 -- FAST_SBM_INIT: '// 			&
@@ -6417,7 +6410,7 @@ module module_mp_SBM_BreakUp
       cwih_1(:,:) = 0.0e0 ; cwih_2(:,:) = 0.0e0 ; cwih_3(:,:) = 0.0e0
       cwsg(:,:) = 0.0e0 ; cwss(:,:) = 0.0e0
    
-      call Kernals_KS(dt,nkr,7.6E6)
+      call Kernals_KS(dt,nkr,DBLE(7.6E6))
    
     !+---+-----------------------------------------+
     if (.NOT. ALLOCATED( Prob)) ALLOCATE( Prob(NKR))
@@ -6445,12 +6438,12 @@ module module_mp_SBM_BreakUp
      implicit none
    
      integer :: nkr
-     real(kind=r4size),intent(in) :: dtime_coal,p_z
+     DOUBLE PRECISION,intent(in) :: dtime_coal,p_z
    
      ! ### Locals
      integer :: i,j
-     real(kind=r4size),parameter :: p1=1.0e6,p2=0.75e6,p3=0.50e6,p4=0.3e6
-     real(kind=r4size) :: dlnr, scal, dtimelnr, pdm, p_1, p_2, p_3, ckern_1, ckern_2, &
+     DOUBLE PRECISION,parameter :: p1=1.0e6,p2=0.75e6,p3=0.50e6,p4=0.3e6
+     DOUBLE PRECISION :: dlnr, scal, dtimelnr, pdm, p_1, p_2, p_3, ckern_1, ckern_2, &
                       ckern_3
    
     ! p1=1.00D6 dynes/cm^2 = 1000.0 mb
@@ -6746,11 +6739,11 @@ module module_mp_SBM_BreakUp
      end subroutine Kernals_KS
    
     ! ------------------------------------------------------------+
-     real function ckern_z (p_z,p_1,p_2,p_3,ckern_1,ckern_2,ckern_3)
+     double precision  function ckern_z (p_z,p_1,p_2,p_3,ckern_1,ckern_2,ckern_3)
    
        implicit none
    
-       real(kind=r4size),intent(in) :: p_z,p_1,p_2,p_3,ckern_1, &
+       DOUBLE PRECISION,intent(in) :: p_z,p_1,p_2,p_3,ckern_1, &
                                ckern_2,ckern_3
    
        if(p_z>=p_1) ckern_z = ckern_1
@@ -6769,13 +6762,13 @@ module module_mp_SBM_BreakUp
          IMPLICIT NONE
    
            INTEGER KR,ICE,ICE_TYPE
-         REAL COL,AFREEZMY,BFREEZMY,BFREEZMAX
+         double precision  COL,AFREEZMY,BFREEZMY,BFREEZMAX
          INTEGER KRFREEZ,ICEMAX,NKR
-         REAL DT,RO,YKK,PF,PF_1,DEL_T,TT_DROP,ARG_1,YK2,DF1,BF,ARG_M, &
+         double precision  DT,RO,YKK,PF,PF_1,DEL_T,TT_DROP,ARG_1,YK2,DF1,BF,ARG_M, &
                TT_DROP_AFTER_FREEZ,CFREEZ,SUM_ICE,TIN,TTIN,AF,FF_MAX,F1_MAX, &
                F2_MAX,F3_MAX,F4_MAX,F5_MAX
    
-         REAL FF1(NKR),XL(NKR),FF2(NKR,ICEMAX) &
+         double precision  FF1(NKR),XL(NKR),FF2(NKR,ICEMAX) &
               ,XI(NKR,ICEMAX),FF3(NKR),XS(NKR),FF4(NKR) &
               ,XG(NKR),FF5(NKR),XH(NKR)
    
@@ -6847,13 +6840,13 @@ module module_mp_SBM_BreakUp
          IMPLICIT NONE
    
          integer,intent(in) :: NKR,ICEMAX
-         real(kind=R4size),intent(in)    :: DT,COL,RO
-         real(kind=R4size),intent(inout) :: FF1(:),XL(:),FF2(:,:),XI(:,:),FF3(:),XS(:),FF4(:),XG(:), &
+         DOUBLE PRECISION,intent(in)    :: DT,COL,RO
+         DOUBLE PRECISION,intent(inout) :: FF1(:),XL(:),FF2(:,:),XI(:,:),FF3(:),XS(:),FF4(:),XG(:), &
                                                      FF5(:),XH(:),Tin
    
          !  ... Locals
          integer :: KR,ICE,ICE_TYPE
-         real(kind=R4size) :: ARG_M,TT_DROP,ARG_1,TT_DROP_AFTER_FREEZ,DF1,DN,DN0, &
+         DOUBLE PRECISION :: ARG_M,TT_DROP,ARG_1,TT_DROP_AFTER_FREEZ,DF1,DN,DN0, &
                                      A,B,DTFREEZ,SUM_ICE,FF_MAX,F1_MAX,F2_MAX,F3_MAX,F4_MAX,F5_MAX, &
                                 DEL_T,meltrate,gamma
          ! ... Locals
@@ -6968,16 +6961,16 @@ module module_mp_SBM_BreakUp
    
           INTEGER NKR,ICEMAX, ISYM1, ISYM2(ICEMAX),ISYM3,ISYM4,ISYM5, Iin, Jin, Kin, &
                  sea_spray_no_temp_change_per_grid, Itimestep
-          REAL    COL,VR1(NKR),PSINGLE &
+          double precision     COL,VR1(NKR),PSINGLE &
          &       ,AA1_MY,BB1_MY,AA2_MY,BB2_MY &
          &       ,DTCOND, W_in,DX_in
    
-          REAL C1_MEY,C2_MEY
+          double precision  C1_MEY,C2_MEY
           INTEGER I_ABERGERON,I_BERGERON, &
          & KR,ICE,ITIME,KCOND,NR,NRM, &
          & KLIMIT, &
          & KM,KLIMITL
-          REAL AL1,AL2,D,GAM,POD, &
+          double precision  AL1,AL2,D,GAM,POD, &
          & RV_MY,CF_MY,D_MYIN,AL1_MY,AL2_MY,ALC,DT0LREF,DTLREF, &
          & A1_MYN, BB1_MYN, A2_MYN, BB2_MYN,DT,DTT,XRAD, &
          & TPC1, TPC2, TPC3, TPC4, TPC5, &
@@ -6991,12 +6984,12 @@ module module_mp_SBM_BreakUp
          & DEL_R1,DT0L0,DT0I0, &
          & DTNEWL0, &
          & DTNEWL2
-           REAL DT_WATER_COND,DT_WATER_EVAP
+           double precision  DT_WATER_COND,DT_WATER_EVAP
    
            INTEGER K
     ! NEW ALGORITHM OF CONDENSATION (12.01.00)
    
-          REAL  FF1_OLD(NKR),SUPINTW(NKR)
+          double precision   FF1_OLD(NKR),SUPINTW(NKR)
           DOUBLE PRECISION DSUPINTW(NKR),DD1N,DB11_MY,DAL1,DAL2
           DOUBLE PRECISION COL3,RORI,TPN,TPS,QPN,QPS,TOLD,QOLD &
          &                  ,FI1_K,FI2_K,FI3_K,FI4_K,FI5_K &
@@ -7012,7 +7005,7 @@ module module_mp_SBM_BreakUp
    
     ! DROPLETS
    
-            REAL R1(NKR) &
+            double precision  R1(NKR) &
          &           ,RLEC(NKR),RO1BL(NKR) &
          &           ,FI1(NKR),FF1(NKR),PSI1(NKR) &
          &           ,B11_MY(NKR),B12_MY(NKR)
@@ -7022,12 +7015,12 @@ module module_mp_SBM_BreakUp
     ! NEW ALGORITHM OF MIXED PHASE FOR EVAPORATION
    
    
-       REAL DTIMEO(NKR),DTIMEL(NKR) &
+       double precision  DTIMEO(NKR),DTIMEL(NKR) &
          &           ,TIMESTEPD(NKR)
    
     ! NEW ALGORITHM (NO TYPE OF ICE)
    
-       REAL :: FL1(NKR), sfndummy(3), R1N(NKR)
+       double precision  :: FL1(NKR), sfndummy(3), R1N(NKR)
        INTEGER :: IDROP
    
        DOUBLE PRECISION :: R1D(NKR),R1ND(NKR)
@@ -7170,7 +7163,7 @@ module module_mp_SBM_BreakUp
    
            CALL JERSUPSAT_KS(DEL1_d,DEL2_d,DEL1N,DEL2N, &
                                  RW_d,PW_d,RI_d,PI_d, &
-                                 DTT,D1N_d,D2N_d,0.0,0.0, &
+                                 DTT,D1N_d,D2N_d,DBLE(0.0),DBLE(0.0), &
                                  ISYM1,ISYM2,ISYM3,ISYM4,ISYM5)
            DEL1 = DEL1_d
            DEL2 = DEL2_d
@@ -7213,7 +7206,7 @@ module module_mp_SBM_BreakUp
            PI_d = PI
            CALL JERSUPSAT_KS(DEL1_d,DEL2_d,DEL1N,DEL2N, &
                      RW_d,PW_d,RI_d,PI_d, &
-                     DTT,D1N_d,D2N_d,0.0,0.0, &
+                     DTT,D1N_d,D2N_d,DBLE(0.0),DBLE(0.0), &
                      ISYM1,ISYM2,ISYM3,ISYM4,ISYM5)
            DEL1 = DEL1_d
            DEL2 = DEL2_d
@@ -7417,18 +7410,18 @@ module module_mp_SBM_BreakUp
        IMPLICIT NONE
    
           INTEGER NKR,ICEMAX,ISYM1, Iin, Jin, Kin, Itimestep
-          REAL    COL,VR2(NKR,ICEMAX),VR3(NKR),VR4(NKR) &
+          double precision     COL,VR2(NKR,ICEMAX),VR3(NKR),VR4(NKR) &
          &           ,VR5(NKR),PSINGLE &
          &       ,AA1_MY,BB1_MY,AA2_MY,BB2_MY &
          &       ,DTCOND,W_in,DX_in
    
-          REAL C1_MEY,C2_MEY
+          double precision  C1_MEY,C2_MEY
           INTEGER I_MIXCOND,I_MIXEVAP,I_ABERGERON,I_BERGERON, &
          & KR,ICE,ITIME,ICM,KCOND,NR,NRM,INUC, &
          & ISYM2(ICEMAX),ISYM3,ISYM4,ISYM5,KP,KLIMIT, &
          & KM,ITER,KLIMITL,KLIMITG,KLIMITH,KLIMITI_1,KLIMITI_2,KLIMITI_3, &
          & NCRITI
-          REAL AL1,AL2,D,GAM,POD, &
+          double precision  AL1,AL2,D,GAM,POD, &
          & RV_MY,CF_MY,D_MYIN,AL1_MY,AL2_MY,ALC,DT0LREF,DTLREF, &
          & A1_MYN, BB1_MYN, A2_MYN, BB2_MYN,DT,DTT,XRAD, &
          & TPC1, TPC2, TPC3, TPC4, TPC5, &
@@ -7446,7 +7439,7 @@ module module_mp_SBM_BreakUp
          & SNF51,DTNEWI2_3,DTNEWI2,DTNEWI_1,DTNEWI_2, &
          & DTNEWL0,DTNEWG1,DTNEWH1,DTNEWI_3, &
          & DTNEWL2,SFN51,SFNII2,DEL_R3,DTNEWI
-           REAL DT_WATER_COND,DT_WATER_EVAP,DT_ICE_COND,DT_ICE_EVAP, &
+           double precision  DT_WATER_COND,DT_WATER_EVAP,DT_ICE_COND,DT_ICE_EVAP, &
          &  DT_MIX_COND,DT_MIX_EVAP,DT_MIX_BERGERON,DT_MIX_ANTIBERGERON
    
            INTEGER K
@@ -7468,7 +7461,7 @@ module module_mp_SBM_BreakUp
    
     ! CRYSTALS
    
-       REAL R2(NKR,ICEMAX) &
+       double precision  R2(NKR,ICEMAX) &
          &           ,RIEC(NKR,ICEMAX) &
          &           ,RO2BL(NKR,ICEMAX) &
          &           ,FI2(NKR,ICEMAX),PSI2(NKR,ICEMAX) &
@@ -7476,29 +7469,29 @@ module module_mp_SBM_BreakUp
          &           ,B21_MY(NKR,ICEMAX),B22_MY(NKR,ICEMAX)
    
     ! SNOW
-            REAL R3(NKR) &
+            double precision  R3(NKR) &
          &           ,RSEC(NKR),RO3BL(NKR) &
          &           ,FI3(NKR),FF3(NKR),PSI3(NKR) &
          &           ,B31_MY(NKR),B32_MY(NKR)
    
     ! GRAUPELS
    
-            REAL R4(NKR) &
+            double precision  R4(NKR) &
          &           ,RGEC(NKR),RO4BL(NKR) &
          &           ,FI4(NKR),FF4(NKR),PSI4(NKR) &
          &           ,B41_MY(NKR),B42_MY(NKR)
    
     ! HAIL
-            REAL R5(NKR) &
+            double precision  R5(NKR) &
          &           ,RHEC(NKR),RO5BL(NKR) &
          &           ,FI5(NKR),FF5(NKR),PSI5(NKR) &
          &           ,B51_MY(NKR),B52_MY(NKR)
    
     ! CCN
    
-       REAL DTIMEG(NKR),DTIMEH(NKR)
+       double precision  DTIMEG(NKR),DTIMEH(NKR)
    
-       REAL DEL2D(ICEMAX),DTIMEO(NKR),DTIMEL(NKR) &
+       double precision  DEL2D(ICEMAX),DTIMEO(NKR),DTIMEL(NKR) &
    
          &           ,DTIMEI_1(NKR),DTIMEI_2(NKR),DTIMEI_3(NKR) &
          &           ,SFNI1(ICEMAX),SFNI2(ICEMAX) &
@@ -7507,7 +7500,7 @@ module module_mp_SBM_BreakUp
          &           ,FI2REF(NKR,ICEMAX),PSI2REF(NKR,ICEMAX)&
          &           ,FCCNRREF(NKR)
    
-       REAL :: FL1(NKR), sfndummy(3), FL3(NKR), FL4(NKR), FL5(NKR), &
+       double precision  :: FL1(NKR), sfndummy(3), FL3(NKR), FL4(NKR), FL5(NKR), &
                    R2N(NKR,ICEMAX), R3N(NKR), R4N(NKR), R5N(NKR)
        INTEGER :: IDROP, ISYMICE
        DOUBLE PRECISION :: R2D(NKR,ICEMAX),R3D(NKR), R4D(NKR), R5D(NKR), &
@@ -7717,7 +7710,7 @@ module module_mp_SBM_BreakUp
              PI_d = PI
              CALL JERSUPSAT_KS(DEL1_d,DEL2_d,DEL1N,DEL2N, &
                                        RW_d,PW_d,RI_d,PI_d, &
-                                       DTT,D1N_d,D2N_d,0.0,0.0, &
+                                       DTT,D1N_d,D2N_d,DBLE(0.0),DBLE(0.0), &
                                        ISYM1,ISYM2,ISYM3,ISYM4,ISYM5)
              DEL1 = DEL1_d
              DEL2 = DEL2_d
@@ -7800,7 +7793,7 @@ module module_mp_SBM_BreakUp
                PI_d = PI
                CALL JERSUPSAT_KS(DEL1_d,DEL2_d,DEL1N,DEL2N, &
                                           RW_d,PW_d,RI_d,PI_d, &
-                                         DTT,D1N_d,D2N_d,0.0,0.0, &
+                                         DTT,D1N_d,D2N_d,DBLE(0.0),DBLE(0.0), &
                                          ISYM1,ISYM2,ISYM3,ISYM4,ISYM5)
                 DEL1 = DEL1_d
                DEL2 = DEL2_d
@@ -8017,7 +8010,7 @@ module module_mp_SBM_BreakUp
            INTEGER KLIMITL,KLIMITG,KLIMITH,KLIMITI_1, &
          &  KLIMITI_2,KLIMITI_3
            INTEGER I_MIXCOND,I_MIXEVAP,I_ABERGERON,I_BERGERON
-           REAL ROR,VR1(NKR),VR2(NKR,ICEMAX),VR3(NKR),VR4(NKR) &
+           double precision  ROR,VR1(NKR),VR2(NKR,ICEMAX),VR3(NKR),VR4(NKR) &
          &           ,VR5(NKR),PSINGLE &
          &           ,AA1_MY,BB1_MY,AA2_MY,BB2_MY &
          &           ,C1_MEY,C2_MEY &
@@ -8025,14 +8018,14 @@ module module_mp_SBM_BreakUp
    
     ! DROPLETS
    
-            REAL R1(NKR)&
+            double precision  R1(NKR)&
          &           ,RLEC(NKR),RO1BL(NKR) &
          &           ,FI1(NKR),FF1(NKR),PSI1(NKR) &
          &           ,B11_MY(NKR),B12_MY(NKR)
    
     ! CRYSTALS
    
-       REAL R2(NKR,ICEMAX) &
+       double precision  R2(NKR,ICEMAX) &
          &           ,RIEC(NKR,ICEMAX) &
          &           ,RO2BL(NKR,ICEMAX) &
          &           ,FI2(NKR,ICEMAX),PSI2(NKR,ICEMAX) &
@@ -8041,7 +8034,7 @@ module module_mp_SBM_BreakUp
          &           ,RATE2(NKR,ICEMAX),DEL_R2M(NKR,ICEMAX)
    
     ! SNOW
-            REAL R3(NKR) &
+            double precision  R3(NKR) &
          &           ,RSEC(NKR),RO3BL(NKR) &
          &           ,FI3(NKR),FF3(NKR),PSI3(NKR) &
          &           ,B31_MY(NKR),B32_MY(NKR) &
@@ -8049,14 +8042,14 @@ module module_mp_SBM_BreakUp
    
     ! GRAUPELS
    
-            REAL R4(NKR) &
+            double precision  R4(NKR) &
          &           ,RGEC(NKR),RO4BL(NKR) &
          &           ,FI4(NKR),FF4(NKR),PSI4(NKR) &
          &           ,B41_MY(NKR),B42_MY(NKR) &
          &           ,DEL_R4M(NKR)
    
     ! HAIL
-            REAL R5(NKR) &
+            double precision  R5(NKR) &
          &           ,RHEC(NKR),RO5BL(NKR) &
          &           ,FI5(NKR),FF5(NKR),PSI5(NKR) &
          &           ,B51_MY(NKR),B52_MY(NKR) &
@@ -8075,33 +8068,33 @@ module module_mp_SBM_BreakUp
    
            DOUBLE PRECISION DELTAQ1,DELMASSI1,DELMASSL1
    
-           REAL A1_MYN, BB1_MYN, A2_MYN, BB2_MYN
+           double precision  A1_MYN, BB1_MYN, A2_MYN, BB2_MYN
             DATA A1_MYN, BB1_MYN, A2_MYN, BB2_MYN &
          &      /2.53,5.42,3.41E1,6.13/
-           REAL B8L,B8I,SFN11,SFN12,SFNL,SFNI
-           REAL B5L,B5I,B7L,B7I,B6,DOPL,DEL1S,DEL2S,DOPI,RW,QW,PW, &
+           double precision  B8L,B8I,SFN11,SFN12,SFNL,SFNI
+           double precision  B5L,B5I,B7L,B7I,B6,DOPL,DEL1S,DEL2S,DOPI,RW,QW,PW, &
          &  RI,PI,QI,SFNI1(ICEMAX),SFNI2(ICEMAX),AL1,AL2
-           REAL D1N,D2N,DT0L, DT0I,D1N0,D2N0
-           REAL SFN21,SFN22,SFNII1,SFNII2,SFN31,SFN32,SFN41,SFN42,SFN51, &
+           double precision  D1N,D2N,DT0L, DT0I,D1N0,D2N0
+           double precision  SFN21,SFN22,SFNII1,SFNII2,SFN31,SFN32,SFN41,SFN42,SFN51, &
          &  SFN52
-           REAL DEL1,DEL2
-           REAL  TIMEREV,DT,DTT,TIMENEW
-           REAL DTIMEG(NKR),DTIMEH(NKR),totccn_before,totccn_after
+           double precision  DEL1,DEL2
+           double precision   TIMEREV,DT,DTT,TIMENEW
+           double precision  DTIMEG(NKR),DTIMEH(NKR),totccn_before,totccn_after
    
-           REAL DEL2D(ICEMAX),DTIMEO(NKR),DTIMEL(NKR) &
+           double precision  DEL2D(ICEMAX),DTIMEO(NKR),DTIMEL(NKR) &
          &           ,DTIMEI_1(NKR),DTIMEI_2(NKR),DTIMEI_3(NKR)
-           REAL DT_WATER_COND,DT_WATER_EVAP,DT_ICE_COND,DT_ICE_EVAP, &
+           double precision  DT_WATER_COND,DT_WATER_EVAP,DT_ICE_COND,DT_ICE_EVAP, &
          &  DT_MIX_COND,DT_MIX_EVAP,DT_MIX_BERGERON,DT_MIX_ANTIBERGERON
-           REAL DTNEWL0,DTNEWL1,DTNEWI1,DTNEWI2_1,DTNEWI2_2,DTNEWI2_3, &
+           double precision  DTNEWL0,DTNEWL1,DTNEWI1,DTNEWI2_1,DTNEWI2_2,DTNEWI2_3, &
          & DTNEWI2,DTNEWI_1,DTNEWI_2,DTNEWI3,DTNEWI4,DTNEWI5, &
          & DTNEWL,DTNEWL2,DTNEWG1,DTNEWH1
-           REAL TIMESTEPD(NKR)
+           double precision  TIMESTEPD(NKR)
    
            DATA AL1 /2500./, AL2 /2834./
-           REAL EPSDEL,EPSDEL2
+           double precision  EPSDEL,EPSDEL2
            DATA EPSDEL, EPSDEL2 /0.1E-03,0.1E-03/
    
-          REAL :: FL1(NKR), FL2(NKR,ICEMAX), FL3(NKR), FL4(NKR), FL5(NKR), SFNDUMMY(3), &
+          double precision  :: FL1(NKR), FL2(NKR,ICEMAX), FL3(NKR), FL4(NKR), FL5(NKR), SFNDUMMY(3), &
                    R1N(NKR), R2N(NKR,ICEMAX), R3N(NKR), R4N(NKR), R5N(NKR)
           INTEGER :: IDROP, ICM, ISYMICE
           DOUBLE PRECISION :: R1D(NKR),R2D(NKR,ICEMAX),R3D(NKR), R4D(NKR), R5D(NKR), &
@@ -8339,7 +8332,7 @@ module module_mp_SBM_BreakUp
        PI_d = PI
        CALL JERSUPSAT_KS(DEL1_d,DEL2_d,DEL1N,DEL2N, &
                       RW_d,PW_d,RI_d,PI_d, &
-                      DTT,D1N_d,D2N_d,0.0,0.0, &
+                      DTT,D1N_d,D2N_d,DBLE(0.0),DBLE(0.0), &
                       ISYM1,ISYM2,ISYM3,ISYM4,ISYM5)
        DEL1 = DEL1_d
        DEL2 = DEL2_d
@@ -8582,40 +8575,40 @@ module module_mp_SBM_BreakUp
         implicit none
    
         integer,intent(in) :: Iin,Jin,Kin
-        real(kind=r4size),intent(in) :: tcrit,ttcoal,dt_coll
-        real(kind=r4size),intent(inout) :: ff1r(:),ff2r(:,:),ff3r(:),ff4r(:),  &
+        DOUBLE PRECISION,intent(in) :: tcrit,ttcoal,dt_coll
+        DOUBLE PRECISION,intent(inout) :: ff1r(:),ff2r(:,:),ff3r(:),ff4r(:),  &
                                            ff5r(:),colleff
-        real(kind=r8size),intent(inout) :: fliqfr_s(:),fliqfr_g(:),fliqfr_h(:), &
+        DOUBLE PRECISION,intent(inout) :: fliqfr_s(:),fliqfr_g(:),fliqfr_h(:), &
                                           frimfr_s(:),del1in,del2in,tt,qq
-        real(kind=r8size),intent(in) :: pp
+        DOUBLE PRECISION,intent(in) :: pp
    
           integer :: KR,ICE,icol_drop,icol_snow,icol_graupel,icol_hail, &
                      icol_column,icol_plate,icol_dendrite,icol_drop_brk
-        real(kind=r8size) :: g1(nkr),g2(nkr,icemax),g3(nkr),g4(nkr),g5(nkr), &
+        DOUBLE PRECISION :: g1(nkr),g2(nkr,icemax),g3(nkr),g4(nkr),g5(nkr), &
                              gdumb(JMAX),gdumb_bf_breakup(JMAX),xl_dumb(JMAX), &
                              g_orig(nkr),g2_1(nkr),g2_2(nkr),g2_3(nkr)
-        real(kind=r4size) :: cont_fin_drop,dconc,conc_icempl,deldrop,t_new, &
+        DOUBLE PRECISION :: cont_fin_drop,dconc,conc_icempl,deldrop,t_new, &
                              delt_new,cont_fin_ice,conc_old,conc_new,cont_init_ice, &
-                              cont_init_drop,ALWC,T_new_real,PP_r,rho,ES1N,ES2N,EW1N
-        real(kind=r4size),parameter :: tt_no_coll=273.16
+                              cont_init_drop,ALWC,T_new_real ,PP_r,rho,ES1N,ES2N,EW1N
+        DOUBLE PRECISION,parameter :: tt_no_coll=273.16
    
         integer :: I,J,IT,NDIV
-        real(kind=r8size) :: break_drop_bef,break_drop_aft,dtbreakup,break_drop_per, &
+        DOUBLE PRECISION :: break_drop_bef,break_drop_aft,dtbreakup,break_drop_per, &
                              prdkrn,fl1(nkr),rf1(nkr),rf3(nkr),fl3(nkr), &
                              fl4(nkr),fl5(nkr),fl2_1(nkr),fl2_2(nkr),fl2_3(nkr), &
                              rf2(nkr),rf4(nkr),rf5(nkr),conc_drop_old, conc_drop_new, &
                              dconc_drop, dm_rime(nkr), conc_plate_icempl, &
                              col3, cont_coll_drop
-        real(kind=r8size),parameter :: prdkrn1 = 1.0d0
-        real(kind=r4size),parameter :: prdkrn1_r = 1.0
+        DOUBLE PRECISION,parameter :: prdkrn1 = 1.0d0
+        DOUBLE PRECISION,parameter :: prdkrn1_r = 1.0
           integer,parameter :: icempl = 1
-          real(kind=r8size),parameter :: t_ice_mpl = 270.15D0 ! for ice multiplication in temp > 268.15
-          real(kind=r8size),PARAMETER :: g_lim = 1.0D-19*1.0D3,AA1_MY = 2.53E12,  &
+          DOUBLE PRECISION,parameter :: t_ice_mpl = 270.15D0 ! for ice multiplication in temp > 268.15
+          DOUBLE PRECISION,PARAMETER :: g_lim = 1.0D-19*1.0D3,AA1_MY = 2.53E12,  &
                                        BB1_MY = 5.42E3, AA2_MY = 3.41E13 ,BB2_MY = 6.13E3
  
  !---YZ2020-------------------------@
 #ifdef SBM_DIAG
-     real cont_auto_mbf,cont_auto_maf, cont_auto_nbf, &
+     double precision  cont_auto_mbf,cont_auto_maf, cont_auto_nbf, &
     &     cont_auto_dropn,nrauto_af,nrauto_bf
 #endif
 !----------------------------------@
@@ -9009,12 +9002,12 @@ module module_mp_SBM_BreakUp
    
     ! ... Interface
         integer,intent(in) :: br_max, JBREAK, NKR, JMAX
-        real(kind=r8size),intent(inout) :: ECOALMASSM(:,:),BRKWEIGHT(:)
-        real,intent(in) :: XL_r(:), DROPRADII(:), VR1(:)
-        real(kind=r4size),intent(inout) :: PKIJ(:,:,:),QKJ(:,:)
+        DOUBLE PRECISION,intent(inout) :: ECOALMASSM(:,:),BRKWEIGHT(:)
+        double precision ,intent(in) :: XL_r(:), DROPRADII(:), VR1(:)
+        DOUBLE PRECISION,intent(inout) :: PKIJ(:,:,:),QKJ(:,:)
     ! ... Interface
    
-        !REAL :: XL_r(size(NKR))
+        !double precision  :: XL_r(size(NKR))
         INTEGER :: hujisbm_unit1
         LOGICAL, PARAMETER :: PRINT_diag=.FALSE.
         LOGICAL :: opened
@@ -9033,14 +9026,14 @@ module module_mp_SBM_BreakUp
         INTEGER :: IE,JE,KE
         INTEGER,PARAMETER :: AP = 1
         INTEGER :: I,J,K,JDIFF
-        REAL :: RPKIJ(JBREAK,JBREAK,JBREAK),RQKJ(JBREAK,JBREAK)
-        REAL :: PI,D0,HLP
+        double precision  :: RPKIJ(JBREAK,JBREAK,JBREAK),RQKJ(JBREAK,JBREAK)
+        double precision  :: PI,D0,HLP
         DOUBLE PRECISION :: M(0:JBREAK),ALM
-        REAL :: DBREAK(JBREAK),GAIN,LOSS
+        double precision  :: DBREAK(JBREAK),GAIN,LOSS
    
     !.....DECLARATIONS FOR INIT
         INTEGER :: IP,KP,JP,KQ,JQ
-        REAL :: XTJ
+        double precision  :: XTJ
    
         CHARACTER*256 FILENAME_P,FILENAME_Q, file_p, file_q
    
@@ -9067,7 +9060,7 @@ module module_mp_SBM_BreakUp
             2061     CONTINUE
         ENDIF
    
-        CALL wrf_dm_bcast_bytes ( hujisbm_unit1 , IWORDSIZE )
+        !CALL wrf_dm_bcast_bytes ( hujisbm_unit1 , IWORDSIZE )
    
         IF ( hujisbm_unit1 < 0 ) THEN
           CALL wrf_error_fatal ( 'Can not find unused fortran unit to read in BREAKINIT_KS lookup table, model stop' )
@@ -9100,7 +9093,7 @@ module module_mp_SBM_BreakUp
           2062     CONTINUE
         ENDIF
    
-        CALL wrf_dm_bcast_bytes ( hujisbm_unit1 , IWORDSIZE )
+        !CALL wrf_dm_bcast_bytes ( hujisbm_unit1 , IWORDSIZE )
    
         IF ( hujisbm_unit1 < 0 ) THEN
           CALL wrf_error_fatal ( 'Can not find unused fortran unit to read in BREAKINIT_KS lookup table, model stop' )
@@ -9144,10 +9137,10 @@ module module_mp_SBM_BreakUp
    
         implicit none
         integer,intent(in) :: NKR
-        real(kind=r8size),intent(in) :: DROPRADII(NKR), VR1_BREAKUP(NKR), x1, x2
+        DOUBLE PRECISION,intent(in) :: DROPRADII(NKR), VR1_BREAKUP(NKR), x1, x2
    
-        real(kind=r8size),PARAMETER :: zero=0.0d0,one=1.0d0,eps=1.0d-10
-        real(kind=r8size) :: rho, PI, akPI, Deta, Dksi
+        DOUBLE PRECISION,PARAMETER :: zero=0.0d0,one=1.0d0,eps=1.0d-10
+        DOUBLE PRECISION :: rho, PI, akPI, Deta, Dksi
    
         rho=1.0d0             ! [rho]=g/cm^3
    
@@ -9167,10 +9160,10 @@ module module_mp_SBM_BreakUp
    
         implicit none
         integer,intent(in) :: NKR
-        real(kind=r8size),intent(in) :: DROPRADII(nkr), VR1_BREAKUP(nkr),Deta,Dksi
+        DOUBLE PRECISION,intent(in) :: DROPRADII(nkr), VR1_BREAKUP(nkr),Deta,Dksi
    
-        real(kind=r8size) :: Dgr, Dkl, Rgr, RKl, q, qmin, qmax, e, x, e1, e2, sin1, cos1
-        real(kind=r8size),PARAMETER :: zero=0.0d0,one=1.0d0,eps=1.0d-30,PI=3.1415927d0
+        DOUBLE PRECISION :: Dgr, Dkl, Rgr, RKl, q, qmin, qmax, e, x, e1, e2, sin1, cos1
+        DOUBLE PRECISION,PARAMETER :: zero=0.0d0,one=1.0d0,eps=1.0d-30,PI=3.1415927d0
    
         Dgr=dmax1(Deta,Dksi)
         Dkl=dmin1(Deta,Dksi)
@@ -9224,11 +9217,11 @@ module module_mp_SBM_BreakUp
         implicit none
    
         integer,intent(in) :: NKR
-        real(kind=r8size),intent(in) :: DROPRADII(NKR), VR1_BREAKUP(NKR)
-        real(kind=r8size),intent(inout) :: Dgr, Dkl
+        DOUBLE PRECISION,intent(in) :: DROPRADII(NKR), VR1_BREAKUP(NKR)
+        DOUBLE PRECISION,intent(inout) :: Dgr, Dkl
    
-        real(kind=r8size) :: sigma, aka, akb, dSTSc, ST, Sc, ET, CKE, qq0, qq1, qq2, Ecl, W1, W2, DC
-        real(kind=r8size),PARAMETER :: epsi=1.d-20
+        DOUBLE PRECISION :: sigma, aka, akb, dSTSc, ST, Sc, ET, CKE, qq0, qq1, qq2, Ecl, W1, W2, DC
+        DOUBLE PRECISION,PARAMETER :: epsi=1.d-20
    
     ! 1 J = 10^7 g cm^2/s^2
    
@@ -9273,10 +9266,10 @@ module module_mp_SBM_BreakUp
         implicit none
    
         integer,intent(in) :: NKR
-        real(kind=r8size),intent(in) :: DROPRADII(NKR), VR1_BREAKUP(NKR), D_l, D_s
+        DOUBLE PRECISION,intent(in) :: DROPRADII(NKR), VR1_BREAKUP(NKR), D_l, D_s
    
-        real(kind=r8size) :: PI, sigma, R_s, R_l, p, vTl, vTs, dv, Weber_number, pa1, pa2, pa3, g, x, e
-        real(kind=r8size),PARAMETER :: epsf=1.d-30 , FPMIN=1.d-30
+        DOUBLE PRECISION :: PI, sigma, R_s, R_l, p, vTl, vTs, dv, Weber_number, pa1, pa2, pa3, g, x, e
+        DOUBLE PRECISION,PARAMETER :: epsf=1.d-30 , FPMIN=1.d-30
    
         PI=3.1415927d0
         sigma=72.8d0       ! Surface Tension [sigma] = g/s^2 (7.28E-2 N/m)
@@ -9316,11 +9309,11 @@ module module_mp_SBM_BreakUp
    
         implicit none
         integer,intent(in) :: NKR
-        real(kind=r8size),intent(in) :: DROPRADII(NKR), VR1_BREAKUP(NKR)
-        real(kind=r8size),intent(inout) :: Dgr, Dkl, CKE, ST, Sc, W1, W2, Dc
+        DOUBLE PRECISION,intent(in) :: DROPRADII(NKR), VR1_BREAKUP(NKR)
+        DOUBLE PRECISION,intent(inout) :: Dgr, Dkl, CKE, ST, Sc, W1, W2, Dc
    
-        real(kind=r8size) :: PI, rho, sigma, ak10, Dgka2, Dgka3, v1, v2, dv, Dgkb3
-        real(kind=r8size),PARAMETER :: epsf = 1.d-30, FPMIN = 1.d-30
+        DOUBLE PRECISION :: PI, rho, sigma, ak10, Dgka2, Dgka3, v1, v2, dv, Dgkb3
+        DOUBLE PRECISION,PARAMETER :: epsf = 1.d-30, FPMIN = 1.d-30
    
         !EXTERNAL vTBeard
    
@@ -9387,10 +9380,10 @@ module module_mp_SBM_BreakUp
         implicit none
    
         integer,intent(in) :: NKR
-        real(kind=r8size),intent(in) :: DROPRADII(NKR), VR1_BREAKUP(NKR), diam
+        DOUBLE PRECISION,intent(in) :: DROPRADII(NKR), VR1_BREAKUP(NKR), diam
    
         integer :: kr
-        real(kind=r8size) :: aa
+        DOUBLE PRECISION :: aa
    
         aa   = diam/2.0d0           ! Radius in cm
    
