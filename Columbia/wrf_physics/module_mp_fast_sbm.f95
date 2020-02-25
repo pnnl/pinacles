@@ -61,8 +61,8 @@
 
 !---YZ2020:Add an option for turning on/off outputs of the process rate diagnostics--@
 #define SBM_DIAG  !turn on the diagnostics
+#undef DM_PARALLEL
 !#undef SBM_DIAG    !turn off the diagnostics 
-
 
 module module_mp_SBM_BreakUp
 
@@ -4246,13 +4246,13 @@ module module_mp_SBM_BreakUp
             end do
           end do
          
-          CALL wrf_debug(0, "Aerosol size distribution")
+          !CALL wrf_debug(0, "Aerosol size distribution")
           do k = kts, kte
              KRR = 0
              do KR = p_ff8i01, p_ff8i33
                 KRR = KRR + 1
                 write(dbg_msg, *) KRR, COL*chem_new(its,k,jts,KR)/rhocgs(its,k,jts)*1000.0 
-                CALL wrf_debug(0,dbg_msg)
+                !CALL wrf_debug(0,dbg_msg)
              end do
 
           end do
@@ -5537,7 +5537,7 @@ module module_mp_SBM_BreakUp
    
        IF ( wrf_dm_on_monitor() ) THEN
              WRITE(errmess, '(A,I2)') 'module_mp_FAST-SBM : Table-1 -- opening "BLKD_SDC.dat" on unit',hujisbm_unit1
-             CALL wrf_debug(150, errmess)
+             !CALL wrf_debug(150, errmess)
              OPEN(UNIT=hujisbm_unit1,FILE=trim(input_dir)//"/BLKD_SDC.dat",FORM="FORMATTED",STATUS="OLD",ERR=2070)
              DO kr=1,NKR
                 READ(hujisbm_unit1,*) bin_mass(kr),tab_colum(kr),tab_dendr(kr), &
@@ -5545,11 +5545,7 @@ module module_mp_SBM_BreakUp
                 bin_log(kr) = log10(bin_mass(kr))
              ENDDO
        ENDIF
-   
-#define DM_BCAST_MACRO_R4(A) CALL wrf_dm_bcast_bytes(A, size(A)*R4SIZE)
-#define DM_BCAST_MACRO_R8(A) CALL wrf_dm_bcast_bytes(A, size(A)*R8SIZE)
-#define DM_BCAST_MACRO_R16(A) CALL wrf_dm_bcast_bytes(A, size(A)*R16SIZE)
-   
+
 #if defined(DM_PARALLEL)
          call wrf_dm_bcast_bytes(bin_mass, size(bin_mass)*R8SIZE)
          call wrf_dm_bcast_bytes(tab_colum, size(tab_colum)*R8SIZE)
@@ -5565,7 +5561,7 @@ module module_mp_SBM_BreakUp
    
         WRITE(errmess, '(A,I2)') 'FAST_SBM_INIT : succesfull reading Table-1'
         print*,errmess
-        CALL wrf_debug(000, errmess)
+        !CALL wrf_debug(000, errmess)
     ! +-----------------------------------------------------------------------+
    
     ! LookUpTable #2
@@ -5598,7 +5594,7 @@ module module_mp_SBM_BreakUp
    
     IF ( wrf_dm_on_monitor() ) THEN
        WRITE(errmess, '(A,I2)') 'module_mp_FAST-SBM : Table-2 -- opening capacity.asc on unit',hujisbm_unit1
-       CALL wrf_debug(150, errmess)
+       !CALL wrf_debug(150, errmess)
        OPEN(UNIT=hujisbm_unit1,FILE=trim(input_dir)//"/capacity33.asc",FORM="FORMATTED",STATUS="OLD",ERR=2070)
        !OPEN(UNIT=hujisbm_unit1,FILE=trim(input_dir)//"/capacity43.asc",FORM="FORMATTED",STATUS="OLD",ERR=2070)
        900	FORMAT(6E13.5)
@@ -5620,7 +5616,7 @@ module module_mp_SBM_BreakUp
    
         WRITE(errmess, '(A,I2)') 'FAST_SBM_INIT : succesfull reading Table-2'
         print*,errmess
-        CALL wrf_debug(000, errmess)
+        !CALL wrf_debug(000, errmess)
     ! +----------------------------------------------------------------------+
    
     ! LookUpTable #3
@@ -5653,7 +5649,7 @@ module module_mp_SBM_BreakUp
         ENDIF
         IF ( wrf_dm_on_monitor() ) THEN
             WRITE(errmess, '(A,I2)') 'module_mp_FAST_SBM : Table-3 -- opening masses.asc on unit ',hujisbm_unit1
-            CALL wrf_debug(150, errmess)
+            !CALL wrf_debug(150, errmess)
             OPEN(UNIT=hujisbm_unit1,FILE=trim(input_dir)//"/masses33.asc",FORM="FORMATTED",STATUS="OLD",ERR=2070)
             !OPEN(UNIT=hujisbm_unit1,FILE=trim(input_dir)//"/masses43.asc",FORM="FORMATTED",STATUS="OLD",ERR=2070)
             READ(hujisbm_unit1,900) XL,XI,XS,XG,XH
@@ -5675,7 +5671,7 @@ module module_mp_SBM_BreakUp
    
          WRITE(errmess, '(A,I2)') 'FAST_SBM_INIT : succesfull reading Table-3'
          print*,errmess
-         CALL wrf_debug(000, errmess)
+         !CALL wrf_debug(000, errmess)
     ! +-------------------------------------------------------------------------+
    
     ! LookUpTable #4
@@ -5709,7 +5705,7 @@ module module_mp_SBM_BreakUp
    
         IF ( wrf_dm_on_monitor() ) THEN
             WRITE(errmess, '(A,I2)') 'module_mp_FAST_SBM : Table-4 -- opening termvels.asc on unit ',hujisbm_unit1
-            CALL wrf_debug(150, errmess)
+            !CALL wrf_debug(150, errmess)
             OPEN(UNIT=hujisbm_unit1,FILE=trim(input_dir)//"/termvels33_corrected.asc",FORM="FORMATTED",STATUS="OLD",ERR=2070)
             !OPEN(UNIT=hujisbm_unit1,FILE=trim(input_dir)//"/termvels43_corrected.asc",FORM="FORMATTED",STATUS="OLD",ERR=2070)
             READ(hujisbm_unit1,900) VR1,VR2,VR3,VR4,VR5
@@ -5729,7 +5725,7 @@ module module_mp_SBM_BreakUp
         !DM_BCAST_MACRO_R4(VR5)
 #endif
         WRITE(errmess, '(A,I2)') 'FAST_SBM_INIT : succesfull reading Table-4'
-        CALL wrf_debug(000, errmess)
+        !CALL wrf_debug(000, errmess)
     ! +----------------------------------------------------------------------+
    
    
@@ -5764,7 +5760,7 @@ module module_mp_SBM_BreakUp
    
         IF ( wrf_dm_on_monitor() ) THEN
             WRITE(errmess, '(A,I2)') 'module_mp_FAST_SBM : Table-5 -- opening constants.asc on unit  ',hujisbm_unit1
-            CALL wrf_debug(150, errmess)
+            !CALL wrf_debug(150, errmess)
             OPEN(UNIT=hujisbm_unit1,FILE=trim(input_dir)//"/constants33.asc",FORM="FORMATTED",STATUS="OLD",ERR=2070)
             !OPEN(UNIT=hujisbm_unit1,FILE=trim(input_dir)//"/constants43.asc",FORM="FORMATTED",STATUS="OLD",ERR=2070)
             READ(hujisbm_unit1,900) SLIC,TLIC,COEFIN
@@ -5781,7 +5777,7 @@ module module_mp_SBM_BreakUp
        !DM_BCAST_MACRO_R4(COEFIN)
 #endif
         WRITE(errmess, '(A,I2)') 'FAST_SBM_INIT : succesfull reading Table-5'
-        CALL wrf_debug(000, errmess)
+        !CALL wrf_debug(000, errmess)
     ! +----------------------------------------------------------------------+
    
     ! LookUpTable #6
@@ -5813,7 +5809,7 @@ module module_mp_SBM_BreakUp
         ENDIF
         IF ( wrf_dm_on_monitor() ) THEN
             WRITE(errmess, '(A,I2)') 'module_mp_FAST_SBM : Table-6 -- opening kernels_z.asc on unit  ',hujisbm_unit1
-            CALL wrf_debug(150, errmess)
+            !CALL wrf_debug(150, errmess)
             Fname = trim(input_dir)//'/kernLL_z33.asc'
             !Fname = trim(input_dir)//'/kernLL_z43.asc'
             OPEN(UNIT=hujisbm_unit1,FILE=Fname,FORM="FORMATTED",STATUS="OLD",ERR=2070)
@@ -5843,7 +5839,7 @@ module module_mp_SBM_BreakUp
 #endif
    
         WRITE(errmess, '(A,I2)') 'FAST_SBM_INIT : succesfull reading Table-6'
-        CALL wrf_debug(000, errmess)
+        !CALL wrf_debug(000, errmess)
     ! +-----------------------------------------------------------------------+
    
     ! LookUpTable #7
@@ -5912,7 +5908,7 @@ module module_mp_SBM_BreakUp
     ! ... KERNELS DEPENDING ON PRESSURE :
     IF ( wrf_dm_on_monitor() ) THEN
        WRITE(errmess, '(A,I2)') 'module_mp_WRFsbm : Table-7 -- opening kernels33.asc on unit',hujisbm_unit1
-       CALL wrf_debug(150, errmess)
+       !CALL wrf_debug(150, errmess)
    
        ! ... Drop - IC
        !Fname = trim(input_dir)//'/ckli_300mb_As'
@@ -6106,7 +6102,7 @@ module module_mp_SBM_BreakUp
 #endif
    
         WRITE(errmess, '(A,I2)') 'FAST_SBM_INIT : succesfull reading Table-7'
-        CALL wrf_debug(000, errmess)
+        !CALL wrf_debug(000, errmess)
     ! +-----------------------------------------------------------------------+
    
     ! LookUpTable #8
@@ -6139,7 +6135,7 @@ module module_mp_SBM_BreakUp
         ENDIF
         IF ( wrf_dm_on_monitor() ) THEN
             WRITE(errmess, '(A,I2)') 'module_mp_WRFsbm : Table-8 -- opening bulkdens.asc on unit ',hujisbm_unit1
-            CALL wrf_debug(150, errmess)
+            !CALL wrf_debug(150, errmess)
             OPEN(UNIT=hujisbm_unit1,FILE=trim(input_dir)//"/bulkdens33.asc",FORM="FORMATTED",STATUS="OLD",ERR=2070)
             !OPEN(UNIT=hujisbm_unit1,FILE=trim(input_dir)//"/bulkdens43.asc",FORM="FORMATTED",STATUS="OLD",ERR=2070)
             READ(hujisbm_unit1,900) RO1BL,RO2BL,RO3BL,RO4BL,RO5BL
@@ -6159,7 +6155,7 @@ module module_mp_SBM_BreakUp
          !DM_BCAST_MACRO_R4(RO5BL)
 #endif
         WRITE(errmess, '(A,I2)') 'FAST_SBM_INIT : succesfull reading Table-8'
-        CALL wrf_debug(000, errmess)
+        !CALL wrf_debug(000, errmess)
     ! +----------------------------------------------------------------------+
    
     ! LookUpTable #9
@@ -6186,7 +6182,7 @@ module module_mp_SBM_BreakUp
         ENDIF
         IF ( wrf_dm_on_monitor() ) THEN
             WRITE(errmess, '(A,I2)') 'module_mp_FAST_SBM : Table-9 -- opening bulkradii.asc on unit',hujisbm_unit1
-            CALL wrf_debug(150, errmess)
+            !CALL wrf_debug(150, errmess)
             OPEN(UNIT=hujisbm_unit1,FILE=trim(input_dir)//"/bulkradii33.asc",FORM="FORMATTED",STATUS="OLD",ERR=2070)
             !OPEN(UNIT=hujisbm_unit1,FILE=trim(input_dir)//"/bulkradii43.asc",FORM="FORMATTED",STATUS="OLD",ERR=2070)
             READ(hujisbm_unit1,*) RADXXO
@@ -6198,7 +6194,7 @@ module module_mp_SBM_BreakUp
           !DM_BCAST_MACRO_R4(RADXXO)
 #endif
         WRITE(errmess, '(A,I2)') 'FAST_SBM_INIT : succesfull reading Table-9'
-        CALL wrf_debug(000, errmess)
+        !CALL wrf_debug(000, errmess)
     ! +-----------------------------------------------------------------------+
    
     ! LookUpTable #10
@@ -6264,7 +6260,7 @@ module module_mp_SBM_BreakUp
          !!!!DM_BCAST_MACRO_R4 ( fws_hail )
     ! ### (KS) - Broadcating Usetables array
          !CALL wrf_dm_bcast_integer ( usetables , size ( usetables ) * IWORDSIZE )
-!#endif
+#endif
 !---END CK COMMENT OUT----!
      WRITE(errmess, '(A,I2)') 'module_mp_WRFsbm : succesfull reading Table-10'
      call wrf_message(errmess)
@@ -6289,7 +6285,7 @@ module module_mp_SBM_BreakUp
       ima = 0
       CALL courant_bott_KS(xl, nkr, chucm, ima, scal) ! ### (KS) : New courant_bott_KS (without XL_MG(0:nkr))
       WRITE(errmess, '(A,I2)') 'FAST_SBM_INIT : succesfull reading "courant_bott_KS" '
-      CALL wrf_debug(000, errmess)
+      !CALL wrf_debug(000, errmess)
    
      DEG01=1./3.
      CONCCCNIN=0.
@@ -6316,7 +6312,7 @@ module module_mp_SBM_BreakUp
           RCCN = 0.0
           CALL LogNormal_modes_Aerosol_ACPC(FCCNR_ACPC_Norm,NKR_aerosol,COL,XL,XCCN,RCCN,RO_SOLUTE,Scale_CCN_Factor)
           WRITE(errmess, '(A,I2)') 'module_mp_WRFsbm : succesfull reading "LogNormal_modes_Aerosol_ACPC" '
-          CALL wrf_debug(000, errmess)
+          !CALL wrf_debug(000, errmess)
        ENDIF
     ! +-------------------------------------------------------------+
    
@@ -6336,7 +6332,7 @@ module module_mp_SBM_BreakUp
        !DM_BCAST_MACRO_R4 (QKJ)
 #endif
          WRITE(errmess, '(A,I2)') 'FAST_SBM_INIT : succesfull reading BREAKINIT_KS" '
-       CALL wrf_debug(000, errmess)
+       !CALL wrf_debug(000, errmess)
      ! +--------------------------------------------------------------------------------------------------------------------+
    
       100	FORMAT(10I4)
@@ -6421,7 +6417,7 @@ module module_mp_SBM_BreakUp
      NND = 0.0
      call Spontanous_Init(dt, XL, DROPRADII, Prob, Gain_Var_New, NND, NKR, ikr_spon_break)
      WRITE(errmess, '(A,I2)') 'FAST_SBM_INIT : succesfull reading "Spontanous_Init" '
-     CALL wrf_debug(000, errmess)
+     !CALL wrf_debug(000, errmess)
    
      return
      2070  continue
