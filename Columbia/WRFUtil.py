@@ -12,6 +12,19 @@ def to_wrf_order(nhalo, our_array, wrf_array):
     return
 
 @numba.njit
+def to_wrf_order_4d(nhalo, our_array, wrf_array):
+    shape = our_array.shape
+    for n in range(shape[0]):
+        for i in range(nhalo[0],shape[1]-nhalo[0]):
+            for j in range(nhalo[1],shape[2]-nhalo[1]):
+                for k in range(nhalo[2],shape[3]-nhalo[2]):
+                    i_wrf = i - nhalo[0]
+                    j_wrf = j - nhalo[1]
+                    k_wrf = k - nhalo[2]
+                    wrf_array[i_wrf,k_wrf,j_wrf,n] = our_array[n,i,j,k]
+
+    return
+@numba.njit
 def wrf_theta_tend_to_our_tend(nhalo, dt, exner, wrf_out, our_in, stend):
     shape = stend.shape
     for i in range(nhalo[0],shape[0]-nhalo[0]):
