@@ -42,7 +42,7 @@ def to_our_order(nhalo, wrf_array, our_array):
     for i in range(nhalo[0],shape[0]-nhalo[0]):
         for j in range(nhalo[1],shape[1]-nhalo[1]):
             for k in range(nhalo[2], shape[2]- nhalo[2]):
-                i_wrf = i -nhalo[0]
+                i_wrf = i - nhalo[0]
                 j_wrf = j - nhalo[1]
                 k_wrf = k - nhalo[2]
                 our_array[i,j,k] = wrf_array[i_wrf, k_wrf, j_wrf]

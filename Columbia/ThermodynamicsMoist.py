@@ -8,15 +8,13 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
 
         return
 
-    def update(self):
+    def update(self, apply_buoyancy=True):
 
         z = self._Grid.z_global
         p0 = self._Ref.p0
         alpha0 = self._Ref.alpha0
-        T0 = self._Ref.T0
         exner = self._Ref.exner
 
-        TH0 = T0/exner
 
         s = self._ScalarState.get_field('s')
         qc = self._ScalarState.get_field('qc')
@@ -30,6 +28,9 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         w_t = self._VelocityState.get_tend('w')
 
         ThermodynamicsMoist_impl.eos(z, p0, alpha0, s, ql, qi, T, alpha, buoyancy)
-        ThermodynamicsMoist_impl.apply_buoyancy(buoyancy, w_t)
+        if apply_buoyancy:
+            ThermodynamicsMoist_impl.apply_buoyancy(buoyancy, w_t)    
 
         return
+
+    

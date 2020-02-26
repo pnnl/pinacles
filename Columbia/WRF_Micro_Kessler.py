@@ -1,13 +1,13 @@
 from Columbia.Microphysics import MicrophysicsBase, water_path, water_fraction
 from Columbia.wrf_physics import kessler
 from Columbia import UtilitiesParallel
-from Columbia.WRFUtil import to_wrf_order, wrf_tend_to_our_tend, wrf_theta_tend_to_our_tend
+from Columbia.WRFUtil import to_wrf_order, wrf_tend_to_our_tend, wrf_theta_tend_to_our_tend, to_our_order
 from Columbia import parameters
 from mpi4py import MPI
 import numpy as np
 import numba
 
-@numba.njit
+@numba.njit()
 def compute_rh(qv, temp, pressure):
     ep2 = 287./461.6
     svp1 = 0.6112
@@ -18,7 +18,6 @@ def compute_rh(qv, temp, pressure):
     es        = 1000.*svp1*np.exp(svp2*(temp-svpt0)/(temp-svp3))
     qvs       = ep2*es/(pressure-es)
     return qv/qvs
-
 
 class MicroKessler(MicrophysicsBase):
     def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController):
@@ -39,47 +38,37 @@ class MicroKessler(MicrophysicsBase):
         self._RAINNCV =  np.zeros_like(self._RAINNC)
 
         self._rain_rate = 0.0
-        return 
+        return
 
-    def update(self): 
+    def update(self):
 
         #Get variables from the model state
         T = self._DiagnosticState.get_field('T')
+        s = self._ScalarState.get_field('s')
         qv = self._ScalarState.get_field('qv')
         qc = self._ScalarState.get_field('qc')
         qr = self._ScalarState.get_field('qr')
 
-        s_tend = self._ScalarState.get_tend('s')
-        qv_tend = self._ScalarState.get_tend('qv')
-        qc_tend = self._ScalarState.get_tend('qc')
-        qr_tend = self._ScalarState.get_tend('qr')
-
         exner = self._Ref.exner
 
         #Build arrays from reference state make sure these are properly Fortran/WRF
-        #ordered 
-       # our_dims= self._Grid.ngrid_local
+        #ordered
         nhalo = self._Grid.n_halo
-       # wrf_dims = (self._our_dims[0] -2*nhalo[0], self_our_dims[2]-2*nhalo[2], self._our_dims[1]-2*nhalo[1])
-    
-        #Some of the memory allocation could be done at init
 
+        #Some of the memory allocation could be done at init (TODO)
         rho_wrf = np.empty(self._wrf_dims, dtype=np.double, order='F')
-        exner_wrf = np.empty_like(rho_wrf) 
+        exner_wrf = np.empty_like(rho_wrf)
         T_wrf = np.empty_like(rho_wrf)
         qv_wrf = np.empty_like(rho_wrf)
         qc_wrf = np.empty_like(rho_wrf)
         qr_wrf = np.empty_like(rho_wrf)
-
-        #RAINNC = np.empty((self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order='F')
-        #RAINNCV = np.empty_like(RAINNC)
 
         dz_wrf = np.empty_like(rho_wrf)
         z = np.empty_like(rho_wrf)
 
         dz_wrf.fill(self._Grid.dxi[2])
         z[:,:,:] = self._Grid.z_global[np.newaxis,nhalo[2]:-nhalo[2],np.newaxis]
-        rho_wrf[:,:,:] = self._Ref.rho0[np.newaxis, nhalo[2]:-nhalo[2], np.newaxis] 
+        rho_wrf[:,:,:] = self._Ref.rho0[np.newaxis, nhalo[2]:-nhalo[2], np.newaxis]
         exner_wrf[:,:,:] = exner[np.newaxis, nhalo[2]:-nhalo[2], np.newaxis]
 
 
@@ -103,23 +92,10 @@ class MicroKessler(MicrophysicsBase):
 
         to_wrf_order(nhalo, T/self._Ref.exner[np.newaxis,np.newaxis,:], T_wrf)
 
-
-        #print('Print 2!')
         to_wrf_order(nhalo, qv, qv_wrf)
-        #print('Print 3!')
         to_wrf_order(nhalo, qc, qc_wrf)
-        #print('Print 4!')
         to_wrf_order(nhalo, qr, qr_wrf)
-        #print('Print 5!')
-        #import pylab as plt
-       # plt.figure(1)
-       # plt.plot(qv_wrf[5,:,5])
-        #plt.show()
 
-        #Convert T to potential temperature (Flip order here)
-        #T_wrf = T_wrf / exner[np.newaxis,::-1,np.newaxis]
-
-        #print('Here 1')
         rain_accum_old = np.sum(self._RAINNC)
         kessler.module_mp_kessler.kessler(T_wrf, qv_wrf, qc_wrf, qr_wrf, rho_wrf, exner_wrf,
             dt, z, xlv, cp,
@@ -130,28 +106,16 @@ class MicroKessler(MicrophysicsBase):
             ims,ime, jms,jme, kms,kme,
             its,ite, jts,jte, kts,kte)
 
+        to_our_order(nhalo, qv_wrf, qv)
+        to_our_order(nhalo, qc_wrf, qc)
+        to_our_order(nhalo, qr_wrf, qr)
+
+        #Update the energy (TODO Move this to numba)
+        T_wrf *= self._Ref.exner[np.newaxis,nhalo[2]:-nhalo[2],np.newaxis]
+        s_wrf = T_wrf + (parameters.G*z- parameters.LV*(qc_wrf + qr_wrf))*parameters.ICPD
+        to_our_order(nhalo, s_wrf, s)
+
         self._rain_rate = (np.sum(self._RAINNC) - rain_accum_old)/dt
-        #print('Here 2')
-
-        wrf_theta_tend_to_our_tend(nhalo, dt, exner, T_wrf, T, s_tend)
-        #print(np.amax(s_tend - s_b4))
-        wrf_tend_to_our_tend(nhalo, dt, qv_wrf, qv, qv_tend)
-        wrf_tend_to_our_tend(nhalo, dt, qc_wrf, qc, qc_tend)
-        #print('qc', np.amax(qc), np.amax(qc_tend))
-        wrf_tend_to_our_tend(nhalo,dt, qr_wrf, qr, qr_tend)
-        #print('qr', np.amax(qr), np.amax(qr_tend))
-
-        #Add in tendencies
-        s_tend -= parameters.LV*parameters.ICPD * np.add(qc_tend, qr_tend)
-
-        #pressure = np.zeros_like(qv) + self._Ref.p0[np.newaxis, np.newaxis,:]
-        #rh = compute_rh(qv, T, pressure)
-        #print('RH: ', np.amax(rh))
-
-        #plt.plot(T[8,8,nhalo[0]:-nhalo[0]]/exner[nhalo[0]:-nhalo[0]])
-        #plt.plot(T_wrf[5,:,5])
-        #plt.show()
-        #import sys; sys.exit()
 
         return
 
