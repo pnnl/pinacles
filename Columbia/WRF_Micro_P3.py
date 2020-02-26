@@ -28,7 +28,6 @@ class MicroP3(MicrophysicsBase):
             self._ScalarState.add_variable('qc')
             self._ScalarState.add_variable('qr')
             self._ScalarState.add_variable('qnr')
-            self._ScalarState.add_variable('nc')
             self._ScalarState.add_variable('qi1')
             self._ScalarState.add_variable('qni1')
             self._ScalarState.add_variable('qir1')
@@ -62,7 +61,6 @@ class MicroP3(MicrophysicsBase):
         qc = self._ScalarState.get_field('qc')
         qr = self._ScalarState.get_field('qr')
         qnr = self._ScalarState.get_field('qnr')
-        nc = self._ScalarState.get_field('nc')
         qi1 = self._ScalarState.get_field('qi1')
         qni1 = self._ScalarState.get_field('qni1')
         qir1 = self._ScalarState.get_field('qir1')
@@ -130,12 +128,9 @@ class MicroP3(MicrophysicsBase):
         to_wrf_order(nhalo, qir1, qir1_wrf)
         to_wrf_order(nhalo, qib1, qib1_wrf)
 
-        #Todo... this my be incorrect. Check carefully.
-        th_old = np.copy(T_wrf, order='F')
-        qv_old = np.copy(qv_wrf, order='F')
 
         n_iceCat = 1
-
+        nc_wrf[:,:,:] = 70e6
         #T_wrf,qv_wrf,qc_wrf,qr_wrf,qnr_wrf)
         p3.module_mp_p3.mp_p3_wrapper_wrf(T_wrf,qv_wrf,qc_wrf,qr_wrf,qnr_wrf,
                                 th_old, qv_old,
@@ -156,7 +151,7 @@ class MicroP3(MicrophysicsBase):
         to_our_order(nhalo, qnr_wrf, qnr)
         to_our_order(nhalo, qi1_wrf, qi1)
         to_our_order(nhalo, qni1_wrf, qni1)
-        to_our_order(nhalo, nc_wrf, nc)
+        #to_our_order(nhalo, nc_wrf, nc)
 
 
         #Update the energys (TODO Move this to numba)
@@ -173,7 +168,6 @@ class MicroP3(MicrophysicsBase):
         #wrf_tend_to_our_tend(nhalo, dt, qi1_wrf, qi1, qi1_tend)
         #wrf_tend_to_our_tend(nhalo, dt, qni1_wrf, qni1, qni1_tend)
         #wrf_tend_to_our_tend(nhalo, dt, nc_wrf, nc, nc_tend)
-
         to_our_order(nhalo, reflectivity_wrf, reflectivity)
 
         #Add in tendencies
