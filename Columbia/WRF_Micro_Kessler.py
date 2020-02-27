@@ -66,7 +66,7 @@ class MicroKessler(MicrophysicsBase):
         dz_wrf = np.empty_like(rho_wrf)
         z = np.empty_like(rho_wrf)
 
-        dz_wrf.fill(self._Grid.dxi[2])
+        dz_wrf.fill(self._Grid.dx[2])
         z[:,:,:] = self._Grid.z_global[np.newaxis,nhalo[2]:-nhalo[2],np.newaxis]
         rho_wrf[:,:,:] = self._Ref.rho0[np.newaxis, nhalo[2]:-nhalo[2], np.newaxis]
         exner_wrf[:,:,:] = exner[np.newaxis, nhalo[2]:-nhalo[2], np.newaxis]
