@@ -59,3 +59,16 @@ def to_our_order(nhalo, wrf_array, our_array):
                 j_wrf = j - nhalo[1]
                 k_wrf = k - nhalo[2]
                 our_array[i,j,k] = wrf_array[i_wrf, k_wrf, j_wrf]
+
+
+@numba.njit
+def to_our_order_4d(nhalo, wrf_array, our_array):
+    shape = our_array.shape
+    for n in range(shape[0]):
+        for i in range(nhalo[0],shape[1]-nhalo[0]):
+            for j in range(nhalo[1],shape[2]-nhalo[1]):
+                for k in range(nhalo[2],shape[3]-nhalo[2]):
+                    i_wrf = i - nhalo[1]
+                    j_wrf = j - nhalo[2]
+                    k_wrf = k - nhalo[3]
+                    our_array[n,i,j,k] = wrf_array[i_wrf, k_wrf, j_wrf,n]

@@ -1,8 +1,9 @@
 import numpy as np
+from Columbia import parameters
 import time
 from Columbia.Microphysics import MicrophysicsBase
-from Columbia.wrf_physics import module_mp_fast_sb
-from Columbia.WRFUtil import to_wrf_order, to_wrf_order_4d
+from Columbia.wrf_physics import module_mp_fast_sbm
+from Columbia.WRFUtil import to_wrf_order, to_wrf_order_4d, to_our_order_4d, to_our_order
 
 class MicroSBM(MicrophysicsBase):
 
@@ -34,6 +35,10 @@ class MicroSBM(MicrophysicsBase):
         self._wrf_dims = (self._our_dims[0] -2*nhalo[0], self._our_dims[2]-2*nhalo[2], self._our_dims[1]-2*nhalo[1])
 
         self._itimestep = 0
+
+
+        module_mp_fast_sbm.module_mp_fast_sbm.fast_hucminit(5.0)
+
         return
 
     def update(self):
@@ -79,11 +84,11 @@ class MicroSBM(MicrophysicsBase):
         wrf_vars['dz8w'] =  np.empty(self._wrf_dims, order='F', dtype=np.double)
         wrf_vars['dz8w'].fill(self._Grid.dx[2])
         wrf_vars['rho_phy'] = np.empty(self._wrf_dims, order='F', dtype=np.double)
-        wrf_vars['rho_phy'] = self._Ref.rho0[np.newaxis, nhalo[2]:-nhalo[2], np.newaxis]
+        wrf_vars['rho_phy'][:,:,:] = self._Ref.rho0[np.newaxis, nhalo[2]:-nhalo[2], np.newaxis]
         wrf_vars['p_phy'] = np.empty(self._wrf_dims, order='F', dtype=np.double)
-        wrf_vars['p_phy'] =  self._Ref.p0[np.newaxis, nhalo[2]:-nhalo[2], np.newaxis]
+        wrf_vars['p_phy'][:,:,:] =  self._Ref.p0[np.newaxis, nhalo[2]:-nhalo[2], np.newaxis]
         wrf_vars['pi_phy'] = np.empty(self._wrf_dims, order='F', dtype=np.double)
-        wrf_vars['pi_phy'] = exner[np.newaxis, nhalo[2]:-nhalo[2], np.newaxis]
+        wrf_vars['pi_phy'][:,:,:] = exner[np.newaxis, nhalo[2]:-nhalo[2], np.newaxis]
         wrf_vars['th_phy'] = np.copy(wrf_vars['th_old'])
         wrf_vars['diagflag'] = True
         wrf_vars['num_sbmradar'] = 1
@@ -113,11 +118,6 @@ class MicroSBM(MicrophysicsBase):
         wrf_vars['autonum_tend'] = np.empty(self._wrf_dims, order='F', dtype=np.double)
         wrf_vars['nprc_tend'] = np.empty(self._wrf_dims, order='F', dtype=np.double)
 
-
-        for v in wrf_vars:
-            print(v, type(wrf_vars[v]))
-
-
         #Get grid dimensions
         ids = 1; jds = 1; kds = 1
         ide = 1; jde = 1; kde = 1
@@ -130,12 +130,11 @@ class MicroSBM(MicrophysicsBase):
 
 
         #Call sbm!
-        module_mp_fast_sb.module_mp_fast_sbm.fast_sbm(wrf_vars['w'],
+        module_mp_fast_sbm.module_mp_fast_sbm.fast_sbm(wrf_vars['w'],
                                                       wrf_vars['u'],
                                                       wrf_vars['v'],
                                                       wrf_vars['th_old'],
                                                       wrf_vars['chem_new'],
-                                                      wrf_vars['chem_new'].shape[3],
                                                       self._itimestep,
                                                       dt,
                                                       self._Grid.dx[0],
@@ -161,16 +160,7 @@ class MicroSBM(MicrophysicsBase):
                                                       ids,ide, jds,jde, kds,kde,
                                                       ims,ime, jms,jme, kms,kme,
                                                       its,ite, jts,jte, kts,kte,
-                                                      wrf_vars['diagflag'],
                                                       wrf_vars['sbmradar'],
-                                                      wrf_vars['num_sbmradar'],
-                                                      wrf_vars['RAINNC'],
-                                                      wrf_vars['RAINNCV'],
-                                                      wrf_vars['SNOWNC'],
-                                                      wrf_vars['SNOWNCV'],
-                                                      wrf_vars['GRAUPELNC'],
-                                                      wrf_vars['GRAUPELNCV'],
-                                                      wrf_vars['SR'],
                                                       wrf_vars['MA'],
                                                       wrf_vars['LH_rate'],
                                                       wrf_vars['CE_rate'],
@@ -184,7 +174,28 @@ class MicroSBM(MicrophysicsBase):
                                                       wrf_vars['tempdiffl'],
                                                       wrf_vars['automass_tend'],
                                                       wrf_vars['autonum_tend'],
-                                                      wrf_vars['nprc_tend'])
+                                                      wrf_vars['nprc_tend'],
+                                                      diagflag= wrf_vars['diagflag'],
+                                                      rainnc=wrf_vars['RAINNC'],
+                                                      rainncv=wrf_vars['RAINNCV'],
+                                                      snownc=wrf_vars['SNOWNC'],
+                                                      snowncv=wrf_vars['SNOWNCV'],
+                                                      graupelnc=wrf_vars['GRAUPELNC'],
+                                                      graupelncv=wrf_vars['GRAUPELNCV'],
+                                                      sr=wrf_vars['SR'])
+
+        #Now we need to map back to map back from WRF indexes to PINNACLE indexes
+        to_wrf_order_4d(nhalo,wrf_vars['chem_new'],chem_new)
+
+        #Now re-order scalar variables
+        for v in self._list_of_ScalarStatevars:
+            wrf_vars[v] = np.empty(self._wrf_dims, order='F', dtype=np.double)
+            var = self._ScalarState.get_field(v)
+            to_wrf_order(nhalo, wrf_vars[v], var)
+
+
+        s_wrf = wrf_vars['th_old'] * self._Ref.exner[np.newaxis,nhalo[2]:-nhalo[2],np.newaxis]  + (parameters.G*z- parameters.LV*(wrf_vars['qc'] + wrf_vars['qr']))*parameters.ICPD
+
         self._itimestep  += 1
 
         t1 = time.time()
