@@ -226,6 +226,7 @@ class ScalarWENO5(ScalarAdvectionBase):
         nhalo = self._Grid.n_halo
         #Now iterate over the scalar variables
         for var in self._ScalarState.names:
+            #print(var)
             #Get a scalar field (No copy done here)
             phi = self._ScalarState.get_field(var)
             phi_t = self._ScalarState.get_tend(var)

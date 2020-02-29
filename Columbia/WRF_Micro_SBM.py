@@ -34,7 +34,8 @@ class MicroSBM(MicrophysicsBase):
         nhalo = self._Grid.n_halo
         self._wrf_dims = (self._our_dims[0] -2*nhalo[0], self._our_dims[2]-2*nhalo[2], self._our_dims[1]-2*nhalo[1])
 
-        self._itimestep = 0
+
+        self._itimestep = 1
 
 
         module_mp_fast_sbm.module_mp_fast_sbm.fast_hucminit(5.0)
@@ -50,6 +51,8 @@ class MicroSBM(MicrophysicsBase):
 
         #Let's build a dictionary wrf_ordered variables
         wrf_vars = {}
+
+        s = self._ScalarState.get_field('s')
 
         #First re-order velocity variables
         for v in ['w', 'u', 'v']:
@@ -68,6 +71,7 @@ class MicroSBM(MicrophysicsBase):
         T = self._DiagnosticState.get_field('T')
         exner = self._Ref.exner
         to_wrf_order(nhalo, T/exner[np.newaxis, np.newaxis,:], wrf_vars['th_old'])
+
 
         wrf_vars['qv_old'] = np.copy(wrf_vars['qv'])
 
@@ -120,7 +124,7 @@ class MicroSBM(MicrophysicsBase):
 
         #Get grid dimensions
         ids = 1; jds = 1; kds = 1
-        ide = 1; jde = 1; kde = 1
+        ide = self._wrf_dims[0]; jde = self._wrf_dims[0]; kde = self._wrf_dims[0]
         ims=1; jms = 1; kms = 1
         ime=self._wrf_dims[0]; jme=self._wrf_dims[2]; kme=self._wrf_dims[1]
         its=1; jts=1; kts=1
@@ -128,6 +132,8 @@ class MicroSBM(MicrophysicsBase):
 
         dt = self._TimeSteppingController.dt,
 
+        z = np.empty(self._wrf_dims, order='F', dtype=np.double)
+        z[:,:,:] = self._Grid.z_global[np.newaxis,nhalo[2]:-nhalo[2],np.newaxis]
 
         #Call sbm!
         module_mp_fast_sbm.module_mp_fast_sbm.fast_sbm(wrf_vars['w'],
@@ -183,9 +189,17 @@ class MicroSBM(MicrophysicsBase):
                                                       graupelnc=wrf_vars['GRAUPELNC'],
                                                       graupelncv=wrf_vars['GRAUPELNCV'],
                                                       sr=wrf_vars['SR'])
-
+        print(np.min(wrf_vars['qv']), np.amax(wrf_vars['qv']))
+        print(np.min(wrf_vars['qv_old']), np.amax(wrf_vars['qv_old']))
+        print(np.min(wrf_vars['qc']), np.amax(wrf_vars['qc']))
+        print(np.min(wrf_vars['qr']), np.amax(wrf_vars['qr']))
+        print(np.min(wrf_vars['th_old']), np.amax(wrf_vars['th_old']))
         #Now we need to map back to map back from WRF indexes to PINNACLE indexes
         to_wrf_order_4d(nhalo,wrf_vars['chem_new'],chem_new)
+
+        #import pylab as plt
+        #plt.contourf(wrf_vars['th_old'][:,1,:])
+        #plt.show()
 
         #Now re-order scalar variables
         for v in self._list_of_ScalarStatevars:
@@ -193,9 +207,15 @@ class MicroSBM(MicrophysicsBase):
             var = self._ScalarState.get_field(v)
             to_wrf_order(nhalo, wrf_vars[v], var)
 
+        
+        s_wrf = wrf_vars['th_old']* self._Ref.exner[np.newaxis,nhalo[2]:-nhalo[2],np.newaxis]  + (parameters.G*z- parameters.LV*(wrf_vars['qc'] + wrf_vars['qr']))*parameters.ICPD
+        to_our_order(nhalo, s_wrf, s)
 
-        s_wrf = wrf_vars['th_old'] * self._Ref.exner[np.newaxis,nhalo[2]:-nhalo[2],np.newaxis]  + (parameters.G*z- parameters.LV*(wrf_vars['qc'] + wrf_vars['qr']))*parameters.ICPD
+        #import sys; sys.exit()
 
+        #import pylab as plt
+        #plt.contourf(s[:,1,:].T)
+        #plt.show()
         self._itimestep  += 1
 
         t1 = time.time()
