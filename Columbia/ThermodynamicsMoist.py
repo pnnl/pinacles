@@ -3,8 +3,8 @@ from Columbia import parameters
 import numpy as np
 
 class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
-    def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState):
-        Thermodynamics.ThermodynamicsBase.__init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState)
+    def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro):
+        Thermodynamics.ThermodynamicsBase.__init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro)
 
         return
 
@@ -17,9 +17,10 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
 
 
         s = self._ScalarState.get_field('s')
-        qc = self._ScalarState.get_field('qc')
-        qr = self._ScalarState.get_field('qr')
-        ql = np.add(qc, qr)
+        #qc = self._ScalarState.get_field('qc')
+        #qr = self._ScalarState.get_field('qr')
+        #ql = np.add(qc, qr)
+        ql = self._Micro.get_qc()
         qi = np.zeros_like(ql)
 
         T = self._DiagnosticState.get_field('T')

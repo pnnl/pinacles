@@ -1,11 +1,12 @@
 class ThermodynamicsBase:
-    def __init__(self, Grid, Ref,  ScalarState, VelocityState, DiagnosticState): 
+    def __init__(self, Grid, Ref,  ScalarState, VelocityState, DiagnosticState, Micro): 
 
         self._Grid = Grid
         self._Ref = Ref
         self._ScalarState = ScalarState
         self._DiagnosticState = DiagnosticState
         self._VelocityState = VelocityState
+        self._Micro = Micro
 
         #Add prognostic fields that are required by all thermodynamic classes
         self._ScalarState.add_variable('s') #TODO Move this elsewhere
@@ -19,6 +20,6 @@ class ThermodynamicsBase:
 
 from Columbia import ThermodynamicsDry
 from Columbia import ThermodynamicsMoist
-def factory(namelist, Grid, Ref, ScalarState, VelocityState, DiagnosticState):
+def factory(namelist, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro):
     return ThermodynamicsMoist.ThermodynamicsMoist(Grid, Ref, ScalarState, VelocityState,
-                                                DiagnosticState)
+                                                DiagnosticState, Micro)

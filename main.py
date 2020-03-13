@@ -48,7 +48,8 @@ def main(namelist):
     VelocityState.add_variable('w', loc='z', bcs='value zero')
 
     # Set up the thermodynamics class
-    Thermo = Thermodynamics.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState)
+    Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController) 
+    Thermo = Thermodynamics.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, Micro)
 
     # In the future the microphyics should be initialized here
 
@@ -58,7 +59,6 @@ def main(namelist):
 
     #Setup the pressure solver
     PSolver = PressureSolver.factory(namelist, ModelGrid, Ref, VelocityState, DiagnosticState)
-    Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
 
     # Allocate all of the big parallel arrays needed for the container classes
     ScalarState.allocate()
