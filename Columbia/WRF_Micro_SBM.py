@@ -93,7 +93,7 @@ class MicroSBM(MicrophysicsBase):
         #This is an expensive transpose
         chem_new = self._ScalarState._state_array.array[self._bin_start:self._bin_end,:,:,:]
 
-        to_wrf_order_4d(nhalo, chem_new, wrf_vars['chem_new'])
+        to_wrf_order_4d_halo(nhalo, chem_new, wrf_vars['chem_new'])
 
         # #Setup reference state profiles
         wrf_vars['dz8w'] =  np.zeros(self._wrf_dims, order='F', dtype=np.double)
@@ -210,7 +210,7 @@ class MicroSBM(MicrophysicsBase):
         print('th_old', np.min(wrf_vars['th_old']), np.amax(wrf_vars['th_old']))
         print('th_phy', np.min(wrf_vars['th_phy']), np.amax(wrf_vars['th_phy']))
         #Now we need to map back to map back from WRF indexes to PINNACLE indexes
-        to_our_order_4d(nhalo,wrf_vars['chem_new'],chem_new)
+        to_our_order_4d_halo(nhalo,wrf_vars['chem_new'],chem_new)
 
         #import pylab as plt
         #plt.contourf(wrf_vars['th_old'][:,1,:])
