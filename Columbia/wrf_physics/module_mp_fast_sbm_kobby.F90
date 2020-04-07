@@ -4246,7 +4246,6 @@ module module_mp_SBM_BreakUp
      !---YZ2020:Arrays for process rate calculation---------------------@
        double precision totlbf_diffu, totlaf_diffu, totrbf_diffu, totraf_diffu, del_difful_sum, del_diffur_sum
      !------------------------------------------------------------------@
-      print *, size(XS_d), size(XS), nkr
       XS_d = XS
    
      if (itimestep.eq.1)then

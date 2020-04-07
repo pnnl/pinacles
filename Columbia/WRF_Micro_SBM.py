@@ -146,8 +146,8 @@ class MicroSBM(MicrophysicsBase):
         z = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         z[:,:,:] = self._Grid.z_global[np.newaxis, :, np.newaxis]
 
-        print('th_old', np.min(wrf_vars['th_old']), np.amax(wrf_vars['th_old']))
-        print('th_phy', np.min(wrf_vars['th_old']), np.amax(wrf_vars['th_old']))
+        #print('th_old', np.min(wrf_vars['th_old']), np.amax(wrf_vars['th_old']))
+        #print('th_phy', np.min(wrf_vars['th_old']), np.amax(wrf_vars['th_old']))
 
         #Call sbm!
         module_mp_fast_sbm.module_mp_fast_sbm.fast_sbm(wrf_vars['w'],
@@ -203,12 +203,12 @@ class MicroSBM(MicrophysicsBase):
                                                       graupelnc=wrf_vars['GRAUPELNC'],
                                                       graupelncv=wrf_vars['GRAUPELNCV'],
                                                       sr=wrf_vars['SR'])
-        print('qv', np.min(wrf_vars['qv']), np.amax(wrf_vars['qv']))
-        print('qv_old', np.min(wrf_vars['qv_old']), np.amax(wrf_vars['qv_old']))
-        print('qc', np.min(wrf_vars['qc']), np.amax(wrf_vars['qc']))
-        print('qr', np.min(wrf_vars['qr']), np.amax(wrf_vars['qr']))
-        print('th_old', np.min(wrf_vars['th_old']), np.amax(wrf_vars['th_old']))
-        print('th_phy', np.min(wrf_vars['th_phy']), np.amax(wrf_vars['th_phy']))
+        #print('qv', np.min(wrf_vars['qv']), np.amax(wrf_vars['qv']))
+        #print('qv_old', np.min(wrf_vars['qv_old']), np.amax(wrf_vars['qv_old']))
+        #print('qc', np.min(wrf_vars['qc']), np.amax(wrf_vars['qc']))
+        #print('qr', np.min(wrf_vars['qr']), np.amax(wrf_vars['qr']))
+        #print('th_old', np.min(wrf_vars['th_old']), np.amax(wrf_vars['th_old']))
+        #print('th_phy', np.min(wrf_vars['th_phy']), np.amax(wrf_vars['th_phy']))
         #Now we need to map back to map back from WRF indexes to PINNACLE indexes
         to_our_order_4d_halo(nhalo,wrf_vars['chem_new'],chem_new)
 
@@ -221,7 +221,7 @@ class MicroSBM(MicrophysicsBase):
 
             var = self._DiagnosticState.get_field(v)
             to_our_order_halo(nhalo, wrf_vars[v], var)
-        print(np.amin(wrf_vars['qc'] ), np.amax(wrf_vars['qc'] ))
+        #print(np.amin(wrf_vars['qc'] ), np.amax(wrf_vars['qc'] ))
         s_wrf = wrf_vars['th_phy']* self._Ref.exner[np.newaxis, :, np.newaxis]  - (parameters.G*z- parameters.LV*(wrf_vars['qc'] + wrf_vars['qr']))*parameters.ICPD
         to_our_order_halo(nhalo, s_wrf, s)
         to_our_order_halo(nhalo, wrf_vars['qv'], qv)

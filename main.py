@@ -123,11 +123,12 @@ def main(namelist):
 
             if n== 0: 
                 #Update microphysics
+                #print(i, n, 'Updating Micro')
                 Thermo.update(apply_buoyancy=False)
                 Micro.update()
                 ScalarState.boundary_exchange()  #Todo... remove this?
                 ScalarState.update_all_bcs()
-
+                #print('Update complete.') 
 
             #Update Thermodynamics
             Thermo.update()
