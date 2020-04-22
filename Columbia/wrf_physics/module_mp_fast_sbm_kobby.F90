@@ -3044,7 +3044,7 @@ module module_mp_SBM_BreakUp
       QPN = QQ
    
       TPC = TT - 273.15D0
-   
+      
       IF(SUP1>0.0D0 .AND. TPC>T_NUCL_DROP_MIN) THEN
          if(sum(FCCNR) > 0.0)then
             DROPCONCN = 0.0D0
@@ -4308,14 +4308,14 @@ module module_mp_SBM_BreakUp
              END DO	! I
           END DO ! J
      end if
-   
+
      DXHUCM=100.*DX
      DYHUCM=100.*DY
    
      I_START=MAX(1,ITS-1)
      J_START=MAX(1,JTS-1)
-     I_END=MIN(IDE-1,ITE+1)
-     J_END=MIN(JDE-1,JTE+1)
+     I_END= IDE!MIN(IDE-1,ITE+1)
+     J_END= JDE!MIN(JDE-1,JTE+1)
 
      !I_START=1
      !J_START=1

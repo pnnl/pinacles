@@ -232,7 +232,8 @@ class ScalarWENO5(ScalarAdvectionBase):
             phi_t = self._ScalarState.get_tend(var)
 
             #Now compute the WENO fluxes
-            if var in ['qc', 'qr']:
+            if 'ff' in var:
+            #if var in ['qc', 'qr']:
                 #first_order(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
                 weno5_advection_flux_limit(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
             else:

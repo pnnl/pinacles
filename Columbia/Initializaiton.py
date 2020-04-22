@@ -122,7 +122,7 @@ def bomex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     shape = s.shape
 
-    perts = np.random.randn(shape[0],shape[1],shape[2])*0.01
+    perts = np.random.randn(shape[0],shape[1],shape[2])*0.1
     for i in range(shape[0]):
         for j in range(shape[1]):
             u700 = 0
@@ -157,7 +157,6 @@ def bomex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     #u.fill(0.0)
     qv /= 1000.0
-
 
     return
 
