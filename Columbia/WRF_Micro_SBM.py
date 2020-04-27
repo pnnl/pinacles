@@ -3,10 +3,10 @@ from Columbia import parameters
 from mpi4py import MPI
 import time
 from Columbia.Microphysics import MicrophysicsBase
-from Columbia.wrf_physics import module_mp_fast_sbm_kobby
+from Columbia.wrf_physics import module_mp_fast_sbm
 from Columbia.WRFUtil import to_wrf_order, to_wrf_order_4d, to_our_order_4d, to_our_order
 from Columbia.WRFUtil import to_wrf_order_halo, to_wrf_order_4d_halo, to_our_order_4d_halo, to_our_order_halo
-module_mp_fast_sbm = module_mp_fast_sbm_kobby
+#module_mp_fast_sbm = module_mp_fast_sbm_kobby
 class MicroSBM(MicrophysicsBase):
 
     def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController):
@@ -19,7 +19,7 @@ class MicroSBM(MicrophysicsBase):
             'qnc', 'qnr', 'qni', 'qns', 'qng', 'qna']
 
         for var in self._list_of_ScalarStatevars:
-            self._DiagnosticState.add_variable(var)
+            self._ScalarState.add_variable(var)
 
         self._bin_start = self._ScalarState.nvars
         self._qc_start = self._ScalarState.nvars 
@@ -72,7 +72,7 @@ class MicroSBM(MicrophysicsBase):
         #Now re-order scalar variables
         for v in self._list_of_ScalarStatevars:
             wrf_vars[v] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
-            var = self._DiagnosticState.get_field(v)
+            var = self._ScalarState.get_field(v)
             to_wrf_order(nhalo, var, wrf_vars[v])
 
         #Need to compute potential temperature
@@ -118,7 +118,8 @@ class MicroSBM(MicrophysicsBase):
         wrf_vars['GRAUPELNC'] = np.zeros((self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order='F')
         wrf_vars['GRAUPELNCV'] = np.zeros((self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order='F')
         wrf_vars['SR'] = np.zeros((self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order='F')
-
+        wrf_vars['xland'] = np.ones((self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order='F')
+        wrf_vars['domain_id'] = 1
         wrf_vars['MA'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         wrf_vars['LH_rate'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         wrf_vars['CE_rate'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
@@ -167,6 +168,8 @@ class MicroSBM(MicrophysicsBase):
                                                       wrf_vars['p_phy'],
                                                       wrf_vars['pi_phy'],
                                                       wrf_vars['th_phy'],
+                                                      wrf_vars['xland'],
+                                                      wrf_vars['domain_id'],
                                                       wrf_vars['qv'],
                                                       wrf_vars['qc'],
                                                       wrf_vars['qr'],
@@ -213,18 +216,18 @@ class MicroSBM(MicrophysicsBase):
         #print('qv_old', np.min(wrf_vars['qv_old']), np.amax(wrf_vars['qv_old']))
         #print('qc', np.min(wrf_vars['qc']), np.amax(wrf_vars['qc']))
         #print('qr', np.min(wrf_vars['qr']), np.amax(wrf_vars['qr']))
-        #print('th_old', np.min(wrf_vars['th_old']), np.amax(wrf_vars['th_old']))
-        #print('th_phy', np.min(wrf_vars['th_phy']), np.amax(wrf_vars['th_phy']))
+        print('th_old', np.min(wrf_vars['th_old']), np.amax(wrf_vars['th_old']))
+        print('th_phy', np.min(wrf_vars['th_phy']), np.amax(wrf_vars['th_phy']))
         #Now we need to map back to map back from WRF indexes to PINNACLE indexes
         to_our_order_4d(nhalo,wrf_vars['chem_new'],chem_new)
 
         #import pylab as plt
         #plt.contourf(wrf_vars['th_old'][:,1,:])
-        #plt.show()
 
+        #plt.show()
         #Now re-order scalar variables
         for v in self._list_of_ScalarStatevars:
-            var = self._DiagnosticState.get_field(v)
+            var = self._ScalarState.get_field(v)
             to_our_order(nhalo, wrf_vars[v], var)
         #print(np.amin(wrf_vars['qc'] ), np.amax(wrf_vars['qc'] ))
         #T + (parameters.G*z - parameters.LV*ql - parameters.LS*qi)*parameters.ICPD
@@ -275,7 +278,7 @@ class MicroSBM(MicrophysicsBase):
     def get_qc(self):
         #print('Here', np.sum(self._ScalarState._state_array.array[self._qc_start:self._qc_end,:,:,:], axis=0))
         #import sys; sys.exit()
-        return self._DiagnosticState.get_field('qc')  #np.sum(self._ScalarState._state_array.array[self._qc_start:self._qc_end,:,:,:], axis=0)
+        return self._ScalarState.get_field('qc') +  self._ScalarState.get_field('qr')  #np.sum(self._ScalarState._state_array.array[self._qc_start:self._qc_end,:,:,:], axis=0)
 
 
 
