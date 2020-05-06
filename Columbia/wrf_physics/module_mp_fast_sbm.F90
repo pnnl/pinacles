@@ -3785,15 +3785,15 @@ end module module_mp_SBM_Auxiliary
 !-----------------------------------------------@
 	IF(IType == 1) THEN ! Maritime regime
 
-		ccncon1 = 340.000
-		radius_mean1 = 0.00500D-04
-		sig1 = 1.60000
+		ccncon1 = 90.0 !340.000
+		radius_mean1 = 0.03d-4 !0.00500D-04
+		sig1 = 1.28!1.60000
 
-		ccncon2 = 60.0000
-		radius_mean2 = 0.03500D-04
-		sig2 = 2.00000
+    ccncon2 = 15 !60.0000 
+    radius_mean2 =  0.14d-4!0.03500D-04
+		sig2 = 1.75 !2.00000
 
-		ccncon3 = 3.10000
+		ccncon3 = 0.0 !3.10000
 		radius_mean3 = 0.31000D-04
 		sig3 = 2.70000
 
@@ -3807,7 +3807,7 @@ end module module_mp_SBM_Auxiliary
 		radius_mean2 = 0.03400D-04
 		sig2 = 2.10000
 
-		ccncon3 = 0.72000
+		ccncon3 = 0.72000 
 		radius_mean3 = 0.46000D-04
 		sig3 = 2.20000
 
@@ -4009,12 +4009,12 @@ enddo
 ! INTEGER,PARAMETER :: ILogNormal_modes_Aerosol = 0 ! read in a SD file from observation. Currently the file name for the observed SD is "CCN_size_33bin.dat", whcih is from the July 18 2017 ENA case.  
 
 ! Aerosol composition
- double precision, parameter :: mwaero = 22.9 + 35.5 ! sea salt
- !double precision,parameter :: mwaero = 115.0
- integer,parameter :: ions = 2        	! sea salt
- !integer,parameter  :: ions = 3         ! ammonium-sulfate
- double precision,parameter :: RO_SOLUTE = 2.16   	! sea salt
- !double precision,parameter ::  RO_SOLUTE = 1.79  	! ammonium-sulfate
+ !double precision, parameter :: mwaero = 22.9 + 35.5 ! sea salt
+ double precision,parameter :: mwaero = 115.0
+! integer,parameter :: ions = 2        	! sea salt
+ integer,parameter  :: ions = 3         ! ammonium-sulfate
+! double precision,parameter :: RO_SOLUTE = 2.16   	! sea salt
+ double precision,parameter ::  RO_SOLUTE = 1.79  	! ammonium-sulfate
 ! for diagnostic CCN for places where sources exist (Added by Jiwen Fan on April
 ! 25, 2020)
       LOGICAL, PARAMETER :: diagCCN=.false.
@@ -4040,7 +4040,7 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
       &                      dz8w,rho_phy,p_phy,pi_phy,th_phy,            &
       &                      xland,domain_id,                             &
       &                      QV,QC,QR,QI,QS,QG,QV_OLD,                    &
-      &                      QNC,QNR,QNI,QNS,QNG,QNA,                     &
+      &                      QNC,QNR,QNI,QNS,QNG,QNA, SUPSAT,                    &
       &                      ids,ide, jds,jde, kds,kde,		        	      &
       &                      ims,ime, jms,jme, kms,kme,		        	      &
       &                      its,ite, jts,jte, kts,kte,                   &
@@ -4090,6 +4090,7 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
  						  qns, 		&
  						  qng, 		&
               qna,    &
+              SUPSAT, &
               MA,LH_rate,CE_rate,DS_rate,Melt_rate,Frz_rate,CldNucl_rate, &
               IceNucl_rate 
 
@@ -4349,7 +4350,7 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
                   KRR = KRR + 1
 !---YZ2020Mar----------------------------------------------@
                   if(ILogNormal_modes_Aerosol == 1)then
-                    if (xland(i,j) == 1)then
+                    if (xland(i,j) == 2)then
                      chem_new(I,K,J,KR)=FCCNR_CON(KRR)*FACTZ
                     else
                     chem_new(I,K,J,KR) = FCCNR_MAR(KRR)*FACTZ 
@@ -4720,6 +4721,7 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
              ES2N = AA2_MY*DEXP(-BB2_MY/TT)
              EW1N=QQ*PP/(0.622+0.378*QQ)
              DIV1=EW1N/ES1N
+             SUPSAT(i,k,j) = DIV1  !KGP
              DEL1IN=EW1N/ES1N-1.
              DIV2=EW1N/ES2N
              DEL2IN=EW1N/ES2N-1.
@@ -7254,7 +7256,6 @@ FCCNR_OBS=0.0
 
     ! IN CASE : KCOND.EQ.11
     ELSE
-
  	    ! EVAPORATION - ONLY WATER
  	    ! IN CASE : KCOND.NE.11
     	DTIMEO = DT
@@ -7285,6 +7286,7 @@ FCCNR_OBS=0.0
      	D2N = D2N_d
 
       IF(ISYM1 == 1)THEN
+        !print *, 'Evaporation', DEL1, DEL2
  	      IDROP = ISYM1
  	      CALL JERDFUN_KS(R1D, R1ND, B11_MY, &
 				              FI1, PSI1, fl1, D1N, &

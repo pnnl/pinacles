@@ -18,6 +18,9 @@ class MicroSBM(MicrophysicsBase):
         self._list_of_ScalarStatevars = ['qc', 'qr', 'qi', 'qg', 'qs',
             'qnc', 'qnr', 'qni', 'qns', 'qng', 'qna']
 
+
+        self._DiagnosticState.add_variable('EvapCondRate')
+
         for var in self._list_of_ScalarStatevars:
             self._ScalarState.add_variable(var)
 
@@ -63,6 +66,8 @@ class MicroSBM(MicrophysicsBase):
         wrf_vars['qv'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         to_wrf_order(nhalo, qv, wrf_vars['qv'])
 
+        evaprate = self._DiagnosticState.get_field('EvapCondRate')
+
         #First re-order velocity variables
         for v in ['w', 'u', 'v']:
             wrf_vars[v] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
@@ -82,7 +87,7 @@ class MicroSBM(MicrophysicsBase):
         T = self._DiagnosticState.get_field('T')
         if self._itimestep == 1:
             to_wrf_order(nhalo, T/exner[np.newaxis, np.newaxis, :], wrf_vars['th_old'])
-            self._qv_old = np.copy(wrf_vars['qv'])
+            self._qv_old[:,:,:] = wrf_vars['qv'][:,:,:]
         wrf_vars['th_phy']=np.zeros(self._wrf_dims, order='F', dtype=np.double)
         to_wrf_order(nhalo, T/exner[np.newaxis, np.newaxis, :], wrf_vars['th_phy'])
         #print(np.amin(T), np.amax(T))
@@ -134,6 +139,7 @@ class MicroSBM(MicrophysicsBase):
         wrf_vars['automass_tend'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         wrf_vars['autonum_tend'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         wrf_vars['nprc_tend'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
+        wrf_vars['saturation'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
 
         #Get grid dimensions
         ids = 1; jds = 1; kds = 1
@@ -150,6 +156,9 @@ class MicroSBM(MicrophysicsBase):
 
         #print('th_old', np.min(wrf_vars['th_old']), np.amax(wrf_vars['th_old']))
         #print('th_phy', np.min(wrf_vars['th_old']), np.amax(wrf_vars['th_old']))
+
+
+        #self.plot_wrf_vars(wrf_vars)
 
         #Call sbm!
         MPI.COMM_WORLD.barrier()
@@ -183,6 +192,7 @@ class MicroSBM(MicrophysicsBase):
                                                       wrf_vars['qns'],
                                                       wrf_vars['qng'],
                                                       wrf_vars['qna'],
+                                                      wrf_vars['saturation'],
                                                       ids,ide, jds,jde, kds,kde,
                                                       ims,ime, jms,jme, kms,kme,
                                                       its,ite, jts,jte, kts,kte,
@@ -210,14 +220,18 @@ class MicroSBM(MicrophysicsBase):
                                                       graupelncv=wrf_vars['GRAUPELNCV'],
                                                       sr=wrf_vars['SR'])
 
+
+        #self.plot_wrf_vars(wrf_vars)
+        print(np.amax(wrf_vars['CE_rate']), np.amin(wrf_vars['CE_rate']))
+
         t1 = time.time()
         MPI.COMM_WORLD.barrier()
         #print('qv', np.min(wrf_vars['qv']), np.amax(wrf_vars['qv']))
         #print('qv_old', np.min(wrf_vars['qv_old']), np.amax(wrf_vars['qv_old']))
         #print('qc', np.min(wrf_vars['qc']), np.amax(wrf_vars['qc']))
         #print('qr', np.min(wrf_vars['qr']), np.amax(wrf_vars['qr']))
-        print('th_old', np.min(wrf_vars['th_old']), np.amax(wrf_vars['th_old']))
-        print('th_phy', np.min(wrf_vars['th_phy']), np.amax(wrf_vars['th_phy']))
+        #print('th_old', np.min(wrf_vars['th_old']), np.amax(wrf_vars['th_old']))
+        #print('th_phy', np.min(wrf_vars['th_phy']), np.amax(wrf_vars['th_phy']))
         #Now we need to map back to map back from WRF indexes to PINNACLE indexes
         to_our_order_4d(nhalo,wrf_vars['chem_new'],chem_new)
 
@@ -231,10 +245,11 @@ class MicroSBM(MicrophysicsBase):
             to_our_order(nhalo, wrf_vars[v], var)
         #print(np.amin(wrf_vars['qc'] ), np.amax(wrf_vars['qc'] ))
         #T + (parameters.G*z - parameters.LV*ql - parameters.LS*qi)*parameters.ICPD
-        s_wrf = wrf_vars['th_phy']* self._Ref.exner[np.newaxis, nhalo[2]:-nhalo[2], np.newaxis]  + (parameters.G*z- parameters.LV*(wrf_vars['qc'] + wrf_vars['qr']))*parameters.ICPD
+        s_wrf = wrf_vars['th_phy']* self._Ref.exner[np.newaxis, nhalo[2]:-nhalo[2], np.newaxis]  +  (parameters.G*z- parameters.LV*(wrf_vars['qc'] + wrf_vars['qr']))*parameters.ICPD
         to_our_order(nhalo, s_wrf, s)
 
         to_our_order(nhalo, wrf_vars['qv'], qv)
+        to_our_order(nhalo, wrf_vars['CE_rate'], evaprate)
         
         import pylab as plt
         plt.figure(2)
@@ -282,3 +297,22 @@ class MicroSBM(MicrophysicsBase):
 
 
 
+    def plot_wrf_vars(self, wrf_vars):
+
+        import pylab as plt
+
+        count = 0
+        for var in wrf_vars:
+            plt.figure(count)
+            data = wrf_vars[var]
+            if type(data) == type(np.array(0)):
+                if len(data.shape) == 3:
+                    plt.plot(np.mean(np.mean(data,axis=2),axis=0))
+                    plt.title(var)
+            count +=  1
+
+
+        plt.show()
+
+
+        return

@@ -97,7 +97,7 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 def bomex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     #Integrate the reference profile.
-    Ref.set_surface(Tsfc=300.4, u0=-8.75, v0=0.0)
+    Ref.set_surface(Psfc=1015e2, Tsfc=300.4, u0=-8.75, v0=0.0)
     Ref.integrate()
 
     u = VelocityState.get_field('u')
