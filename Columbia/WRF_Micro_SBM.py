@@ -19,7 +19,13 @@ class MicroSBM(MicrophysicsBase):
             'qnc', 'qnr', 'qni', 'qns', 'qng', 'qna']
 
 
-        self._DiagnosticState.add_variable('EvapCondRate')
+        #Add new diag fields
+        self._io_fields = ['MA', 'LH_rate', 'CE_rate', 'DS_rate', 'Melt_rate',
+            'Frz_rate', 'CldNucl_rate', 'IceNucl_rate', 'difful_tend', 'diffur_tend',
+            'tempdiffl', 'automass_tend', 'autonum_tend', 'saturation']
+        
+        for var in self._io_fields:
+            self._DiagnosticState.add_variable(var)
 
         for var in self._list_of_ScalarStatevars:
             self._ScalarState.add_variable(var)
@@ -65,8 +71,6 @@ class MicroSBM(MicrophysicsBase):
         qv = self._ScalarState.get_field('qv')
         wrf_vars['qv'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         to_wrf_order(nhalo, qv, wrf_vars['qv'])
-
-        evaprate = self._DiagnosticState.get_field('EvapCondRate')
 
         #First re-order velocity variables
         for v in ['w', 'u', 'v']:
@@ -226,12 +230,7 @@ class MicroSBM(MicrophysicsBase):
 
         t1 = time.time()
         MPI.COMM_WORLD.barrier()
-        #print('qv', np.min(wrf_vars['qv']), np.amax(wrf_vars['qv']))
-        #print('qv_old', np.min(wrf_vars['qv_old']), np.amax(wrf_vars['qv_old']))
-        #print('qc', np.min(wrf_vars['qc']), np.amax(wrf_vars['qc']))
-        #print('qr', np.min(wrf_vars['qr']), np.amax(wrf_vars['qr']))
-        #print('th_old', np.min(wrf_vars['th_old']), np.amax(wrf_vars['th_old']))
-        #print('th_phy', np.min(wrf_vars['th_phy']), np.amax(wrf_vars['th_phy']))
+
         #Now we need to map back to map back from WRF indexes to PINNACLE indexes
         to_our_order_4d(nhalo,wrf_vars['chem_new'],chem_new)
 
@@ -243,46 +242,18 @@ class MicroSBM(MicrophysicsBase):
         for v in self._list_of_ScalarStatevars:
             var = self._ScalarState.get_field(v)
             to_our_order(nhalo, wrf_vars[v], var)
-        #print(np.amin(wrf_vars['qc'] ), np.amax(wrf_vars['qc'] ))
-        #T + (parameters.G*z - parameters.LV*ql - parameters.LS*qi)*parameters.ICPD
+
+        for v in self._io_fields:
+            var = self._DiagnosticState.get_field(v)
+            to_our_order(nhalo, wrf_vars[v], var)
+
+
         s_wrf = wrf_vars['th_phy']* self._Ref.exner[np.newaxis, nhalo[2]:-nhalo[2], np.newaxis]  +  (parameters.G*z- parameters.LV*(wrf_vars['qc'] + wrf_vars['qr']))*parameters.ICPD
         to_our_order(nhalo, s_wrf, s)
 
         to_our_order(nhalo, wrf_vars['qv'], qv)
-        to_our_order(nhalo, wrf_vars['CE_rate'], evaprate)
-        
-        import pylab as plt
-        plt.figure(2)
-        #plt.subplot(211)
-        plt.contourf(np.sum(wrf_vars['qc'][:,:,:],axis=1),33)
-        #plt.subplot(212)
-
-        #plt.contourf(q[nhalo[0]:-nhalo[0], nhalo[2]:-nhalo[2],13],33)
-        plt.savefig('./quick_figs/' + str(10000 + self._call_count) + '.png')
-        #plt.show()
-        plt.close()
-
 
         self._call_count += 1 
-
-        #import pylab as plt
-        #plt.contourf(wrf_vars['th_phy'][:,:,5])
-        #plt.colorbar()
-        #plt.show()
-        
-        #print(np.amin(s), np.amax(s))  
-        #print('QR MAX!!!', np.amax(wrf_vars['qr']))
-        #print('TEMP MAX!!!', np.amax(wrf_vars['th_phy']* self._Ref.exner[np.newaxis,nhalo[2]:-nhalo[2],np.newaxis]  - (parameters.G*z- parameters.LV*(wrf_vars['qc']+wrf_vars['qr']))*parameters.ICPD ))
-
-        #print('Exit')
-        #import sys; sys.exit()
-
-        #import pylab as plt
-        #plt.contourf(wrf_vars['qv'][3,:,:].T)
-        #plt.colorbar()
-        ##plt.grid()
-        #plt.show()
-        #import sys; sys.exit()
         self._itimestep  += 1
 
         
