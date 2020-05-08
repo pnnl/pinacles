@@ -3,10 +3,10 @@ from Columbia import parameters
 from mpi4py import MPI
 import time
 from Columbia.Microphysics import MicrophysicsBase
-from Columbia.wrf_physics import module_mp_fast_sbm
+from Columbia.wrf_physics import module_mp_fast_sbm_warm
 from Columbia.WRFUtil import to_wrf_order, to_wrf_order_4d, to_our_order_4d, to_our_order
 from Columbia.WRFUtil import to_wrf_order_halo, to_wrf_order_4d_halo, to_our_order_4d_halo, to_our_order_halo
-#module_mp_fast_sbm = module_mp_fast_sbm_kobby
+module_mp_fast_sbm = module_mp_fast_sbm_warm
 class MicroSBM(MicrophysicsBase):
 
     def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController):
@@ -15,14 +15,14 @@ class MicroSBM(MicrophysicsBase):
 
         self._ScalarState.add_variable('qv')
         #TODO for now adding these as prognostic variables but probably unnecessary
-        self._list_of_ScalarStatevars = ['qc', 'qr', 'qi', 'qg', 'qs',
-            'qnc', 'qnr', 'qni', 'qns', 'qng', 'qna']
+        self._list_of_ScalarStatevars = ['qc', 'qr',
+            'qnc', 'qnr', 'qna','qna_nucl']
 
 
         #Add new diag fields
         self._io_fields = ['MA', 'LH_rate', 'CE_rate', 'DS_rate', 'Melt_rate',
             'Frz_rate', 'CldNucl_rate', 'IceNucl_rate', 'difful_tend', 'diffur_tend',
-            'tempdiffl', 'automass_tend', 'autonum_tend', 'saturation']
+            'tempdiffl', 'automass_tend', 'autonum_tend', 'saturation','n_reg_ccn']
         
         for var in self._io_fields:
             self._DiagnosticState.add_variable(var)
@@ -39,6 +39,10 @@ class MicroSBM(MicrophysicsBase):
         #Add aersol bins
         for i in range(1,34):
             name = 'ff8i' + str(i)
+            self._ScalarState.add_variable(name)
+
+        for i in range(1,34):
+            name = 'ff8in' + str(i)
             self._ScalarState.add_variable(name)
         self._bin_end = self._ScalarState.nvars
 
@@ -98,7 +102,7 @@ class MicroSBM(MicrophysicsBase):
         #import sys; sys.exit()
 
         #Now reorder the bin array
-        wrf_vars['chem_new'] = np.zeros((self._wrf_dims[0], self._wrf_dims[1], self._wrf_dims[2], 66),
+        wrf_vars['chem_new'] = np.zeros((self._wrf_dims[0], self._wrf_dims[1], self._wrf_dims[2], 99),
             order='F', dtype=np.double)
 
         #This is an expensive transpose
@@ -127,7 +131,7 @@ class MicroSBM(MicrophysicsBase):
         wrf_vars['GRAUPELNC'] = np.zeros((self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order='F')
         wrf_vars['GRAUPELNCV'] = np.zeros((self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order='F')
         wrf_vars['SR'] = np.zeros((self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order='F')
-        wrf_vars['xland'] = np.ones((self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order='F')
+        wrf_vars['xland'] = np.zeros((self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order='F')
         wrf_vars['domain_id'] = 1
         wrf_vars['MA'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         wrf_vars['LH_rate'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
@@ -136,6 +140,7 @@ class MicroSBM(MicrophysicsBase):
         wrf_vars['Melt_rate'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         wrf_vars['Frz_rate'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         wrf_vars['CldNucl_rate'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
+        wrf_vars['n_reg_ccn'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         wrf_vars['IceNucl_rate'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         wrf_vars['difful_tend'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         wrf_vars['diffur_tend'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
@@ -167,7 +172,7 @@ class MicroSBM(MicrophysicsBase):
         #Call sbm!
         MPI.COMM_WORLD.barrier()
         t0 = time.time()
-        module_mp_fast_sbm.module_mp_fast_sbm.fast_sbm(wrf_vars['w'],
+        module_mp_fast_sbm.module_mp_fast_sbm.warm_sbm(wrf_vars['w'],
                                                       wrf_vars['u'],
                                                       wrf_vars['v'],
                                                       wrf_vars['th_old'],
@@ -186,17 +191,11 @@ class MicroSBM(MicrophysicsBase):
                                                       wrf_vars['qv'],
                                                       wrf_vars['qc'],
                                                       wrf_vars['qr'],
-                                                      wrf_vars['qi'],
-                                                      wrf_vars['qs'],
-                                                      wrf_vars['qg'],
                                                       wrf_vars['qv_old'],
                                                       wrf_vars['qnc'],
                                                       wrf_vars['qnr'],
-                                                      wrf_vars['qni'],
-                                                      wrf_vars['qns'],
-                                                      wrf_vars['qng'],
                                                       wrf_vars['qna'],
-                                                      wrf_vars['saturation'],
+                                                      wrf_vars['qna_nucl'],
                                                       ids,ide, jds,jde, kds,kde,
                                                       ims,ime, jms,jme, kms,kme,
                                                       its,ite, jts,jte, kts,kte,
@@ -209,6 +208,7 @@ class MicroSBM(MicrophysicsBase):
                                                       wrf_vars['Frz_rate'],
                                                       wrf_vars['CldNucl_rate'],
                                                       wrf_vars['IceNucl_rate'],
+                                                      wrf_vars['n_reg_ccn'],
                                                       wrf_vars['difful_tend'],
                                                       wrf_vars['diffur_tend'],
                                                       wrf_vars['tempdiffl'],
@@ -218,15 +218,11 @@ class MicroSBM(MicrophysicsBase):
                                                       diagflag= wrf_vars['diagflag'],
                                                       rainnc=wrf_vars['RAINNC'],
                                                       rainncv=wrf_vars['RAINNCV'],
-                                                      snownc=wrf_vars['SNOWNC'],
-                                                      snowncv=wrf_vars['SNOWNCV'],
-                                                      graupelnc=wrf_vars['GRAUPELNC'],
-                                                      graupelncv=wrf_vars['GRAUPELNCV'],
                                                       sr=wrf_vars['SR'])
 
 
         #self.plot_wrf_vars(wrf_vars)
-        print(np.amax(wrf_vars['CE_rate']), np.amin(wrf_vars['CE_rate']))
+        print(np.amax(wrf_vars['th_phy']), np.amin(wrf_vars['th_phy']))
 
         t1 = time.time()
         MPI.COMM_WORLD.barrier()
