@@ -54,7 +54,7 @@ def main(namelist):
     # In the future the microphyics should be initialized here
 
     #Setup the scalar advection calss
-    ScalarAdv = ScalarAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState)
+    ScalarAdv = ScalarAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, ScalarTimeStepping)
     MomAdv = MomentumAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
     #Setup the pressure solver
@@ -121,13 +121,13 @@ def main(namelist):
         for n in range(ScalarTimeStepping.n_rk_step):
             TimeSteppingController.adjust_timestep(n)
 
-            if n== 0: 
+            #if n== 0: 
                 #Update microphysics
                 #print(i, n, 'Updating Micro')
-                Thermo.update(apply_buoyancy=False)
-                Micro.update()
-                ScalarState.boundary_exchange()  #Todo... remove this?
-                ScalarState.update_all_bcs()
+                #Thermo.update(apply_buoyancy=False)
+
+                #ScalarState.boundary_exchange()  #Todo... remove this?
+                #ScalarState.update_all_bcs()
                 #print('Update complete.') 
 
             #Update Thermodynamics
@@ -163,7 +163,16 @@ def main(namelist):
 
             #Call pressure solver
             PSolver.update()
+
+            if n== 1: 
+                Thermo.update(apply_buoyancy=False)
+                #We call the microphysics update at the end of the RK steps.
+                Micro.update()
+                ScalarState.boundary_exchange()
+                ScalarState.update_all_bcs()
+
         i += 1
+
 
         t1 = time.time()
         MPI.COMM_WORLD.barrier()
