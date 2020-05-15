@@ -191,3 +191,6 @@ class MicroKessler(MicrophysicsBase):
             timeseries_grp['rain_rate'][-1] = rr
 
         return
+
+    def get_qc(self):
+        return self._ScalarState.get_field('qc') + self._ScalarState.get_field('qr')

@@ -48,17 +48,17 @@ def main(namelist):
     VelocityState.add_variable('w', loc='z', bcs='value zero')
 
     # Set up the thermodynamics class
-    Thermo = Thermodynamics.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState)
+    Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController) 
+    Thermo = Thermodynamics.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, Micro)
 
     # In the future the microphyics should be initialized here
 
     #Setup the scalar advection calss
-    ScalarAdv = ScalarAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState)
+    ScalarAdv = ScalarAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, ScalarTimeStepping)
     MomAdv = MomentumAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
     #Setup the pressure solver
     PSolver = PressureSolver.factory(namelist, ModelGrid, Ref, VelocityState, DiagnosticState)
-    Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
 
     # Allocate all of the big parallel arrays needed for the container classes
     ScalarState.allocate()
@@ -121,13 +121,14 @@ def main(namelist):
         for n in range(ScalarTimeStepping.n_rk_step):
             TimeSteppingController.adjust_timestep(n)
 
-            if n== 0: 
+            #if n== 0: 
                 #Update microphysics
-                Thermo.update(apply_buoyancy=False)
-                Micro.update()
-                ScalarState.boundary_exchange()  #Todo... remove this?
-                ScalarState.update_all_bcs()
+                #print(i, n, 'Updating Micro')
+                #Thermo.update(apply_buoyancy=False)
 
+                #ScalarState.boundary_exchange()  #Todo... remove this?
+                #ScalarState.update_all_bcs()
+                #print('Update complete.') 
 
             #Update Thermodynamics
             Thermo.update()
@@ -162,7 +163,16 @@ def main(namelist):
 
             #Call pressure solver
             PSolver.update()
+
+            if n== 1: 
+                Thermo.update(apply_buoyancy=False)
+                #We call the microphysics update at the end of the RK steps.
+                Micro.update()
+                ScalarState.boundary_exchange()
+                ScalarState.update_all_bcs()
+
         i += 1
+
 
         t1 = time.time()
         MPI.COMM_WORLD.barrier()
