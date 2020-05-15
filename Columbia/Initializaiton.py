@@ -4,7 +4,8 @@ import Columbia.ThermodynamicsDry_impl as DryThermo
 CASENAMES = ['colliding_blocks', 
             'sullivan_and_patton', 
             'stable_bubble', 
-            'bomex']
+            'bomex', 
+            'rico']
 
 def colliding_blocks(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
@@ -96,7 +97,7 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 def bomex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     #Integrate the reference profile.
-    Ref.set_surface(Tsfc=300.4, u0=-8.75, v0=0.0)
+    Ref.set_surface(Psfc=1015e2, Tsfc=300.4, u0=-8.75, v0=0.0)
     Ref.integrate()
 
     u = VelocityState.get_field('u')
@@ -121,7 +122,7 @@ def bomex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     shape = s.shape
 
-    perts = np.random.randn(shape[0],shape[1],shape[2])*0.01
+    perts = np.random.randn(shape[0],shape[1],shape[2])*0.1
     for i in range(shape[0]):
         for j in range(shape[1]):
             u700 = 0
@@ -156,6 +157,70 @@ def bomex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     #u.fill(0.0)
     qv /= 1000.0
+
+    return
+
+
+def rico(namelist, ModelGrid, Ref, ScalarState, VelocityState):
+
+    #Integrate the reference profile.
+    Ref.set_surface(Tsfc=299.8, Psfc=1.0154e5, u0=-9.9, v0=-3.8)
+    Ref.integrate()
+
+    u = VelocityState.get_field('u')
+    v = VelocityState.get_field('v')
+    w = VelocityState.get_field('w')
+    s = ScalarState.get_field('s')
+    qv = ScalarState.get_field('qv')
+
+    xl = ModelGrid.x_local
+    yl = ModelGrid.y_local
+    zl = ModelGrid.z_local
+    xg = ModelGrid.x_global
+    yg = ModelGrid.y_global
+
+    exner = Ref.exner
+
+
+    #Wind is uniform initiall
+    u.fill(0.0)
+    v.fill(0.0)
+    w.fill(0.0)
+
+    shape = s.shape
+
+    perts = np.random.randn(shape[0],shape[1],shape[2])*0.1 
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            for k in range(shape[2]):
+                t = 0.0
+                z = zl[k]
+
+                if z <= 740.0:
+                    t = 297.7
+                else:
+                    t = 297.9 + (317.0-297.9)/(4000.0-740.0)*(z - 740.0)
+
+                if z <= 740.0:
+                    q =  16.0 + (13.8 - 16.0)/740.0 * z
+                elif z > 740.0 and z <= 3260.:
+                    q = 13.8 + (2.4 - 13.8)/(3260.0-740.0) * (z - 740.0)
+                else:
+                    q = 2.4 + (1.8-2.4)/(4000.0-3260.0)*(z - 3260.0)
+
+                q/=1000.0
+
+                t *= exner[k]
+                if zl[k] < 200.0:
+                    t += perts[i,j,k]
+                s[i,j,k] = DryThermo.s(z, t)
+                qv[i,j,k] = q
+                u[i,j,k] =  -9.9 + 2.0e-3 * z
+                v[i,j,k] =  -3.8
+    u -= Ref.u0
+    v -= Ref.v0
+
+    #u.fill(0.0)
 
 
 
@@ -228,6 +293,9 @@ def factory(namelist):
         return stable_bubble
     elif namelist['meta']['casename'] == 'bomex':
         return bomex
+    elif namelist['meta']['casename'] == 'rico':
+        return rico
+
 
 def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     init_function = factory(namelist)

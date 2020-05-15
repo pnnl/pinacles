@@ -55,6 +55,10 @@ class RungeKutta2ndSSP(RungeKuttaBase):
 
         return
 
+    @property 
+    def dt(self): 
+        return self._dt
+
 def factory(namelist, Grid, PrognosticState):
     return RungeKutta2ndSSP(namelist, Grid, PrognosticState)
 

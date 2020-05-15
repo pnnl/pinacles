@@ -48,19 +48,17 @@ def main(namelist):
     VelocityState.add_variable('w', loc='z', bcs='value zero')
 
     # Set up the thermodynamics class
-    Thermo = Thermodynamics.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState)
+    Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController) 
+    Thermo = Thermodynamics.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, Micro)
 
     # In the future the microphyics should be initialized here
 
     #Setup the scalar advection calss
-    ScalarAdv = ScalarAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState)
+    ScalarAdv = ScalarAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, ScalarTimeStepping)
     MomAdv = MomentumAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
     #Setup the pressure solver
     PSolver = PressureSolver.factory(namelist, ModelGrid, Ref, VelocityState, DiagnosticState)
-    Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
-
-
 
     # Allocate all of the big parallel arrays needed for the container classes
     ScalarState.allocate()
@@ -123,6 +121,15 @@ def main(namelist):
         for n in range(ScalarTimeStepping.n_rk_step):
             TimeSteppingController.adjust_timestep(n)
 
+            #if n== 0: 
+                #Update microphysics
+                #print(i, n, 'Updating Micro')
+                #Thermo.update(apply_buoyancy=False)
+
+                #ScalarState.boundary_exchange()  #Todo... remove this?
+                #ScalarState.update_all_bcs()
+                #print('Update complete.') 
+
             #Update Thermodynamics
             Thermo.update()
 
@@ -130,9 +137,6 @@ def main(namelist):
             if n == 0:
                 StatsIO.update()
                 MPI.COMM_WORLD.barrier()
-
-            #Update microphysics
-            Micro.update()
 
             #Update the surface
             Surf.update()
@@ -159,7 +163,16 @@ def main(namelist):
 
             #Call pressure solver
             PSolver.update()
+
+            if n== 1: 
+                Thermo.update(apply_buoyancy=False)
+                #We call the microphysics update at the end of the RK steps.
+                Micro.update()
+                ScalarState.boundary_exchange()
+                ScalarState.update_all_bcs()
+
         i += 1
+
 
         t1 = time.time()
         MPI.COMM_WORLD.barrier()
@@ -172,7 +185,7 @@ def main(namelist):
         # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         xl = ModelGrid.x_local
         zl = ModelGrid.z_local
-        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%120.0,0.0):
+        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%60.0,0.0):
             FieldsIO.update()
             if MPI.COMM_WORLD.Get_rank() == 0:
         #     #print('step: ', i, ' time: ', t1 - t0)
@@ -181,8 +194,8 @@ def main(namelist):
                  #levels = np.linspace(-4,4, 100)
                  levels = np.linspace(-5, 5,100)
                  #plt.contourf(s_slice,cmap=plt.cm.seismic, levels=levels) #,levels=levels, cmap=plt.cm.seismic)
-                 plt.contourf((s[3:-3,16,3:-3]) .T ,100,cmap=plt.cm.seismic) 
-                 #plt.contourf(s_slice, 100,cmap=plt.cm.seismic) 
+                 #plt.contourf((s[3:-3,16,3:-3]) .T ,100,cmap=plt.cm.seismic) 
+                 plt.contourf(s_slice, levels=levels,cmap=plt.cm.seismic) 
         #     #plt.contourf(w[:,:,16], levels=levels, cmap=plt.cm.seismic)
                  #plt.clim(-4,5)
                  #plt.colorbar()

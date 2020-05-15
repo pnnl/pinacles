@@ -64,10 +64,10 @@ class SurfaceBOMEX(Surface.SurfaceBase):
 
         shf = np.zeros_like(self._taux_sfc) + self._theta_flux * exner_edge[nh[2]-1]
         qv_flx_sf = np.zeros_like(self._taux_sfc) + self._qv_flux
-        Surface_impl.iles_surface_flux_application(10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._taux_sfc, ut)
-        Surface_impl.iles_surface_flux_application(10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._tauy_sfc, vt)
-        Surface_impl.iles_surface_flux_application(10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, shf, st)
-        Surface_impl.iles_surface_flux_application(10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, qv_flx_sf , qvt)
+        Surface_impl.iles_surface_flux_application(50, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._taux_sfc, ut)
+        Surface_impl.iles_surface_flux_application(50, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._tauy_sfc, vt)
+        Surface_impl.iles_surface_flux_application(50, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, shf, st)
+        Surface_impl.iles_surface_flux_application(50, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, qv_flx_sf , qvt)
 
 
         #import pylab as plt
@@ -89,21 +89,24 @@ class ForcingBOMEX(Forcing.ForcingBase):
         #Set Geostrophic wind
         self._ug = np.zeros_like(self._Grid.z_global)
         for k in range(zl.shape[0]): 
-            self._ug[k] = self._ug[k] = -10.0 + (1.8e-3)*zl[k]
+            self._ug[k] = -10.0 + (1.8e-3)*zl[k]
         self._vg = np.zeros_like(self._ug)
 
         #Set heating rate
         self._heating_rate = np.zeros_like(self._Grid.z_global)
+        self._subsidence = np.zeros_like(self._Grid.z_global)
 
-        #Set large scale cooling
         # Convert given form of tendencies (theta) to temperature tendency
-        for k in range(zl.shape[0]): 
+        for k in range(zl.shape[0]):
             if zl[k] <= 1500.0:
                 self._heating_rate[k] = (-2.0/(3600 * 24.0))  * exner[k]     #K/s
             if zl[k] > 1500.0:
                 self._heating_rate[k] = (-2.0/(3600 * 24.0) + (zl[k] - 1500.0)
                                  * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)) * exner[k]
-
+            if zl[k] <=  1500.0:
+                self._subsidence[k] = 0.0 + zl[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
+            if zl[k] > 1500.0 and zl[k] <= 2100.0:
+                self._subsidence[k] = -0.65/100 + (zl[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
 
         return 
 
@@ -111,19 +114,20 @@ class ForcingBOMEX(Forcing.ForcingBase):
 
         u = self._VelocityState.get_field('u')
         v = self._VelocityState.get_field('v')
+        s = self._ScalarState.get_field('s')
+        qv = self._ScalarState.get_field('qv')
+
 
         ut = self._VelocityState.get_tend('u')
         vt = self._VelocityState.get_tend('v')
         st = self._ScalarState.get_tend('s')
+        qvt = self._ScalarState.get_tend('qv')
 
-        #Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, vt, ut)
         st += self._heating_rate[np.newaxis, np.newaxis, :]
 
-        vt_old = np.copy(vt)
         Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f ,u, v, self._Ref.u0, self._Ref.v0, vt, ut)
-        #vt_diff = vt  - vt_old
 
-
-        #print(np.mean(vt_diff[3:-3,3:-3,3:-3],axis=(0,1)))
+        Forcing_impl.apply_subsidence(self._subsidence, self._Grid.dxi[2],s, st)
+        Forcing_impl.apply_subsidence(self._subsidence, self._Grid.dxi[2],qv, qvt)
 
         return 
