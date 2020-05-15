@@ -151,7 +151,7 @@ def bomex():
     input_dict[key] = {}
     input_dict[key]['vars'] = ['u', 'v', 'w', 's']
     input_dict[key]['depth'] = 1000.0
-    input_dict[key]['timescale'] = 5.0
+    input_dict[key]['timescale'] = 60.0
 
     key = 'time'
     input_dict[key] = {}
@@ -190,7 +190,7 @@ def rico():
     input_dict[key] = {}
     input_dict[key]['vars'] = ['u', 'v', 'w', 's']
     input_dict[key]['depth'] = 1000.0
-    input_dict[key]['timescale'] = 5.0
+    input_dict[key]['timescale'] = 60.0
 
     key = 'time'
     input_dict[key] = {}
