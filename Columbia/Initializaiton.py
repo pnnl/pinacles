@@ -212,7 +212,7 @@ def rico(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
                 t *= exner[k]
                 if zl[k] < 200.0:
-                    t += perts[i,j,k]
+                    t += perts[i,1,k]
                 s[i,j,k] = DryThermo.s(z, t)
                 qv[i,j,k] = q
                 u[i,j,k] =  -9.9 + 2.0e-3 * z

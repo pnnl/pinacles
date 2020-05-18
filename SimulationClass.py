@@ -53,15 +53,18 @@ class Simulation:
         self.VelocityState.add_variable('w', loc='z', bcs='value zero')
 
         # Set up the thermodynamics class
-        self.Thermo = Thermodynamics.factory(namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.DiagnosticState)
+        self.Micro = MicrophysicsFactory.factory(namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.DiagnosticState, self.TimeSteppingController) 
+        self.Thermo = Thermodynamics.factory(namelist,self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.DiagnosticState, self.Micro)
+
+        # In the future the microphyics should be initialized here
 
         #Setup the scalar advection calss
-        self.ScalarAdv = ScalarAdvection.factory(namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState)
+        self.ScalarAdv = ScalarAdvection.factory(namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.ScalarTimeStepping)
         self.MomAdv = MomentumAdvection.factory(namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState)
 
         #Setup the pressure solver
         self.PSolver = PressureSolver.factory(namelist, self.ModelGrid, self.Ref, self.VelocityState, self.DiagnosticState)
-        self.Micro = MicrophysicsFactory.factory(namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.DiagnosticState, self.TimeSteppingController)
+        #self.Micro = MicrophysicsFactory.factory(namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.DiagnosticState, self.TimeSteppingController)
 
         # Allocate all of the big parallel arrays needed for the container classes
         self.ScalarState.allocate()
@@ -116,7 +119,7 @@ class Simulation:
                     MPI.COMM_WORLD.barrier()
 
                 #Update microphysics
-                self.Micro.update()
+                #self.Micro.update()
 
                 #Update the surface
                 self.Surf.update()
@@ -147,6 +150,13 @@ class Simulation:
 
                 #Call pressure solver
                 self.PSolver.update()
+                if n== 1: 
+                    self.Thermo.update(apply_buoyancy=False)
+                    #We call the microphysics update at the end of the RK steps.
+                    self.Micro.update()
+                    self.ScalarState.boundary_exchange()
+                    self.ScalarState.update_all_bcs()
+
         return
 
 

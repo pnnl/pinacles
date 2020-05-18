@@ -7,7 +7,7 @@ import SimulationClass
 
 def main(namelist):
 
-    n = 2
+    n = 1
     gcm_res = 50*1e3
     couple_dt = 600.0
     forced_fields = ['qv', 's']
@@ -18,42 +18,36 @@ def main(namelist):
         domains.append(SimulationClass.Simulation(namelist, i))
         domains[i].initialize()
 
-    ls_state = [] 
+    ls_state = []
     #Get GCM initial condition
-    for i in range(n): 
+    for i in range(n):
         ls_state.append({})
         for v in forced_fields:
             ls_state[i][v] = domains[i].ScalarState.mean(v)
             np.shape(ls_state[i][v])
 
-    #Set up storage for LES 
+    #Set up storage for LES
     ls_forcing = []
     ss_forcing = []
     for i in range(n):
         ss_forcing.append({})
         ls_forcing.append({})
-        #les_tend.append({})
 
     for couple_time in np.arange(couple_dt,21600.0+couple_dt, couple_dt):
         print(couple_time)
 
-    for couple_time in np.arange(couple_dt,36000.0+couple_dt, couple_dt):
+    for couple_time in np.arange(couple_dt,10*86400+couple_dt, couple_dt):
         for i in range(n):
-            for v in forced_fields: 
+            for v in forced_fields:
                 ls_forcing[i][v] = (ls_state[i][v] - domains[i].ScalarState.mean(v) )/couple_dt
             domains[i].update(couple_time, ls_forcing[i])
-            for v in forced_fields: 
+            for v in forced_fields:
                 ss_forcing[i][v] = (domains[i].ScalarState.mean(v) - ls_state[i][v])/couple_dt
-            
+
         for i in range(n):
             for v in forced_fields:
                 adv = uls * (ls_state[(i-1)%n][v] - ls_state[i%n][v] )/gcm_res
                 ls_state[i][v] += adv * couple_dt + ss_forcing[i][v] * couple_dt
-
-
-        for i in range(n):
-            print(ss_forcing[i]['qv'])
-
 
     return
 
