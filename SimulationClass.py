@@ -4,6 +4,7 @@ import argparse
 from Columbia import Initializaiton
 from Columbia import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
 from Columbia import ScalarAdvection, TimeStepping, ReferenceState
+from Columbia import ScalarDiffusion, MomentumDiffusion
 from Columbia import MomentumAdvection
 from Columbia import PressureSolver
 from Columbia import Damping
@@ -12,6 +13,8 @@ from Columbia import ForcingFactory
 from Columbia.Stats import Stats
 from Columbia import DumpFields
 from Columbia import MicrophysicsFactory
+from Columbia import Kinematics
+from Columbia import SGSFactory
 from mpi4py import MPI
 import numpy as np
 import time
@@ -53,6 +56,8 @@ class Simulation:
         self.VelocityState.add_variable('w', loc='z', bcs='value zero')
 
         # Set up the thermodynamics class
+        self.Kine = Kinematics.Kinematics(self.ModelGrid, self.Ref, self.VelocityState, self.DiagnosticState)
+        self.SGS = SGSFactory.factory(namelist, self.ModelGrid, self.Ref, self.VelocityState, self.DiagnosticState)
         self.Micro = MicrophysicsFactory.factory(namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.DiagnosticState, self.TimeSteppingController) 
         self.Thermo = Thermodynamics.factory(namelist,self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.DiagnosticState, self.Micro)
 
@@ -61,6 +66,10 @@ class Simulation:
         #Setup the scalar advection calss
         self.ScalarAdv = ScalarAdvection.factory(namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.ScalarTimeStepping)
         self.MomAdv = MomentumAdvection.factory(namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState)
+
+        self.ScalarDiff = ScalarDiffusion.ScalarDiffusion(namelist, self.ModelGrid, self.Ref, self.DiagnosticState, self.ScalarState)
+        self.MomDiff = MomentumDiffusion.MomentumDiffusion(namelist, self.ModelGrid, self.Ref, self.DiagnosticState, self.Kine, self.VelocityState)
+
 
         #Setup the pressure solver
         self.PSolver = PressureSolver.factory(namelist, self.ModelGrid, self.Ref, self.VelocityState, self.DiagnosticState)
@@ -127,9 +136,16 @@ class Simulation:
                 #Update the forcing
                 self.Force.update()
 
+                #Update Kinematics
+                self.Kine.update()
+                self.SGS.update()
+
                 #Update scalar advection
                 self.ScalarAdv.update()
                 self.MomAdv.update()
+
+                self.ScalarDiff.update()
+                self.MomDiff.update()
 
                 #Do Damping
                 self.RayleighDamping.update()
