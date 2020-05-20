@@ -132,7 +132,7 @@ class ForcingRICO(Forcing.ForcingBase):
         st += self._heating_rate[np.newaxis, np.newaxis, :]
         qvt += self._ls_mositure[np.newaxis, np.newaxis, :]
 
-        Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f ,u, v, self._Ref.u0, self._Ref.v0, vt, ut)
+        Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f ,u, v, self._Ref.u0, self._Ref.v0, ut, vt)
 
 
         #Now ad large scale subsidence

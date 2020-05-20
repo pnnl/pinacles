@@ -64,10 +64,10 @@ class SurfaceBOMEX(Surface.SurfaceBase):
 
         shf = np.zeros_like(self._taux_sfc) + self._theta_flux * exner_edge[nh[2]-1]
         qv_flx_sf = np.zeros_like(self._taux_sfc) + self._qv_flux
-        Surface_impl.iles_surface_flux_application(50, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._taux_sfc, ut)
-        Surface_impl.iles_surface_flux_application(50, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._tauy_sfc, vt)
-        Surface_impl.iles_surface_flux_application(50, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, shf, st)
-        Surface_impl.iles_surface_flux_application(50, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, qv_flx_sf , qvt)
+        Surface_impl.iles_surface_flux_application(1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._taux_sfc, ut)
+        Surface_impl.iles_surface_flux_application(1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._tauy_sfc, vt)
+        Surface_impl.iles_surface_flux_application(1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, shf, st)
+        Surface_impl.iles_surface_flux_application(1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, qv_flx_sf , qvt)
 
 
         #import pylab as plt
@@ -125,7 +125,7 @@ class ForcingBOMEX(Forcing.ForcingBase):
 
         st += self._heating_rate[np.newaxis, np.newaxis, :]
 
-        Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f ,u, v, self._Ref.u0, self._Ref.v0, vt, ut)
+        Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f ,u, v, self._Ref.u0, self._Ref.v0, ut, vt)
 
         Forcing_impl.apply_subsidence(self._subsidence, self._Grid.dxi[2],s, st)
         Forcing_impl.apply_subsidence(self._subsidence, self._Grid.dxi[2],qv, qvt)

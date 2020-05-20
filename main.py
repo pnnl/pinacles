@@ -4,6 +4,7 @@ import argparse
 from Columbia import Initializaiton
 from Columbia import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
 from Columbia import ScalarAdvection, TimeStepping, ReferenceState
+from Columbia import ScalarDiffusion, MomentumDiffusion
 from Columbia import MomentumAdvection
 from Columbia import PressureSolver
 from Columbia import Damping
@@ -12,6 +13,8 @@ from Columbia import ForcingFactory
 from Columbia.Stats import Stats
 from Columbia import DumpFields
 from Columbia import MicrophysicsFactory
+from Columbia import Kinematics
+from Columbia import SGSFactory
 from mpi4py import MPI
 import numpy as np
 import time
@@ -36,11 +39,14 @@ def main(namelist):
     RayleighDamping.add_state(VelocityState)
     RayleighDamping.add_state(ScalarState)
 
+
+
     TimeSteppingController.add_timestepper(ScalarTimeStepping)
     TimeSteppingController.add_timestepper(VelocityTimeStepping)
     #TimeSteppingController.add_timematch(60.0)
     # Set up the reference state class
     Ref =  ReferenceState.factory(namelist, ModelGrid)
+
 
     # Add velocity variables
     VelocityState.add_variable('u')
@@ -48,6 +54,8 @@ def main(namelist):
     VelocityState.add_variable('w', loc='z', bcs='value zero')
 
     # Set up the thermodynamics class
+    Kine = Kinematics.Kinematics(ModelGrid, Ref, VelocityState, DiagnosticState)
+    SGS = SGSFactory.factory(namelist, ModelGrid, Ref, VelocityState, DiagnosticState)
     Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController) 
     Thermo = Thermodynamics.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, Micro)
 
@@ -56,6 +64,10 @@ def main(namelist):
     #Setup the scalar advection calss
     ScalarAdv = ScalarAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, ScalarTimeStepping)
     MomAdv = MomentumAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState)
+
+    ScalarDiff = ScalarDiffusion.ScalarDiffusion(namelist, ModelGrid, Ref, DiagnosticState, ScalarState)
+    MomDiff = MomentumDiffusion.MomentumDiffusion(namelist, ModelGrid, Ref, DiagnosticState, Kine, VelocityState)
+
 
     #Setup the pressure solver
     PSolver = PressureSolver.factory(namelist, ModelGrid, Ref, VelocityState, DiagnosticState)
@@ -144,9 +156,17 @@ def main(namelist):
             #Update the forcing
             Force.update()
 
+            #Update Kinematics
+            Kine.update()
+            SGS.update()
+
             #Update scalar advection
             ScalarAdv.update()
             MomAdv.update()
+
+
+            ScalarDiff.update()
+            MomDiff.update()
 
             #Do Damping
             RayleighDamping.update()

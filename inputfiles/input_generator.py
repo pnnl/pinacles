@@ -143,6 +143,10 @@ def bomex():
     #Set the domain length, dx will be determined from n and L
     input_dict[key]['l'] = [6400.0, 6400.0, 4000.0]
 
+    key = 'sgs'
+    input_dict[key] = {}
+    input_dict[key]['model'] = 'smagorinsky'
+
     key = 'microphysics'
     input_dict[key] = {} 
     input_dict[key]['scheme'] = 'kessler'
