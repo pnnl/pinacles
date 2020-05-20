@@ -22,6 +22,25 @@ def buoyancy(alpha0,alpha):
     return parameters.G * (alpha - alpha0)/alpha0
 
 @numba.njit()
+def compute_bvf(theta_ref, exner, T, qv, ql, dz, thetav, bvf):
+
+    shape = bvf.shape
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            for k in range(shape[2]):
+                thetav[i,j,k] = T[i,j,k]/exner[k]*(1.0 + 0.61*qv[i,j,k] - ql[i,j,k])
+
+
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            for k in range(1,shape[2]-1):
+                bvf[i,j,k] = parameters.G/theta_ref[k] * (thetav[i,j,k+1] - thetav[i,j,k-1])/dz
+
+    return
+
+
+
+@numba.njit()
 def buoyancy_sam(): 
     return 
 
