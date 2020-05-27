@@ -46,21 +46,21 @@ class MomentumWENO5(MomentumAdvectionBase):
 
         #Here we return the fluxes. We could capture these for output
         #U Component
-        MomentumAdvection_impl.u_advection_weno5(rho0, rho0_edge,
+        MomentumAdvection_impl.u_advection_2nd(rho0, rho0_edge,
             u, v, w, fluxx, fluxy, fluxz)
 
         MomentumAdvection_impl.uv_flux_div(dxi[0], dxi[1], dxi[2], alpha0,
             fluxx, fluxy, fluxz, u_t)
 
         #V Component
-        MomentumAdvection_impl.v_advection_weno5(rho0, rho0_edge,
+        MomentumAdvection_impl.v_advection_2nd(rho0, rho0_edge,
             u, v, w, fluxx, fluxy, fluxz)
 
         MomentumAdvection_impl.uv_flux_div(dxi[0], dxi[1], dxi[2], alpha0,
             fluxx, fluxy, fluxz, v_t)
 
         # W Component
-        MomentumAdvection_impl.w_advection_weno5(rho0, rho0_edge
+        MomentumAdvection_impl.w_advection_2nd(rho0, rho0_edge
             ,u, v, w, fluxx, fluxy, fluxz)
 
         MomentumAdvection_impl.w_flux_div(dxi[0], dxi[1], dxi[2], alpha0_edge,
