@@ -18,6 +18,7 @@ def compute_visc(dx, strain_rate_mag, bvf, cs, pr, eddy_viscosity, eddy_diffusiv
                 if bvf[i,j,k] > 0:
                     fb = max(0.0, 1.0 - bvf[i,j,k]/(pr * max(1e-9, strain_rate_mag[i,j,k] * strain_rate_mag[i,j,k])))**(1.0/2.0)
 
+
                 eddy_viscosity[i,j,k] = cs * cs * fb *filt_scale_squared * strain_rate_mag[i,j,k]
 
                 eddy_diffusivity[i,j,k] = eddy_viscosity[i,j,k] * pri

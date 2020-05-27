@@ -15,13 +15,13 @@ def compute_u_fluxes(dxi, rho0, rho0_edge, eddy_viscosity,
         for j in range(shape[1]):
             for k in range(shape[2]):
 
-                s11 = dudx[i,j,k]**2.0
-                s12 = (0.5*(dvdx[i,j,k] + dudy[i,j,k]))**2.0
-                s13 = (0.5*(dudz[i,j,k] + dwdx[i,j,k]))**2.0
+                s11 = dudx[i,j,k]
+                s12 = (0.5*(dvdx[i,j,k] + dudy[i,j,k]))
+                s13 = (0.5*(dudz[i,j,k] + dwdx[i,j,k]))
 
-                fluxx[i,j,k] = 2.0*rho0[k]*eddy_viscosity[i,j,k] * s11
-                fluxy[i,j,k] = 2.0*rho0[k]*eddy_viscosity[i,j,k] * s12
-                fluxz[i,j,k] = 2.0*rho0[k]*eddy_viscosity[i,j,k] * s13
+                fluxx[i,j,k] = -2.0*rho0[k]*eddy_viscosity[i,j,k] * s11
+                fluxy[i,j,k] = -2.0*rho0[k]*eddy_viscosity[i,j,k] * s12
+                fluxz[i,j,k] = -2.0*rho0[k]*eddy_viscosity[i,j,k] * s13
 
     #Compute the flux divergences
     for i in range(shape[0]-1):
@@ -47,13 +47,13 @@ def compute_v_fluxes(dxi, rho0, rho0_edge, eddy_viscosity,
         for j in range(shape[1]):
             for k in range(shape[2]):
 
-                s22 = dvdy[i,j,k]**2.0
-                s21 = (0.5*(dvdx[i,j,k] + dudy[i,j,k]))**2.0
-                s23 = (0.5*(dvdz[i,j,k] + dwdy[i,j,k]))**2.0
+                s22 = dvdy[i,j,k]
+                s21 = (0.5*(dvdx[i,j,k] + dudy[i,j,k]))
+                s23 = (0.5*(dvdz[i,j,k] + dwdy[i,j,k]))
 
-                fluxx[i,j,k] = 2.0*rho0[k]*eddy_viscosity[i,j,k] * s21
-                fluxy[i,j,k] = 2.0*rho0[k]*eddy_viscosity[i,j,k] * s22
-                fluxz[i,j,k] = 2.0*rho0[k]*eddy_viscosity[i,j,k] * s23
+                fluxx[i,j,k] = -2.0*rho0[k]*eddy_viscosity[i,j,k] * s21
+                fluxy[i,j,k] = -2.0*rho0[k]*eddy_viscosity[i,j,k] * s22
+                fluxz[i,j,k] = -2.0*rho0[k]*eddy_viscosity[i,j,k] * s23
 
     #Compute the flux divergences
     for i in range(shape[0]-1):
@@ -78,13 +78,13 @@ def compute_w_fluxes(dxi, rho0, rho0_edge, eddy_viscosity,
         for j in range(shape[1]):
             for k in range(shape[2]):
 
-                s33 = dwdz[i,j,k]**2.0
-                s31 = (0.5*(dwdx[i,j,k] + dudz[i,j,k]))**2.0
-                s23 = (0.5*(dvdz[i,j,k] + dwdy[i,j,k]))**2.0
+                s33 = dwdz[i,j,k]
+                s31 = (0.5*(dwdx[i,j,k] + dudz[i,j,k]))
+                s23 = (0.5*(dvdz[i,j,k] + dwdy[i,j,k]))
 
-                fluxx[i,j,k] = 2.0*rho0[k]*eddy_viscosity[i,j,k] * s31
-                fluxy[i,j,k] = 2.0*rho0[k]*eddy_viscosity[i,j,k] * s23
-                fluxz[i,j,k] = 2.0*rho0[k]*eddy_viscosity[i,j,k] * s33
+                fluxx[i,j,k] = -2.0*rho0[k]*eddy_viscosity[i,j,k] * s31
+                fluxy[i,j,k] = -2.0*rho0[k]*eddy_viscosity[i,j,k] * s23
+                fluxz[i,j,k] = -2.0*rho0[k]*eddy_viscosity[i,j,k] * s33
 
     #Compute the flux divergences
     for i in range(shape[0]-1):
