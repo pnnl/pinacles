@@ -7,7 +7,7 @@ import SimulationClass
 
 def main(namelist):
 
-    n = 1 
+    n = 4 
     gcm_res = 50*1e3
     couple_dt = 600.0
     forced_fields = ['qv', 's']
@@ -33,16 +33,21 @@ def main(namelist):
         ss_forcing.append({})
         ls_forcing.append({})
 
-    for couple_time in np.arange(couple_dt,21600.0+couple_dt, couple_dt):
-        print(couple_time)
-
     for couple_time in np.arange(couple_dt,10*86400+couple_dt, couple_dt):
         for i in range(n):
             for v in forced_fields:
-                ls_forcing[i][v] = (ls_state[i][v] - domains[i].ScalarState.mean(v) )/couple_dt
+                if not v == 'qv':
+                    ls_forcing[i][v] = (ls_state[i][v] - domains[i].ScalarState.mean(v) )/couple_dt
+                else:
+                    ls_forcing[i][v] = (ls_state[i][v] - domains[i].ScalarState.mean(v) 
+                        - domains[i].ScalarState.mean('qc') - domains[i].ScalarState.mean('qr') )/couple_dt
             domains[i].update(couple_time, ls_forcing[i])
             for v in forced_fields:
-                ss_forcing[i][v] = (domains[i].ScalarState.mean(v) - ls_state[i][v])/couple_dt
+                if not v == 'qv':
+                    ss_forcing[i][v] = (domains[i].ScalarState.mean(v) - ls_state[i][v])/couple_dt
+                else:
+                    ss_forcing[i][v] = (domains[i].ScalarState.mean(v) + domains[i].ScalarState.mean('qc') 
+                        + domains[i].ScalarState.mean('qr')  - ls_state[i][v])/couple_dt
 
         for i in range(n):
             for v in forced_fields:
