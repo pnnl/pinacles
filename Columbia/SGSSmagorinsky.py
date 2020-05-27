@@ -7,7 +7,7 @@ import numba
 def compute_visc(dx, strain_rate_mag, bvf, cs, pr, eddy_viscosity, eddy_diffusivity):
 
 
-    filt_scale_squared = (dx[0]*dx[1]*dx[2])**(2.0/3.0)
+    filt_scale_squared = 100 * 100#dx[0] * dx[0]#(dx[0]*dx[1]*dx[2])**(2.0/3.0)
     pri = 1.0/pr
 
     shape = eddy_viscosity.shape
@@ -15,7 +15,7 @@ def compute_visc(dx, strain_rate_mag, bvf, cs, pr, eddy_viscosity, eddy_diffusiv
         for j in range(shape[1]):
             for k in range(shape[2]):
                 fb = 1
-                if bvf[i,j,k] > 0 and strain_rate_mag > 0.0:
+                if bvf[i,j,k] > 0 and strain_rate_mag[i,j,k] > 0.0:
                     fb = max(0.0, 1.0 - bvf[i,j,k]/(pr *  strain_rate_mag[i,j,k] * strain_rate_mag[i,j,k]))**(1.0/2.0)
 
 
