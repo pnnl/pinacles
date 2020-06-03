@@ -76,10 +76,10 @@ class SurfaceRICO(Surface.SurfaceBase):
         #shf = np.zeros_like(self._taux_sfc) + self._theta_flux * exner_edge[nh[2]-1]
         #qv_flx_sf = np.zeros_like(self._taux_sfc) + self._qv_flux
         
-        Surface_impl.iles_surface_flux_application(100, z_edge, dxi2, nh, alpha0, alpha0_edge, 500, self._taux_sfc, ut)
-        Surface_impl.iles_surface_flux_application(100, z_edge, dxi2, nh, alpha0, alpha0_edge, 500, self._tauy_sfc, vt)
-        Surface_impl.iles_surface_flux_application(100, z_edge, dxi2, nh, alpha0, alpha0_edge, 500, shf, st)
-        Surface_impl.iles_surface_flux_application(100, z_edge, dxi2, nh, alpha0, alpha0_edge, 500, qv_flx_sfc , qvt)
+        Surface_impl.iles_surface_flux_application(1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 500, self._taux_sfc, ut)
+        Surface_impl.iles_surface_flux_application(1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 500, self._tauy_sfc, vt)
+        Surface_impl.iles_surface_flux_application(1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 500, shf, st)
+        Surface_impl.iles_surface_flux_application(1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 500, qv_flx_sfc , qvt)
 
         return
 

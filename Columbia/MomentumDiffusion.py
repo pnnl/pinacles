@@ -142,19 +142,19 @@ class MomentumDiffusion:
         dwdz = self._Kine._dwdz
 
         compute_u_fluxes(dxi, rho0, rho0_edge, eddy_viscosity,
-                        dudx, dudy, dudz,
-                        dvdx, dwdx,
-                        fluxx, fluxy, fluxz, ut)
+                       dudx, dudy, dudz,
+                       dvdx, dwdx,
+                       fluxx, fluxy, fluxz, ut)
 
 
         compute_v_fluxes(dxi, rho0, rho0_edge, eddy_viscosity,
                         dvdx, dvdy, dvdz,
                         dudy, dwdy,
                         fluxx, fluxy, fluxz, vt)
-
+                        
         compute_w_fluxes(dxi, rho0, rho0_edge, eddy_viscosity,
                         dwdx, dwdy, dwdz,
-                        dudz, dwdz,
+                        dudz, dvdz,
                         fluxx, fluxy, fluxz, wt)
 
         return
