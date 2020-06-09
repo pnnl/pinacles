@@ -50,6 +50,10 @@ class DumpFields:
             for v in ac._dofs:
                 v_nc = rt_grp.createVariable(v, np.double, dimensions=('time','X','Y','Z'))
 
+                v_nc.units = ac.get_units(v)
+                v_nc.long_names = ac.get_long_name(v)
+                v_nc.standard_name = ac.get_standard_name(v)
+
                 v_nc[0,:,:,:] =  ac.get_field(v)[nhalo[0]:-nhalo[0],
                     nhalo[1]:-nhalo[1],
                     nhalo[2]:-nhalo[2]]
@@ -74,11 +78,26 @@ class DumpFields:
 
         T = rt_grp.createVariable('time', np.double, dimensions=('time'))
         T[0] =  self._TimeSteppingController.time
+        T.units = 's'
+        T.long_name = 'time'
+        T.standard_name = 't'
+
         X = rt_grp.createVariable('X', np.double, dimensions=('X'))
+        X.units = 'm'
+        X.long_name = 'x-coordinate'
+        X.standard_name = 'x'
         X[:] = self._Grid.x_local[nhalo[0]:-nhalo[0]]
+
         Y = rt_grp.createVariable('Y', np.double, dimensions=('Y'))
+        Y.units = 'm'
+        Y.long_name = 'y-coordinate'
+        Y.standard_name = 'y'
         Y[:] = self._Grid.y_local[nhalo[1]:-nhalo[1]]
+
         Z = rt_grp.createVariable('Z', np.double, dimensions=('Z'))
+        Z.units = 'm'
+        Z.long_name = 'z-coordinate'
+        Z.standard_name = 'z'
         Z[:] = self._Grid.z_local[nhalo[2]:-nhalo[2]]
         rt_grp.sync()
 

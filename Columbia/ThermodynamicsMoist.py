@@ -6,8 +6,14 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
     def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro):
         Thermodynamics.ThermodynamicsBase.__init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro)
 
-        DiagnosticState.add_variable('bvf')
-        DiagnosticState.add_variable('thetav')
+        DiagnosticState.add_variable('bvf', 
+            long_name = 'Brunt–Väisälä frequency squared', 
+            latex_name = 'N^2',
+            units='s^-2')
+        DiagnosticState.add_variable('thetav',
+            long_name = 'Virtual Potential Temperature',
+            latex_name = '\theta_v',
+            units = 'K')
 
         return
 
