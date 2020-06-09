@@ -296,13 +296,9 @@ class MicroSBM(MicrophysicsBase):
 
         to_our_order(nhalo, wrf_vars['qv'], qv)
 
-        self._call_count += 1 
+        self._call_count += 1
         self._itimestep  += 1
 
-        
-        print('SBM time: ', t1-t0, MPI.COMM_WORLD.Get_rank())
-
-        
         return
     def get_qc(self):
         #print('Here', np.sum(self._ScalarState._state_array.array[self._qc_start:self._qc_end,:,:,:], axis=0))
