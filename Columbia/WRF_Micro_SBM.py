@@ -268,9 +268,6 @@ class MicroSBM(MicrophysicsBase):
                                                       sr=wrf_vars['SR'])
 
 
-        #self.plot_wrf_vars(wrf_vars)
-        print(np.amax(wrf_vars['th_phy']), np.amin(wrf_vars['th_phy']))
-
         t1 = time.time()
         MPI.COMM_WORLD.barrier()
 
