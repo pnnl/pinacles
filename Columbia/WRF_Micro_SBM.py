@@ -104,13 +104,28 @@ class MicroSBM(MicrophysicsBase):
 
         self._itimestep = 1
         self._call_count = 0
-        module_mp_fast_sbm.module_mp_fast_sbm.fast_hucminit(5.0)
+        
+        ccncon1 = 90.0 
+        radius_mean1 = 0.03e-4 
+        sig1 = 1.28
+        
+        ccncon2 = 15
+        radius_mean2 =  0.14e-4
+        sig2 = 1.75 
+		
+        ccncon3 = 0.0
+        radius_mean3 = 0.31000e-04
+        sig3 = 2.70000
+
+
+        module_mp_fast_sbm.module_mp_fast_sbm.fast_hucminit(5.0,
+        ccncon1, radius_mean1, sig1, 
+        ccncon2, radius_mean2, sig2,
+        ccncon3, radius_mean3, sig3)
 
         return
 
     def update(self):
-
-
 
         #Get grid information
         nhalo = self._Grid.n_halo
