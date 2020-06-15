@@ -38,8 +38,6 @@ def compute_bvf(theta_ref, exner, T, qv, ql, dz, thetav, bvf):
 
     return
 
-
-
 @numba.njit()
 def buoyancy_sam(): 
     return 

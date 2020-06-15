@@ -24,6 +24,16 @@ class ModelState:
 
         return
 
+
+    def get_long_name(self, name):
+        return self._long_names[name]
+
+    def get_standard_name(self, name):
+        return self._latex_names[name]
+
+    def get_units(self, name):
+        return self._units[name]
+
     @property
     def nvars(self):
         return self._nvars
@@ -42,7 +52,7 @@ class ModelState:
     def identical_bcs(self):
         return self._identical_bcs
 
-    def add_variable(self, name, long_name=None, latex_name=None, units=None, bcs='gradient zero', loc='c'):
+    def add_variable(self, name, long_name='None', latex_name='None', units='None', bcs='gradient zero', loc='c'):
 
         #Do some correctness checks and warn for some behavior
         assert(bcs in  ['gradient zero', 'value zero'])

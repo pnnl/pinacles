@@ -3,6 +3,70 @@ from Columbia import interpolation_impl
 
 
 
+@numba.njit
+def u_advection_4th(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz):
+    shape = u.shape
+    for i in range(2,shape[0]-3):
+        for j in range(2,shape[1]-3):
+            for k in range(2,shape[2]-3):
+               #Compute advection of u by u-wind
+               #up = interpolation_impl.centered_fourth(u[i-1,j,k], u[i,j,k], u[i+1,j,k], u[i+2,j,k])
+               #vp = interpolation_impl.centered_fourth(v[i-1,j,k], v[i,j,k], v[i+1,j,k], v[i+2,j,k])
+               #wp = interpolation_impl.centered_fourth(w[i-1,j,k], w[i,j,k], w[i+1,j,k], w[i+2,j,k])
+
+               up = interpolation_impl.centered_fourth(u[i-1,j,k],u[i,j,k], u[i+1,j,k], u[i+2,j,k])
+               vp = interpolation_impl.centered_fourth(v[i-1,j,k],v[i,j,k], v[i+1,j,k], v[i+2,j,k])
+               wp = interpolation_impl.centered_fourth(w[i-1,j,k],w[i,j,k], w[i+1,j,k],w[i+2,j,k])
+
+               fluxx[i,j,k] = up  * up  * rho0[k]
+
+               #Copute advection of u by v-wind
+               fluxy[i,j,k] = vp*interpolation_impl.centered_fourth(u[i,j-1,k],u[i,j,k],u[i,j+1,k],u[i,j+2,k]) * rho0[k]
+
+               fluxz[i,j,k] = wp*interpolation_impl.centered_fourth(u[i,j,k-1],u[i,j,k],u[i,j,k+1],u[i,j,k+2]) * rho_edge0[k]
+
+
+    return
+
+@numba.njit
+def v_advection_4th(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
+    shape = v.shape
+    for i in range(2,shape[0]-3):
+        for j in range(2,shape[1]-3):
+            for k in range(2,shape[2]-3):
+                #Compute v advection by the u wind
+                up = interpolation_impl.centered_fourth(u[i,j-1,k],u[i,j,k], u[i,j+1,k],u[i,j+2,k])
+                vp = interpolation_impl.centered_fourth(v[i,j-1,k],v[i,j,k], v[i,j+1,k],v[i,j+2,k])
+                wp = interpolation_impl.centered_fourth(w[i,j-1,k],w[i,j,k], w[i,j+1,k],w[i,j+2,k])
+
+                fluxx[i,j,k] = up  * interpolation_impl.centered_fourth(v[i-1,j,k],v[i,j,k],v[i+1,j,k],v[i+2,j,k])* rho0[k]
+
+                fluxy[i,j,k] = vp * vp* rho0[k]
+
+                fluxz[i,j,k] = wp * interpolation_impl.centered_fourth(v[i,j,k-1],v[i,j,k],v[i,j,k+1],v[i,j,k+2]) * rho0_edge[k]
+    return
+
+@numba.njit
+def w_advection_4th(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
+    shape = w.shape
+    for i in range(2,shape[0]-3):
+        for j in range(2,shape[1]-3):
+            for k in range(2,shape[2]-3):
+
+                up = interpolation_impl.centered_fourth(u[i,j,k-1], u[i,j,k], u[i,j,k+1], u[i,j,k+2])
+                vp = interpolation_impl.centered_fourth(v[i,j,k-1], v[i,j,k], v[i,j,k+1], v[i,j,k+2])
+                wp = interpolation_impl.centered_fourth(w[i,j,k-1], w[i,j,k], w[i,j,k+1], w[i,j,k+2])
+                
+                fluxx[i,j,k] = up  * interpolation_impl.centered_fourth(w[i-1,j,k], w[i,j,k],w[i+1,j,k],w[i+2,j,k])* rho0_edge[k]
+
+                #Compute w advection by the v wind
+                fluxy[i,j,k] = vp * interpolation_impl.centered_fourth(w[i,j-1,k], w[i,j,k],w[i,j+1,k],w[i,j+2,k])* rho0_edge[k] 
+
+                #Compute w advection by the w wind
+                fluxz[i,j,k] = wp * wp * rho0[k+1]
+
+    return
+
 
 @numba.njit
 def u_advection_2nd(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz):

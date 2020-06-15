@@ -35,6 +35,7 @@ class MomentumWENO5(MomentumAdvectionBase):
         v = self._VelocityState.get_field('v')
         w = self._VelocityState.get_field('w')
 
+
         u_t = self._VelocityState.get_tend('u')
         v_t = self._VelocityState.get_tend('v')
         w_t = self._VelocityState.get_tend('w')

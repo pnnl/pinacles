@@ -7,7 +7,11 @@ import numba
 def compute_visc(dx, strain_rate_mag, bvf, cs, pr, eddy_viscosity, eddy_diffusivity):
 
 
-    filt_scale_squared = dx[2]#(dx[2])**(1.0/3.0)
+#<<<<<<< HEAD
+#    filt_scale_squared = dx[2]#(dx[2])**(1.0/3.0)
+#=======
+    filt_scale_squared = (dx[0] * dx[1] * dx[2])**(1.0/3.0)
+#>>>>>>> master
     pri = 1.0/pr
 
     shape = eddy_viscosity.shape

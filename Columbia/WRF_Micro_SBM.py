@@ -18,32 +18,79 @@ class MicroSBM(MicrophysicsBase):
         self._list_of_ScalarStatevars = ['qc', 'qr',
             'qnc', 'qnr', 'qna','qna_nucl']
 
+        long_names = {'qc': 'cloud-water mixing ratio',
+                      'qr': 'rain-water mixing ratio',
+                      'qnc': 'cloud droplet number concentraiton',
+                      'qnr': 'rain drop number concentration',
+                      'qna': 'aerosol number concentration',
+                      'qna_nucl': 'regeneration aerosol number concentration'}
+        
+        units = {'qc':'kg kg^-1',
+                 'qr':  'kg kg^-1',
+                 'qnc': 'kg^-1',
+                 'qnr': 'kg^-1',
+                 'qna': 'kg^-1',
+                 'qna_nucl': 'kg^-1'}
+        
+
+
+        for var in self._list_of_ScalarStatevars:
+            self._ScalarState.add_variable(var, units='kg kg^-1', latex_name=var, long_name=long_names[var])
 
         #Add new diag fields
         self._io_fields = ['MA', 'LH_rate', 'CE_rate', 'DS_rate', 'Melt_rate',
             'Frz_rate', 'CldNucl_rate', 'IceNucl_rate', 'difful_tend', 'diffur_tend',
             'tempdiffl', 'automass_tend', 'autonum_tend', 'saturation','n_reg_ccn']
         
-        for var in self._io_fields:
-            self._DiagnosticState.add_variable(var)
+        long_names = {'MA': '', 
+                      'LH_rate':'Latent heat rate',
+                      'CE_rate':'Condensation / evaporation rate',
+                      'DS_rate':'Deposition / sublimation rate',
+                      'Melt_rate':'Ice melting rate',
+                      'Frz_rate':'Liquid freezing rate',
+                      'CldNucl_rate':'Cloud nucleation rate',
+                      'IceNucl_rate':'Ice nucleation rate',
+                      'difful_tend':'liquid mass change rate due to droplet diffusional growth',
+                      'diffur_tend':'rain mass change rate due to droplet diffusional growth',
+                      'tempdiffl':'latent heat rate due to droplet diffusional growth',
+                      'automass_tend':'cloud droplet mass change due to collision-coalescence',
+                      'autonum_tend':'cloud droplet number change due to collision-coalescence',
+                      'saturation':'Saturaiton Ratio',
+                      'n_reg_ccn':'Aerosol Regeneration Rate'}
 
-        for var in self._list_of_ScalarStatevars:
-            self._ScalarState.add_variable(var)
+        units = {'MA': '', 
+                      'LH_rate':'K s^{-1}',
+                      'CE_rate':'kg kg^{-1} s^{-1}',
+                      'DS_rate':'kg kg^{-1} s^{-1}',
+                      'Melt_rate':'kg kg^{-1} s^{-1}',
+                      'Frz_rate':'kg kg^{-1} s^{-1}',
+                      'CldNucl_rate':'kg kg^{-1} s^{-1}',
+                      'IceNucl_rate':'kg kg^{-1} s^{-1}',
+                      'difful_tend':'kg kg^{-1} s^{-1}',
+                      'diffur_tend':'kg kg^{-1} s^{-1}',
+                      'tempdiffl':'K s^{-1}',
+                      'automass_tend':'kg kg^{-1} s^{-1}',
+                      'autonum_tend':'kg kg^{-1} s^{-1}',
+                      'saturation':'',
+                      'n_reg_ccn':''}
+
+        for var in self._io_fields:
+            self._DiagnosticState.add_variable(var, latex_name=var, long_name=long_names[var])
 
         self._bin_start = self._ScalarState.nvars
         self._qc_start = self._ScalarState.nvars 
         for i in range(1,34):
             name = "ff1i" + str(i)
-            self._ScalarState.add_variable(name)
+            self._ScalarState.add_variable(name, units='kg kg^{-1}', long_name='liquid bin mass ' + str(i) )
         self._qc_end = self._ScalarState.nvars
         #Add aersol bins
         for i in range(1,34):
             name = 'ff8i' + str(i)
-            self._ScalarState.add_variable(name)
+            self._ScalarState.add_variable(name, units='kg kg^{-1}', long_name='aerosol bin mass ' + str(i))
 
         for i in range(1,34):
             name = 'ff8in' + str(i)
-            self._ScalarState.add_variable(name)
+            self._ScalarState.add_variable(name,units='kg kg^{-1}', long_name='(regeneration) aerosol bin mass ' + str(i))
         self._bin_end = self._ScalarState.nvars
 
         nhalo = self._Grid.n_halo
@@ -57,13 +104,28 @@ class MicroSBM(MicrophysicsBase):
 
         self._itimestep = 1
         self._call_count = 0
-        module_mp_fast_sbm.module_mp_fast_sbm.fast_hucminit(5.0)
+        
+        ccncon1 = 90.0 
+        radius_mean1 = 0.03e-4 
+        sig1 = 1.28
+        
+        ccncon2 = 15
+        radius_mean2 =  0.14e-4
+        sig2 = 1.75 
+		
+        ccncon3 = 0.0
+        radius_mean3 = 0.31000e-04
+        sig3 = 2.70000
+
+
+        module_mp_fast_sbm.module_mp_fast_sbm.fast_hucminit(5.0,
+        ccncon1, radius_mean1, sig1, 
+        ccncon2, radius_mean2, sig2,
+        ccncon3, radius_mean3, sig3)
 
         return
 
     def update(self):
-
-
 
         #Get grid information
         nhalo = self._Grid.n_halo
@@ -221,9 +283,6 @@ class MicroSBM(MicrophysicsBase):
                                                       sr=wrf_vars['SR'])
 
 
-        #self.plot_wrf_vars(wrf_vars)
-        print(np.amax(wrf_vars['th_phy']), np.amin(wrf_vars['th_phy']))
-
         t1 = time.time()
         MPI.COMM_WORLD.barrier()
 
@@ -249,13 +308,9 @@ class MicroSBM(MicrophysicsBase):
 
         to_our_order(nhalo, wrf_vars['qv'], qv)
 
-        self._call_count += 1 
+        self._call_count += 1
         self._itimestep  += 1
 
-        
-        print('SBM time: ', t1-t0, MPI.COMM_WORLD.Get_rank())
-
-        
         return
     def get_qc(self):
         #print('Here', np.sum(self._ScalarState._state_array.array[self._qc_start:self._qc_end,:,:,:], axis=0))

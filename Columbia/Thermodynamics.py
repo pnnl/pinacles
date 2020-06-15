@@ -9,12 +9,12 @@ class ThermodynamicsBase:
         self._Micro = Micro
 
         #Add prognostic fields that are required by all thermodynamic classes
-        self._ScalarState.add_variable('s') #TODO Move this elsewhere
+        self._ScalarState.add_variable('s', units='K', latex_name='s', long_name='static energy') #TODO Move this elsewhere
 
         #Add diagnostic fields that are required by all thermodynamic classes
-        self._DiagnosticState.add_variable('T')
-        self._DiagnosticState.add_variable('alpha')
-        self._DiagnosticState.add_variable('buoyancy')
+        self._DiagnosticState.add_variable('T', units='K',  latex_name = 'T', long_name='Temperature')
+        self._DiagnosticState.add_variable('alpha', units='m^3 K^{-1}', latex_name='\alpha', long_name='Specific Volume')
+        self._DiagnosticState.add_variable('buoyancy', units='m s^{-1}', latex_name='b', long_name='buoyancy')
 
         return
 

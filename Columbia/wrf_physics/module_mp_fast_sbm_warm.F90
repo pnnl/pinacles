@@ -3842,21 +3842,25 @@ end module module_mp_SBM_Auxiliary
 	RETURN
 	END SUBROUTINE SupMax_COEFF
 ! +----------------------------------------------------------------------------------------------------+
-	SUBROUTINE LogNormal_modes_Aerosol(FCCNR_CON,FCCNR_MAR,NKR_local,COL,XL,XCCN,RCCN,RO_SOLUTE,Scale_Fa,IType)
+  SUBROUTINE LogNormal_modes_Aerosol(FCCNR_CON,FCCNR_MAR,NKR_local,COL,XL,XCCN,RCCN,RO_SOLUTE,Scale_Fa,IType, &
+    ccncon1,radius_mean1,sig1, &
+    ccncon2,radius_mean2,sig2, &
+    ccncon3,radius_mean3,sig3)
 
 	implicit none
 ! ... Interface
 		integer,intent(in) :: NKR_local, Itype
 		double precision ,intent(in) :: XL(:), COL, RO_SOLUTE, Scale_Fa
 		double precision ,intent(out) :: FCCNR_CON(:), FCCNR_MAR(:)
-		double precision ,intent(out) :: XCCN(:),RCCN(:)
+    double precision ,intent(out) :: XCCN(:),RCCN(:)
+    double precision, intent(in) :: ccncon1,radius_mean1,sig1
+    double precision, intent(in) :: ccncon2,radius_mean2,sig2
+    double precision, intent(in) :: ccncon3,radius_mean3,sig3
 ! ... Interface
 ! ... Local
 		integer :: mode_num, KR
 		integer,parameter :: modemax = 3
-		double precision  :: ccncon1, ccncon2, ccncon3, radius_mean1, radius_mean2, radius_mean3, &
-							            sig1, sig2, sig3,													 &
-							            ccncon(modemax), sig(modemax), radius_mean(modemax)
+		double precision  :: ccncon(modemax), sig(modemax), radius_mean(modemax)
 		double precision  :: CONCCCNIN, FCCNR_tmp(NKR_local), DEG01, X0DROP, &
 						              XOCCN, X0, R0, RCCN_MICRON, S_KR, S(NKR_local), X0CCN, ROCCN(NKR_local), &
 	                        RO_SOLUTE_Ammon, RO_SOLUTE_NaCl,arg11,arg12,arg13,arg21,arg22,arg23, & 
@@ -3901,17 +3905,17 @@ end module module_mp_SBM_Auxiliary
 !-----------------------------------------------@
 	IF(IType == 1) THEN ! Maritime regime
 
-		ccncon1 = 90.0 !340.000
-		radius_mean1 = 0.03d-4 !0.00500D-04
-		sig1 = 1.28!1.60000
+		!ccncon1 = 90.0 !340.000
+		!radius_mean1 = 0.03d-4 !0.00500D-04
+		!sig1 = 1.28!1.60000
 
-    ccncon2 = 15 !60.0000 
-    radius_mean2 =  0.14d-4!0.03500D-04
-		sig2 = 1.75 !2.00000
+    !ccncon2 = 15 !60.0000 
+    !radius_mean2 =  0.14d-4!0.03500D-04
+		!sig2 = 1.75 !2.00000
 
-		ccncon3 = 0.0 !3.10000
-		radius_mean3 = 0.31000D-04
-		sig3 = 2.70000
+		!ccncon3 = 0.0 !3.10000
+		!radius_mean3 = 0.31000D-04
+		!sig3 = 2.70000
 
 		!ccncon1 = 340.000
 		!radius_mean1 = 0.00500D-04
@@ -3927,17 +3931,17 @@ end module module_mp_SBM_Auxiliary
 
 	ELSE IF(IType == 2) THEN ! Continental regime
 
-		ccncon1 = 1000.000
-		radius_mean1 = 0.00800D-04
-		sig1 = 1.60000
+		!ccncon1 = 1000.000
+		!radius_mean1 = 0.00800D-04
+		!sig1 = 1.60000
 
-		ccncon2 = 800.0000
-		radius_mean2 = 0.03400D-04
-		sig2 = 2.10000
+		!ccncon2 = 800.0000
+		!radius_mean2 = 0.03400D-04
+		!sig2 = 2.10000
 
-		ccncon3 = 0.72000
-		radius_mean3 = 0.46000D-04
-		sig3 = 2.20000
+		!ccncon3 = 0.72000
+		!radius_mean3 = 0.46000D-04
+		!sig3 = 2.20000
 
 	ENDIF
 
@@ -5232,7 +5236,9 @@ END IF
        RETURN
        END SUBROUTINE FALFLUXHUCM_Z
  ! +----------------------------------+
-   SUBROUTINE FAST_HUCMINIT(DT)
+   SUBROUTINE FAST_HUCMINIT(DT, ccncon1,radius_mean1,sig1, &
+    ccncon2,radius_mean2,sig2, &
+    ccncon3,radius_mean3,sig3)
 
     USE module_mp_SBM_BreakUp,ONLY:Spontanous_Init
  	  USE module_mp_SBM_Collision,ONLY:courant_bott_KS
@@ -5242,6 +5248,9 @@ END IF
  	  IMPLICIT NONE
 
     double precision,intent(in) :: DT
+    double precision,intent(in) :: ccncon1,radius_mean1,sig1
+    double precision,intent(in) :: ccncon2,radius_mean2,sig2
+    double precision,intent(in) :: ccncon3,radius_mean3,sig3
 
     LOGICAL , EXTERNAL      :: wrf_dm_on_monitor
     LOGICAL :: opened
@@ -6002,8 +6011,14 @@ FCCNR_OBS=0.0
  		Scale_CCN_Factor = 1.0
  		XCCN = 0.0
  		RCCN = 0.0
- 		CALL LogNormal_modes_Aerosol(FCCNR_CON,FCCNR_MAR,NKR_aerosol,COL,XL,XCCN,RCCN,RO_SOLUTE,Scale_CCN_Factor,1)
- 		CALL LogNormal_modes_Aerosol(FCCNR_CON,FCCNR_MAR,NKR_aerosol,COL,XL,XCCN,RCCN,RO_SOLUTE,Scale_CCN_Factor,2)
+     CALL LogNormal_modes_Aerosol(FCCNR_CON,FCCNR_MAR,NKR_aerosol,COL,XL,XCCN,RCCN,RO_SOLUTE,Scale_CCN_Factor,1, &
+         ccncon1,radius_mean1,sig1, &
+         ccncon2,radius_mean2,sig2, &
+         ccncon3,radius_mean3,sig3)
+     CALL LogNormal_modes_Aerosol(FCCNR_CON,FCCNR_MAR,NKR_aerosol,COL,XL,XCCN,RCCN,RO_SOLUTE,Scale_CCN_Factor,2, &
+         ccncon1,radius_mean1,sig1, &
+         ccncon2,radius_mean2,sig2, &
+         ccncon3,radius_mean3,sig3)
  		WRITE(errmess, '(A,I2)') 'FAST_SBM_INIT : succesfull reading "LogNormal_modes_Aerosol" '
  		!call wrf_debug(000, errmess)
 !---YZ2020Mar:read aerosol size distribution from observation----@
