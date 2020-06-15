@@ -5,8 +5,9 @@ from mpi4py import MPI
 
 class RungeKuttaBase:
 
-    def __init__(self, namelist, Grid, PrognosticState):
+    def __init__(self, namelist, Grid, Parallel, PrognosticState):
         self._Grid = Grid
+        self._Parallel = Parallel
         self._PrognosticState = PrognosticState
         self._t = 0
         self.n_rk_step = 0
@@ -26,8 +27,8 @@ class RungeKuttaBase:
         return
 
 class RungeKutta2ndSSP(RungeKuttaBase):
-    def __init__(self, namelist, Grid, PrognosticState):
-        RungeKuttaBase.__init__(self, namelist, Grid, PrognosticState)
+    def __init__(self, namelist, Grid, Parallel, PrognosticState):
+        RungeKuttaBase.__init__(self, namelist, Grid, Parallel, PrognosticState)
         self.Tn = None
         self.n_rk_step = 2
         self._rk_step = 0
@@ -59,12 +60,13 @@ class RungeKutta2ndSSP(RungeKuttaBase):
     def dt(self): 
         return self._dt
 
-def factory(namelist, Grid, PrognosticState):
-    return RungeKutta2ndSSP(namelist, Grid, PrognosticState)
+def factory(namelist, Grid, Parallel, PrognosticState):
+    return RungeKutta2ndSSP(namelist, Grid, Parallel, PrognosticState)
 
 class TimeSteppingController:
-    def __init__(self, namelist, Grid, VelocityState):
+    def __init__(self, namelist, Grid, Parallel,  VelocityState):
         self._Grid = Grid
+        self._Parallel = Parallel
         self._VelocityState = VelocityState
         self._TimeStepper = []
         self._times_to_match = []
@@ -100,12 +102,12 @@ class TimeSteppingController:
             cfl_max_local, umax, vmax, wmax = TS_impl.comput_local_cfl_max(nhalo, dxi, u, v, w)
 
 
-            umax = UtilitiesParallel.ScalarAllReduce(umax, op=MPI.MAX)
-            vmax = UtilitiesParallel.ScalarAllReduce(vmax, op=MPI.MAX)
-            wmax = UtilitiesParallel.ScalarAllReduce(wmax, op=MPI.MAX)
+            umax = UtilitiesParallel.ScalarAllReduce(self._Parallel.world, umax, op=MPI.MAX)
+            vmax = UtilitiesParallel.ScalarAllReduce(self._Parallel.world, vmax, op=MPI.MAX)
+            wmax = UtilitiesParallel.ScalarAllReduce(self._Parallel.world, wmax, op=MPI.MAX)
 
             recv_buffer = np.zeros((1,), dtype=np.double)
-            MPI.COMM_WORLD.Allreduce(np.array([cfl_max_local], dtype=np.double), recv_buffer, op=MPI.MAX)
+            self._Parallel.world.Allreduce(np.array([cfl_max_local], dtype=np.double), recv_buffer, op=MPI.MAX)
             cfl_max = recv_buffer[0]
             self._cfl_current = self._dt * cfl_max
             self._dt = min(self._cfl_target / cfl_max, self._dt_max)
@@ -117,10 +119,11 @@ class TimeSteppingController:
             for Stepper in self._TimeStepper:
                 Stepper._dt = self._dt
 
-            if MPI.COMM_WORLD.Get_rank() == 0:
-                print('Time:', self._time, 'CFL Before Adjustment:', self._cfl_current,
-                    'CFL After Adjustment:', cfl_max * self._dt, 'dt:', self._dt )
-                print('\t umax: ', umax, '\t vmax:', vmax, '\t wmax:', wmax)
+            if self._Parallel.rank == 0:
+                pass
+                #print('Time:', self._time, 'CFL Before Adjustment:', self._cfl_current,
+                #    'CFL After Adjustment:', cfl_max * self._dt, 'dt:', self._dt )
+                #print('\t umax: ', umax, '\t vmax:', vmax, '\t wmax:', wmax)
 
         return
 

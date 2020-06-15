@@ -3,11 +3,11 @@ from Columbia import SGSSmagorinsky
 
 from mpi4py import MPI
 
-def factory(namelist, Grid, Ref, VelocityState, DiagnosticState):
+def factory(namelist, Grid, Parallel, Ref, VelocityState, DiagnosticState):
     try:
         sgs_model = namelist['sgs']['model']
     except:
-        if MPI.COMM_WORLD.Get_rank() == 0:
+        if Parallel.rank == 0:
             print('Looks like there is no SGS model specified in the namelist!')
         sgs_model = None
 

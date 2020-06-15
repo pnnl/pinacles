@@ -6,10 +6,11 @@ from mpi4py import MPI
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
 class Stats:
-    def __init__(self, namelist, Grid, Ref, TimeSteppingController):
+    def __init__(self, namelist, Grid, Parallel, Ref, TimeSteppingController):
 
         self._Grid = Grid
         self._Ref = Ref
+        self._Parallel = Parallel
 
         self._frequency = namelist['stats']['frequency']
         self._ouput_root = str(namelist['meta']['output_directory'])
@@ -44,7 +45,7 @@ class Stats:
         #Todo: Follow CORADS standard?
 
         #We only need to initialzie the profiles on the rank 0
-        if MPI.COMM_WORLD.Get_rank() != 0:
+        if self._Parallel.rank != 0:
             return
 
         #Create groups for each class
@@ -106,7 +107,7 @@ class Stats:
         if  not  np.allclose(self._TimeSteppingController._time%self._frequency,0.0):
             return
 
-        if MPI.COMM_WORLD.Get_rank() == 0: 
+        if self._Parallel.rank == 0: 
             self._rt_grp = nc.Dataset(self._stats_file, 'r+')
         else: 
             self._rt_grp = None
@@ -114,23 +115,23 @@ class Stats:
         #Increment time for all groups
         for aclass in self._classes:
             for grp in ['timeseries', 'profiles']:
-                if MPI.COMM_WORLD.Get_rank() == 0: 
+                if self._Parallel.rank == 0: 
                     this_grp = self._rt_grp[aclass]
                     time = this_grp[grp]['time']
                     time[time.shape[0]] = self._TimeSteppingController._time
-        if MPI.COMM_WORLD.Get_rank() == 0: 
+        if self._Parallel.rank == 0: 
             self._rt_grp.sync()
        
         #Call io for all of the classes
         for aclass in self._classes:
-            if MPI.COMM_WORLD.Get_rank() == 0: 
+            if self._Parallel.rank == 0: 
                 this_grp = self._rt_grp[aclass]
             else:
                 this_grp = None    
             self._classes[aclass].io_update(this_grp)
 
 
-        if MPI.COMM_WORLD.Get_rank() == 0: 
+        if self._Parallel.rank == 0: 
             self._rt_grp.sync()
             self._rt_grp.close()
 
@@ -140,7 +141,7 @@ class Stats:
 
     def setup_directories(self):
 
-        if MPI.COMM_WORLD.Get_rank() == 0:
+        if self._Parallel.rank == 0:
             if not os.path.exists(self._output_path):
                 os.makedirs(self._output_path)
 

@@ -4,15 +4,16 @@ from mpi4py import MPI
 import pylab as plt
 
 class GhostArrayBase:
-    def __init__(self, _Grid, dof=None):
+    def __init__(self, _Grid, _Parallel, dof=None):
         self._Grid = _Grid
+        self._Parallel = _Parallel
         return
 
 
 class GhostArray(GhostArrayBase):
-    def __init__(self, _Grid, dtype=np.double,ndof=1):
+    def __init__(self, _Grid, _Parallel, dtype=np.double,ndof=1):
 
-        GhostArrayBase.__init__(self, _Grid)
+        GhostArrayBase.__init__(self, _Grid, _Parallel)
         self._shape = tuple(np.append(ndof, self._Grid.ngrid_local))
         self._n_halo = self._Grid.n_halo
         self.array = np.empty(self._shape, dtype=np.double)
@@ -48,7 +49,7 @@ class GhostArray(GhostArrayBase):
             local_max = np.array(np.amax(self.array[dof,:,:,:]),dtype=np.double)
 
         global_max = np.empty_like(local_max)
-        MPI.COMM_WORLD.Allreduce(local_max, global_max, op=MPI.MAX)
+        self._Parallel.world.Allreduce(local_max, global_max, op=MPI.MAX)
 
         return global_max
 
@@ -61,7 +62,7 @@ class GhostArray(GhostArrayBase):
             local_min = np.array(np.amin(self.array[dof,:,:,:]),dtype=np.double)
 
         global_min = np.empty_like(local_min)
-        MPI.COMM_WORLD.Allreduce(local_min, global_min, op=MPI.MIN)
+        self._Parallel.world.Allreduce(local_min, global_min, op=MPI.MIN)
 
         return global_min
 
@@ -148,7 +149,7 @@ class GhostArray(GhostArrayBase):
         n = self._Grid.n
         local_sum /= (n[0] * n[1])
         mean = np.empty_like(local_sum)
-        MPI.COMM_WORLD.Allreduce(local_sum, mean, op=MPI.SUM)
+        self._Parallel.world.Allreduce(local_sum, mean, op=MPI.SUM)
 
         return mean
 
@@ -159,7 +160,7 @@ class GhostArray(GhostArrayBase):
             :],axis=(0,1))
 
         max = np.empty_like(local_max)
-        MPI.COMM_WORLD.Allreduce(local_max, max, op=MPI.MAX)
+        self._Parallel.world.Allreduce(local_max, max, op=MPI.MAX)
 
         return max
 
@@ -170,7 +171,7 @@ class GhostArray(GhostArrayBase):
             :],axis=(0,1))
 
         min = np.empty_like(local_min)
-        MPI.COMM_WORLD.Allreduce(local_min, min, op=MPI.MIN)
+        self._Parallel.world.Allreduce(local_min, min, op=MPI.MIN)
 
         return min
 

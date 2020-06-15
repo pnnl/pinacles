@@ -9,9 +9,8 @@ from Columbia.WRFUtil import to_wrf_order_halo, to_wrf_order_4d_halo, to_our_ord
 module_mp_fast_sbm = module_mp_fast_sbm_warm
 class MicroSBM(MicrophysicsBase):
 
-    def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController):
-        MicrophysicsBase.__init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
-
+    def __init__(self, Grid, Parallel, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController):
+        MicrophysicsBase.__init__(self, Grid, Parallel, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
 
         self._ScalarState.add_variable('qv')
         #TODO for now adding these as prognostic variables but probably unnecessary
@@ -232,7 +231,7 @@ class MicroSBM(MicrophysicsBase):
         #self.plot_wrf_vars(wrf_vars)
 
         #Call sbm!
-        MPI.COMM_WORLD.barrier()
+        self._Parallel.barrier()
         t0 = time.time()
         module_mp_fast_sbm.module_mp_fast_sbm.warm_sbm(wrf_vars['w'],
                                                       wrf_vars['u'],
@@ -284,7 +283,7 @@ class MicroSBM(MicrophysicsBase):
 
 
         t1 = time.time()
-        MPI.COMM_WORLD.barrier()
+        self._Parallel.barrier()
 
         #Now we need to map back to map back from WRF indexes to PINNACLE indexes
         to_our_order_4d(nhalo,wrf_vars['chem_new'],chem_new)

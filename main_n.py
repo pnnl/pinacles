@@ -10,9 +10,9 @@ import SimulationClass
 
 def main(namelist):
 
-    n = 4 
+    n = 10 
     gcm_res = 50*1e3
-    couple_dt = 600.0
+    couple_dt =600.0
     forced_fields = ['qv', 's']
     domains = []
     uls = 10.0
@@ -64,7 +64,7 @@ def main(namelist):
 
 
 
-    for couple_time in np.arange(couple_dt,10*86400+couple_dt, couple_dt):
+    for couple_time in np.arange(couple_dt,20*86400+couple_dt, couple_dt):
         for i in range(n):
             for v in forced_fields:
                 if not v == 'qv':

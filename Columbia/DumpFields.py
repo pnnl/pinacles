@@ -4,13 +4,14 @@ import os
 from mpi4py import MPI
 
 class DumpFields:
-    def __init__(self, namelist, Grid, TimeSteppingController):
+    def __init__(self, namelist, Grid, TimeSteppingController, Parallel):
 
 
         self._Grid = Grid
         self._TimeSteppingController = TimeSteppingController
+        self._Parallel = Parallel
 
-        self._this_rank = MPI.COMM_WORLD.Get_rank()
+        self._this_rank = self._Parallel.rank
         self._output_root = str(namelist['meta']['output_directory'])
         self._casename = str(namelist['meta']['casename'])
         self._output_path = self._output_path = os.path.join(self._output_root, self._casename)
@@ -33,12 +34,12 @@ class DumpFields:
     def update(self):
 
         output_here = os.path.join(self._output_path, str(self._TimeSteppingController.time))
-        MPI.COMM_WORLD.barrier()
+        self._Parallel.barrier()
         if self._this_rank == 0:
             if not os.path.exists(output_here):
                 os.makedirs(output_here)
 
-        MPI.COMM_WORLD.barrier()
+        self._Parallel.barrier()
         rt_grp = nc.Dataset(os.path.join(output_here, str(self._this_rank) + '.nc'), 'w', format="NETCDF4_CLASSIC")
 
         self.setup_nc_dims(rt_grp)

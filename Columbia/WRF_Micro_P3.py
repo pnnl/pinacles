@@ -9,9 +9,9 @@ import numba
 import numpy as np
 
 class MicroP3(MicrophysicsBase):
-    def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController):
+    def __init__(self, Grid, Parallel, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController):
 
-            MicrophysicsBase.__init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
+            MicrophysicsBase.__init__(self, Grid, Parallel, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
 
 
             lookup_file_dir = '/Users/pres026/ColumbiaDev/Columbia/Columbia/wrf_physics/data'
@@ -193,7 +193,7 @@ class MicroP3(MicrophysicsBase):
 
     def io_update(self, nc_grp):
 
-        my_rank = MPI.COMM_WORLD.Get_rank()
+        my_rank = self._Parallel.rank
 
         n_halo = self._Grid.n_halo
         dz = self._Grid.dx[2]
@@ -206,26 +206,26 @@ class MicroP3(MicrophysicsBase):
 
         #First compute liqud water path
         lwp = water_path(n_halo, dz, npts, rho, qc)
-        lwp = UtilitiesParallel.ScalarAllReduce(lwp)
+        lwp = UtilitiesParallel.ScalarAllReduce(self._Parallel.rank, lwp)
 
         rwp = water_path(n_halo, dz, npts, rho, qr)
-        rwp = UtilitiesParallel.ScalarAllReduce(rwp)
+        rwp = UtilitiesParallel.ScalarAllReduce(self._Parallel.rank, rwp)
 
         vwp = water_path(n_halo, dz, npts, rho, qv)
-        vwp = UtilitiesParallel.ScalarAllReduce(vwp)
+        vwp = UtilitiesParallel.ScalarAllReduce(self._Parallel.rank, vwp)
 
         #Compute cloud and rain fraction
         cf = water_fraction(n_halo, npts, qc, threshold=1e-5)
-        cf = UtilitiesParallel.ScalarAllReduce(cf)
+        cf = UtilitiesParallel.ScalarAllReduce(self._Parallel.rank, cf)
 
         rf = water_fraction(n_halo, npts, qr)
-        rf = UtilitiesParallel.ScalarAllReduce(rf)
+        rf = UtilitiesParallel.ScalarAllReduce(self._Parallel.rank, rf)
 
         rainnc = np.sum(self._RAINNC)/npts
-        rainnc = UtilitiesParallel.ScalarAllReduce(rainnc)
+        rainnc = UtilitiesParallel.ScalarAllReduce(self._Parallel.rank, rainnc)
         
         rainncv = np.sum(self._RAINNCV)/npts
-        rainncv = UtilitiesParallel.ScalarAllReduce(rainncv)
+        rainncv = UtilitiesParallel.ScalarAllReduce(self._Parallel.rank, rainncv)
 
         if my_rank == 0:
             timeseries_grp = nc_grp['timeseries']

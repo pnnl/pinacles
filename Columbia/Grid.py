@@ -4,7 +4,9 @@ import numpy as np
 from mpi4py_fft.pencil import Subcomm
 
 class GridBase:
-    def __init__(self, namelist):
+    def __init__(self, namelist, Parallel):
+
+        self._Parallel = Parallel
 
         #The total number of points in the domain NOT including halo/ghost points
         self._n = np.array(namelist['grid']['n'], dtype=np.int)
@@ -188,7 +190,7 @@ class GridBase:
         return mpi4py_fft.DistArray(self._n, self.subcomms)
 
     def _create_subcomms(self):
-        self.subcomms = Subcomm(MPI.COMM_WORLD, dims=[0,0,1])
+        self.subcomms = Subcomm(self._Parallel.world, dims=[0,0,1])
         return
 
     def _get_local_grid_indicies(self):
@@ -211,9 +213,9 @@ class GridBase:
         return
 
 class RegularCartesian(GridBase):
-    def __init__(self, namelist):
+    def __init__(self, namelist, Parallel):
 
-        GridBase.__init__(self, namelist)
+        GridBase.__init__(self, namelist, Parallel)
         self._compute_globalcoordiantes()
 
         return

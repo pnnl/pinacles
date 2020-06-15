@@ -3,10 +3,11 @@ import numpy as np
 from mpi4py import MPI
 
 class ModelState:
-    def __init__(self, Grid, container_name, prognostic=False, identical_bcs=False):
+    def __init__(self, Grid, Parallel, container_name, prognostic=False, identical_bcs=False):
 
         self._Grid = Grid          #The grid to use for this ModelState container
         self._prognostic = prognostic  #Is prognostic, if True we will allocate a tendency array
+        self._Parallel = Parallel
 
         self._state_array = None   #This will store present values of the model state
         self._tend_array = None    #If prognostic this will store the values of the tend array
@@ -75,12 +76,12 @@ class ModelState:
         #Todo add error handling here, for example check to see if memory is already allocated.
 
         #Allocate tendency array
-        self._state_array = ParallelArrays.GhostArray(self._Grid, ndof=self._nvars)
+        self._state_array = ParallelArrays.GhostArray(self._Grid, self._Parallel, ndof=self._nvars)
         self._state_array.zero()
 
         #Only allocate tendency array if this is a container for prognostic variables
         if self._prognostic:
-            self._tend_array = ParallelArrays.GhostArray(self._Grid, ndof=self._nvars)
+            self._tend_array = ParallelArrays.GhostArray(self._Grid, self._Parallel, ndof=self._nvars)
             self._tend_array.zero()
         return
 
@@ -209,7 +210,7 @@ class ModelState:
 
         recv_buf = np.empty_like(local_copy_of_global)
 
-        MPI.COMM_WORLD.Allreduce(local_copy_of_global, recv_buf, op=MPI.SUM)
+        self._Parallel.world.Allreduce(local_copy_of_global, recv_buf, op=MPI.SUM)
 
         return recv_buf
 
@@ -262,7 +263,7 @@ class ModelState:
 
     def io_update(self, nc_grp):
 
-        my_rank = MPI.COMM_WORLD.Get_rank()
+        my_rank = self._Parallel.rank
         nh = self._Grid.n_halo
 
         #Loop over variables and write  profiles
