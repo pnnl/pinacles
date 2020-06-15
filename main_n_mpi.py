@@ -4,7 +4,7 @@ import json
 import numpy as np
 import pylab as plt
 import netCDF4 as nc 
-
+import time 
 import SimulationClass
 
 
@@ -12,14 +12,14 @@ COMM_WORLD = MPI.COMM_WORLD
 
 def main(namelist):
 
-    n = 2
+    n =10 
     gcm_res = 50*1e3
     couple_dt =600.0
     forced_fields = ['qv', 's']
     # domain
     uls = 10.0
 
-
+    
 
     #Check to make sure that we have 1 mpi rank for each CRM column
     size = COMM_WORLD.Get_size() 
@@ -33,7 +33,7 @@ def main(namelist):
     #Initialize on domain on each rank
     for i in range(n):
         if i == rank:
-            namelist["meta"]["output_directory"] = './couple_' + str(i)
+            namelist["meta"]["output_directory"] = '/global/cscratch1/sd/kylepres/MetaModel/u10c10/couple_' + str(i)
             domain = SimulationClass.Simulation(namelist, i, LOCAL_COMM)
             domain.initialize()
 
@@ -85,8 +85,8 @@ def main(namelist):
         ls_forcing.append({})
 
 
-
     for couple_time in np.arange(couple_dt,20*86400+couple_dt, couple_dt):
+        t0 = time.time() 
         crm_state_local = {}
         for v in forced_fields + ['qc' , 'qr']:
             crm_state_local[v] = domain.ScalarState.mean(v)
@@ -138,9 +138,9 @@ def main(namelist):
                     this_grp[v + '_ls_forcing'][-1,:] = ls_forcing[i][v][nh[2]:-nh[2]]
                     this_grp[v + '_ls_state'][-1,:] = gcm_state_global[i][v][nh[2]:-nh[2]]
             rt_grp.close()
-
+        t1 = time.time() 
         if rank == 0: 
-            print('Time: ', str(couple_time))
+            print('Time: ' +  str(couple_time) + ' walltime ' + str(t1 - t0))
 
     return
 
