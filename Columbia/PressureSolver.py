@@ -2,7 +2,8 @@ import numpy as np
 from Columbia.PressureSolver_impl import divergence, fill_pressure, apply_pressure
 from Columbia.TDMA import Thomas, PressureTDMA
 import mpi4py_fft as fft
-from mpi4py import MPI
+import time 
+from mpi4py import MPI 
 
 class PressureSolver:
     def __init__(self, Grid, Ref, VelocityState, DiagnosticState):
@@ -44,8 +45,9 @@ class PressureSolver:
         return
 
     def update(self):
-
+        #print('rank ', MPI.COMM_WORLD.rank, ' k')
         self._VelocityState.remove_mean('w')
+
 
         #First get views in to the velocity components
         u = self._VelocityState.get_field('u')
@@ -59,15 +61,16 @@ class PressureSolver:
 
         dxs = self._Grid.dx
         n_halo = self._Grid.n_halo
-
+        t0 = time.time() 
         div = fft.DistArray(self._Grid.n, self._Grid.subcomms, dtype=np.complex)
-
+        t1 = time.time() 
         #First compute divergence of wind field
         divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
 
         div_0 = div.redistribute(0)
 
         div_hat =  fft.newDistArray(self._fft, forward_output=True)
+
         self._fft.forward(div_0, div_hat)
 
         div_hat_2 = div_hat.redistribute(2)
@@ -86,7 +89,11 @@ class PressureSolver:
 
         div_hat = div_hat_2.redistribute(1)
 
+
+   
         self._fft.backward(div_hat, div_0)
+
+        #print('rank ', MPI.COMM_WORLD.rank, t1 - t0)
 
         div = div_0.redistribute(2)
 

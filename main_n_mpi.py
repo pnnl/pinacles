@@ -12,7 +12,7 @@ COMM_WORLD = MPI.COMM_WORLD
 
 def main(namelist):
 
-    n =10 
+    n = 1
     gcm_res = 50*1e3
     couple_dt =600.0
     forced_fields = ['qv', 's']
@@ -30,10 +30,11 @@ def main(namelist):
 
     LOCAL_COMM = COMM_WORLD.Split(rank)
 
+
     #Initialize on domain on each rank
     for i in range(n):
         if i == rank:
-            namelist["meta"]["output_directory"] = '/global/cscratch1/sd/kylepres/MetaModel/u10c10/couple_' + str(i)
+            namelist["meta"]["output_directory"] = './couple_' + str(i)
             domain = SimulationClass.Simulation(namelist, i, LOCAL_COMM)
             domain.initialize()
 
@@ -101,8 +102,9 @@ def main(namelist):
                 else:
                     ls_forcing[i][v] = (gcm_state_global[i][v] - crm_state_global[i][v] 
                         - crm_state_global[i]['qc'] - crm_state_global[i]['qr'] )/couple_dt
-            
+        t1_crm = time.time()     
         domain.update(couple_time, ls_forcing[rank])
+        t2_crm = time.time() 
         
         for i in range(n):
             for v in forced_fields + ['qc' , 'qr']:
@@ -140,7 +142,7 @@ def main(namelist):
             rt_grp.close()
         t1 = time.time() 
         if rank == 0: 
-            print('Time: ' +  str(couple_time) + ' walltime ' + str(t1 - t0))
+            print('Time: ' +  str(couple_time) + ' walltime ' + str(t1 - t0), 'crm time ',  t2_crm - t1_crm)
 
     return
 

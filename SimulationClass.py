@@ -120,6 +120,7 @@ class Simulation:
         self.PSolver.update()
 
     def update(self, timestop, ls_forcing):
+        psum = 0
         while self.TimeSteppingController.time < timestop:
             for n in range(self.ScalarTimeStepping.n_rk_step):
                 self.TimeSteppingController.adjust_timestep(n)
@@ -130,7 +131,7 @@ class Simulation:
                 #Do StatsIO if it is time
                 if n == 0:
                     self.StatsIO.update()
-                    MPI.COMM_WORLD.barrier()
+                    #self._Parallel self._Parallel 
 
                 #Update microphysics
                 #self.Micro.update()
@@ -170,7 +171,11 @@ class Simulation:
                 self.VelocityState.update_all_bcs()
 
                 #Call pressure solver
+                t0 = time.time()
                 self.PSolver.update()
+                t1 = time.time() 
+                #print(self._domain_number, t1-t0)
+                psum += t1 - t0
                 if n== 1: 
                     self.Thermo.update(apply_buoyancy=False)
                     #We call the microphysics update at the end of the RK steps.
@@ -178,6 +183,7 @@ class Simulation:
                     self.ScalarState.boundary_exchange()
                     self.ScalarState.update_all_bcs()
 
+        print(psum) 
         return
 
 
