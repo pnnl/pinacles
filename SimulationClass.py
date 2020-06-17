@@ -119,14 +119,22 @@ class Simulation:
         self.VelocityState.update_all_bcs()
         self.PSolver.update()
 
+
     def update(self, timestop, ls_forcing):
-        psum = 0
+        timing = {}
+
+        for key in ['micro','pressure','bc', 'time_int', 'MMF', 'Rayleigh', 'Diff', 'Adv', 'SGS', 'Forcing', 'surf', 'Thermo']:
+            timing[key] = 0.0
+
         while self.TimeSteppingController.time < timestop:
             for n in range(self.ScalarTimeStepping.n_rk_step):
                 self.TimeSteppingController.adjust_timestep(n)
 
+                t0 = time.time() 
                 #Update Thermodynamics
                 self.Thermo.update()
+                t1 = time.time()
+                timing['Thermo'] += t1 - t0
 
                 #Do StatsIO if it is time
                 if n == 0:
@@ -137,53 +145,80 @@ class Simulation:
                 #self.Micro.update()
 
                 #Update the surface
+                t0 = time.time() 
                 self.Surf.update()
+                t1 = time.time()
+                timing['surf'] += t1 - t0
 
                 #Update the forcing
+                t0 = time.time() 
                 self.Force.update()
+                t1 = time.time()
+                timing['Forcing'] += t1 - t0
 
                 #Update Kinematics
+                t0 = time.time() 
                 self.Kine.update()
                 self.SGS.update()
+                t1 = time.time()
+                timing['SGS'] += t1 - t0
 
                 #Update scalar advection
+                t0 = time.time() 
                 self.ScalarAdv.update()
                 self.MomAdv.update()
+                t1 = time.time()
+                timing['Adv'] += t1 - t0
 
+                t0 = time.time() 
                 self.ScalarDiff.update()
                 self.MomDiff.update()
+                t1 = time.time() 
+                timing['Diff'] += t1 - t0
 
                 #Do Damping
+                t0 = time.time() 
                 self.RayleighDamping.update()
+                t1 = time.time() 
+                timing['Rayleigh'] += t1 - t0
 
+                t0 = time.time()
                 #Apply large scale forcing
                 for v in ls_forcing:
                     self.ScalarState.get_tend(v)[:,:,:] += ls_forcing[v][np.newaxis,np.newaxis,:] 
+                t1 = time.time()
+                timing['MMF'] += t1 - t0
 
                 #Do time stepping
+                t0 = time.time() 
                 self.ScalarTimeStepping.update()
                 self.VelocityTimeStepping.update()
+                t1 = time.time() 
+                timing['time_int'] += t1 - t0
 
                 #Update boundary conditions
+                
                 self.ScalarState.boundary_exchange()
                 self.VelocityState.boundary_exchange()
                 self.ScalarState.update_all_bcs()
                 self.VelocityState.update_all_bcs()
+                timing['bc'] += t1 - t0
 
                 #Call pressure solver
                 t0 = time.time()
                 self.PSolver.update()
-                t1 = time.time() 
-                #print(self._domain_number, t1-t0)
-                psum += t1 - t0
+                t1 = time.time()
+                timing['pressure'] += t1 - t0
+                
+                t0 = time.time()
                 if n== 1: 
                     self.Thermo.update(apply_buoyancy=False)
                     #We call the microphysics update at the end of the RK steps.
                     self.Micro.update()
                     self.ScalarState.boundary_exchange()
                     self.ScalarState.update_all_bcs()
-
-        print(psum) 
+                t1 = time.time()
+                timing['micro'] += t1 - t0
+        print(timing)
         return
-
 

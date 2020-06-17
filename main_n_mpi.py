@@ -12,7 +12,7 @@ COMM_WORLD = MPI.COMM_WORLD
 
 def main(namelist):
 
-    n = 1
+    n = 4
     gcm_res = 50*1e3
     couple_dt =600.0
     forced_fields = ['qv', 's']
@@ -27,11 +27,13 @@ def main(namelist):
     if not size == n: 
         import sys; sys.exit()
 
-
     LOCAL_COMM = COMM_WORLD.Split(rank)
+    #print('World', size, rank, 'Local', LOCAL_COMM.Get_size(), LOCAL_COMM.Get_rank())
+    #import sys; sys.exit()
 
 
-    #Initialize on domain on each rank
+
+    #Initialize one domain on each rank
     for i in range(n):
         if i == rank:
             namelist["meta"]["output_directory"] = './couple_' + str(i)
@@ -102,10 +104,14 @@ def main(namelist):
                 else:
                     ls_forcing[i][v] = (gcm_state_global[i][v] - crm_state_global[i][v] 
                         - crm_state_global[i]['qc'] - crm_state_global[i]['qr'] )/couple_dt
+        
+        
+        MPI.COMM_WORLD.barrier()
         t1_crm = time.time()     
         domain.update(couple_time, ls_forcing[rank])
         t2_crm = time.time() 
-        
+        print(t2_crm - t1_crm)
+        MPI.COMM_WORLD.barrier()
         for i in range(n):
             for v in forced_fields + ['qc' , 'qr']:
                 crm_state_local[v] = domain.ScalarState.mean(v)

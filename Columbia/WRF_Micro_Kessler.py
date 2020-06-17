@@ -7,6 +7,8 @@ from mpi4py import MPI
 import numpy as np
 import numba
 
+import time 
+
 @numba.njit
 def compute_qvs(temp, pressure):
     ep2 = 287./461.6
