@@ -12,7 +12,7 @@ class DumpFields:
 
         self._this_rank = MPI.COMM_WORLD.Get_rank()
         self._output_root = str(namelist['meta']['output_directory'])
-        self._casename = str(namelist['meta']['casename'])
+        self._casename = str(namelist['meta']['simname'])
         self._output_path = self._output_path = os.path.join(self._output_root, self._casename)
         self._output_path = os.path.join(self._output_path, 'fields')
 
@@ -32,7 +32,7 @@ class DumpFields:
 
     def update(self):
 
-        output_here = os.path.join(self._output_path, str(self._TimeSteppingController.time))
+        output_here = os.path.join(self._output_path, str(np.round(self._TimeSteppingController.time + self._TimeSteppingController._dt)))
         MPI.COMM_WORLD.barrier()
         if self._this_rank == 0:
             if not os.path.exists(output_here):
