@@ -112,6 +112,14 @@ def sullivan_and_patton():
     input_dict[key]['depth'] = 250.0
     input_dict[key]['timescale'] = 50.0
 
+    key = 'sgs'
+    input_dict[key] = {}
+    input_dict[key]['model'] = 'smagorinsky'
+
+    key = 'Thermodynamics'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'dry'
+
     key = 'microphysics'
     input_dict[key] = {} 
     input_dict[key]['scheme'] = 'base'

@@ -21,5 +21,14 @@ class ThermodynamicsBase:
 from Columbia import ThermodynamicsDry
 from Columbia import ThermodynamicsMoist
 def factory(namelist, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro):
-    return ThermodynamicsMoist.ThermodynamicsMoist(Grid, Ref, ScalarState, VelocityState,
+    try:
+        thermo_type = namelist['Thermodynamics']['type']
+    except:
+        thermo_type = 'moist'
+
+    if thermo_type == 'moist':
+        return ThermodynamicsMoist.ThermodynamicsMoist(Grid, Ref, ScalarState, VelocityState,
                                                 DiagnosticState, Micro)
+    else:
+        return ThermodynamicsDry.ThermodynamicsDry(Grid, Ref, ScalarState, VelocityState,
+                                                DiagnosticState)
