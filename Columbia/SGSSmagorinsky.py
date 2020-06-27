@@ -21,7 +21,7 @@ def compute_visc(dx, strain_rate_mag, bvf, cs, pr, eddy_viscosity, eddy_diffusiv
 
                 eddy_viscosity[i,j,k] = min( (cs * filt_scale_squared) **2.0  * fb  * strain_rate_mag[i,j,k], 100.0)
 
-                eddy_diffusivity[i,j,k] = eddy_viscosity[i,j,k] * pri
+                eddy_diffusivity[i,j,k] = eddy_viscosity[i,j,k] * pri 
 
 
     return
