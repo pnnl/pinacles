@@ -13,14 +13,9 @@ class Stats:
 
         self._frequency = namelist['stats']['frequency']
         self._ouput_root = str(namelist['meta']['output_directory'])
-        self._casename = str(namelist['meta']['casename'])
+        self._casename = str(namelist['meta']['simname'])
 
         self._classes = {}
-
-        try:
-            self._customname = str(namelist['meta']['customname'])
-        except:
-            self._customname = self._casename
 
         self._output_path = os.path.join(self._ouput_root, self._casename)
         self._stats_file = os.path.join(self._output_path, 'stats.nc')

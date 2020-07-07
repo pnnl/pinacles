@@ -31,6 +31,7 @@ def stable_bubble():
     key = 'meta'
     input_dict[key] = {}
     input_dict[key]['casename'] = 'stable_bubble'
+    input_dict[key]['simname'] = input_dict[key]['casename']
     input_dict[key]['output_directory'] = './'
 
     key = 'grid'
@@ -68,6 +69,7 @@ def colliding_blocks():
     key = 'meta'
     input_dict[key] = {}
     input_dict[key]['casename'] = 'colliding_blocks'
+    input_dict[key]['simname'] = input_dict[key]['casename']
 
     key = 'grid'
     input_dict[key] = {}
@@ -92,6 +94,7 @@ def sullivan_and_patton():
     key = 'meta'
     input_dict[key] = {}
     input_dict[key]['casename'] = 'sullivan_and_patton'
+    input_dict[key]['simname'] = input_dict[key]['casename']
     input_dict[key]['output_directory'] = './'
 
     key = 'grid'
@@ -108,6 +111,14 @@ def sullivan_and_patton():
     input_dict[key]['vars'] = ['u', 'v', 'w', 's']
     input_dict[key]['depth'] = 250.0
     input_dict[key]['timescale'] = 50.0
+
+    key = 'sgs'
+    input_dict[key] = {}
+    input_dict[key]['model'] = 'smagorinsky'
+
+    key = 'Thermodynamics'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'dry'
 
     key = 'microphysics'
     input_dict[key] = {} 
@@ -132,6 +143,7 @@ def bomex():
     key = 'meta'
     input_dict[key] = {}
     input_dict[key]['casename'] = 'bomex'
+    input_dict[key]['simname'] = input_dict[key]['casename']
     input_dict[key]['output_directory'] = './'
 
     key = 'grid'
@@ -175,6 +187,7 @@ def rico():
     key = 'meta'
     input_dict[key] = {}
     input_dict[key]['casename'] = 'rico'
+    input_dict[key]['simname'] = input_dict[key]['casename']
     input_dict[key]['output_directory'] = './'
 
     key = 'grid'
