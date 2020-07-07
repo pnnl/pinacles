@@ -3,6 +3,7 @@ import json
 import argparse
 from Columbia import Initializaiton
 from Columbia import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
+from Columbia import ScalarAdvectionFactory
 from Columbia import ScalarAdvection, TimeStepping, ReferenceState
 from Columbia import ScalarDiffusion, MomentumDiffusion
 from Columbia import MomentumAdvection
@@ -62,7 +63,7 @@ def main(namelist):
     # In the future the microphyics should be initialized here
 
     #Setup the scalar advection calss
-    ScalarAdv = ScalarAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, ScalarTimeStepping)
+    ScalarAdv = ScalarAdvectionFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, ScalarTimeStepping)
     MomAdv = MomentumAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
     ScalarDiff = ScalarDiffusion.ScalarDiffusion(namelist, ModelGrid, Ref, DiagnosticState, ScalarState)
@@ -199,8 +200,8 @@ def main(namelist):
         if MPI.COMM_WORLD.Get_rank() == 0:
 
             print(t1 -t0)
-        #s_slice = DiagnosticState.get_field_slice_z('T', indx=16)
-        s_slice = VelocityState.get_field_slice_z('w', indx=5)
+        s_slice = DiagnosticState.get_field_slice_z('T', indx=12)
+        #s_slice = VelocityState.get_field_slice_z('w', indx=5)
         # b = DiagnosticState.get_field('T')
         # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         xl = ModelGrid.x_local
@@ -212,10 +213,10 @@ def main(namelist):
                  plt.figure(12)
         #     #evels = np.linspace(299, 27.1, 100)
                  #levels = np.linspace(-4,4, 100)
-                 levels = np.linspace(-5, 5,100)
+                 #levels = np.linspace(-5, 5,100)
                  #plt.contourf(s_slice,cmap=plt.cm.seismic, levels=levels) #,levels=levels, cmap=plt.cm.seismic)
                  #plt.contourf((s[3:-3,16,3:-3]) .T ,100,cmap=plt.cm.seismic) 
-                 plt.contourf(s_slice, levels=levels,cmap=plt.cm.seismic) 
+                 plt.contourf(s_slice, 100) 
         #     #plt.contourf(w[:,:,16], levels=levels, cmap=plt.cm.seismic)
                  #plt.clim(-4,5)
                  #plt.colorbar()

@@ -2,9 +2,6 @@ import numba
 import numpy as np
 from Columbia.interpolation_impl import interp_weno5
 
-def factory(namelist, Grid, Ref, ScalarState, VelocityState, TimeStepping):
-
-    return ScalarWENO5(Grid, Ref, ScalarState, VelocityState, TimeStepping)
 
 class ScalarAdvectionBase:
 
