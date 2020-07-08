@@ -159,7 +159,10 @@ def main(namelist):
             SGS.update()
 
             #Update scalar advection
+            t0 = time.time()
             ScalarAdv.update()
+            t1 = time.time()
+            print(t1 - t0)
             MomAdv.update()
 
 
@@ -197,13 +200,13 @@ def main(namelist):
         if MPI.COMM_WORLD.Get_rank() == 0:
 
             print(t1 -t0)
-        s_slice = DiagnosticState.get_field_slice_z('T', indx=12)
+        s_slice = DiagnosticState.get_field_slice_z('T', indx=5)
         #s_slice = VelocityState.get_field_slice_z('w', indx=5)
         # b = DiagnosticState.get_field('T')
         # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         xl = ModelGrid.x_local
         zl = ModelGrid.z_local
-        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%60.0,0.0):
+        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%10.0,0.0):
             FieldsIO.update()
             if MPI.COMM_WORLD.Get_rank() == 0:
         #     #print('step: ', i, ' time: ', t1 - t0)
