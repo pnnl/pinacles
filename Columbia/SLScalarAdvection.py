@@ -131,7 +131,7 @@ def compute_SL_tend(phi, phi_t, dt, coeff_tensor):
 
 
 @numba.njit()
-def compute_SL_tend_bounded(phi, phi_t, dt, coeff_tensor1, coeff_tensor2):
+def compute_SL_tend_bounded(phi, phi_t, dt,  coeff_tensor1, coeff_tensor2, gamma=0.5,):
     shape = phi.shape
 
     for i in range(1,shape[0]-1):
@@ -140,10 +140,9 @@ def compute_SL_tend_bounded(phi, phi_t, dt, coeff_tensor1, coeff_tensor2):
                 phi_old = phi[i,j,k]
                 phi_new = 0.0
 
-                phi_max = -1e9
-                phi_min = 1e9
+                #phi_max = -1e9
+                #phi_min = 1e9
 
-                gamma = 0.8
                 #print(np.sum(coeff_tensor[i,j,k,:]),np.sum(coeff_tensor2[i,j,k,:]))
                 for p in range(3):
                     for r in range(3):
@@ -151,18 +150,16 @@ def compute_SL_tend_bounded(phi, phi_t, dt, coeff_tensor1, coeff_tensor2):
 
                             phi_new += ((1.0 - gamma)*coeff_tensor1[i,j,k,p,r,s]  +  gamma * coeff_tensor2[i,j,k,p,r,s])*phi[i+p-1,j+r-1,k+s-1]
 
-                            phi_max = max(phi_max, phi[i+p-1,j+r-1,k+s-1])
-                            phi_min = min(phi_min, phi[i+p-1,j+r-1,k+s-1])
+                            #phi_max = max(phi_max, phi[i+p-1,j+r-1,k+s-1])
+                            #phi_min = min(phi_min, phi[i+p-1,j+r-1,k+s-1])
 
-                if phi_new > phi_max or phi_new < phi_min:
-                    phi_new = 0
-                    for p in range(3):
-                        for r in range(3):
-                            for s in range(3):
-                                phi_new += coeff_tensor1[i,j,k,p,r,s]*phi[i+p-1,j+r-1,k+s-1]
+                #if phi_new > phi_max or phi_new < phi_min:
+                #    phi_new = 0
+                #    for p in range(3):
+                #        for r in range(3):
+                #            for s in range(3):
+                #                phi_new += coeff_tensor1[i,j,k,p,r,s]*phi[i+p-1,j+r-1,k+s-1]
 
-
-                #phi_new *= 1.0/3.0
                 phi_t[i,j,k] += (phi_new-phi_old)/dt
 
 
@@ -189,21 +186,13 @@ class CTU(ScalarAdvection.ScalarAdvectionBase):
         dt = self._TimeStepping.dt
         dxi = self._Grid.dxi
 
-
-        #compute_coeff_tensor_biquad(u,dxi[0], dt, self._coeff_tensor2, 0,  0)
-        #compute_coeff_tensor_biquad(v,dxi[1], dt, self._coeff_tensor2, 1, 3)
         compute_coeff_tensor_biquad(u,v,w,dxi, dt, self._coeff_tensor2)
 
         compute_coeff_tensor(u,v,w,dxi, dt, self._coeff_tensor1)
-        #compute_coeff_tensor(v,dxi[1], dt, self._coeff_tensor1, 1, 3)
-        #compute_coeff_tensor(w,dxi[2], dt, self._coeff_tensor1, 2, 6)
-
-
 
         #Now iterate over the scalar variables
         for var in self._ScalarState.names:
-            #Get a scalar field (No copy done here)
-            #if var in ['qc', 'qr']:
+
             phi = self._ScalarState.get_field(var)
             phi_t = self._ScalarState.get_tend(var)
 
