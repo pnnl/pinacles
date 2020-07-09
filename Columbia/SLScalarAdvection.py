@@ -131,7 +131,7 @@ def compute_SL_tend(phi, phi_t, dt, coeff_tensor):
 
 
 @numba.njit()
-def compute_SL_tend_bounded(phi, phi_t, dt,  coeff_tensor1, coeff_tensor2, gamma=0.5,):
+def compute_SL_tend_bounded(phi, phi_t, dt, coeff_tensor1, coeff_tensor2, gamma=0.5):
     shape = phi.shape
 
     for i in range(1,shape[0]-1):
@@ -140,8 +140,8 @@ def compute_SL_tend_bounded(phi, phi_t, dt,  coeff_tensor1, coeff_tensor2, gamma
                 phi_old = phi[i,j,k]
                 phi_new = 0.0
 
-                #phi_max = -1e9
-                #phi_min = 1e9
+                phi_max = -1e9
+                phi_min = 1e9
 
                 #print(np.sum(coeff_tensor[i,j,k,:]),np.sum(coeff_tensor2[i,j,k,:]))
                 for p in range(3):
@@ -150,16 +150,15 @@ def compute_SL_tend_bounded(phi, phi_t, dt,  coeff_tensor1, coeff_tensor2, gamma
 
                             phi_new += ((1.0 - gamma)*coeff_tensor1[i,j,k,p,r,s]  +  gamma * coeff_tensor2[i,j,k,p,r,s])*phi[i+p-1,j+r-1,k+s-1]
 
-                            #phi_max = max(phi_max, phi[i+p-1,j+r-1,k+s-1])
-                            #phi_min = min(phi_min, phi[i+p-1,j+r-1,k+s-1])
+                            phi_max = max(phi_max, phi[i+p-1,j+r-1,k+s-1])
+                            phi_min = min(phi_min, phi[i+p-1,j+r-1,k+s-1])
 
-                #if phi_new > phi_max or phi_new < phi_min:
-                #    phi_new = 0
-                #    for p in range(3):
-                #        for r in range(3):
-                #            for s in range(3):
-                #                phi_new += coeff_tensor1[i,j,k,p,r,s]*phi[i+p-1,j+r-1,k+s-1]
-
+                if phi_new > phi_max or phi_new < phi_min:
+                    phi_new = 0
+                    for p in range(3):
+                        for r in range(3):
+                            for s in range(3):
+                                phi_new += coeff_tensor1[i,j,k,p,r,s]*phi[i+p-1,j+r-1,k+s-1]
                 phi_t[i,j,k] += (phi_new-phi_old)/dt
 
 

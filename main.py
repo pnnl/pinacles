@@ -206,25 +206,26 @@ def main(namelist):
         # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         xl = ModelGrid.x_local
         zl = ModelGrid.z_local
-        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%10.0,0.0):
+        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%60.0,0.0):
             FieldsIO.update()
             if MPI.COMM_WORLD.Get_rank() == 0:
+                pass 
         #     #print('step: ', i, ' time: ', t1 - t0)
-                 plt.figure(12)
+        #         plt.figure(12)
         #     #evels = np.linspace(299, 27.1, 100)
                  #levels = np.linspace(-4,4, 100)
                  #levels = np.linspace(-5, 5,100)
                  #plt.contourf(s_slice,cmap=plt.cm.seismic, levels=levels) #,levels=levels, cmap=plt.cm.seismic)
                  #plt.contourf((s[3:-3,16,3:-3]) .T ,100,cmap=plt.cm.seismic) 
-                 plt.contourf(s_slice, 100) 
+        #         plt.contourf(s_slice, 100) 
         #     #plt.contourf(w[:,:,16], levels=levels, cmap=plt.cm.seismic)
                  #plt.clim(-4,5)
                  #plt.colorbar()
                 # plt.ylim(0.0*1000,4.0*1000)
                 # plt.xlim(25.6*1000,40.0*1000)
-                 plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=300)
+        #         plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=300)
         #         times.append(t1 - t0)
-                 plt.close()
+        #         plt.close()
         #         print('Scalar Integral ', np.sum(s_slice))
         #         print('S-min max', np.amin(w), np.amax(w))
 
