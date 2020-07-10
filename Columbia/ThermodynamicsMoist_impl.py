@@ -1,27 +1,27 @@
 import numba
 from Columbia import parameters
 
-@numba.njit()
+@numba.njit(fastmath=True)
 def s(z, T, ql, qi):
     return T + (parameters.G*z - parameters.LV*ql - parameters.LS*qi)*parameters.ICPD
 
-@numba.njit()
+@numba.njit(fastmath=True)
 def T(z, s, ql, qi):
     return s + (parameters.LV*ql + parameters.LS*qi - parameters.G*z)*parameters.ICPD
 
-@numba.njit()
+@numba.njit(fastmath=True)
 def rho(P, T):
     return P/(parameters.RD*T)
 
-@numba.njit()
+@numba.njit(fastmath=True)
 def alpha(P,T):
     return 1.0/rho(P,T)
 
-@numba.njit()
+@numba.njit(fastmath=True)
 def buoyancy(alpha0,alpha):
     return parameters.G * (alpha - alpha0)/alpha0
 
-@numba.njit()
+@numba.njit(fastmath=True)
 def compute_bvf(theta_ref, exner, T, qv, ql, dz, thetav, bvf):
 
     shape = bvf.shape
@@ -38,7 +38,7 @@ def compute_bvf(theta_ref, exner, T, qv, ql, dz, thetav, bvf):
 
     return
 
-@numba.njit()
+@numba.njit(fastmath=True)
 def eos(z_in, P_in, alpha0, s_in, ql_in, qi_in, T_out, alpha_out, buoyancy_out):
     shape = s_in.shape
     for i in range(shape[0]):
@@ -49,7 +49,7 @@ def eos(z_in, P_in, alpha0, s_in, ql_in, qi_in, T_out, alpha_out, buoyancy_out):
                  buoyancy_out[i,j,k] = buoyancy(alpha0[k], alpha_out[i,j,k])
     return
 
-@numba.njit()
+@numba.njit(fastmath=True)
 def eos_sam(z_in, P_in, alpha0, s_in, qv_in, ql_in, qi_in, T_out, tref, alpha_out, buoyancy_out):
     shape = s_in.shape
     for i in range(shape[0]):
@@ -62,7 +62,7 @@ def eos_sam(z_in, P_in, alpha0, s_in, qv_in, ql_in, qi_in, T_out, tref, alpha_ou
 
     return
 
-@numba.njit()
+@numba.njit(fastmath=True)
 def apply_buoyancy(buoyancy, w_t):
     shape = w_t.shape
     for i in range(shape[0]):

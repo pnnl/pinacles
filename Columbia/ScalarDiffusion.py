@@ -1,7 +1,7 @@
 import numpy as np
 import numba
 
-@numba.njit()
+@numba.njit(fastmath=True)
 def compute_fluxes(dxi, rho0, rho0_edge, phi, eddy_diffusivity, fluxx, fluxy, fluxz, phi_t):
 
     shape = phi.shape

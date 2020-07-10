@@ -3,7 +3,7 @@ import numpy as np
 import numba
 
 
-@numba.njit()
+@numba.njit(fastmath=True)
 def compute_visc(dx, strain_rate_mag, bvf, cs, pr, eddy_viscosity, eddy_diffusivity):
 
 

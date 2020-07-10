@@ -132,7 +132,7 @@ def w_advection_2nd(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
     return
 
 
-@numba.njit
+@numba.njit(fastmath=True)
 def u_advection_weno5(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz):
     shape = u.shape
     for i in range(2,shape[0]-3):
@@ -199,7 +199,7 @@ def u_advection_weno5(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz):
 
     return
 
-@numba.njit
+@numba.njit(fastmath=True)
 def v_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
     shape = v.shape
     for i in range(2,shape[0]-3):
@@ -262,7 +262,7 @@ def v_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
                                                      v[i,j,k-1]) * rho0_edge[k]
     return
 
-@numba.njit
+@numba.njit(fastmath=True)
 def w_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
     shape = w.shape
     for i in range(2,shape[0]-3):

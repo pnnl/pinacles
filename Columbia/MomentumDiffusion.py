@@ -2,7 +2,7 @@ import numpy as np
 import numba
 
 
-@numba.njit()
+@numba.njit(fastmath=True)
 def compute_u_fluxes(dxi, rho0, rho0_edge, eddy_viscosity,
     dudx, dudy, dudz,
     dvdx, dwdx,
@@ -34,7 +34,7 @@ def compute_u_fluxes(dxi, rho0, rho0_edge, eddy_viscosity,
     return
 
 
-@numba.njit()
+@numba.njit(fastmath=True)
 def compute_v_fluxes(dxi, rho0, rho0_edge, eddy_viscosity,
     dvdx, dvdy, dvdz,
     dudy, dwdy,
@@ -65,7 +65,7 @@ def compute_v_fluxes(dxi, rho0, rho0_edge, eddy_viscosity,
 
     return
 
-@numba.njit()
+@numba.njit(fastmath=True)
 def compute_w_fluxes(dxi, rho0, rho0_edge, eddy_viscosity,
     dwdx, dwdy, dwdz,
     dudz, dvdz,
