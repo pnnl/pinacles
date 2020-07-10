@@ -159,12 +159,8 @@ def main(namelist):
             SGS.update()
 
             #Update scalar advection
-            t0 = time.time()
             ScalarAdv.update()
-            t1 = time.time()
-            print(t1 - t0)
             MomAdv.update()
-
 
             ScalarDiff.update()
             MomDiff.update()
