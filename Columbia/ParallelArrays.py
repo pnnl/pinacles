@@ -54,9 +54,9 @@ class GhostArray(GhostArrayBase):
 
     def min(self, dof=0, profile=False, halo=False):
         if not halo:
-            local_min = np.array(np.amin(self.array[self._n_halo[0]:-self._n_halo[0],
+            local_min = np.array(np.amin(self.array[dof,self._n_halo[0]:-self._n_halo[0],
                                                 self._n_halo[1]:-self._n_halo[1],
-                                                self._n_halo[2]:-self._n_halo[2],dof]),dtype=np.double)
+                                                self._n_halo[2]:-self._n_halo[2]]),dtype=np.double)
         if halo:
             local_min = np.array(np.amin(self.array[dof,:,:,:]),dtype=np.double)
 

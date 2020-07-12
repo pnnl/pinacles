@@ -1,4 +1,4 @@
-from Columbia.Microphysics import MicrophysicsBase, water_path, water_fraction
+from Columbia.Microphysics import MicrophysicsBase, water_path, water_fraction, water_fraction_profile
 from Columbia.wrf_physics import kessler
 from Columbia.wrf_physics import p3
 from Columbia import UtilitiesParallel
@@ -178,7 +178,7 @@ class MicroP3(MicrophysicsBase):
 
     def io_initialize(self, nc_grp):
         timeseries_grp = nc_grp['timeseries']
-
+        profiles_grp = nc_grp['profiles']
 
         timeseries_grp.createVariable('CF', np.double, dimensions=('time',))
         timeseries_grp.createVariable('RF', np.double, dimensions=('time',))
@@ -188,6 +188,10 @@ class MicroP3(MicrophysicsBase):
 
         timeseries_grp.createVariable('RAINNC', np.double, dimensions=('time',))
         timeseries_grp.createVariable('RAINNCV', np.double, dimensions=('time',))
+
+        #Now add cloud fraction and rain fraction profiles
+        profiles_grp.createVariable('CF', np.double, dimensions=('time', 'z',))
+        profiles_grp.createVariable('RF', np.double, dimensions=('time', 'z',))
 
         return
 
@@ -218,12 +222,18 @@ class MicroP3(MicrophysicsBase):
         cf = water_fraction(n_halo, npts, qc, threshold=1e-5)
         cf = UtilitiesParallel.ScalarAllReduce(cf)
 
+        cf_prof = water_fraction_profile(n_halo, npts, qc, threshold=1e-5)
+        cf_prof = UtilitiesParallel.ScalarAllReduce(cf_prof)
+
         rf = water_fraction(n_halo, npts, qr)
         rf = UtilitiesParallel.ScalarAllReduce(rf)
 
         rainnc = np.sum(self._RAINNC)/npts
         rainnc = UtilitiesParallel.ScalarAllReduce(rainnc)
-        
+
+        rf_prof = water_fraction_profile(n_halo, npts, qr, threshold=1e-5)
+        rf_prof = UtilitiesParallel.ScalarAllReduce(rf_prof)
+
         rainncv = np.sum(self._RAINNCV)/npts
         rainncv = UtilitiesParallel.ScalarAllReduce(rainncv)
 
