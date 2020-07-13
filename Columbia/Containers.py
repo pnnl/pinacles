@@ -291,11 +291,12 @@ class ModelState:
         #Loop over variables and time series
         for var in self._dofs:
             var_max = self.max(var)
-            #var_min = self.min(var)
+            var_min = self.min(var)
 
             #Only write from rank zero
             if my_rank == 0:
                 timeseries_grp = nc_grp['timeseries']
                 timeseries_grp[var + '_max'][-1] = var_max
+                timeseries_grp[var + '_min'][-1] = var_min
 
         return
