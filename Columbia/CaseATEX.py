@@ -83,7 +83,7 @@ def radiative_transfer(dz, rho0, qc, st):
 
     lwp = np.zeros(shape, dtype=np.double)
     lw_flux = np.zeros(shape, dtype=np.double)
-    print(np.max(qc))
+
     for i in range(shape[0]):
         for j in range(shape[1]):
             #Compute the liquid path
@@ -96,7 +96,7 @@ def radiative_transfer(dz, rho0, qc, st):
             #Now compute tendencies
             for k in range(1,shape[2]):
                 st[i,j,k] -= (lw_flux[i,j,k] - lw_flux[i,j,k-1])/dz/parameters.CPD
-    print(np.amax(lw_flux), np.amin(lw_flux))
+
     return
 
 class ForcingATEX(Forcing.ForcingBase):
@@ -218,7 +218,7 @@ class ForcingATEX(Forcing.ForcingBase):
 
 
         st_old = np.copy(st)
-        print(np.max(qc))
+
         radiative_transfer(dz, rho, qc, st)
         radiation_temp_tend[:,:,:] = (st[:,:,:] - st_old[:,:,:])
 

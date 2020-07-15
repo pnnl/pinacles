@@ -172,14 +172,21 @@ def compute_SL_tend_bounded(phi, phi_t, dt, coeff_tensor1, coeff_tensor2, gamma=
 
 class CTU(ScalarAdvection.ScalarAdvectionBase):
 
-    def __init__(self, Grid, Ref, ScalarState, VelocityState, TimeStepping):
+    def __init__(self, namelist, Grid, Ref, ScalarState, VelocityState, TimeStepping):
 
         ScalarAdvection.ScalarAdvectionBase.__init__(self, Grid, Ref, ScalarState, VelocityState, TimeStepping)
         coeff_shape = (self._Grid.ngrid_local[0], self._Grid.ngrid_local[1], self._Grid.ngrid_local[2],3,3,3)
-        
+
+        #See if any relevant parametes are set in the input file
+        try:
+            self._gamma = namelist['ScalarAdvection']['SL2']
+        except: 
+            self._gamma = 0.5
+
         #Initialze two tensors for storing the coefficients
         self._coeff_tensor2 = np.zeros(coeff_shape, dtype=np.double, order='C')
         self._coeff_tensor1 = np.zeros(coeff_shape, dtype=np.double, order='C')
+
 
         return
 
@@ -201,12 +208,12 @@ class CTU(ScalarAdvection.ScalarAdvectionBase):
 
         #Now iterate over the scalar variables
         for var in self._ScalarState.names:
-            
+
             #Grab the sclars and tendencies for each field
             phi = self._ScalarState.get_field(var)
             phi_t = self._ScalarState.get_tend(var)
 
-            compute_SL_tend_bounded(phi, phi_t, dt, self._coeff_tensor1, self._coeff_tensor2)
+            compute_SL_tend_bounded(phi, phi_t, dt, self._coeff_tensor1, self._coeff_tensor2, gamma=self._gamma)
             #compute_SL_tend(phi, phi_t, dt, self._coeff_tensor1)
 
         return

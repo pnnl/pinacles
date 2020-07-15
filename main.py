@@ -133,15 +133,6 @@ def main(namelist):
         for n in range(ScalarTimeStepping.n_rk_step):
             TimeSteppingController.adjust_timestep(n)
 
-            #if n== 0: 
-                #Update microphysics
-                #print(i, n, 'Updating Micro')
-                #Thermo.update(apply_buoyancy=False)
-
-                #ScalarState.boundary_exchange()  #Todo... remove this?
-                #ScalarState.update_all_bcs()
-                #print('Update complete.') 
-
             #Update Thermodynamics
             Thermo.update()
 
@@ -191,7 +182,6 @@ def main(namelist):
                 ScalarState.update_all_bcs()
 
         i += 1
-
 
         t1 = time.time()
         MPI.COMM_WORLD.barrier()

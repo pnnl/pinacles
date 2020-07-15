@@ -27,8 +27,6 @@ def compute_visc(dx, strain_rate_mag, bvf, cs, pr, eddy_viscosity, eddy_diffusiv
     return
 
 
-
-
 class Smagorinsky(SGSBase):
     def __init__(self, namelist, Grid, Ref, VelocityState, DiagnosticState):
 
@@ -37,6 +35,19 @@ class Smagorinsky(SGSBase):
 
         self._DiagnosticState.add_variable('eddy_diffusivity')
         self._DiagnosticState.add_variable('eddy_viscosity')
+
+
+        #Read values in from namelist
+        try:
+            self._cs = namelist['SGS']['Smagorinsky']['cs']
+        except:
+            self._cs = 0.17
+
+        try:
+            self._prt = namelsit['SGS']['Smagorinsky']['Prt']
+        except:
+            self._prt = 1.0/3.0
+
 
         return
 
@@ -50,7 +61,7 @@ class Smagorinsky(SGSBase):
         eddy_diffusivity = self._DiagnosticState.get_field('eddy_diffusivity')
         bvf = self._DiagnosticState.get_field('bvf')
 
-        compute_visc(dx, strain_rate_mag, bvf, 0.17, 1.0, eddy_viscosity, eddy_diffusivity)
+        compute_visc(dx, strain_rate_mag, bvf, self._cs, self._prt, eddy_viscosity, eddy_diffusivity)
 
 
 
