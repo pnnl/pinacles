@@ -34,7 +34,6 @@ def water_fraction_profile(n_halo, npts, q, threshold=1e-8):
             for k in range(n_halo[2], shape[2] - n_halo[2]):
                 if q[i,j,k] >= threshold:
                     frac[k] += 1.0
-                    break
 
     return frac/npts
 

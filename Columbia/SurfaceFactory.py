@@ -2,6 +2,7 @@ from Columbia import CaseSullivanAndPatton
 from Columbia import CaseBOMEX
 from Columbia import CaseStableBubble
 from Columbia import CaseRICO
+from Columbia import CaseATEX
 from Columbia import Surface
 
 
@@ -15,5 +16,7 @@ def factory(namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState):
         return CaseBOMEX.SurfaceBOMEX(namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState)
     elif casename == 'rico':
         return CaseRICO.SurfaceRICO(namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState)
+    elif casename == 'atex':
+        return CaseATEX.SurfaceATEX(namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState)
     else:
         return Surface.SurfaceBase(namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState)

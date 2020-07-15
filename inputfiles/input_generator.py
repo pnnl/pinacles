@@ -13,6 +13,8 @@ def main(casename):
         input_dict = bomex()
     elif casename == 'rico':
         input_dict = rico()
+    elif casename == 'atex':
+        input_dict = atex()
 
 
     write_file(casename, input_dict)
@@ -181,6 +183,50 @@ def bomex():
 
     return input_dict
 
+def atex():
+    input_dict = {}
+
+    key = 'meta'
+    input_dict[key] = {}
+    input_dict[key]['casename'] = 'atex'
+    input_dict[key]['simname'] = input_dict[key]['casename']
+    input_dict[key]['output_directory'] = './'
+
+    key = 'grid'
+    input_dict[key] = {}
+    #Set the number of grid points in the domain
+    input_dict[key]['n'] = [64, 64, 100]
+    #Set the number of halo points in each direct
+    input_dict[key]['n_halo'] = [3, 3, 3]
+    #Set the domain length, dx will be determined from n and L
+    input_dict[key]['l'] = [6400.0, 6400.0, 4000.0]
+
+    key = 'sgs'
+    input_dict[key] = {}
+    input_dict[key]['model'] = 'smagorinsky'
+
+    key = 'microphysics'
+    input_dict[key] = {} 
+    input_dict[key]['scheme'] = 'kessler'
+
+    key = 'damping'
+    input_dict[key] = {}
+    input_dict[key]['vars'] = ['u', 'v', 'w', 's']
+    input_dict[key]['depth'] = 1000.0
+    input_dict[key]['timescale'] = 60.0
+
+    key = 'time'
+    input_dict[key] = {}
+    input_dict[key]['cfl'] = 0.6
+    input_dict[key]['time_max'] = 3600.0 * 6.0
+
+    key = 'stats'
+    input_dict[key] = {}
+    input_dict[key]['frequency'] = 60.0
+    input_dict[key]['modules'] = []
+
+    return input_dict
+
 def rico():
     input_dict = {}
 
@@ -227,7 +273,8 @@ LIST_OF_CASES = ['colliding_blocks',
                  'stable_bubble',
                 'sullivan_and_patton', 
                 'bomex',
-                'rico']
+                'rico',
+                'atex']
 
 if __name__ == '__main__':
 
