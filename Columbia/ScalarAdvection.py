@@ -2,9 +2,6 @@ import numba
 import numpy as np
 from Columbia.interpolation_impl import interp_weno5
 
-def factory(namelist, Grid, Ref, ScalarState, VelocityState, TimeStepping):
-
-    return ScalarWENO5(Grid, Ref, ScalarState, VelocityState, TimeStepping)
 
 class ScalarAdvectionBase:
 
@@ -21,7 +18,7 @@ class ScalarAdvectionBase:
 
         return
 
-@numba.njit
+@numba.njit(fastmath=True)
 def weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t):
     phi_shape = phi.shape
     for i in range(2,phi_shape[0]-3):
@@ -77,7 +74,7 @@ def weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, p
     return
 
 theta = 1.0
-@numba.njit
+@numba.njit(fastmath=True)
 def weno5_advection_flux_limit(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t):
     phi_shape = phi.shape
     for i in range(2,phi_shape[0]-3):
@@ -183,7 +180,7 @@ def first_order(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t
 
     return
 
-@numba.njit
+@numba.njit(fastmath=True)
 def flux_divergence(nhalo, idx, idy, idzi, alpha0, fluxx, fluxy, fluxz, phi_t):
     phi_shape = phi_t.shape
     #TODO Tighten range of loops
@@ -196,7 +193,7 @@ def flux_divergence(nhalo, idx, idy, idzi, alpha0, fluxx, fluxy, fluxz, phi_t):
     return
 
 
-@numba.njit
+@numba.njit(fastmath=True)
 def flux_divergence_bounded(nhalo, idx, idy, idzi, alpha0, fluxx, fluxy, fluxz,
                             fluxx_low, fluxy_low, fluxz_low, dt, phi, phi_t):
     phi_shape = phi_t.shape

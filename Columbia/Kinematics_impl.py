@@ -1,6 +1,6 @@
 import numba
 import numpy as np
-@numba.njit()
+@numba.njit(fastmath=True)
 def u_gradients(dxi, u, dudx, dudy, dudz):
 
     shape = u.shape
@@ -35,7 +35,7 @@ def u_gradients(dxi, u, dudx, dudy, dudz):
 
     return
 
-@numba.njit()
+@numba.njit(fastmath=True)
 def v_gradients(dxi, v, dvdx, dvdy, dvdz):
 
     shape = v.shape
@@ -67,7 +67,7 @@ def v_gradients(dxi, v, dvdx, dvdy, dvdz):
                 dvdz[i,j,k] = (vz_h - vz_l)*(0.5 * dxi[2])
 
 
-@numba.njit()
+@numba.njit(fastmath=True)
 def w_gradients(dxi, w, dwdx, dwdy, dwdz):
 
     shape = w.shape
@@ -98,7 +98,7 @@ def w_gradients(dxi, w, dwdx, dwdy, dwdz):
     return
 
 
-@numba.njit()
+@numba.njit(fastmath=True)
 def strain_rate_max(dudx, dudy, dudz,
                     dvdx, dvdy, dvdz,
                     dwdx, dwdy, dwdz, strain_rate_mag):

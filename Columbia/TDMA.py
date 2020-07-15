@@ -1,7 +1,7 @@
 import numpy as np
 import numba
 
-@numba.njit()
+@numba.njit(fastmath=True)
 def Thomas(x, a, b, c):
     """ a generic Thomas algorithm tridiagonal solver. 
     
@@ -27,7 +27,7 @@ def Thomas(x, a, b, c):
                 x[i,j,k] = x[i,j,k] - scratch[k] * x[i,j,k+1]
     return
 
-@numba.njit()
+@numba.njit(fastmath=True)
 def PressureThomas(n_halo, dxs, rho0, rho0_edge, kx2, ky2, x, a, c, wavenumber_substarts):
     shape = x.shape
     scratch = np.empty(shape[2], dtype=np.double)

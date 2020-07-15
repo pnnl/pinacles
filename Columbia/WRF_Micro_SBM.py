@@ -41,7 +41,7 @@ class MicroSBM(MicrophysicsBase):
         self._io_fields = ['MA', 'LH_rate', 'CE_rate', 'DS_rate', 'Melt_rate',
             'Frz_rate', 'CldNucl_rate', 'IceNucl_rate', 'difful_tend', 'diffur_tend',
             'tempdiffl', 'automass_tend', 'autonum_tend', 'saturation','n_reg_ccn']
-        
+
         long_names = {'MA': '', 
                       'LH_rate':'Latent heat rate',
                       'CE_rate':'Condensation / evaporation rate',
@@ -58,7 +58,7 @@ class MicroSBM(MicrophysicsBase):
                       'saturation':'Saturaiton Ratio',
                       'n_reg_ccn':'Aerosol Regeneration Rate'}
 
-        units = {'MA': '', 
+        units = {'MA': '',
                       'LH_rate':'K s^{-1}',
                       'CE_rate':'kg kg^{-1} s^{-1}',
                       'DS_rate':'kg kg^{-1} s^{-1}',
@@ -75,6 +75,30 @@ class MicroSBM(MicrophysicsBase):
                       'n_reg_ccn':''}
 
         for var in self._io_fields:
+            self._DiagnosticState.add_variable(var, latex_name=var, long_name=long_names[var])
+
+        self._sbm_in_iofield = ['T_sbm_in', 'qv_sbm_in', 'qc_sbm_in', 'qr_sbm_in',
+            'qnc_sbm_in', 'qnr_sbm_in', 'qna_sbm_in', 'qna_nucl_sbm_in']
+
+        long_names = {'T_sbm_in': 'temperature going into sbm',
+                      'qv_sbm_in': 'water vapor mixing ratio going into sbm',
+                      'qc_sbm_in': 'cloud-water mixing ratio going into sbm',
+                      'qr_sbm_in': 'rain-water mixing ratio going into sbm',
+                      'qnc_sbm_in': 'cloud droplet number concentraiton going into sbm',
+                      'qnr_sbm_in': 'rain drop number concentration going into sbm',
+                      'qna_sbm_in': 'aerosol number concentration going into sbm',
+                      'qna_nucl_sbm_in': 'regeneration aerosol number concentration going into sbm'}
+
+        units = {'T_sbm_in': 'K',
+                      'qv_sbm_in': 'kg/kg',
+                      'qc_sbm_in': 'kg/kg',
+                      'qr_sbm_in': 'kg/kg',
+                      'qnc_sbm_in': 'kg/kg',
+                      'qnr_sbm_in': 'kg/kg',
+                      'qna_sbm_in': 'kg/kg',
+                      'qna_nucl_sbm_in': 'kg/kg'}
+
+        for var in self._sbm_in_iofield :
             self._DiagnosticState.add_variable(var, latex_name=var, long_name=long_names[var])
 
         self._bin_start = self._ScalarState.nvars
@@ -237,6 +261,20 @@ class MicroSBM(MicrophysicsBase):
         #self.plot_wrf_vars(wrf_vars)
 
         #Call sbm!
+
+        #Store input fields
+        sbm_in_vars = {'T_sbm_in':'T' , 'qv_sbm_in':'qv', 'qc_sbm_in':'qc', 'qr_sbm_in':'qr',
+            'qnc_sbm_in':'qnc', 'qnr_sbm_in':'qnr', 'qna_sbm_in':'qna', 'qna_nucl_sbm_in':'qna_nucl'}
+    
+        for key, value in sbm_in_vars.items():
+            try:
+                v = self._ScalarState.get_field(value)
+            except:
+                v = self._DiagnosticState.get_field(value)
+            v_diag = self._DiagnosticState.get_field(key)
+            v_diag[:,:,:] = v[:,:,:]
+
+
         rain_accum_old = np.sum(self._RAINNC)
         MPI.COMM_WORLD.barrier()
         t0 = time.time()
@@ -310,6 +348,9 @@ class MicroSBM(MicrophysicsBase):
         for v in self._io_fields:
             var = self._DiagnosticState.get_field(v)
             to_our_order(nhalo, wrf_vars[v], var)
+
+
+
 
 
         s_wrf = wrf_vars['th_phy']* self._Ref.exner[np.newaxis, nhalo[2]:-nhalo[2], np.newaxis]  +  (parameters.G*z- parameters.LV*(wrf_vars['qc'] + wrf_vars['qr']))*parameters.ICPD
