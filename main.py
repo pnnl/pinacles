@@ -56,7 +56,7 @@ def main(namelist):
     # Set up the thermodynamics class
     Kine = Kinematics.Kinematics(ModelGrid, Ref, VelocityState, DiagnosticState)
     SGS = SGSFactory.factory(namelist, ModelGrid, Ref, VelocityState, DiagnosticState)
-    Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController) 
+    Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
     Thermo = Thermodynamics.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, Micro)
 
     # In the future the microphyics should be initialized here
@@ -73,6 +73,8 @@ def main(namelist):
     PSolver = PressureSolver.factory(namelist, ModelGrid, Ref, VelocityState, DiagnosticState)
 
     # Allocate all of the big parallel arrays needed for the container classes
+    Force = ForcingFactory.factory(namelist, ModelGrid, Ref, Micro, VelocityState, ScalarState, DiagnosticState, TimeSteppingController)
+
     ScalarState.allocate()
     VelocityState.allocate()
     DiagnosticState.allocate()
@@ -85,7 +87,7 @@ def main(namelist):
 
     RayleighDamping.init_means()
     Surf = SurfaceFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState)
-    Force = ForcingFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState)
+
     PSolver.initialize() #Must be called after reference profile is integrated
 
     #Setup Stats-IO
