@@ -179,8 +179,8 @@ class CTU(ScalarAdvection.ScalarAdvectionBase):
 
         #See if any relevant parametes are set in the input file
         try:
-            self._gamma = namelist['ScalarAdvection']['SL2']
-        except: 
+            self._gamma = namelist['scalar_advection']['sl2']['gamma']
+        except:
             self._gamma = 0.5
 
         #Initialze two tensors for storing the coefficients

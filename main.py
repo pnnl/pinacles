@@ -183,6 +183,7 @@ def main(namelist):
 
         i += 1
 
+
         t1 = time.time()
         MPI.COMM_WORLD.barrier()
         if MPI.COMM_WORLD.Get_rank() == 0:
