@@ -39,12 +39,12 @@ class Smagorinsky(SGSBase):
 
         #Read values in from namelist
         try:
-            self._cs = namelist['SGS']['Smagorinsky']['cs']
+            self._cs = namelist['SGS']['smagorinsky']['cs']
         except:
             self._cs = 0.17
 
         try:
-            self._prt = namelsit['SGS']['Smagorinsky']['Prt']
+            self._prt = namelsit['SGS']['smagorinsky']['Prt']
         except:
             self._prt = 1.0/3.0
 

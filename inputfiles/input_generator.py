@@ -61,6 +61,11 @@ def stable_bubble():
     input_dict[key]['frequency'] = 60.0
     input_dict[key]['modules'] = []
 
+    key = 'scalar_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'weno'
+    input_dict[key][input_dict[key]['type']] = {}
+
 
     return input_dict
 
@@ -157,9 +162,18 @@ def bomex():
     #Set the domain length, dx will be determined from n and L
     input_dict[key]['l'] = [6400.0, 6400.0, 4000.0]
 
+    key = 'scalar_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'sl2'
+    input_dict[key][input_dict[key]['type']] = {}
+    input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
+
     key = 'sgs'
     input_dict[key] = {}
     input_dict[key]['model'] = 'smagorinsky'
+    input_dict[key][input_dict[key]['model']] = {}
+    input_dict[key][input_dict[key]['model']]['cs'] = 0.17
+    input_dict[key][input_dict[key]['model']]['prt'] = 1.0/3.0
 
     key = 'microphysics'
     input_dict[key] = {} 
@@ -201,9 +215,19 @@ def atex():
     #Set the domain length, dx will be determined from n and L
     input_dict[key]['l'] = [6400.0, 6400.0, 4000.0]
 
+    key = 'scalar_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'sl2'
+    input_dict[key][input_dict[key]['type']] = {}
+    input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
+
     key = 'sgs'
     input_dict[key] = {}
     input_dict[key]['model'] = 'smagorinsky'
+    input_dict[key][input_dict[key]['model']] = {}
+    input_dict[key][input_dict[key]['model']]['cs'] = 0.17
+    input_dict[key][input_dict[key]['model']]['prt'] = 1.0/3.0
+
 
     key = 'microphysics'
     input_dict[key] = {} 
@@ -244,6 +268,21 @@ def rico():
     input_dict[key]['n_halo'] = [3, 3, 3]
     #Set the domain length, dx will be determined from n and L
     input_dict[key]['l'] = [6400.0, 6400.0, 4000.0]
+
+
+    key = 'scalar_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'sl2'
+    input_dict[key][input_dict[key]['type']] = {}
+    input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
+
+    key = 'sgs'
+    input_dict[key] = {}
+    input_dict[key]['model'] = 'smagorinsky'
+    input_dict[key][input_dict[key]['model']] = {}
+    input_dict[key][input_dict[key]['model']]['cs'] = 0.17
+    input_dict[key][input_dict[key]['model']]['prt'] = 1.0/3.0
+
 
     key = 'microphysics'
     input_dict[key] = {}

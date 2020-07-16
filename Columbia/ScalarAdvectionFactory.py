@@ -4,12 +4,12 @@ from Columbia.SLScalarAdvection import CTU
 def factory(namelist, Grid, Ref, ScalarState, VelocityState, TimeStepping):
    
    try:
-      adv_type = namelist['ScalarAdvection']['type']
+      adv_type = namelist['scalar_advection']['type']
    except:
-      adv_type = 'SL2'
+      adv_type = 'sl2'
 
 
-   if adv_type == 'SL2':
+   if adv_type == 'sl2':
       return CTU(namelist, Grid, Ref, ScalarState, VelocityState, TimeStepping)
    else:
       return ScalarWENO5(Grid, Ref, ScalarState, VelocityState, TimeStepping)

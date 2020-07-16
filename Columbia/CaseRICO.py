@@ -23,10 +23,7 @@ class SurfaceRICO(Surface.SurfaceBase):
         self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
         self._taux_sfc = np.zeros_like(self._windspeed_sfc)
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
-        #self._bflx_sfc = np.zeros_like(self._windspeed_sfc) + self._buoyancy_flux
-        #self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
-
-
+ 
         return
 
     def update(self):
@@ -90,7 +87,7 @@ class ForcingRICO(Forcing.ForcingBase):
         self._f = 0.376e-4
 
         zl = self._Grid.z_local
-        exner = self._Ref.exner
+
 
         #Set Geostrophic wind
         self._ug = np.zeros_like(self._Grid.z_global)
@@ -111,12 +108,14 @@ class ForcingRICO(Forcing.ForcingBase):
         self._vg = np.zeros_like(self._ug)-3.8
 
         #Set heating rate
-        self._heating_rate = np.zeros_like(self._Grid.z_global) -2.5/86400.0 * exner
+        self._heating_rate = np.zeros_like(self._Grid.z_global) -2.5/86400.0 
 
 
         return
 
     def update(self):
+
+        exner = self._Ref.exner
 
         u = self._VelocityState.get_field('u')
         v = self._VelocityState.get_field('v')
@@ -128,8 +127,7 @@ class ForcingRICO(Forcing.ForcingBase):
         st = self._ScalarState.get_tend('s')
         qvt = self._ScalarState.get_tend('qv')
 
-        #Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, vt, ut)
-        st += self._heating_rate[np.newaxis, np.newaxis, :]
+        st += (self._heating_rate* exner)[np.newaxis, np.newaxis, :]
         qvt += self._ls_mositure[np.newaxis, np.newaxis, :]
 
         Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f ,u, v, self._Ref.u0, self._Ref.v0, ut, vt)
