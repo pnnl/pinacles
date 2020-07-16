@@ -47,7 +47,7 @@ def compute_bvf(theta_ref, exner, T, qv, dz, thetav, bvf):
     for i in range(shape[0]):
         for j in range(shape[1]):
             for k in range(1,shape[2]-1):
-                bvf[i,j,k] = parameters.G/theta_ref[k] * (thetav[i,j,k+1] - thetav[i,j,k-1])/dz
+                bvf[i,j,k] = parameters.G/theta_ref[k] * (thetav[i,j,k+1] - thetav[i,j,k-1])/(2.0 * dz)
 
     return
 
