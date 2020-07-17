@@ -108,9 +108,9 @@ def strain_rate_max(dudx, dudy, dudz,
         for j in range(1,shape[1]):
             for k in range(1, shape[2]):
 
-                s11 = dudx[i,j,k]**2.0
-                s22 = dvdy[i,j,k]**2.0
-                s33 = dwdz[i,j,k]**2.0
+                s11 = (0.5 * dudx[i,j,k])**2.0
+                s22 = (0.5 * dvdy[i,j,k])**2.0
+                s33 = (0.5 * dwdz[i,j,k])**2.0
 
                 s12 = (0.5*(dvdx[i,j,k] + dudy[i,j,k]))**2.0
                 s21 = s12
