@@ -51,6 +51,19 @@ def stable_bubble():
     input_dict[key]['depth'] = 250.0
     input_dict[key]['timescale'] = 50.0
 
+    key = 'scalar_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'sl2'
+    input_dict[key][input_dict[key]['type']] = {}
+    input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
+
+    key = 'sgs'
+    input_dict[key] = {}
+    input_dict[key]['model'] = 'smagorinsky'
+    input_dict[key][input_dict[key]['model']] = {}
+    input_dict[key][input_dict[key]['model']]['cs'] = 0.17
+    input_dict[key][input_dict[key]['model']]['prt'] = 1.0/3.0
+
     key = 'time'
     input_dict[key] = {}
     input_dict[key]['time_max'] = 600.0
@@ -61,11 +74,10 @@ def stable_bubble():
     input_dict[key]['frequency'] = 60.0
     input_dict[key]['modules'] = []
 
-    key = 'scalar_advection'
-    input_dict[key] = {}
-    input_dict[key]['type'] = 'weno'
-    input_dict[key][input_dict[key]['type']] = {}
 
+    key='Thermodynamics'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'dry'
 
     return input_dict
 
@@ -119,9 +131,18 @@ def sullivan_and_patton():
     input_dict[key]['depth'] = 250.0
     input_dict[key]['timescale'] = 50.0
 
+    key = 'scalar_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'sl2'
+    input_dict[key][input_dict[key]['type']] = {}
+    input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
+
     key = 'sgs'
     input_dict[key] = {}
     input_dict[key]['model'] = 'smagorinsky'
+    input_dict[key][input_dict[key]['model']] = {}
+    input_dict[key][input_dict[key]['model']]['cs'] = 0.17
+    input_dict[key][input_dict[key]['model']]['prt'] = 1.0/3.0
 
     key = 'Thermodynamics'
     input_dict[key] = {}

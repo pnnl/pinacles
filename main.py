@@ -110,7 +110,7 @@ def main(namelist):
 
 
     s = ScalarState.get_field('s')
-    qv = ScalarState.get_field('qv')
+    #qv = ScalarState.get_field('qv')
     u = VelocityState.get_field('u')
     t1 = time.time()
 
