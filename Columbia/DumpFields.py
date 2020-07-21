@@ -21,6 +21,7 @@ class DumpFields:
                 os.makedirs(self._output_path)
 
         self._classes = {}
+        self._namelist = namelist
 
         return
 
@@ -40,6 +41,10 @@ class DumpFields:
 
         MPI.COMM_WORLD.barrier()
         rt_grp = nc.Dataset(os.path.join(output_here, str(self._this_rank) + '.nc'), 'w', format="NETCDF4_CLASSIC")
+
+        #Add some metadata
+        rt_grp.unique_id = self._namelist['meta']['unique_id']
+        rt_grp.wall_time = self._namelist['meta']['wall_time']
 
         self.setup_nc_dims(rt_grp)
 

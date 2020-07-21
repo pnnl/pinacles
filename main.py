@@ -1,6 +1,8 @@
 import numba
 import json
 import argparse
+import uuid
+import datetime
 from Columbia import Initializaiton
 from Columbia import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
 from Columbia import ScalarAdvectionFactory
@@ -230,6 +232,19 @@ if __name__ == '__main__':
     parser.add_argument('inputfile')
     args = parser.parse_args()
 
+    #Broadcast a uuid and wall time
+    unique_id= None
+    wall_time = None
+    if MPI.COMM_WORLD.Get_rank() == 0:
+        unique_id = uuid.uuid4()
+        wall_time = datetime.datetime.now()
+
+
+    unique_id = MPI.COMM_WORLD.bcast(str(unique_id))
+    wall_time = MPI.COMM_WORLD.bcast(str(wall_time))
+
     with open(args.inputfile, 'r') as namelist_h:
         namelist = json.load(namelist_h)
+        namelist['meta']['unique_id'] = unique_id
+        namelist['meta']['wall_time'] = wall_time
         main(namelist)

@@ -191,12 +191,9 @@ def compute_SL_tend_bounded(phi, phi_t, dt, coeff_tensor1, coeff_tensor2, gamma=
 def compute_SL_tend_bounded_tvd(u, v, w, phi, phi_t, dt, coeff_tensor1, coeff_tensor2, x_quad, y_quad, z_quad, gamma=1.0):
     shape = phi.shape
 
-    count = 0
-    count_adj = 0
     for i in range(1,shape[0]-1):
         for j in range(1,shape[1]-1):
             for k in range(1,shape[2]-1):
-                count += 1
                 #Initialize values
                 phi_old = phi[i,j,k]
                 phi_new = 0.0
@@ -235,12 +232,10 @@ def compute_SL_tend_bounded_tvd(u, v, w, phi, phi_t, dt, coeff_tensor1, coeff_te
 
                 #Here we apply the correction to ensure boundedness
                 if phi_new > phi_max or phi_new < phi_min:
-                    count_adj += 1
                     phi_new = first
-                count += 1
+
                 #Back out the tendencies and apply!
                 phi_t[i,j,k] += (phi_new-phi_old)/dt
-    print('Fluc corrected: ', count_adj/count)
 
 class CTU(ScalarAdvection.ScalarAdvectionBase):
 
