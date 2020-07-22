@@ -18,7 +18,7 @@ def compute_visc(dx, strain_rate_mag, bvf, cs, pr,
     for i in range(shape[0]):
         for j in range(shape[1]):
             for k in range(shape[2]):
-                # Compute the stratification corrction
+                # Compute the stratification correction
                 fb = 1
                 if bvf[i, j, k] > 0 and strain_rate_mag[i, j, k] > 0.0:
                     fb = max(0.0, 1.0 -
@@ -33,7 +33,7 @@ def compute_visc(dx, strain_rate_mag, bvf, cs, pr,
                 eddy_viscosity[i, j, k] = (
                     cs * filt_scale) ** 2.0 * fb * strain_rate_mag[i, j, k]
 
-                #  Compute the eddy diffusivty from the  eddy viscosity using an assumed
+                # Compute the eddy diffusivty from the  eddy viscosity using an assumed
                 # inverse SGS Prandtl number tune this using
                 eddy_diffusivity[i, j, k] = eddy_viscosity[i, j, k] * pri
 
@@ -74,7 +74,7 @@ class Smagorinsky(SGSBase):
         # Get the grid spacing from the Grid class
         dx = self._Grid.dx
 
-        # Gret the necessary 3D fields from the field containers
+        # Get the necessary 3D fields from the field containers
         strain_rate_mag = self._DiagnosticState.get_field('strain_rate_mag')
         eddy_viscosity = self._DiagnosticState.get_field('eddy_viscosity')
         eddy_diffusivity = self._DiagnosticState.get_field('eddy_diffusivity')
