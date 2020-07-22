@@ -53,17 +53,15 @@ class DumpFields:
             #Loop over all variables
             ac = self._classes[ac]
             for v in ac._dofs:
-                v_nc = rt_grp.createVariable(v, np.double, dimensions=('time','X','Y','Z'))
-
-                v_nc.units = ac.get_units(v)
-                v_nc.long_names = ac.get_long_name(v)
-                v_nc.standard_name = ac.get_standard_name(v)
-
-                v_nc[0,:,:,:] =  ac.get_field(v)[nhalo[0]:-nhalo[0],
-                    nhalo[1]:-nhalo[1],
-                    nhalo[2]:-nhalo[2]]
-
-
+                
+                if 'ff' not in v:  #Exclude the bins from the 3D fields for the same of storage
+                    v_nc = rt_grp.createVariable(v, np.double, dimensions=('time','X','Y','Z'))
+                    v_nc.units = ac.get_units(v)
+                    v_nc.long_names = ac.get_long_name(v)
+                    v_nc.standard_name = ac.get_standard_name(v)
+                    v_nc[0,:,:,:] =  ac.get_field(v)[nhalo[0]:-nhalo[0],
+                                                     nhalo[1]:-nhalo[1],
+                                                     nhalo[2]:-nhalo[2]]
 
             rt_grp.sync()
 
