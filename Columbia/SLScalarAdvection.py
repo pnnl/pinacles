@@ -283,11 +283,13 @@ class CTU(ScalarAdvection.ScalarAdvectionBase):
         #Now iterate over the scalar variables
         for var in self._ScalarState.names:
 
-            #Grab the sclars and tendencies for each field
-            phi = self._ScalarState.get_field(var)
-            phi_t = self._ScalarState.get_tend(var)
+            if var != 's' and var !='qv':
 
-            compute_SL_tend_bounded_tvd(u,v,w,phi, phi_t, dt, self._coeff_tensor1, self._coeff_tensor2, x_quad, y_quad, z_quad, gamma=self._gamma)
-            #compute_SL_tend(phi, phi_t, dt, self._coeff_tensor1)
+                #Grab the sclars and tendencies for each field
+                phi = self._ScalarState.get_field(var)
+                phi_t = self._ScalarState.get_tend(var)
+
+                compute_SL_tend_bounded_tvd(u,v,w,phi, phi_t, dt, self._coeff_tensor1, self._coeff_tensor2, x_quad, y_quad, z_quad, gamma=self._gamma)
+                #compute_SL_tend(phi, phi_t, dt, self._coeff_tensor1)
 
         return

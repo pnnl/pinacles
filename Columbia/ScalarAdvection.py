@@ -270,21 +270,22 @@ class ScalarWENO5(ScalarAdvectionBase):
             phi_t = self._ScalarState.get_tend(var)
 
             #Now compute the WENO fluxes
-            if 'ff' in var or var in ['qc', 'qr']:
-                if np.amax(np.abs(phi)) > 0.0: #If fields are zero everywhere no need to do any advection so skip-it! 
-                    #TODO This could probably be made faster
-                    # First compute the higher order fluxes, for now we do it with WENO
-                    weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
+            # if 'ff' in var or var in ['qc', 'qr']:
+            #     if np.amax(np.abs(phi)) > 0.0: #If fields are zero everywhere no need to do any advection so skip-it! 
+            #         #TODO This could probably be made faster
+            #         # First compute the higher order fluxes, for now we do it with WENO
+            #         weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
 
-                    #Now compute the lower order upwind fluxes these are used if high-order fluxes 
-                    # break boundness. 
-                    first_order(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx_low, fluxy_low, fluxz_low, phi_t)
+            #         #Now compute the lower order upwind fluxes these are used if high-order fluxes 
+            #         # break boundness. 
+            #         first_order(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx_low, fluxy_low, fluxz_low, phi_t)
 
-                    # Now insure the that the advection does not violate boundeness of scalars.
-                    flux_divergence_bounded(nhalo, self._Grid.dxi[0], self._Grid.dxi[1], self._Grid.dxi[2],
-                        alpha0, fluxx, fluxy, fluxz, fluxx_low, fluxy_low, fluxz_low, dt, phi, phi_t)
-                 #   weno5_advection_flux_limit(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
-            else:
+            #         # Now insure the that the advection does not violate boundeness of scalars.
+            #         flux_divergence_bounded(nhalo, self._Grid.dxi[0], self._Grid.dxi[1], self._Grid.dxi[2],
+            #             alpha0, fluxx, fluxy, fluxz, fluxx_low, fluxy_low, fluxz_low, dt, phi, phi_t)
+            #      #   weno5_advection_flux_limit(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
+            # else:
+            if var == 'qv' or var == 's':
                 weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
 
                 #Now compute the flux divergences

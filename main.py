@@ -66,6 +66,7 @@ def main(namelist):
 
     #Setup the scalar advection calss
     ScalarAdv = ScalarAdvectionFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, ScalarTimeStepping)
+    SLAdv = ScalarAdvectionFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, ScalarTimeStepping, adv_type='sl2')
     MomAdv = MomentumAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
     ScalarDiff = ScalarDiffusion.ScalarDiffusion(namelist, ModelGrid, Ref, DiagnosticState, ScalarState)
@@ -155,6 +156,7 @@ def main(namelist):
 
             #Update scalar advection
             ScalarAdv.update()
+            SLAdv.update()
             MomAdv.update()
 
             ScalarDiff.update()
