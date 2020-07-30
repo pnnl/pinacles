@@ -248,7 +248,7 @@ class CTU(ScalarAdvection.ScalarAdvectionBase):
         try:
             self._gamma = namelist['scalar_advection']['sl2']['gamma']
         except:
-            self._gamma = 0.5
+            self._gamma = 1.0
 
         #Initialze two tensors for storing the coefficients
         self._coeff_tensor2 = np.zeros(coeff_shape, dtype=np.double, order='C')
