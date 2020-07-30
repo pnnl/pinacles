@@ -12,4 +12,4 @@ def factory(namelist, Grid, Ref, ScalarState, VelocityState, TimeStepping, adv_t
    if adv_type == 'sl2':
       return CTU(namelist, Grid, Ref, ScalarState, VelocityState, TimeStepping)
    else:
-      return ScalarWENO5(Grid, Ref, ScalarState, VelocityState, TimeStepping)
+      return ScalarWENO5(namelist, Grid, Ref, ScalarState, VelocityState, TimeStepping)

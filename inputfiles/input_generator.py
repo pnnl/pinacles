@@ -185,7 +185,8 @@ def bomex():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'sl2'
+    input_dict[key]['type'] = 'weno'
+    input_dict[key]['hybrid'] = True
     input_dict[key][input_dict[key]['type']] = {}
     input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
 

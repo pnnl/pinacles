@@ -241,7 +241,7 @@ class CTU(ScalarAdvection.ScalarAdvectionBase):
 
     def __init__(self, namelist, Grid, Ref, ScalarState, VelocityState, TimeStepping):
 
-        ScalarAdvection.ScalarAdvectionBase.__init__(self, Grid, Ref, ScalarState, VelocityState, TimeStepping)
+        ScalarAdvection.ScalarAdvectionBase.__init__(self, namelist, Grid, Ref, ScalarState, VelocityState, TimeStepping)
         coeff_shape = (self._Grid.ngrid_local[0], self._Grid.ngrid_local[1], self._Grid.ngrid_local[2],3,3,3)
 
         #See if any relevant parametes are set in the input file
@@ -283,13 +283,21 @@ class CTU(ScalarAdvection.ScalarAdvectionBase):
         #Now iterate over the scalar variables
         for var in self._ScalarState.names:
 
-            if var != 's' and var !='qv':
+            if self._do_hybrid:
+                if var != 's' and var !='qv':
 
-                #Grab the sclars and tendencies for each field
-                phi = self._ScalarState.get_field(var)
-                phi_t = self._ScalarState.get_tend(var)
+                    #Grab the sclars and tendencies for each field
+                    phi = self._ScalarState.get_field(var)
+                    phi_t = self._ScalarState.get_tend(var)
 
-                compute_SL_tend_bounded_tvd(u,v,w,phi, phi_t, dt, self._coeff_tensor1, self._coeff_tensor2, x_quad, y_quad, z_quad, gamma=self._gamma)
-                #compute_SL_tend(phi, phi_t, dt, self._coeff_tensor1)
+                    compute_SL_tend_bounded_tvd(u,v,w,phi, phi_t, dt, self._coeff_tensor1, self._coeff_tensor2, x_quad, y_quad, z_quad, gamma=self._gamma)
+                    #compute_SL_tend(phi, phi_t, dt, self._coeff_tensor1)
+            else:
+                if self._scalar_adv is 'sl2':
+                    #Grab the sclars and tendencies for each field
+                    phi = self._ScalarState.get_field(var)
+                    phi_t = self._ScalarState.get_tend(var)
 
+                    compute_SL_tend_bounded_tvd(u,v,w,phi, phi_t, dt, self._coeff_tensor1, self._coeff_tensor2, x_quad, y_quad, z_quad, gamma=self._gamma)
+                    #compute_SL_tend(phi, phi_t, dt, self._coeff_tensor1)
         return
