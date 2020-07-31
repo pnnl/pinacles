@@ -285,7 +285,7 @@ class CTU(ScalarAdvection.ScalarAdvectionBase):
 
             if self._do_hybrid:
                 if var != 's' and var !='qv':
-
+                    print('Calling SL on: ', var)
                     #Grab the sclars and tendencies for each field
                     phi = self._ScalarState.get_field(var)
                     phi_t = self._ScalarState.get_tend(var)
@@ -294,6 +294,7 @@ class CTU(ScalarAdvection.ScalarAdvectionBase):
                     #compute_SL_tend(phi, phi_t, dt, self._coeff_tensor1)
             else:
                 if self._scalar_adv is 'sl2':
+                    print('Calling SL on: ', var)
                     #Grab the sclars and tendencies for each field
                     phi = self._ScalarState.get_field(var)
                     phi_t = self._ScalarState.get_tend(var)

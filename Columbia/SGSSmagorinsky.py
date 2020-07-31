@@ -63,7 +63,7 @@ class Smagorinsky(SGSBase):
             self._cs = 0.17
 
         try:
-            self._prt = namelsit['sgs']['smagorinsky']['Prt']
+            self._prt = namelist['sgs']['smagorinsky']['prt']
         except BaseException:
             self._prt = 1.0 / 3.0
 
