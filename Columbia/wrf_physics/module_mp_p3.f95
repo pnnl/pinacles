@@ -164,7 +164,7 @@
 ! = 1 Seifert and Beheng 2001
 ! = 2 Beheng 1994
 ! = 3 Khairoutdinov and Kogan 2000
- iparam = 3
+ iparam = 1
 
 ! droplet concentration (m-3)
  nccnst = 200.e+6
@@ -698,6 +698,8 @@ END subroutine p3_init
    log_predictNc=.false.
    if (present(nc_3d)) log_predictNc = .true.
 
+   log_predictNc = .false.
+
    do j = jts,jte      ! j loop (north-south)
 
       if (log_predictNc) then
@@ -844,7 +846,7 @@ END subroutine p3_init
 
    !--- local variables/parameters:
 
-   character(len=16), parameter :: model = 'WRF'
+   character(len=16), parameter :: model = 'PINACLES'
 
    real, dimension(ims:ime, kms:kme) ::nc,ssat
 

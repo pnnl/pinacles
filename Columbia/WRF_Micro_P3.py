@@ -14,7 +14,7 @@ class MicroP3(MicrophysicsBase):
             MicrophysicsBase.__init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
 
 
-            lookup_file_dir = '/Users/pres026/ColumbiaDev/Columbia/Columbia/wrf_physics/data'
+            lookup_file_dir = '/Users/pres026/ColumbiaDev/Columbia/Columbia/wrf_physics/'
             nCat = 1
             stat = 1
             abort_on_err = False
@@ -27,6 +27,7 @@ class MicroP3(MicrophysicsBase):
             self._ScalarState.add_variable('qv')
             self._ScalarState.add_variable('qc')
             self._ScalarState.add_variable('qr')
+            self._ScalarState.add_variable('qnc')
             self._ScalarState.add_variable('qnr')
             self._ScalarState.add_variable('qi1')
             self._ScalarState.add_variable('qni1')
@@ -40,7 +41,6 @@ class MicroP3(MicrophysicsBase):
             nhalo = self._Grid.n_halo
             self._wrf_dims = (self._our_dims[0] -2*nhalo[0], self._our_dims[2]-2*nhalo[2], self._our_dims[1]-2*nhalo[1])
 
-
             self._itimestep = 0
             self._RAINNC = np.zeros((self._wrf_dims[0], self._wrf_dims[2]), order='F', dtype=np.float32)
             self._SR = np.zeros_like(self._RAINNC)
@@ -48,6 +48,8 @@ class MicroP3(MicrophysicsBase):
             self._SNOWNC = np.zeros_like(self._RAINNC)
             self._SNOWNCV =  np.zeros_like(self._RAINNC)
 
+            self._th_old = None
+            self._qv_old = None
 
 
             return
@@ -61,6 +63,7 @@ class MicroP3(MicrophysicsBase):
         qc = self._ScalarState.get_field('qc')
         qr = self._ScalarState.get_field('qr')
         qnr = self._ScalarState.get_field('qnr')
+        qnc = self._ScalarState.get_field('qnc')
         qi1 = self._ScalarState.get_field('qi1')
         qni1 = self._ScalarState.get_field('qni1')
         qir1 = self._ScalarState.get_field('qir1')
@@ -82,7 +85,7 @@ class MicroP3(MicrophysicsBase):
         qc_wrf = np.empty_like(rho_wrf)
         qr_wrf = np.empty_like(rho_wrf)
         qnr_wrf = np.empty_like(rho_wrf)
-        nc_wrf = np.empty_like(rho_wrf)
+        qnc_wrf = np.empty_like(rho_wrf)
         qi1_wrf = np.empty_like(rho_wrf)
         qni1_wrf = np.empty_like(rho_wrf)
         qir1_wrf = np.empty_like(rho_wrf)
@@ -123,17 +126,22 @@ class MicroP3(MicrophysicsBase):
         to_wrf_order(nhalo, qr, qr_wrf)
         to_wrf_order(nhalo, w, w_wrf)
         to_wrf_order(nhalo, qnr, qnr_wrf)
+        to_wrf_order(nhalo, qnc, qnc_wrf)
         to_wrf_order(nhalo, qi1, qi1_wrf)
         to_wrf_order(nhalo, qni1, qni1_wrf)
         to_wrf_order(nhalo, qir1, qir1_wrf)
         to_wrf_order(nhalo, qib1, qib1_wrf)
 
+        #Todo... this my be incorrect. Check carefully.
+        if self._th_old is None or self._qv_old is None:
+            self._th_old = np.copy(T_wrf, order='F')
+            self._qv_old = np.copy(qv_wrf, order='F')
 
         n_iceCat = 1
-        nc_wrf[:,:,:] = 70e6
+        #nc_wrf[:,:,:] = 1000e6
         #T_wrf,qv_wrf,qc_wrf,qr_wrf,qnr_wrf)
         p3.module_mp_p3.mp_p3_wrapper_wrf(T_wrf,qv_wrf,qc_wrf,qr_wrf,qnr_wrf,
-                                th_old, qv_old,
+                                self._th_old, self._qv_old,
                                 exner_wrf, p0_wrf, dz_wrf, w_wrf, dt, self._itimestep,
                                 self._RAINNC,self._RAINNCV,self._SR,self._SNOWNC,self._SNOWNCV,n_iceCat,
                                 ids, ide, jds, jde, kds, kde ,
@@ -141,8 +149,7 @@ class MicroP3(MicrophysicsBase):
                                 its, ite, jts, jte, kts, kte ,
                                 reflectivity_wrf,diag_effc,diag_effi,
                                 diag_vmi,diag_di,diag_rhopo,
-                                qi1_wrf,qni1_wrf,qir1_wrf,qib1_wrf,nc_wrf)
-
+                                qi1_wrf,qni1_wrf,qir1_wrf,qib1_wrf,qnc_wrf)
 
         #Update prognosed fields
         to_our_order(nhalo, qv_wrf, qv)
@@ -151,7 +158,7 @@ class MicroP3(MicrophysicsBase):
         to_our_order(nhalo, qnr_wrf, qnr)
         to_our_order(nhalo, qi1_wrf, qi1)
         to_our_order(nhalo, qni1_wrf, qni1)
-        #to_our_order(nhalo, nc_wrf, nc)
+        to_our_order(nhalo, qnc_wrf, qnc)
 
 
         #Update the energys (TODO Move this to numba)
@@ -250,3 +257,6 @@ class MicroP3(MicrophysicsBase):
             timeseries_grp['RAINNCV'][-1] = rainncv
 
         return
+
+    def get_qc(self):
+        return self._ScalarState.get_field('qc') + self._ScalarState.get_field('qr')
