@@ -55,7 +55,7 @@ class SurfaceBOMEX(Surface.SurfaceBase):
         utsfc = ut[:,:,nh[2]]
         vtsfc = vt[:,:,nh[2]]
         stsfc = st[:,:,nh[2]]
-        qvtsfc = qvt[:,:,nh[2]+1]
+        qvtsfc = qvt[:,:,nh[2]]
 
 
 
