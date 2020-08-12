@@ -59,7 +59,7 @@ class SurfaceATEX(Surface.SurfaceBase):
         utsfc = ut[:,:,nh[2]]
         vtsfc = vt[:,:,nh[2]]
         stsfc = st[:,:,nh[2]]
-        qvtsfc = qvt[:,:,nh[2]+1]
+        qvtsfc = qvt[:,:,nh[2]]
 
         Surface_impl.compute_windspeed_sfc(usfc, vsfc, self._Ref.u0, self._Ref.v0, self.gustiness, self._windspeed_sfc)
         #Surface_impl.tau_given_ustar(self._ustar_sfc, usfc, vsfc, self._Ref.u0, self._Ref.v0, self._windspeed_sfc, self._taux_sfc, self._tauy_sfc)
