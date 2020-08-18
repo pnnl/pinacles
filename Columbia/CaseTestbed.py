@@ -1,7 +1,8 @@
 import numpy as np 
 import netCDF4 as nc
-from Columbia import Surface, Forcing
+from Columbia import Surface, Surface_impl, Forcing, Forcing_impl
 from Columbia import parameters
+from scipy import interpolate
 
 '''
 CK: Here I am starting with the simplest case and assuming the start time of the forcing
@@ -18,8 +19,9 @@ class SurfaceTestbed(Surface.SurfaceBase):
         
         self._TimeSteppingController = TimeSteppingController
         
-        surface_file = namelist['surface']['filepath']
-        surface_data = nc.Dataset(surface_file, 'r')
+        file = namelist['testbed']['filepath']
+        data = nc.Dataset(file, 'r')
+        surface_data = data.groups['surface']
         self._forcing_times = surface_data.variables['time'][:]
         self._forcing_shf = surface_data.variables['sensible_heat_flux'][:]
         self._forcing_lhf = surface_data.variables['latent_heat_flux'][:]
@@ -27,15 +29,14 @@ class SurfaceTestbed(Surface.SurfaceBase):
         self._forcing_ustar = surface_data.variables['friction_velocity'][:]
         # Read off other variables needed for radiation..?
 
+        data.close()
+
         nl = self._Grid.ngrid_local
 
         self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
         self._taux_sfc = np.zeros_like(self._windspeed_sfc)
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
-       
-
-
-        # Open and read the file
+        
         return
     
     
@@ -43,10 +44,10 @@ class SurfaceTestbed(Surface.SurfaceBase):
         current_time = self._TimeSteppingController.time()
  
         # Interpolate to the current time
-        shf_interp = np.interp(current_time, self._forcing_times, self._forcing_shf)
-        lhf_interp = np.interp(current_time, self._forcing_times, self._forcing_lhf)
-        ustar_interp = np.interp(current_time, self._forcing_times, self._forcing_ustar)
-
+     
+        shf_interp = interpolate.interp1d(self._forcing_times, self._forcing_shf,fill_value='extrapolate', assume_sorted=True )(current_time)
+        lhf_interp = interpolate.interp1d(self._forcing_times, self._forcing_lhf,fill_value='extrapolate', assume_sorted=True )(current_time)
+        ustar_interp = interpolate.interp1d(self._forcing_times, self._forcing_ustar,fill_value='extrapolate', assume_sorted=True )(current_time)
         # Get grid & reference profile info
         nh = self._Grid.n_halo
         dxi2 = self._Grid.dxi[2]
@@ -67,10 +68,7 @@ class SurfaceTestbed(Surface.SurfaceBase):
         # Get surface slices
         usfc = u[:,:,nh[2]]
         vsfc = v[:,:,nh[2]]
-        utsfc = ut[:,:,nh[2]]
-        vtsfc = vt[:,:,nh[2]]
-        stsfc = st[:,:,nh[2]]
-        qvtsfc = qvt[:,:,nh[2]]
+       
 
         # Compute the surface stress & apply it
         ustar_sfc = np.zeros_like(self._windspeed_sfc) + ustar_interp
@@ -89,6 +87,79 @@ class SurfaceTestbed(Surface.SurfaceBase):
 
 
         return
+
+class ForcingTestbed(Forcing.ForcingBase):
+    def __init__(self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState, TimeSteppingController):
+
+        Forcing.ForcingBase.__init__(self, namelist, Grid, 
+        Ref, VelocityState, ScalarState, DiagnosticState)
+        self._TimeSteppingController = TimeSteppingController
+        
+        file = namelist['testbed']['filepath']
+        data = nc.Dataset(file, 'r')
+        forcing_data = data.groups['forcing']
+        lat = forcing_data.variables['latitude']
+        self._f = 2.0 * parameters.OMEGA* np.sin(latitude * np.pi / 180.0 )
+        zl = self._Grid.z_local
+      
+
+        # Read in the data, we want to 
+        forcing_z = forcing_data.variables['z'][:]
+        self._forcing_times =forcing_data.variables['time'][:]
+        raw_ug = forcing_data.variables['u_geostrophic'][:,:]
+        raw_vg = forcing_data.variables['v_geostrophic'][:,:]
+        raw_subsidence = forcing_data.variables['subsidence'][:,:]
+        raw_adv_qt = forcing_data.variables['qt_advection'][:,:]
+        raw_adv_theta = forcing_data.variables['theta_advection'][:,:]
+
+        data.close()
+
+        self._ug = interpolate.interp1d(forcing_z, raw_ug, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
+        self._vg = interpolate.interp1d(forcing_z, raw_vg, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
+        self._subsidence = interpolate.interp1d(forcing_z, raw_subsidence, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
+        self._adv_qt = interpolate.interp1d(forcing_z, raw_adv_qt, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
+        self._adv_theta = interpolate.interp1d(forcing_z, raw_adv_theta, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
+
+        return
+        
+    def update(self):
+        current_time = self._TimeSteppingController.time()
+
+        # interpolate in time
+        ug = interpolate.interp1d(self._forcing_times,self._ug, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
+        vg = interpolate.interp1d(self._forcing_times,self._vg, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
+        subsidence = interpolate.interp1d(self._forcing_times,self._subsidence, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
+        adv_qt = interpolate.interp1d(self._forcing_times,self._adv_qt, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
+        adv_theta = interpolate.interp1d(self._forcing_times,self._adv_theta, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
+       
+        exner = self._Ref.exner
+
+        u = self._VelocityState.get_field('u')
+        v = self._VelocityState.get_field('v')
+        s = self._ScalarState.get_field('s')
+        qv = self._ScalarState.get_field('qv')
+
+
+        ut = self._VelocityState.get_tend('u')
+        vt = self._VelocityState.get_tend('v')
+        st = self._ScalarState.get_tend('s')
+        qvt = self._ScalarState.get_tend('qv')
+
+        st += (self._adv_theta * exner)[np.newaxis, np.newaxis, :]
+
+        Forcing_impl.large_scale_pgf(ug, vg, self._f ,u, v, self._Ref.u0, self._Ref.v0, ut, vt)
+
+        Forcing_impl.apply_subsidence(subsidence, self._Grid.dxi[2],s, st)
+        Forcing_impl.apply_subsidence(subsidence, self._Grid.dxi[2],qv, qvt)
+        
+        return
+
+
+
+
+
+
+
 
         
 
