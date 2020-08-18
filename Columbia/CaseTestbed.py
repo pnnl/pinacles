@@ -19,7 +19,7 @@ class SurfaceTestbed(Surface.SurfaceBase):
         
         self._TimeSteppingController = TimeSteppingController
         
-        file = namelist['testbed']['filepath']
+        file = namelist['testbed']['input_filepath']
         data = nc.Dataset(file, 'r')
         surface_data = data.groups['surface']
         self._forcing_times = surface_data.variables['time'][:]
@@ -95,7 +95,7 @@ class ForcingTestbed(Forcing.ForcingBase):
         Ref, VelocityState, ScalarState, DiagnosticState)
         self._TimeSteppingController = TimeSteppingController
         
-        file = namelist['testbed']['filepath']
+        file = namelist['testbed']['input_filepath']
         data = nc.Dataset(file, 'r')
         forcing_data = data.groups['forcing']
         lat = forcing_data.variables['latitude']
