@@ -52,12 +52,6 @@ class SurfaceBOMEX(Surface.SurfaceBase):
         #Get surface slices
         usfc = u[:,:,nh[2]]
         vsfc = v[:,:,nh[2]]
-        utsfc = ut[:,:,nh[2]]
-        vtsfc = vt[:,:,nh[2]]
-        stsfc = st[:,:,nh[2]]
-        qvtsfc = qvt[:,:,nh[2]+1]
-
-
 
         Surface_impl.compute_windspeed_sfc(usfc, vsfc, self._Ref.u0, self._Ref.v0, self.gustiness, self._windspeed_sfc)
         Surface_impl.tau_given_ustar(self._ustar_sfc, usfc, vsfc, self._Ref.u0, self._Ref.v0, self._windspeed_sfc, self._taux_sfc, self._tauy_sfc)
@@ -84,7 +78,7 @@ class ForcingBOMEX(Forcing.ForcingBase):
         self._f = 0.376e-4
 
         zl = self._Grid.z_local
-        exner = self._Ref.exner
+
 
         #Set Geostrophic wind
         self._ug = np.zeros_like(self._Grid.z_global)
@@ -99,10 +93,10 @@ class ForcingBOMEX(Forcing.ForcingBase):
         # Convert given form of tendencies (theta) to temperature tendency
         for k in range(zl.shape[0]):
             if zl[k] <= 1500.0:
-                self._heating_rate[k] = (-2.0/(3600 * 24.0))  * exner[k]     #K/s
+                self._heating_rate[k] = (-2.0/(3600 * 24.0))      #K/s
             if zl[k] > 1500.0:
                 self._heating_rate[k] = (-2.0/(3600 * 24.0) + (zl[k] - 1500.0)
-                                 * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)) * exner[k]
+                                 * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)) 
             if zl[k] <=  1500.0:
                 self._subsidence[k] = 0.0 + zl[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
             if zl[k] > 1500.0 and zl[k] <= 2100.0:
@@ -111,6 +105,8 @@ class ForcingBOMEX(Forcing.ForcingBase):
         return 
 
     def update(self): 
+
+        exner = self._Ref.exner
 
         u = self._VelocityState.get_field('u')
         v = self._VelocityState.get_field('v')
@@ -123,7 +119,7 @@ class ForcingBOMEX(Forcing.ForcingBase):
         st = self._ScalarState.get_tend('s')
         qvt = self._ScalarState.get_tend('qv')
 
-        st += self._heating_rate[np.newaxis, np.newaxis, :]
+        st += (self._heating_rate * exner)[np.newaxis, np.newaxis, :]
 
         Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f ,u, v, self._Ref.u0, self._Ref.v0, ut, vt)
 

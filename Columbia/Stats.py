@@ -2,6 +2,7 @@ import numpy as np
 import netCDF4 as nc
 import os
 from mpi4py import MPI
+import json 
 
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
@@ -13,14 +14,9 @@ class Stats:
 
         self._frequency = namelist['stats']['frequency']
         self._ouput_root = str(namelist['meta']['output_directory'])
-        self._casename = str(namelist['meta']['casename'])
+        self._casename = str(namelist['meta']['simname'])
 
         self._classes = {}
-
-        try:
-            self._customname = str(namelist['meta']['customname'])
-        except:
-            self._customname = self._casename
 
         self._output_path = os.path.join(self._ouput_root, self._casename)
         self._stats_file = os.path.join(self._output_path, 'stats.nc')
@@ -32,6 +28,7 @@ class Stats:
         self._TimeSteppingController.add_timematch(self._frequency)
         self._last_io_time = 0
 
+        self._namelist = namelist
 
         return
 
@@ -49,6 +46,14 @@ class Stats:
 
         #Create groups for each class
         self._rt_grp = nc.Dataset(self._stats_file, 'w')
+
+        #Copy in the input files
+        self._rt_grp.input_json = json.dumps(self._namelist)
+        self._rt_grp.uuid = self._namelist['meta']['unique_id']
+        self._rt_grp.wall_time = self._namelist['meta']['wall_time']
+
+        with open(os.path.join(self._output_path, 'input.json'), 'w') as input_file_out:
+            json.dump(self._namelist, input_file_out, sort_keys=True, indent=4)
 
         nh = self._Grid.n_halo
 

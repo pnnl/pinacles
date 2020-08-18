@@ -1,8 +1,11 @@
 import numba
 import json
 import argparse
+import uuid
+import datetime
 from Columbia import Initializaiton
 from Columbia import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
+from Columbia import ScalarAdvectionFactory
 from Columbia import ScalarAdvection, TimeStepping, ReferenceState
 from Columbia import ScalarDiffusion, MomentumDiffusion
 from Columbia import MomentumAdvection
@@ -56,13 +59,13 @@ def main(namelist):
     # Set up the thermodynamics class
     Kine = Kinematics.Kinematics(ModelGrid, Ref, VelocityState, DiagnosticState)
     SGS = SGSFactory.factory(namelist, ModelGrid, Ref, VelocityState, DiagnosticState)
-    Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController) 
+    Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
     Thermo = Thermodynamics.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, Micro)
 
     # In the future the microphyics should be initialized here
 
     #Setup the scalar advection calss
-    ScalarAdv = ScalarAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, ScalarTimeStepping)
+    ScalarAdv = ScalarAdvectionFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, ScalarTimeStepping)
     MomAdv = MomentumAdvection.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
     ScalarDiff = ScalarDiffusion.ScalarDiffusion(namelist, ModelGrid, Ref, DiagnosticState, ScalarState)
@@ -73,6 +76,8 @@ def main(namelist):
     PSolver = PressureSolver.factory(namelist, ModelGrid, Ref, VelocityState, DiagnosticState)
 
     # Allocate all of the big parallel arrays needed for the container classes
+    Force = ForcingFactory.factory(namelist, ModelGrid, Ref, Micro, VelocityState, ScalarState, DiagnosticState, TimeSteppingController)
+
     ScalarState.allocate()
     VelocityState.allocate()
     DiagnosticState.allocate()
@@ -85,7 +90,7 @@ def main(namelist):
 
     RayleighDamping.init_means()
     Surf = SurfaceFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState)
-    Force = ForcingFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState)
+
     PSolver.initialize() #Must be called after reference profile is integrated
 
     #Setup Stats-IO
@@ -107,10 +112,7 @@ def main(namelist):
 
 
     s = ScalarState.get_field('s')
-    qv = ScalarState.get_field('qv')
-    #qr = ScalarState.get_field('qr')
-    #qc = ScalarState.get_field('qc')
-    #w = VelocityState.get_field('w')
+    #qv = ScalarState.get_field('qv')
     u = VelocityState.get_field('u')
     t1 = time.time()
 
@@ -133,15 +135,6 @@ def main(namelist):
         for n in range(ScalarTimeStepping.n_rk_step):
             TimeSteppingController.adjust_timestep(n)
 
-            #if n== 0: 
-                #Update microphysics
-                #print(i, n, 'Updating Micro')
-                #Thermo.update(apply_buoyancy=False)
-
-                #ScalarState.boundary_exchange()  #Todo... remove this?
-                #ScalarState.update_all_bcs()
-                #print('Update complete.') 
-
             #Update Thermodynamics
             Thermo.update()
 
@@ -163,7 +156,6 @@ def main(namelist):
             #Update scalar advection
             ScalarAdv.update()
             MomAdv.update()
-
 
             ScalarDiff.update()
             MomDiff.update()
@@ -199,31 +191,32 @@ def main(namelist):
         if MPI.COMM_WORLD.Get_rank() == 0:
 
             print(t1 -t0)
-        #s_slice = DiagnosticState.get_field_slice_z('T', indx=16)
-        s_slice = VelocityState.get_field_slice_z('w', indx=5)
+        s_slice = DiagnosticState.get_field_slice_z('T', indx=5)
+        #s_slice = VelocityState.get_field_slice_z('w', indx=5)
         # b = DiagnosticState.get_field('T')
         # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         xl = ModelGrid.x_local
         zl = ModelGrid.z_local
-        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%60.0,0.0):
+        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%300.0,0.0):
             FieldsIO.update()
             if MPI.COMM_WORLD.Get_rank() == 0:
+                pass 
         #     #print('step: ', i, ' time: ', t1 - t0)
-                 plt.figure(12)
+        #         plt.figure(12)
         #     #evels = np.linspace(299, 27.1, 100)
                  #levels = np.linspace(-4,4, 100)
-                 levels = np.linspace(-5, 5,100)
+                 #levels = np.linspace(-5, 5,100)
                  #plt.contourf(s_slice,cmap=plt.cm.seismic, levels=levels) #,levels=levels, cmap=plt.cm.seismic)
                  #plt.contourf((s[3:-3,16,3:-3]) .T ,100,cmap=plt.cm.seismic) 
-                 plt.contourf(s_slice, levels=levels,cmap=plt.cm.seismic) 
+        #         plt.contourf(s_slice, 100) 
         #     #plt.contourf(w[:,:,16], levels=levels, cmap=plt.cm.seismic)
                  #plt.clim(-4,5)
                  #plt.colorbar()
                 # plt.ylim(0.0*1000,4.0*1000)
                 # plt.xlim(25.6*1000,40.0*1000)
-                 plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=300)
+        #         plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=300)
         #         times.append(t1 - t0)
-                 plt.close()
+        #         plt.close()
         #         print('Scalar Integral ', np.sum(s_slice))
         #         print('S-min max', np.amin(w), np.amax(w))
 
@@ -239,6 +232,19 @@ if __name__ == '__main__':
     parser.add_argument('inputfile')
     args = parser.parse_args()
 
+    #Broadcast a uuid and wall time
+    unique_id= None
+    wall_time = None
+    if MPI.COMM_WORLD.Get_rank() == 0:
+        unique_id = uuid.uuid4()
+        wall_time = datetime.datetime.now()
+
+
+    unique_id = MPI.COMM_WORLD.bcast(str(unique_id))
+    wall_time = MPI.COMM_WORLD.bcast(str(wall_time))
+
     with open(args.inputfile, 'r') as namelist_h:
         namelist = json.load(namelist_h)
+        namelist['meta']['unique_id'] = unique_id
+        namelist['meta']['wall_time'] = wall_time
         main(namelist)

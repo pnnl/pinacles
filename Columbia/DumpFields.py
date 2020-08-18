@@ -12,7 +12,7 @@ class DumpFields:
 
         self._this_rank = MPI.COMM_WORLD.Get_rank()
         self._output_root = str(namelist['meta']['output_directory'])
-        self._casename = str(namelist['meta']['casename'])
+        self._casename = str(namelist['meta']['simname'])
         self._output_path = self._output_path = os.path.join(self._output_root, self._casename)
         self._output_path = os.path.join(self._output_path, 'fields')
 
@@ -21,6 +21,7 @@ class DumpFields:
                 os.makedirs(self._output_path)
 
         self._classes = {}
+        self._namelist = namelist
 
         return
 
@@ -32,7 +33,7 @@ class DumpFields:
 
     def update(self):
 
-        output_here = os.path.join(self._output_path, str(self._TimeSteppingController.time))
+        output_here = os.path.join(self._output_path, str(np.round(self._TimeSteppingController.time + self._TimeSteppingController._dt)))
         MPI.COMM_WORLD.barrier()
         if self._this_rank == 0:
             if not os.path.exists(output_here):
@@ -41,6 +42,10 @@ class DumpFields:
         MPI.COMM_WORLD.barrier()
         rt_grp = nc.Dataset(os.path.join(output_here, str(self._this_rank) + '.nc'), 'w', format="NETCDF4_CLASSIC")
 
+        #Add some metadata
+        rt_grp.unique_id = self._namelist['meta']['unique_id']
+        rt_grp.wall_time = self._namelist['meta']['wall_time']
+
         self.setup_nc_dims(rt_grp)
 
         nhalo = self._Grid.n_halo
@@ -48,17 +53,15 @@ class DumpFields:
             #Loop over all variables
             ac = self._classes[ac]
             for v in ac._dofs:
-                v_nc = rt_grp.createVariable(v, np.double, dimensions=('time','X','Y','Z'))
-
-                v_nc.units = ac.get_units(v)
-                v_nc.long_names = ac.get_long_name(v)
-                v_nc.standard_name = ac.get_standard_name(v)
-
-                v_nc[0,:,:,:] =  ac.get_field(v)[nhalo[0]:-nhalo[0],
-                    nhalo[1]:-nhalo[1],
-                    nhalo[2]:-nhalo[2]]
-
-
+                
+                if 'ff' not in v:  #Exclude the bins from the 3D fields for the same of storage
+                    v_nc = rt_grp.createVariable(v, np.double, dimensions=('time','X','Y','Z'))
+                    v_nc.units = ac.get_units(v)
+                    v_nc.long_names = ac.get_long_name(v)
+                    v_nc.standard_name = ac.get_standard_name(v)
+                    v_nc[0,:,:,:] =  ac.get_field(v)[nhalo[0]:-nhalo[0],
+                                                     nhalo[1]:-nhalo[1],
+                                                     nhalo[2]:-nhalo[2]]
 
             rt_grp.sync()
 

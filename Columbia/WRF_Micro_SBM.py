@@ -1,8 +1,9 @@
 import numpy as np
 from Columbia import parameters
 from mpi4py import MPI
+from Columbia import UtilitiesParallel
 import time
-from Columbia.Microphysics import MicrophysicsBase
+from Columbia.Microphysics import MicrophysicsBase, water_path, water_fraction, water_fraction_profile
 from Columbia.wrf_physics import module_mp_fast_sbm_warm
 from Columbia.WRFUtil import to_wrf_order, to_wrf_order_4d, to_our_order_4d, to_our_order
 from Columbia.WRFUtil import to_wrf_order_halo, to_wrf_order_4d_halo, to_our_order_4d_halo, to_our_order_halo
@@ -24,14 +25,13 @@ class MicroSBM(MicrophysicsBase):
                       'qnr': 'rain drop number concentration',
                       'qna': 'aerosol number concentration',
                       'qna_nucl': 'regeneration aerosol number concentration'}
-        
+
         units = {'qc':'kg kg^-1',
                  'qr':  'kg kg^-1',
                  'qnc': 'kg^-1',
                  'qnr': 'kg^-1',
                  'qna': 'kg^-1',
                  'qna_nucl': 'kg^-1'}
-        
 
 
         for var in self._list_of_ScalarStatevars:
@@ -41,7 +41,7 @@ class MicroSBM(MicrophysicsBase):
         self._io_fields = ['MA', 'LH_rate', 'CE_rate', 'DS_rate', 'Melt_rate',
             'Frz_rate', 'CldNucl_rate', 'IceNucl_rate', 'difful_tend', 'diffur_tend',
             'tempdiffl', 'automass_tend', 'autonum_tend', 'saturation','n_reg_ccn']
-        
+
         long_names = {'MA': '', 
                       'LH_rate':'Latent heat rate',
                       'CE_rate':'Condensation / evaporation rate',
@@ -58,7 +58,7 @@ class MicroSBM(MicrophysicsBase):
                       'saturation':'Saturaiton Ratio',
                       'n_reg_ccn':'Aerosol Regeneration Rate'}
 
-        units = {'MA': '', 
+        units = {'MA': '',
                       'LH_rate':'K s^{-1}',
                       'CE_rate':'kg kg^{-1} s^{-1}',
                       'DS_rate':'kg kg^{-1} s^{-1}',
@@ -75,6 +75,30 @@ class MicroSBM(MicrophysicsBase):
                       'n_reg_ccn':''}
 
         for var in self._io_fields:
+            self._DiagnosticState.add_variable(var, latex_name=var, long_name=long_names[var])
+
+        self._sbm_in_iofield = ['T_sbm_in', 'qv_sbm_in', 'qc_sbm_in', 'qr_sbm_in',
+            'qnc_sbm_in', 'qnr_sbm_in', 'qna_sbm_in', 'qna_nucl_sbm_in']
+
+        long_names = {'T_sbm_in': 'temperature going into sbm',
+                      'qv_sbm_in': 'water vapor mixing ratio going into sbm',
+                      'qc_sbm_in': 'cloud-water mixing ratio going into sbm',
+                      'qr_sbm_in': 'rain-water mixing ratio going into sbm',
+                      'qnc_sbm_in': 'cloud droplet number concentraiton going into sbm',
+                      'qnr_sbm_in': 'rain drop number concentration going into sbm',
+                      'qna_sbm_in': 'aerosol number concentration going into sbm',
+                      'qna_nucl_sbm_in': 'regeneration aerosol number concentration going into sbm'}
+
+        units = {'T_sbm_in': 'K',
+                      'qv_sbm_in': 'kg/kg',
+                      'qc_sbm_in': 'kg/kg',
+                      'qr_sbm_in': 'kg/kg',
+                      'qnc_sbm_in': 'kg/kg',
+                      'qnr_sbm_in': 'kg/kg',
+                      'qna_sbm_in': 'kg/kg',
+                      'qna_nucl_sbm_in': 'kg/kg'}
+
+        for var in self._sbm_in_iofield :
             self._DiagnosticState.add_variable(var, latex_name=var, long_name=long_names[var])
 
         self._bin_start = self._ScalarState.nvars
@@ -101,6 +125,11 @@ class MicroSBM(MicrophysicsBase):
 
         self._th_old = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         self._qv_old = np.zeros(self._wrf_dims, order='F', dtype=np.double)
+
+        self._RAINNC = np.zeros((self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order='F')
+        self._RAINNCV =  np.zeros_like(self._RAINNC)
+
+        self._rain_rate = 0.0
 
         self._itimestep = 1
         self._call_count = 0
@@ -232,6 +261,21 @@ class MicroSBM(MicrophysicsBase):
         #self.plot_wrf_vars(wrf_vars)
 
         #Call sbm!
+
+        #Store input fields
+        sbm_in_vars = {'T_sbm_in':'T' , 'qv_sbm_in':'qv', 'qc_sbm_in':'qc', 'qr_sbm_in':'qr',
+            'qnc_sbm_in':'qnc', 'qnr_sbm_in':'qnr', 'qna_sbm_in':'qna', 'qna_nucl_sbm_in':'qna_nucl'}
+    
+        for key, value in sbm_in_vars.items():
+            try:
+                v = self._ScalarState.get_field(value)
+            except:
+                v = self._DiagnosticState.get_field(value)
+            v_diag = self._DiagnosticState.get_field(key)
+            v_diag[:,:,:] = v[:,:,:]
+
+
+        rain_accum_old = np.sum(self._RAINNC)
         MPI.COMM_WORLD.barrier()
         t0 = time.time()
         module_mp_fast_sbm.module_mp_fast_sbm.warm_sbm(wrf_vars['w'],
@@ -286,6 +330,9 @@ class MicroSBM(MicrophysicsBase):
         t1 = time.time()
         MPI.COMM_WORLD.barrier()
 
+        self._RAINNC[:,:] = wrf_vars['RAINNC'][:,:]
+        self._RAINNCV[:,:] = wrf_vars['RAINNCV'][:,:]
+        self._rain_rate = (np.sum(self._RAINNC) - rain_accum_old)/dt
         #Now we need to map back to map back from WRF indexes to PINNACLE indexes
         to_our_order_4d(nhalo,wrf_vars['chem_new'],chem_new)
 
@@ -303,38 +350,104 @@ class MicroSBM(MicrophysicsBase):
             to_our_order(nhalo, wrf_vars[v], var)
 
 
+
+
+
         s_wrf = wrf_vars['th_phy']* self._Ref.exner[np.newaxis, nhalo[2]:-nhalo[2], np.newaxis]  +  (parameters.G*z- parameters.LV*(wrf_vars['qc'] + wrf_vars['qr']))*parameters.ICPD
         to_our_order(nhalo, s_wrf, s)
 
         to_our_order(nhalo, wrf_vars['qv'], qv)
+
 
         self._call_count += 1
         self._itimestep  += 1
 
         return
     def get_qc(self):
-        #print('Here', np.sum(self._ScalarState._state_array.array[self._qc_start:self._qc_end,:,:,:], axis=0))
-        #import sys; sys.exit()
         return self._ScalarState.get_field('qc') +  self._ScalarState.get_field('qr')  #np.sum(self._ScalarState._state_array.array[self._qc_start:self._qc_end,:,:,:], axis=0)
 
+    def io_initialize(self, nc_grp):
+
+        timeseries_grp = nc_grp['timeseries']
+        profiles_grp = nc_grp['profiles']
+
+        #Cloud fractions
+        timeseries_grp.createVariable('CF', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('RF', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('LWP', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('RWP', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('VWP', np.double, dimensions=('time',))
 
 
-    def plot_wrf_vars(self, wrf_vars):
-
-        import pylab as plt
-
-        count = 0
-        for var in wrf_vars:
-            plt.figure(count)
-            data = wrf_vars[var]
-            if type(data) == type(np.array(0)):
-                if len(data.shape) == 3:
-                    plt.plot(np.mean(np.mean(data,axis=2),axis=0))
-                    plt.title(var)
-            count +=  1
+        #Precipitation
+        timeseries_grp.createVariable('RAINNC', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('RAINNCV', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('rain_rate', np.double, dimensions=('time',))
 
 
-        plt.show()
-
+        #Now add cloud fraction and rain fraction profiles
+        profiles_grp.createVariable('CF', np.double, dimensions=('time', 'z',))
+        profiles_grp.createVariable('RF', np.double, dimensions=('time', 'z',))
 
         return
+
+    def io_update(self, nc_grp):
+        my_rank = MPI.COMM_WORLD.Get_rank()
+
+        n_halo = self._Grid.n_halo
+        dz = self._Grid.dx[2]
+        rho = self._Ref.rho0
+        npts = self._Grid.n[0] * self._Grid.n[1]
+
+        qc = self._ScalarState.get_field('qc')
+        qv = self._ScalarState.get_field('qv')
+        qr = self._ScalarState.get_field('qr')
+
+        #First compute liqud water path
+        lwp = water_path(n_halo, dz, npts, rho, qc)
+        lwp = UtilitiesParallel.ScalarAllReduce(lwp)
+
+        rwp = water_path(n_halo, dz, npts, rho, qr)
+        rwp = UtilitiesParallel.ScalarAllReduce(rwp)
+
+        vwp = water_path(n_halo, dz, npts, rho, qv)
+        vwp = UtilitiesParallel.ScalarAllReduce(vwp)
+
+        #Compute cloud and rain fraction
+        cf = water_fraction(n_halo, npts, qc, threshold=1e-5)
+        cf = UtilitiesParallel.ScalarAllReduce(cf)
+
+        cf_prof = water_fraction_profile(n_halo, npts, qc, threshold=1e-5)
+        cf_prof = UtilitiesParallel.ScalarAllReduce(cf_prof)
+
+        rf = water_fraction(n_halo, npts, qr, threshold=1e-5)
+        rf = UtilitiesParallel.ScalarAllReduce(rf)
+
+        rf_prof = water_fraction_profile(n_halo, npts, qr, threshold=1e-5)
+        rf_prof = UtilitiesParallel.ScalarAllReduce(rf_prof)
+
+        rainnc = np.sum(self._RAINNC)/npts
+        rainnc = UtilitiesParallel.ScalarAllReduce(rainnc)
+        rainncv = np.sum(self._RAINNCV)/npts
+        rainncv = UtilitiesParallel.ScalarAllReduce(rainncv)
+
+        rr = UtilitiesParallel.ScalarAllReduce(self._rain_rate/npts)
+
+        if my_rank == 0:
+            timeseries_grp = nc_grp['timeseries']
+            profiles_grp = nc_grp['profiles']
+
+            timeseries_grp['CF'][-1] = cf
+            timeseries_grp['RF'][-1] = rf
+            timeseries_grp['LWP'][-1] = lwp
+            timeseries_grp['RWP'][-1] = rwp
+            timeseries_grp['VWP'][-1] = vwp
+
+            timeseries_grp['RAINNC'][-1] = rainnc
+            timeseries_grp['RAINNCV'][-1] = rainncv
+            timeseries_grp['rain_rate'][-1] = rr
+
+            profiles_grp['CF'][-1,:] = cf_prof[n_halo[2]:-n_halo[2]]
+            profiles_grp['RF'][-1,:] = rf_prof[n_halo[2]:-n_halo[2]]
+
+            
