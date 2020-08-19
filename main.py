@@ -157,8 +157,8 @@ def main(namelist):
             ScalarAdv.update()
             MomAdv.update()
 
-            #ScalarDiff.update()
-            #MomDiff.update()
+            ScalarDiff.update()
+            MomDiff.update()
 
             #Do Damping
             RayleighDamping.update()

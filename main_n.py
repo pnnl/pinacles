@@ -10,7 +10,7 @@ import SimulationClass
 
 def main(namelist):
 
-    n = 1 
+    n = 4 
     gcm_res = 25*1e3
     couple_dt = 600.0
     forced_fields = ['qv', 's']

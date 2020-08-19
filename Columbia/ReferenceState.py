@@ -186,8 +186,8 @@ class ReferenceDry(ReferenceBase):
         z = np.append([0.0],self._Grid.z_global[nhalo:-nhalo] )
 
         #Compute reference pressure profiles
-        self._P0[nhalo:-nhalo] = _integrate_dry(z, lnp_sfc, self.ssfc)[1:]
-        self._P0_edge[nhalo-1:-nhalo+1] = _integrate_dry(self._Grid.z_edge_global[nhalo-1:-nhalo+1], lnp_sfc, self.ssfc)
+        self._P0[nhalo:-nhalo] = _integrate_dry_bouss(z, lnp_sfc, self.ssfc)[1:]
+        self._P0_edge[nhalo-1:-nhalo+1] = _integrate_dry_bouss(self._Grid.z_edge_global[nhalo-1:-nhalo+1], lnp_sfc, self.ssfc)
 
         #Compute reference temperature profiles
         self._T0[nhalo:-nhalo] = ThermodynamicsDry_impl.T(z, self.ssfc)[1:]

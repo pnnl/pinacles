@@ -123,7 +123,7 @@ def bomex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     shape = s.shape
 
-    perts = np.random.uniform(-0.01, 0.01,(shape[0],shape[1],shape[2]))
+    perts = np.random.uniform(-0.5, 0.5,(shape[0],shape[1],shape[2]))
     for i in range(shape[0]):
         for j in range(shape[1]):
             u700 = 0

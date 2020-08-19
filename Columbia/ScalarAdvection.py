@@ -238,7 +238,7 @@ class ScalarWENO5(ScalarAdvectionBase):
         # remain true.
 
         #Ge the velocities (No copy done here)
-        u = np.copy(self._VelocityState.get_field('u')) + 10.0
+        u = np.copy(self._VelocityState.get_field('u')) #+ 10.0
         v = self._VelocityState.get_field('v')
         w = self._VelocityState.get_field('w')
         

@@ -97,12 +97,9 @@ class PressureTDMA:
         self._a = np.zeros(self._Grid.n[2], dtype=np.double)
         self._c = np.zeros(self._Grid.n[2], dtype=np.double)
 
-        #First set the lower boundary condition
-        self._a[0] = 0.0
-        self._c[0] = dxi[2] * dxi[2] * rho0_edge[n_halo[2]]
 
         #Fill Matrix Values
-        for k in range(1,nl[2]-1):
+        for k in range(0,nl[2]):
             self._a[k] = dxi[2] * dxi[2] * rho0_edge[k + n_halo[2]-1]
             self._c[k] = dxi[2] * dxi[2] * rho0_edge[k + n_halo[2]]
 
