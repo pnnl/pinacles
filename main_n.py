@@ -4,14 +4,14 @@ import json
 import numpy as np
 import pylab as plt
 import netCDF4 as nc 
-
+import uuid, datetime
 import SimulationClass
 
 
 def main(namelist):
 
-    n = 4 
-    gcm_res = 50*1e3
+    n = 1 
+    gcm_res = 25*1e3
     couple_dt = 600.0
     forced_fields = ['qv', 's']
     domains = []
@@ -21,20 +21,18 @@ def main(namelist):
         domains.append(SimulationClass.Simulation(namelist, i))
         domains[i].initialize()
 
-
-    
     if MPI.COMM_WORLD.Get_rank() == 0:
         rt_grp = nc.Dataset('couple_out.nc', 'w')
-        
+
         for i in range(n):
             cpl_grp = rt_grp.createGroup('couple_' + str(i))
             print(domains[i].ModelGrid.n[2])
             cpl_grp.createDimension('z', size=domains[i].ModelGrid.n[2])
             z = cpl_grp.createVariable('z', np.double,  dimensions=('z',))
-            
+
             cpl_grp.createDimension('t')
             t = cpl_grp.createVariable('t', np.double, dimensions=('t',))
-            
+
             nh = domains[i].ModelGrid.n_halo
             z[:] = domains[i].ModelGrid.z_global[nh[2]:-nh[2]]
 
@@ -63,22 +61,61 @@ def main(namelist):
         ls_forcing.append({})
 
 
+    edge_nudging = True
+    center_min = 3 + 32
+    center_max = 3 + 64
 
     for couple_time in np.arange(couple_dt,10*86400+couple_dt, couple_dt):
         for i in range(n):
-            for v in forced_fields:
-                if not v == 'qv':
-                    ls_forcing[i][v] = (ls_state[i][v] - domains[i].ScalarState.mean(v) )/couple_dt
-                else:
-                    ls_forcing[i][v] = (ls_state[i][v] - domains[i].ScalarState.mean(v) 
-                        - domains[i].ScalarState.mean('qc') - domains[i].ScalarState.mean('qr') )/couple_dt
-            domains[i].update(couple_time, ls_forcing[i])
-            for v in forced_fields:
-                if not v == 'qv':
-                    ss_forcing[i][v] = (domains[i].ScalarState.mean(v) - ls_state[i][v])/couple_dt
-                else:
-                    ss_forcing[i][v] = (domains[i].ScalarState.mean(v) + domains[i].ScalarState.mean('qc') + domains[i].ScalarState.mean('qr') 
-                     - ls_state[i][v])/couple_dt
+
+            if not edge_nudging:
+            #With out edge nudging
+                for v in forced_fields:
+                    if not v == 'qv':
+                        ls_forcing[i][v] = (ls_state[i][v] - domains[i].ScalarState.mean(v) )/couple_dt
+                    else:
+                        ls_forcing[i][v] = (ls_state[i][v] - domains[i].ScalarState.mean(v) 
+                            - domains[i].ScalarState.mean('qc') - domains[i].ScalarState.mean('qr') )/couple_dt
+                domains[i].update(couple_time, ls_forcing[i])
+                for v in forced_fields:
+                    if not v == 'qv':
+                        ss_forcing[i][v] = (domains[i].ScalarState.mean(v) - ls_state[i][v])/couple_dt
+                    else:
+                        ss_forcing[i][v] = (domains[i].ScalarState.mean(v) + domains[i].ScalarState.mean('qc') + domains[i].ScalarState.mean('qr') 
+                        - ls_state[i][v])/couple_dt
+            else:
+            #with edge nudgeing
+                for v in forced_fields:
+                    if not v == 'qv':
+
+                        phi = domains[i].ScalarState.get_field(v)
+                        mean = np.mean(phi[center_min:center_max,3,:], axis=0)
+
+                        ls_forcing[i][v] = (ls_state[i][v] - mean)/couple_dt
+                    else:
+                        qv = domains[i].ScalarState.get_field('qv')
+                        qc = domains[i].ScalarState.get_field('qc')
+                        qr = domains[i].ScalarState.get_field('qr')
+
+                        mean = np.mean(qv[center_min:center_max,3,:], axis=0) + np.mean(qc[center_min:center_max,3,:], axis=0) + np.mean(qr[center_min:center_max,3,:], axis=0)
+
+                        ls_forcing[i][v] = (ls_state[i][v] - mean )/couple_dt
+                domains[i].update(couple_time, ls_forcing[i])
+                for v in forced_fields:
+                    if not v == 'qv':
+                        phi = domains[i].ScalarState.get_field(v)
+                        mean = np.mean(phi[center_min:center_max,3,:], axis=0)
+
+                        ss_forcing[i][v] = (mean - ls_state[i][v])/couple_dt
+                    else:
+
+                        qv = domains[i].ScalarState.get_field('qv')
+                        qc = domains[i].ScalarState.get_field('qc')
+                        qr = domains[i].ScalarState.get_field('qr')
+
+                        mean = np.mean(qv[center_min:center_max,3,:], axis=0) + np.mean(qc[center_min:center_max,3,:], axis=0) + np.mean(qr[center_min:center_max,3,:], axis=0)
+
+                        ss_forcing[i][v] = (mean - ls_state[i][v])/couple_dt
 
         for i in range(n):
             for v in forced_fields:
@@ -111,8 +148,23 @@ if __name__ == '__main__':
     parser.add_argument('inputfile')
     args = parser.parse_args()
 
+
+    #Broadcast a uuid and wall time
+    unique_id= None
+    wall_time = None
+    if MPI.COMM_WORLD.Get_rank() == 0:
+        unique_id = uuid.uuid4()
+        wall_time = datetime.datetime.now()
+
+
+    unique_id = MPI.COMM_WORLD.bcast(str(unique_id))
+    wall_time = MPI.COMM_WORLD.bcast(str(wall_time))
+
+
     with open(args.inputfile, 'r') as namelist_h:
         namelist = json.load(namelist_h)
+        namelist['meta']['unique_id'] = unique_id
+        namelist['meta']['wall_time'] = wall_time
         main(namelist)
 
 

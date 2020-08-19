@@ -9,7 +9,7 @@ def compute_visc(dx, strain_rate_mag, bvf, cs, pr,
 
     shape = eddy_viscosity.shape
 
-    filt_scale = (dx[0] * dx[1])**(1.0/3.0)
+    filt_scale  = (dx[0] * dx[1])**(1.0/2.0)
     pri = 1.0/pr
 
     for i in range(shape[0]):
@@ -24,7 +24,7 @@ def compute_visc(dx, strain_rate_mag, bvf, cs, pr,
                               strain_rate_mag[i, j, k] *
                                  strain_rate_mag[i, j, k]))**(1.0 /
                                                               2.0)
-
+ 
                 # Compute the eddy viscosity with a correction for
                 # stratification
                 eddy_viscosity[i, j, k] = (

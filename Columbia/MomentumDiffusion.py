@@ -106,7 +106,7 @@ def compute_w_fluxes(n_halo, dx, dxi, rho0, rho0_edge, eddy_viscosity,
                                         - (fluxx[i,j,k]+ fluxx[i,j,k+1] + fluxx[i-1,j,k] + fluxx[i-1,j,k+1]))*dxi[0])/ rho0_edge[k]
 
                 wt[i,j,k] -= 0.25 * (((fluxy[i,j,k] + fluxy[i,j,k+1] + fluxy[i,j+1,k] + fluxy[i,j+1,k+1])
-                                        - (fluxy[i,j,k]+ fluxy[i,j,k+1] + fluxy[i,j-1,k] + fluxy[i,j-1,k+1]))*dxi[1])/ rho0[k]
+                                        - (fluxy[i,j,k]+ fluxy[i,j,k+1] + fluxy[i,j-1,k] + fluxy[i,j-1,k+1]))*dxi[1])/ rho0_edge[k]
 
                 wt[i,j,k] -= (fluxz[i,j,k+1] - fluxz[i,j,k])*dxi[2]/ rho0_edge[k]
                 #wt[i,j,k] -= ((fluxx[i+1,j,k] - fluxx[i,j,k])*dxi[0]
@@ -126,7 +126,6 @@ class MomentumDiffusion:
         self._Kine = Kine
 
         return
-
 
     def update(self):
 

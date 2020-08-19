@@ -4,6 +4,7 @@ import argparse
 from Columbia import Initializaiton
 from Columbia import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
 from Columbia import ScalarAdvection, TimeStepping, ReferenceState
+from Columbia import ScalarAdvectionFactory
 from Columbia import ScalarDiffusion, MomentumDiffusion
 from Columbia import MomentumAdvection
 from Columbia import PressureSolver
@@ -58,13 +59,13 @@ class Simulation:
         # Set up the thermodynamics class
         self.Kine = Kinematics.Kinematics(self.ModelGrid, self.Ref, self.VelocityState, self.DiagnosticState)
         self.SGS = SGSFactory.factory(namelist, self.ModelGrid, self.Ref, self.VelocityState, self.DiagnosticState)
-        self.Micro = MicrophysicsFactory.factory(namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.DiagnosticState, self.TimeSteppingController) 
+        self.Micro = MicrophysicsFactory.factory(namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.DiagnosticState, self.TimeSteppingController)
         self.Thermo = Thermodynamics.factory(namelist,self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.DiagnosticState, self.Micro)
 
         # In the future the microphyics should be initialized here
 
         #Setup the scalar advection calss
-        self.ScalarAdv = ScalarAdvection.factory(namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.ScalarTimeStepping)
+        self.ScalarAdv = ScalarAdvectionFactory.factory(namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.ScalarTimeStepping)
         self.MomAdv = MomentumAdvection.factory(namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState)
 
         self.ScalarDiff = ScalarDiffusion.ScalarDiffusion(namelist, self.ModelGrid, self.Ref, self.DiagnosticState, self.ScalarState)
@@ -87,7 +88,7 @@ class Simulation:
 
         self.RayleighDamping.init_means()
         self.Surf = SurfaceFactory.factory(namelist, self.ModelGrid, self.Ref, self.VelocityState, self.ScalarState, self.DiagnosticState)
-        self.Force = ForcingFactory.factory(namelist, self.ModelGrid, self.Ref, self.VelocityState, self.ScalarState, self.DiagnosticState)
+        self.Force = ForcingFactory.factory(namelist, self.ModelGrid, self.Ref, self.Micro, self.VelocityState, self.ScalarState, self.DiagnosticState, self.TimeSteppingController)
         self.PSolver.initialize() #Must be called after reference profile is integrated
 
         #Setup Stats-IO
@@ -150,9 +151,37 @@ class Simulation:
                 #Do Damping
                 self.RayleighDamping.update()
 
+                #Do edge nudging
+                for  var in ['qv', 's']:
+                    phi = self.ScalarState.get_field(var)
+                    phi_t = self.ScalarState.get_tend(var)
+
+                    center_min = 3 + 32
+                    center_max = 3 + 64
+
+                    mean = np.mean(phi[center_min:center_max,3,:], axis=0)
+
+                    phi_t[:8+3,:,:] += 1/100.0 * (mean[np.newaxis, np.newaxis, :] - phi[:8+3,:,:] )
+                    phi_t[-8-3:,:,:] += 1/100.0 * (mean[np.newaxis,np.newaxis, :] - phi[-8-3:,:,:] )
+
+                #for  var in ['u', 'v']:
+                #    phi = self.VelocityState.get_field(var)
+                #    phi_t = self.VelocityState.get_tend(var)
+
+                #    center_min = 3 + 32
+                #    center_max = 3 + 64
+
+                #    mean = np.mean(phi[center_min:center_max,3,:], axis=0)
+
+
+                #    phi_t[:16+3,:,:] += 1/300.0 * (mean[np.newaxis, np.newaxis, :] - phi[:16+3,:,:] )
+                #    phi_t[-16-3:,:,:] += 1/300.0 * (mean[np.newaxis,np.newaxis, :] - phi[-16-3:,:,:] )
+
                 #Apply large scale forcing
                 for v in ls_forcing:
                     self.ScalarState.get_tend(v)[:,:,:] += ls_forcing[v][np.newaxis,np.newaxis,:] 
+
+
 
                 #Do time stepping
                 self.ScalarTimeStepping.update()
@@ -172,7 +201,11 @@ class Simulation:
                     self.Micro.update()
                     self.ScalarState.boundary_exchange()
                     self.ScalarState.update_all_bcs()
+        
 
+        
+        
+        self.FieldsIO.update()
         return
 
 

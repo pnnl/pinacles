@@ -4,25 +4,32 @@ import numpy as np
 def water_path(n_halo, dz, npts, rho, q):
     path = 0.0 
     shape = q.shape
-    for i in range(n_halo[0], shape[0]-n_halo[0]):
+    count = 0 
+    #for i in range(n_halo[0], shape[0]-n_halo[0]):
+    for i in range(3+32, 3+64):
         for j in range(n_halo[1], shape[1]-n_halo[1]):
+            count += 1 
             for k in range(n_halo[2], shape[2] - n_halo[2]):
                 path += q[i,j,k] * rho[k] * dz
-    return path/npts
+    return path/count
 
 
 @numba.njit()
 def water_fraction(n_halo, npts, q, threshold=1e-8):
     frac = 0.0
     shape = q.shape
-    for i in range(n_halo[0], shape[0]-n_halo[0]):
+
+    #for i in range(n_halo[0], shape[0]-n_halo[0]):
+    count = 0 
+    for i in range(3+32, 3+64):
         for j in range(n_halo[1], shape[1]-n_halo[1]):
+            count += 1
             for k in range(n_halo[2], shape[2] - n_halo[2]):
                 if q[i,j,k] >= threshold:
                     frac += 1.0
                     break
 
-    return frac/npts
+    return frac/count
 
 @numba.njit()
 def water_fraction_profile(n_halo, npts, q, threshold=1e-8):
