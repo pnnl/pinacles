@@ -2,9 +2,12 @@ import numpy as np
 import numba
 
 @numba.njit(fastmath=True)
-def compute_fluxes(dxi, rho0, rho0_edge, phi, eddy_diffusivity, fluxx, fluxy, fluxz, phi_t):
+def compute_fluxes(dx, dxi, rho0, rho0_edge, phi, eddy_diffusivity, fluxx, fluxy, fluxz, phi_t):
 
     shape = phi.shape
+
+
+    #kz_fact = dx[2]*dx[2]/((dx[0] * dx[1]))
 
     for i in range(shape[0]-1):
         for j in range(shape[1]-1):
@@ -12,7 +15,7 @@ def compute_fluxes(dxi, rho0, rho0_edge, phi, eddy_diffusivity, fluxx, fluxy, fl
 
                 fluxx[i,j,k] = -0.5*(eddy_diffusivity[i,j,k] + eddy_diffusivity[i+1,j,k])*(phi[i+1,j,k] - phi[i,j,k])*dxi[0] * rho0[k]
                 fluxy[i,j,k] = -0.5*(eddy_diffusivity[i,j,k] + eddy_diffusivity[i,j+1,k])*(phi[i,j+1,k] - phi[i,j,k])*dxi[1] * rho0[k] 
-                fluxz[i,j,k] = -0.5*(eddy_diffusivity[i,j,k] + eddy_diffusivity[i,j,k+1])*(phi[i,j,k+1] - phi[i,j,k])*dxi[2] * rho0_edge[k]
+                fluxz[i,j,k] = -0.5*(eddy_diffusivity[i,j,k] + eddy_diffusivity[i,j,k+1])*(phi[i,j,k+1] - phi[i,j,k])*dxi[2] * rho0_edge[k] #* kz_fact
 
     for i in range(1,shape[0]-1):
         for j in range(1,shape[1]-1):
@@ -37,6 +40,7 @@ class ScalarDiffusion:
     def update(self):
 
         dxi = self._Grid.dxi
+        dx = self._Grid.dx
 
         rho0 = self._Ref.rho0
         alpha0 = self._Ref.alpha0
@@ -53,7 +57,7 @@ class ScalarDiffusion:
             phi_t = self._ScalarState.get_tend(var)
 
 
-            compute_fluxes(dxi, rho0, rho0_edge, phi, eddy_diffusivity, fluxx, fluxy, fluxz, phi_t)
+            compute_fluxes(dx, dxi, rho0, rho0_edge, phi, eddy_diffusivity, fluxx, fluxy, fluxz, phi_t)
 
 
 

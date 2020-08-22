@@ -123,7 +123,7 @@ def bomex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     shape = s.shape
 
-    perts = np.random.uniform(-0.01, 0.01,(shape[0],shape[1],shape[2]))
+    perts = np.random.uniform(-0.01, 0.01,(shape[0],shape[1],shape[2])) * 10.0
     for i in range(shape[0]):
         for j in range(shape[1]):
             u700 = 0
@@ -144,7 +144,7 @@ def bomex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                     qv[i,j,k] = 4.2 + (z- 2000.0) * (3.0 - 4.2)/(3000.0  - 2000.0)
 
                 t *= exner[k]
-                if zl[k] < 200.0:
+                if zl[k] < 400.0:
                     t += perts[i,j,k]
                 s[i,j,k] = DryThermo.s(zl[k], t)
 
