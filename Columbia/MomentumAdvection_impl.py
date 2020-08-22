@@ -124,7 +124,7 @@ def w_advection_2nd(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
                 fluxx[i,j,k] = up  * (w[i+1,j,k] + w[i,j,k])*0.5* rho0_edge[k]
 
                 #Compute w advection by the v wind
-                fluxy[i,j,k] = vp * (w[i,j+1,k] + w[i,j,k])*0.5* rho0_edge[k] 
+                fluxy[i,j,k] = vp * (w[i,j+1,k] + w[i,j,k])*0.5* rho0_edge[k]
 
                 #Compute w advection by the w wind
                 fluxz[i,j,k] = wp * wp * rho0[k+1]

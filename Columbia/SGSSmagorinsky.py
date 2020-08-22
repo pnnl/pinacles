@@ -4,20 +4,18 @@ import numba
 
 
 @numba.njit(fastmath=True)
-def compute_visc(dx, strain_rate_mag, bvf, cs, pr,
+def compute_visc(dx, z, strain_rate_mag, bvf, cs, pr,
                  eddy_viscosity, eddy_diffusivity):
 
     shape = eddy_viscosity.shape
 
-    # Compute filter scale
-    filt_scale = (dx[0] * dx[1] * dx[2])**(1.0 / 3.0)
-
-    # Compute the inverse Prandtl number
-    pri = 1.0 / pr
+    filt_scale  = (dx[0] * dx[1] * dx[2] )**(1.0/3.0)
+    pri = 1.0/pr
 
     for i in range(shape[0]):
         for j in range(shape[1]):
             for k in range(shape[2]):
+                filt_scale  = 1.0/np.sqrt(1.0/((dx[0] * dx[1] * dx[2] )**(1.0/3.0))**2.0 + 1.0/(0.4 * z[k])**2.0)
                 # Compute the stratification correction
                 fb = 1
                 if bvf[i, j, k] > 0 and strain_rate_mag[i, j, k] > 0.0:
@@ -27,11 +25,10 @@ def compute_visc(dx, strain_rate_mag, bvf, cs, pr,
                               strain_rate_mag[i, j, k] *
                                  strain_rate_mag[i, j, k]))**(1.0 /
                                                               2.0)
-
                 # Compute the eddy viscosity with a correction for
                 # stratification
                 eddy_viscosity[i, j, k] = (
-                    cs * filt_scale) ** 2.0 * fb * strain_rate_mag[i, j, k]
+                    (cs * filt_scale) ** 2.0 * (fb * strain_rate_mag[i, j, k]))
 
                 # Compute the eddy diffusivty from the  eddy viscosity using an assumed
                 # inverse SGS Prandtl number tune this using
@@ -73,6 +70,7 @@ class Smagorinsky(SGSBase):
 
         # Get the grid spacing from the Grid class
         dx = self._Grid.dx
+        z = self._Grid.z_local
 
         # Get the necessary 3D fields from the field containers
         strain_rate_mag = self._DiagnosticState.get_field('strain_rate_mag')
@@ -82,7 +80,7 @@ class Smagorinsky(SGSBase):
 
         # Compute the viscosity
         compute_visc(
-            dx,
+            dx, z,
             strain_rate_mag,
             bvf,
             self._cs,
