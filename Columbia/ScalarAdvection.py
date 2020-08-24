@@ -15,7 +15,6 @@ class ScalarAdvectionBase:
         return
 
     def update(self):
-
         return
 
 @numba.njit(fastmath=True)
