@@ -53,7 +53,7 @@ def stable_bubble():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'sl2'
+    input_dict[key]['type'] = 'weno'
     input_dict[key][input_dict[key]['type']] = {}
     input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
 
@@ -133,7 +133,7 @@ def sullivan_and_patton():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'sl2'
+    input_dict[key]['type'] = 'weno'
     input_dict[key][input_dict[key]['type']] = {}
     input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
 
@@ -185,7 +185,7 @@ def bomex():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'sl2'
+    input_dict[key]['type'] = 'weno'
     input_dict[key][input_dict[key]['type']] = {}
     input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
 
@@ -238,7 +238,7 @@ def atex():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'sl2'
+    input_dict[key]['type'] = 'weno'
     input_dict[key][input_dict[key]['type']] = {}
     input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
 
@@ -293,7 +293,7 @@ def rico():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'sl2'
+    input_dict[key]['type'] = 'weno'
     input_dict[key][input_dict[key]['type']] = {}
     input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
 
