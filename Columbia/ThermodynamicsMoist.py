@@ -1,6 +1,7 @@
 from Columbia import Thermodynamics, ThermodynamicsMoist_impl
 from Columbia import parameters
 import numpy as np
+import numba
 
 class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
     def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro):
@@ -55,4 +56,21 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
 
         return
 
-    
+    @staticmethod
+    @numba.njit()
+    def compute_thetali(exner, T, thetali, qc):
+        shape = T.shape
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                for k in range(shape[2]):
+                    thetali[i,j,k] = T[i,j,k]/exner[k] - parameters.LV * qc[i,j,k] / (parameters.CPD * T[i,j,k])
+        return
+
+    def get_thetali(self):
+        exner = self._Ref.exner
+        T = self._DiagnosticState.get_field('T')
+        qc = self._Micro.get_qc()
+        thetali = np.empty_like(T)
+        self.compute_thetali(exner, T, thetali, qc)
+
+        return thetali

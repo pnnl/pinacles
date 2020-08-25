@@ -18,6 +18,7 @@ from Columbia import DumpFields
 from Columbia import MicrophysicsFactory
 from Columbia import Kinematics
 from Columbia import SGSFactory
+from Columbia import DiagnosticsTurbulence
 from mpi4py import MPI
 import numpy as np
 import time
@@ -96,10 +97,13 @@ def main(namelist):
     #Setup Stats-IO
     StatsIO = Stats(namelist, ModelGrid, Ref, TimeSteppingController)
 
+    DiagTurbulence = DiagnosticsTurbulence.DiagnosticsTurbulence(ModelGrid, Ref, Thermo, Micro, VelocityState, ScalarState, DiagnosticState)
+
     StatsIO.add_class(VelocityState)
     StatsIO.add_class(ScalarState)
     StatsIO.add_class(DiagnosticState)
     StatsIO.add_class(Micro)
+    StatsIO.add_class(DiagTurbulence)
 
 
     FieldsIO = DumpFields.DumpFields(namelist, ModelGrid, TimeSteppingController)
