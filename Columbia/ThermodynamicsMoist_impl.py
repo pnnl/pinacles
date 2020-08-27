@@ -22,7 +22,7 @@ def buoyancy(alpha0,alpha):
     return parameters.G * (alpha - alpha0)/alpha0
 
 @numba.njit(fastmath=True)
-def compute_bvf(theta_ref, exner, T, qv, ql, dz, thetav, bvf):
+def compute_bvf(n_halo, theta_ref, exner, T, qv, ql, dz, thetav, bvf):
 
     shape = bvf.shape
     for i in range(shape[0]):
@@ -31,28 +31,14 @@ def compute_bvf(theta_ref, exner, T, qv, ql, dz, thetav, bvf):
                 thetav[i,j,k] = T[i,j,k]/exner[k]*(1.0 + 0.61*qv[i,j,k] - ql[i,j,k])
 
 
-    for i in range(shape[0]):
-        for j in range(shape[1]):
-            for k in range(1,shape[2]-1):
+    for i in range(n_halo[0], shape[0]-n_halo[0]):
+        for j in range(n_halo[1], shape[1]-n_halo[1]):
+            k = n_halo[2]
+            bvf[i,j,k] = parameters.G/theta_ref[k] * (thetav[i,j,k+1] - thetav[i,j,k])/(dz)
+            for k in range(n_halo[2]+2, shape[2]-n_halo[2]):
                 bvf[i,j,k] = parameters.G/theta_ref[k] * (thetav[i,j,k+1] - thetav[i,j,k-1])/(2.0*dz)
-
-    return
-
-@numba.njit(fastmath=True)
-def compute_bvf_s(theta_ref, exner, s, T, qv, ql, dz, thetav, bvf):
-
-    shape = bvf.shape
-    for i in range(shape[0]):
-        for j in range(shape[1]):
-            for k in range(shape[2]):
-                thetav[i,j,k] = T[i,j,k]/exner[k]*(1.0 + 0.61*qv[i,j,k] - ql[i,j,k])
-
-
-    for i in range(shape[0]):
-        for j in range(shape[1]):
-            for k in range(1,shape[2]-1):
-                #bvf[i,j,k] = parameters.G/theta_ref[k] * (thetav[i,j,k+1] - thetav[i,j,k-1])/(2.0*dz)
-                bvf[i,j,k] = parameters.G/s[i,j,k]* (s[i,j,k+1] - s[i,j,k-1])/(2.0*dz)
+            k = shape[1]-n_halo[1] - 1
+            bvf[i,j,k] = parameters.G/theta_ref[k] * (thetav[i,j,k] - thetav[i,j,k-1])/(dz)
 
     return
 

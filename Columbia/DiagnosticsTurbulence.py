@@ -44,24 +44,34 @@ class DiagnosticsTurbulence:
 
         #Add thermodynamic field moments
         profiles_grp.createVariable('thetali', np.double, dimensions=('time', 'z',))
+        profiles_grp.createVariable('qt', np.double, dimensions=('time', 'z',))
+
 
         # 2nd moments
         profiles_grp.createVariable('s2', np.double, dimensions=('time', 'z',))
         profiles_grp.createVariable('qv2', np.double, dimensions=('time', 'z',))
         profiles_grp.createVariable('thetali2', np.double, dimensions=('time', 'z',))
+        profiles_grp.createVariable('qt2', np.double, dimensions=('time', 'z',))
 
         # 3rd moments
         profiles_grp.createVariable('s3', np.double, dimensions=('time', 'z',))
         profiles_grp.createVariable('qv3', np.double, dimensions=('time', 'z',))
         profiles_grp.createVariable('thetali3', np.double, dimensions=('time', 'z',))
+        profiles_grp.createVariable('qt3', np.double, dimensions=('time', 'z',))
 
         # 4th moments
         profiles_grp.createVariable('s4', np.double, dimensions=('time', 'z',))
         profiles_grp.createVariable('qv4', np.double, dimensions=('time', 'z',))
         profiles_grp.createVariable('thetali4', np.double, dimensions=('time', 'z',))
+        profiles_grp.createVariable('qt4', np.double, dimensions=('time', 'z',))
+
+        #  Add resolved turbulent fluxes
+        profiles_grp.createVariable('wqt', np.double, dimensions=('time', 'z',))
+        profiles_grp.createVariable('wthetali', np.double, dimensions=('time', 'z',))
+        for var in self._ScalarState.names:
+            profiles_grp.createVariable('w' + var, np.double, dimensions=('time', 'z',))
 
         return
-
 
     @staticmethod
     @numba.njit()
@@ -115,7 +125,8 @@ class DiagnosticsTurbulence:
 
         return
 
-    def io_update(self, this_grp):
+
+    def _update_velocity_moments(self, this_grp):
 
         n_halo = self._Grid.n_halo
         npts = self._Grid.n[0] * self._Grid.n[1]
@@ -161,6 +172,7 @@ class DiagnosticsTurbulence:
 
         #Only do IO on rank 0
         my_rank = MPI.COMM_WORLD.Get_rank()
+        MPI.COMM_WORLD.barrier()
         if my_rank == 0:
             profiles_grp = this_grp['profiles']
             profiles_grp['u2'][-1,:] = uu[n_halo[2]:-n_halo[2]]
@@ -178,11 +190,19 @@ class DiagnosticsTurbulence:
             profiles_grp['w4'][-1,:] = wwww[n_halo[2]:-n_halo[2]]
 
 
+        return
+
+
+    def _update_scalar_moments(self, this_grp):
+
+        n_halo = self._Grid.n_halo
+        npts = self._Grid.n[0] * self._Grid.n[1]
+        profiles_grp = this_grp['profiles']
+        my_rank = MPI.COMM_WORLD.Get_rank()
         for v in ['s', 'qv']:
             #Now compute scalar moments
             phi = self._ScalarState.get_field(v)
-            phimean = self._ScalarState.mean('s')
-
+            phimean = self._ScalarState.mean(v)
 
             phi2 = np.zeros_like(phimean)
             phi3 = np.zeros_like(phimean)
@@ -193,6 +213,7 @@ class DiagnosticsTurbulence:
             phi3 = UtilitiesParallel.ScalarAllReduce(phi3/npts)
             phi4 = UtilitiesParallel.ScalarAllReduce(phi4/npts)
 
+            MPI.COMM_WORLD.barrier()
             if my_rank == 0:
                 profiles_grp = this_grp['profiles']
                 profiles_grp[v+'2'][-1,:]  = phi2[n_halo[2]:-n_halo[2]]
@@ -202,24 +223,88 @@ class DiagnosticsTurbulence:
 
 
         # Compute moments of liquid ice potential temperature
-        thetali = self._Thermo.get_thetali()
-        thetali_mean = UtilitiesParallel.ScalarAllReduce(np.sum(np.sum(thetali[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1],:],axis=0),axis=0)/npts)
-        thetali2 = np.zeros_like(thetali_mean)
-        thetali3 = np.zeros_like(thetali_mean)
-        thetali4 = np.zeros_like(thetali_mean)
-        self.scalar_moments(n_halo, thetali, thetali_mean, thetali2, thetali3, thetali4)
-        thetali2= UtilitiesParallel.ScalarAllReduce(thetali2/npts)
-        thetali3= UtilitiesParallel.ScalarAllReduce(thetali3/npts)
-        thetali4= UtilitiesParallel.ScalarAllReduce(thetali4/npts)
+        derived_vars = {}
+        derived_vars['thetali'] = self._Thermo.get_thetali()
+        derived_vars['qt'] = self._Thermo.get_qt()
+        for key, item in derived_vars.items():
+            item_mean = UtilitiesParallel.ScalarAllReduce(np.sum(np.sum(item[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1],:],axis=0),axis=0)/npts)
+            item2 = np.zeros_like(item_mean)
+            item3 = np.zeros_like(item_mean)
+            item4 = np.zeros_like(item_mean)
+            self.scalar_moments(n_halo, item, item_mean, item2, item3, item4)
+            item2= UtilitiesParallel.ScalarAllReduce(item2/npts)
+            item3= UtilitiesParallel.ScalarAllReduce(item3/npts)
+            item4= UtilitiesParallel.ScalarAllReduce(item4/npts)
 
-        if my_rank == 0:
-            profiles_grp['thetali'][-1,:]  = thetali_mean[n_halo[2]:-n_halo[2]]
-            profiles_grp['thetali2'][-1,:]  = thetali2[n_halo[2]:-n_halo[2]]
-            profiles_grp['thetali3'][-1,:]  = thetali3[n_halo[2]:-n_halo[2]]
-            profiles_grp['thetali4'][-1,:]  = thetali4[n_halo[2]:-n_halo[2]]
+           #Only do IO on rank 0
+            MPI.COMM_WORLD.barrier()
+            if my_rank == 0:
+                profiles_grp[key][-1,:]  = item_mean[n_halo[2]:-n_halo[2]]
+                profiles_grp[key+'2'][-1,:]  = item2[n_halo[2]:-n_halo[2]]
+                profiles_grp[key+'3'][-1,:]  = item3[n_halo[2]:-n_halo[2]]
+                profiles_grp[key+'4'][-1,:]  = item4[n_halo[2]:-n_halo[2]]
+
+        return
 
 
+    @staticmethod
+    @numba.njit()
+    def compute_vertical_fluxes(n_halo, w_mean, phi_mean, w, phi, fluxz):
+        # Compute a resolved vertival flux of phi
+        shape = phi.shape
+        for i in range(n_halo[0], shape[0] - n_halo[0]):
+            for j in range(n_halo[1], shape[1] - n_halo[1]):
+                for k in range(n_halo[2], shape[2] - n_halo[2]):
+                    fluxz[k] +=  0.5 * (w[i,j,k-1] + w[i,j,k] - (w_mean[k-1] + w_mean[k])) * (phi[i,j,k]-phi_mean[k])
+        return
 
+    def _update_scalar_fluxes(self, this_grp):
+
+        n_halo = self._Grid.n_halo
+        npts = self._Grid.n[0] * self._Grid.n[1]
+        profiles_grp = this_grp['profiles']
+        my_rank = MPI.COMM_WORLD.Get_rank()
+
+        w = self._VelocityState.get_field('w')
+        w_mean = UtilitiesParallel.ScalarAllReduce(np.sum(np.sum(w[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1],:],axis=0),axis=0)/npts)
+
+        derived_vars = {}
+        derived_vars['thetali'] = self._Thermo.get_thetali()
+        derived_vars['qt'] = self._Thermo.get_qt()
+
+        for key, item in derived_vars.items():
+            item_mean = UtilitiesParallel.ScalarAllReduce(np.sum(np.sum(item[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1],:],axis=0),axis=0)/npts)
+            item_fluxz = np.zeros_like(w_mean)
+            self.compute_vertical_fluxes(n_halo, w_mean, item_mean, w, item, item_fluxz)
+            item_fluxz = UtilitiesParallel.ScalarAllReduce(item_fluxz/npts)
+
+
+            #Only do IO on rank 0
+            MPI.COMM_WORLD.barrier()
+            if my_rank == 0:
+                profiles_grp['w'+key][-1,:]  = item_fluxz[n_halo[2]:-n_halo[2]]
+
+        for key in self._ScalarState.names:
+            item = self._ScalarState.get_field(key)
+            item_mean = UtilitiesParallel.ScalarAllReduce(np.sum(np.sum(item[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1],:],axis=0),axis=0)/npts)
+            item_fluxz = np.zeros_like(w_mean)
+            self.compute_vertical_fluxes(n_halo, w_mean, item_mean, w, item, item_fluxz)
+            item_fluxz = UtilitiesParallel.ScalarAllReduce(item_fluxz/npts)
+
+
+            #Only do IO on rank 0
+            MPI.COMM_WORLD.barrier()
+            if my_rank == 0:
+                profiles_grp['w'+key][-1,:]  = item_fluxz[n_halo[2]:-n_halo[2]]
+
+        return
+
+
+    def io_update(self, this_grp):
+
+        self._update_velocity_moments(this_grp)
+        self._update_scalar_moments(this_grp)
+        self._update_scalar_fluxes(this_grp)
 
         return
 

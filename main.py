@@ -98,12 +98,15 @@ def main(namelist):
     StatsIO = Stats(namelist, ModelGrid, Ref, TimeSteppingController)
 
     DiagTurbulence = DiagnosticsTurbulence.DiagnosticsTurbulence(ModelGrid, Ref, Thermo, Micro, VelocityState, ScalarState, DiagnosticState)
-
+    ScalarDiff.initialize_io_arrays()
+    
+    StatsIO.add_class(ScalarDiff)
     StatsIO.add_class(VelocityState)
     StatsIO.add_class(ScalarState)
     StatsIO.add_class(DiagnosticState)
     StatsIO.add_class(Micro)
     StatsIO.add_class(DiagTurbulence)
+
 
 
     FieldsIO = DumpFields.DumpFields(namelist, ModelGrid, TimeSteppingController)

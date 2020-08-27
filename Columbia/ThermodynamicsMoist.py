@@ -20,6 +20,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
 
     def update(self, apply_buoyancy=True):
 
+        n_halo = self._Grid.n_halo
         z = self._Grid.z_global
         dz = self._Grid.dx[2]
         p0 = self._Ref.p0
@@ -45,10 +46,10 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
 
         #ThermodynamicsMoist_impl.eos(z, p0, alpha0, s, ql, qi, T, alpha, buoyancy)
         ThermodynamicsMoist_impl.eos_sam(z, p0, alpha0, s, qv, ql, qi, T, tref,  alpha, buoyancy)
-        
+
         #Compute the buoyancy frequency
         #ThermodynamicsMoist_impl.compute_bvf_s(theta_ref, exner, s, T, qv, ql, dz, thetav, bvf)
-        ThermodynamicsMoist_impl.compute_bvf(theta_ref, exner, T, qv, ql, dz, thetav, bvf)
+        ThermodynamicsMoist_impl.compute_bvf(n_halo, theta_ref, exner, T, qv, ql, dz, thetav, bvf)
 
 
         if apply_buoyancy:
@@ -74,3 +75,12 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         self.compute_thetali(exner, T, thetali, qc)
 
         return thetali
+
+
+    def get_qt(self):
+        # Todo optimize
+
+        qv = self._ScalarState.get_field('qv')
+        qc = self._Micro.get_qc()
+
+        return qv + qc

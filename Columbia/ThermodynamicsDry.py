@@ -69,3 +69,8 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         thetali = np.empty_like(T)
         self.compute_thetali(exner, T, thetali)
         return thetali
+
+    def get_qt(self):
+        #Todo this gets a copy. So modifying it does nothing!
+        qv = self._ScalarState.get_field('qv')
+        return np.copy(qv)
