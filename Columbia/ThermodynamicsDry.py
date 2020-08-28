@@ -26,6 +26,7 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
 
     def update(self, apply_buoyancy=True):
 
+        n_halo = self._Grid.n_halo
         z = self._Grid.z_global
         dz = self._Grid.dx[2]
         p0 = self._Ref.p0
@@ -46,7 +47,7 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         w_t = self._VelocityState.get_tend('w')
 
         ThermodynamicsDry_impl.eos_sam(z, p0, alpha0, s, qv, T, tref, alpha, buoyancy)
-        ThermodynamicsDry_impl.compute_bvf(theta_ref, exner, T, qv, dz, thetav, bvf)
+        ThermodynamicsDry_impl.compute_bvf(n_halo,theta_ref, exner, T, qv, dz, thetav, bvf)
 
         if apply_buoyancy:
             ThermodynamicsDry_impl.apply_buoyancy(buoyancy, w_t)

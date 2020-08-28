@@ -99,7 +99,9 @@ def main(namelist):
 
     DiagTurbulence = DiagnosticsTurbulence.DiagnosticsTurbulence(ModelGrid, Ref, Thermo, Micro, VelocityState, ScalarState, DiagnosticState)
     ScalarDiff.initialize_io_arrays()
-    
+    ScalarAdv.initialize_io_arrays()
+
+    StatsIO.add_class(ScalarAdv)
     StatsIO.add_class(ScalarDiff)
     StatsIO.add_class(VelocityState)
     StatsIO.add_class(ScalarState)

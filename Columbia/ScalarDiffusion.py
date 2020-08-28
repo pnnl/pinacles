@@ -21,7 +21,7 @@ def compute_fluxes(n_halo, dx, dxi, rho0, rho0_edge, phi, eddy_diffusivity, flux
         for j in range(n_halo[1],shape[1]-n_halo[1]):
             for k in range(n_halo[2],shape[2]-n_halo[2]):
 
-                io_flux[k] += fluxz[i,j,k]
+                io_flux[k] += fluxz[i,j,k]/rho0_edge[k]
 
                 phi_t[i,j,k] -= (fluxx[i,j,k] - fluxx[i-1,j,k])*dxi[0]/rho0[k]
                 phi_t[i,j,k] -= (fluxy[i,j,k] - fluxy[i,j-1,k])*dxi[1]/rho0[k]
@@ -55,12 +55,12 @@ class ScalarDiffusion:
         npts = self._Grid.n[0] * self._Grid.n[1]
         my_rank = MPI.COMM_WORLD.Get_rank()
 
-        profiles_grp = this_grp['profiles']
         for var in self._ScalarState.names:
             flux_mean = UtilitiesParallel.ScalarAllReduce(self._flux_profiles[var]/npts)
 
             MPI.COMM_WORLD.barrier()
             if my_rank == 0:
+                profiles_grp = this_grp['profiles']
                 profiles_grp['w' + var + '_sgs'][-1,:] = flux_mean[n_halo[2]:-n_halo[2]]
 
         return

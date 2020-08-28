@@ -197,7 +197,6 @@ class DiagnosticsTurbulence:
 
         n_halo = self._Grid.n_halo
         npts = self._Grid.n[0] * self._Grid.n[1]
-        profiles_grp = this_grp['profiles']
         my_rank = MPI.COMM_WORLD.Get_rank()
         for v in ['s', 'qv']:
             #Now compute scalar moments
@@ -239,6 +238,7 @@ class DiagnosticsTurbulence:
            #Only do IO on rank 0
             MPI.COMM_WORLD.barrier()
             if my_rank == 0:
+                profiles_grp = this_grp['profiles']
                 profiles_grp[key][-1,:]  = item_mean[n_halo[2]:-n_halo[2]]
                 profiles_grp[key+'2'][-1,:]  = item2[n_halo[2]:-n_halo[2]]
                 profiles_grp[key+'3'][-1,:]  = item3[n_halo[2]:-n_halo[2]]
@@ -255,14 +255,15 @@ class DiagnosticsTurbulence:
         for i in range(n_halo[0], shape[0] - n_halo[0]):
             for j in range(n_halo[1], shape[1] - n_halo[1]):
                 for k in range(n_halo[2], shape[2] - n_halo[2]):
-                    fluxz[k] +=  0.5 * (w[i,j,k-1] + w[i,j,k] - (w_mean[k-1] + w_mean[k])) * (phi[i,j,k]-phi_mean[k])
+                    flux_above =  w[i,j,k] *  0.5 * (phi[i,j,k+1]-phi_mean[k+1] + phi[i,j,k]-phi_mean[k])
+                    flux_below =  w[i,j,k-1] * 0.5 * (phi[i,j,k]-phi_mean[k] + phi[i,j,k-1]-phi_mean[k-1])#fluxz[k] +=  #0.5 * (w[i,j,k-1] + w[i,j,k] - (w_mean[k-1] + w_mean[k])) * (phi[i,j,k]-phi_mean[k])
+                    fluxz[k] += 0.5 * (flux_above + flux_below)
         return
 
     def _update_scalar_fluxes(self, this_grp):
 
         n_halo = self._Grid.n_halo
         npts = self._Grid.n[0] * self._Grid.n[1]
-        profiles_grp = this_grp['profiles']
         my_rank = MPI.COMM_WORLD.Get_rank()
 
         w = self._VelocityState.get_field('w')
@@ -282,6 +283,7 @@ class DiagnosticsTurbulence:
             #Only do IO on rank 0
             MPI.COMM_WORLD.barrier()
             if my_rank == 0:
+                profiles_grp = this_grp['profiles']
                 profiles_grp['w'+key][-1,:]  = item_fluxz[n_halo[2]:-n_halo[2]]
 
         for key in self._ScalarState.names:
@@ -295,6 +297,7 @@ class DiagnosticsTurbulence:
             #Only do IO on rank 0
             MPI.COMM_WORLD.barrier()
             if my_rank == 0:
+                profiles_grp = this_grp['profiles']
                 profiles_grp['w'+key][-1,:]  = item_fluxz[n_halo[2]:-n_halo[2]]
 
         return
