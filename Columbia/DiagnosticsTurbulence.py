@@ -71,6 +71,8 @@ class DiagnosticsTurbulence:
         for var in self._ScalarState.names:
             profiles_grp.createVariable('w' + var, np.double, dimensions=('time', 'z',))
 
+
+        profiles_grp.createVariable('qtthetali', np.double, dimensions=('time', 'z',))
         return
 
     @staticmethod
@@ -122,6 +124,22 @@ class DiagnosticsTurbulence:
                     phi2[k] += phip2
                     phi3[k] += phip3
                     phi4[k] += phip3 * phip
+
+        return
+
+    @staticmethod
+    @numba.njit()
+    def scalar_correlation(n_halo, phi, phimean, rhi, rhimean, corr):
+
+        shape = phi.shape
+        for i in range(n_halo[0], shape[0] - n_halo[0]):
+            for j in range(n_halo[1], shape[1] - n_halo[1]):
+                for k in range(n_halo[2], shape[2] - n_halo[2]):
+
+                    phip = phi[i,j,k] - phimean[k]
+                    rhip = rhi[i,j,k] - rhimean[k]
+                    corr[k] += phip * rhip
+
 
         return
 
@@ -243,6 +261,18 @@ class DiagnosticsTurbulence:
                 profiles_grp[key+'2'][-1,:]  = item2[n_halo[2]:-n_halo[2]]
                 profiles_grp[key+'3'][-1,:]  = item3[n_halo[2]:-n_halo[2]]
                 profiles_grp[key+'4'][-1,:]  = item4[n_halo[2]:-n_halo[2]]
+
+
+        thetali_mean =  UtilitiesParallel.ScalarAllReduce(np.sum(np.sum(derived_vars['thetali'] [n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1],:],axis=0),axis=0)/npts)
+        qt_mean = UtilitiesParallel.ScalarAllReduce(np.sum(np.sum(derived_vars['qt'] [n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1],:],axis=0),axis=0)/npts)
+
+        qtthl = np.zeros_like(thetali_mean)
+        self.scalar_correlation(n_halo, derived_vars['thetali'], thetali_mean, derived_vars['qt'], qt_mean, qtthl)
+        qtthl= UtilitiesParallel.ScalarAllReduce(qtthl/npts)
+        MPI.COMM_WORLD.barrier()
+        if my_rank == 0:
+            profiles_grp = this_grp['profiles']
+            profiles_grp['qtthetali'][-1,:] = qtthl[n_halo[2]:-n_halo[2]]
 
         return
 

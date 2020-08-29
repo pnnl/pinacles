@@ -42,7 +42,6 @@ class SurfaceBOMEX(Surface.SurfaceBase):
         u = self._VelocityState.get_field('u')
         v = self._VelocityState.get_field('v')
 
-
         #Get Tendnecies
         ut = self._VelocityState.get_tend('u')
         vt = self._VelocityState.get_tend('v')

@@ -1,7 +1,7 @@
 import numba
 import numpy as np
 from Columbia.interpolation_impl import interp_weno5, centered_second
-from Columbia import UtilitiesParallel
+from Columbia import UtilitiesParallel, parameters
 from mpi4py import MPI
 
 class ScalarAdvectionBase:
@@ -265,6 +265,11 @@ class ScalarWENO5(ScalarAdvectionBase):
         for var in self._ScalarState.names:
             profiles_grp.createVariable('w' + var + '_resolved', np.double, dimensions=('time', 'z',))
 
+        #Add the thetali flux
+        profiles_grp.createVariable('w' + 'T' + '_resolved', np.double, dimensions=('time', 'z',))
+        profiles_grp.createVariable('w' + 'thetali' + '_resolved', np.double, dimensions=('time', 'z',))
+
+
         return
 
     def io_update(self, this_grp):
@@ -279,6 +284,29 @@ class ScalarWENO5(ScalarAdvectionBase):
             if my_rank == 0:
                 profiles_grp = this_grp['profiles']
                 profiles_grp['w' + var + '_resolved'][-1,:] = flux_mean[n_halo[2]:-n_halo[2]]
+
+
+
+        #Compute the thetali flux
+        if my_rank == 0:
+            profiles_grp = this_grp['profiles']
+            if 'qc' in self._ScalarState.names and 'qr' in self._ScalarState.names:
+                wql = profiles_grp['wqc_resolved'][-1,:] + profiles_grp['wqr_resolved'][-1,:]
+                # Liquid water flux
+                wT = profiles_grp['ws_resolved'][-1,:] + (wql  * parameters.LV)*parameters.ICPD
+                # Temperature Flux
+                wthetali_sgs = (wT[:]  - (wql * parameters.LV/parameters.CPD))/ self._Ref.exner[n_halo[2]:-n_halo[2]] 
+            elif 'qc' in self._ScalarState.names:
+                wql = profiles_grp['wqc_resolved'][-1,:]
+                wT = profiles_grp['ws_resolved'][-1,:] + (wql * parameters.LV)*parameters.ICPD
+                wthetali_sgs = (wT[:]  - (wql * parameters.LV/parameters.CPD))/ self._Ref.exner[n_halo[2]:-n_halo[2]] 
+            else:
+                wT = profiles_grp['ws_resolved'][-1,:]
+                wthetali_sgs = wT[:] / self._Ref.exner[n_halo[2]:-n_halo[2]]
+
+                # Write to the netcdf file
+                profiles_grp['wT_resolved'][-1,:] = wT
+                profiles_grp['wthetali_resolved'][-1] = wthetali_sgs
 
         return
 

@@ -1,7 +1,7 @@
 import numpy as np
 from mpi4py import MPI
 import numba
-from Columbia import UtilitiesParallel
+from Columbia import UtilitiesParallel, parameters
 
 
 @numba.njit(fastmath=True)
@@ -47,6 +47,10 @@ class ScalarDiffusion:
         for var in self._ScalarState.names:
             profiles_grp.createVariable('w' + var + '_sgs', np.double, dimensions=('time', 'z',))
 
+        #Add the thetali flux
+        profiles_grp.createVariable('w' + 'T' + '_sgs', np.double, dimensions=('time', 'z',))
+        profiles_grp.createVariable('w' + 'thetali' + '_sgs', np.double, dimensions=('time', 'z',))
+
         return
 
     def io_update(self, this_grp):
@@ -62,6 +66,27 @@ class ScalarDiffusion:
             if my_rank == 0:
                 profiles_grp = this_grp['profiles']
                 profiles_grp['w' + var + '_sgs'][-1,:] = flux_mean[n_halo[2]:-n_halo[2]]
+
+
+        #Compute the thetali flux
+        if my_rank == 0:
+            profiles_grp = this_grp['profiles']
+            if 'qc' in self._ScalarState.names and 'qr' in self._ScalarState.names:
+                wql = profiles_grp['wqc_sgs'][-1,:] + profiles_grp['wqr_sgs'][-1,:]
+                # Liquid water flux
+                wT = profiles_grp['ws_sgs'][-1,:] + (wql  * parameters.LV)*parameters.ICPD
+                # Temperature Flux
+                wthetali_sgs = (wT[:]  - (wql * parameters.LV/parameters.CPD))/ self._Ref.exner[n_halo[2]:-n_halo[2]] 
+            elif 'qc' in self._ScalarState.names:
+                wql = profiles_grp['wqc_sgs'][-1,:]
+                wT = profiles_grp['ws_sgs'][-1,:] + (wql * parameters.LV)*parameters.ICPD
+                wthetali_sgs = (wT[:]  - (wql * parameters.LV/parameters.CPD))/ self._Ref.exner[n_halo[2]:-n_halo[2]] 
+            else:
+                wT = profiles_grp['ws_sgs'][-1,:]
+                wthetali_sgs = wT[:] / self._Ref.exner[n_halo[2]:-n_halo[2]]
+
+            profiles_grp['wT_sgs'][-1,:] = wT
+            profiles_grp['wthetali_sgs'][-1] = wthetali_sgs
 
         return
 
