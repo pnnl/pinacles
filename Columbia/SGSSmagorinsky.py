@@ -5,7 +5,7 @@ import numba
 
 @numba.njit(fastmath=True)
 def compute_visc(dx, z, strain_rate_mag, bvf, cs, pr,
-                 eddy_viscosity, eddy_diffusivity):
+                 eddy_viscosity, eddy_diffusivity, tke_sgs):
 
     shape = eddy_viscosity.shape
 
@@ -30,6 +30,8 @@ def compute_visc(dx, z, strain_rate_mag, bvf, cs, pr,
                 eddy_viscosity[i, j, k] = (
                     (cs * filt_scale) ** 2.0 * (fb * strain_rate_mag[i, j, k]))
 
+
+                tke_sgs[i,j,k] = (eddy_viscosity[i, j, k]/(filt_scale*0.1))**2.0
                 # Compute the eddy diffusivty from the  eddy viscosity using an assumed
                 # inverse SGS Prandtl number tune this using
                 eddy_diffusivity[i, j, k] = eddy_viscosity[i, j, k] * pri
@@ -51,6 +53,7 @@ class Smagorinsky(SGSBase):
 
         # Add diagnostic fields
         self._DiagnosticState.add_variable('eddy_diffusivity')
+        self._DiagnosticState.add_variable('tke_sgs')
         self._DiagnosticState.add_variable('eddy_viscosity')
 
         # Read values in from namelist if not there set defaults
@@ -60,7 +63,7 @@ class Smagorinsky(SGSBase):
             self._cs = 0.17
 
         try:
-            self._prt = namelsit['sgs']['smagorinsky']['Prt']
+            self._prt = namelist['sgs']['smagorinsky']['Prt']
         except BaseException:
             self._prt = 1.0 / 3.0
 
@@ -76,6 +79,7 @@ class Smagorinsky(SGSBase):
         strain_rate_mag = self._DiagnosticState.get_field('strain_rate_mag')
         eddy_viscosity = self._DiagnosticState.get_field('eddy_viscosity')
         eddy_diffusivity = self._DiagnosticState.get_field('eddy_diffusivity')
+        tke_sgs = self._DiagnosticState.get_field('tke_sgs')
         bvf = self._DiagnosticState.get_field('bvf')
 
         # Compute the viscosity
@@ -86,6 +90,7 @@ class Smagorinsky(SGSBase):
             self._cs,
             self._prt,
             eddy_viscosity,
-            eddy_diffusivity)
+            eddy_diffusivity, 
+            tke_sgs)
 
         return

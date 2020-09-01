@@ -1,11 +1,14 @@
 import numba
 import numpy as np
 from Columbia.interpolation_impl import interp_weno5, centered_second
-
+from Columbia import UtilitiesParallel, parameters
+from mpi4py import MPI
 
 class ScalarAdvectionBase:
 
     def __init__(self, Grid, Ref, ScalarState, VelocityState, TimeStepping):
+        
+        self._name = 'ScalarAdvection'
         self._Grid = Grid
         self._ScalarState = ScalarState
         self._VelocityState = VelocityState
@@ -16,6 +19,10 @@ class ScalarAdvectionBase:
 
     def update(self):
         return
+
+    @property
+    def name(self):
+        return self._name
 
 @numba.njit(fastmath=True)
 def weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t):
@@ -199,21 +206,22 @@ def second_order(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_
     return
 
 @numba.njit(fastmath=True)
-def flux_divergence(nhalo, idx, idy, idzi, alpha0, fluxx, fluxy, fluxz, phi_t):
+def flux_divergence(nhalo, idx, idy, idzi, alpha0, fluxx, fluxy, fluxz, io_flux, phi_t):
     phi_shape = phi_t.shape
     #TODO Tighten range of loops
-    for i in range(1,phi_shape[0] -1):
-        for j in range(1,phi_shape[1] -1):
-            for k in range(1,phi_shape[2] - 1):
+    for i in range(nhalo[0],phi_shape[0]-nhalo[0]):
+        for j in range(nhalo[1],phi_shape[1]-nhalo[1]):
+            for k in range(nhalo[2],phi_shape[2]-nhalo[2]):
                 phi_t[i,j,k] -= alpha0[k]*((fluxx[i,j,k] - fluxx[i-1,j,k])*idx
                                             + (fluxy[i,j,k] - fluxy[i,j-1,k])*idy
                                             + (fluxz[i,j,k] - fluxz[i,j,k-1])*idzi)
+                io_flux[k] += (fluxz[i,j,k] + fluxz[i,j,k-1])*0.5 *alpha0[k]
     return
 
 
 @numba.njit(fastmath=True)
 def flux_divergence_bounded(nhalo, idx, idy, idzi, alpha0, fluxx, fluxy, fluxz,
-                            fluxx_low, fluxy_low, fluxz_low, dt, phi, phi_t):
+                            fluxx_low, fluxy_low, fluxz_low, dt, phi, io_flux, phi_t):
     phi_shape = phi_t.shape
     #TODO Tighten range of loops
     for i in range(1,phi_shape[0] -1):
@@ -235,9 +243,10 @@ def flux_divergence_bounded(nhalo, idx, idy, idzi, alpha0, fluxx, fluxy, fluxz,
                     fluxz[i,j,k-1] = fluxz_low[i,j,k-1]
                     fluxz[i,j,k]  = fluxz_low[i,j,k]
 
-    for i in range(1,phi_shape[0] -1):
-        for j in range(1,phi_shape[1] -1):
-            for k in range(1,phi_shape[2] - 1):
+    for i in range(nhalo[0],phi_shape[0]-nhalo[0]):
+        for j in range(nhalo[1],phi_shape[1]-nhalo[1]):
+            for k in range(nhalo[2],phi_shape[2]-nhalo[2]):
+                io_flux[k] += (fluxz[i,j,k] + fluxz[i,j,k-1])*0.5
                 phi_t[i,j,k] -= alpha0[k]*((fluxx[i,j,k] - fluxx[i-1,j,k])*idx
                                             + (fluxy[i,j,k] - fluxy[i,j-1,k])*idy
                                             + (fluxz[i,j,k] - fluxz[i,j,k-1])*idzi)
@@ -248,6 +257,63 @@ def flux_divergence_bounded(nhalo, idx, idy, idzi, alpha0, fluxx, fluxy, fluxz,
 class ScalarWENO5(ScalarAdvectionBase):
     def __init__(self, Grid, Ref, ScalarState, VelocityState, TimeStepping):
         ScalarAdvectionBase.__init__(self, Grid, Ref, ScalarState, VelocityState, TimeStepping)
+        self._flux_profiles = {}
+        return
+
+    def io_initialize(self, this_grp):
+        profiles_grp = this_grp['profiles']
+        for var in self._ScalarState.names:
+            profiles_grp.createVariable('w' + var + '_resolved', np.double, dimensions=('time', 'z',))
+
+        #Add the thetali flux
+        profiles_grp.createVariable('w' + 'T' + '_resolved', np.double, dimensions=('time', 'z',))
+        profiles_grp.createVariable('w' + 'thetali' + '_resolved', np.double, dimensions=('time', 'z',))
+
+
+        return
+
+    def io_update(self, this_grp):
+        n_halo = self._Grid.n_halo
+        npts = self._Grid.n[0] * self._Grid.n[1]
+        my_rank = MPI.COMM_WORLD.Get_rank()
+
+        for var in self._ScalarState.names:
+            flux_mean = UtilitiesParallel.ScalarAllReduce(self._flux_profiles[var]/npts)
+
+            MPI.COMM_WORLD.barrier()
+            if my_rank == 0:
+                profiles_grp = this_grp['profiles']
+                profiles_grp['w' + var + '_resolved'][-1,:] = flux_mean[n_halo[2]:-n_halo[2]]
+
+
+
+        #Compute the thetali flux
+        if my_rank == 0:
+            profiles_grp = this_grp['profiles']
+            if 'qc' in self._ScalarState.names and 'qr' in self._ScalarState.names:
+                wql = profiles_grp['wqc_resolved'][-1,:] + profiles_grp['wqr_resolved'][-1,:]
+                # Liquid water flux
+                wT = profiles_grp['ws_resolved'][-1,:] + (wql  * parameters.LV)*parameters.ICPD
+                # Temperature Flux
+                wthetali_sgs = (wT[:]  - (wql * parameters.LV/parameters.CPD))/ self._Ref.exner[n_halo[2]:-n_halo[2]] 
+            elif 'qc' in self._ScalarState.names:
+                wql = profiles_grp['wqc_resolved'][-1,:]
+                wT = profiles_grp['ws_resolved'][-1,:] + (wql * parameters.LV)*parameters.ICPD
+                wthetali_sgs = (wT[:]  - (wql * parameters.LV/parameters.CPD))/ self._Ref.exner[n_halo[2]:-n_halo[2]] 
+            else:
+                wT = profiles_grp['ws_resolved'][-1,:]
+                wthetali_sgs = wT[:] / self._Ref.exner[n_halo[2]:-n_halo[2]]
+
+                # Write to the netcdf file
+                profiles_grp['wT_resolved'][-1,:] = wT
+                profiles_grp['wthetali_resolved'][-1] = wthetali_sgs
+
+        return
+
+    def initialize_io_arrays(self):
+        for var in self._ScalarState.names:
+            self._flux_profiles[var] = np.zeros(self._Grid.ngrid[2],dtype=np.double)
+
         return
 
     def update(self):
@@ -286,7 +352,8 @@ class ScalarWENO5(ScalarAdvectionBase):
             #Get a scalar field (No copy done here)
             phi = self._ScalarState.get_field(var)
             phi_t = self._ScalarState.get_tend(var)
-
+            io_flux = self._flux_profiles[var]
+            io_flux.fill(0)
             #Now compute the WENO fluxes
             if 'ff' in var or var in ['qc', 'qr']:
                 if np.amax(np.abs(phi)) > 0.0: #If fields are zero everywhere no need to do any advection so skip-it! 
@@ -300,14 +367,16 @@ class ScalarWENO5(ScalarAdvectionBase):
 
                     # Now insure the that the advection does not violate boundeness of scalars.
                     flux_divergence_bounded(nhalo, self._Grid.dxi[0], self._Grid.dxi[1], self._Grid.dxi[2],
-                        alpha0, fluxx, fluxy, fluxz, fluxx_low, fluxy_low, fluxz_low, dt, phi, phi_t)
+                        alpha0, fluxx, fluxy, fluxz, fluxx_low, fluxy_low, fluxz_low, dt, phi, io_flux, phi_t)
                  #   weno5_advection_flux_limit(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
             else:
                 weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
                 #second_order(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
                 #Now compute the flux divergences
                 flux_divergence(nhalo, self._Grid.dxi[0], self._Grid.dxi[1], self._Grid.dxi[2],
-                    alpha0, fluxx, fluxy, fluxz, phi_t)
+                    alpha0, fluxx, fluxy, fluxz, io_flux, phi_t)
+
+
 
 
         return

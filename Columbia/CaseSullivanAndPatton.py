@@ -1,6 +1,8 @@
 import numpy as np
 import numba
+from mpi4py import MPI
 from Columbia import Surface, Surface_impl, Forcing_impl, Forcing
+from Columbia import UtilitiesParallel
 from Columbia import parameters
 
 class SurfaceSullivanAndPatton(Surface.SurfaceBase):
@@ -20,6 +22,7 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
         self._bflx_sfc = np.zeros_like(self._windspeed_sfc) + self._buoyancy_flux
         self._ustar_sfc = np.zeros_like(self._windspeed_sfc)
+        self._tflx = np.zeros_like(self._windspeed_sfc)
 
         return
 
@@ -40,7 +43,7 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
         v = self._VelocityState.get_field('v')
 
         u0 = self._Ref.u0
-        v0 = self._Ref.v0 
+        v0 = self._Ref.v0
 
         #Get Tendnecies
         ut = self._VelocityState.get_tend('u')
@@ -59,17 +62,67 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
         Surface_impl.compute_ustar_sfc(self._windspeed_sfc, self._bflx_sfc, self._z0, self._Grid.dx[2]/2.0, self._ustar_sfc)
         Surface_impl.tau_given_ustar(self._ustar_sfc, usfc, vsfc, u0, v0, self._windspeed_sfc, self._taux_sfc, self._tauy_sfc)
 
-        #Add the tendencies
-        #utsfc += self._taux_sfc * dxi2 * alpha0[nh[2]]/alpha0_edge[nh[2]-1]
-        #vtsfc += self._tauy_sfc * dxi2 * alpha0[nh[2]]/alpha0_edge[nh[2]-1]
-        #stsfc +=  self._theta_flux * parameters.CPD*exner_edge[nh[2]-1] * dxi2 * alpha0[nh[2]]/alpha0_edge[nh[2]-1]
-
-        shf = np.zeros_like(self._taux_sfc) + self._theta_flux * exner_edge[nh[2]-1]
+        #Compute the surface temperature flux
+        self._tflx[:,:] =  self._theta_flux * exner_edge[nh[2]-1]
 
         Surface_impl.iles_surface_flux_application(25.0, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._taux_sfc, ut)
         Surface_impl.iles_surface_flux_application(25.0, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tauy_sfc, vt)
-        Surface_impl.iles_surface_flux_application(25.0, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, shf, st)
+        Surface_impl.iles_surface_flux_application(25.0, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tflx, st)
 
+
+        return
+
+
+    def io_initialize(self, rt_grp):
+
+        timeseries_grp = rt_grp['timeseries']
+
+        #Add surface windspeed
+        timeseries_grp.createVariable('wind_horizontal', np.double, dimensions=('time',))
+
+        # Add surface stresses
+        timeseries_grp.createVariable('ustar', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('taux', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('tauy', np.double, dimensions=('time',))
+
+        #Add thermodynamic fluxes
+        timeseries_grp.createVariable('tflx', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('shf', np.double, dimensions=('time',))
+
+
+        return
+
+    def io_update(self, rt_grp):
+
+        my_rank = MPI.COMM_WORLD.Get_rank()
+        n_halo = self._Grid.n_halo
+        npts = self._Grid.n[0] * self._Grid.n[1]
+
+        windspeed = np.sum(self._windspeed_sfc[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1]])/npts
+        windspeed = UtilitiesParallel.ScalarAllReduce(windspeed)
+
+        ustar = np.sum(self._ustar_sfc[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1]])/npts
+        ustar = UtilitiesParallel.ScalarAllReduce(ustar)
+
+        taux = np.sum(self._taux_sfc[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1]])/npts
+        taux = UtilitiesParallel.ScalarAllReduce(taux)
+
+        tauy = np.sum(self._taux_sfc[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1]])/npts
+        tauy = UtilitiesParallel.ScalarAllReduce(tauy)
+
+        tflx = np.sum(self._tflx[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1]])/npts
+        tflx = UtilitiesParallel.ScalarAllReduce(tflx)
+
+        MPI.COMM_WORLD.barrier()
+        if my_rank == 0:
+            timeseries_grp = rt_grp['timeseries']
+
+            timeseries_grp['wind_horizontal'][-1] = windspeed
+            timeseries_grp['ustar'][-1] = ustar
+            timeseries_grp['taux'][-1] = taux
+            timeseries_grp['tauy'][-1] = tauy
+            timeseries_grp['tflx'][-1] = tflx
+            timeseries_grp['shf'][-1] = tflx * parameters.CPD*self._Ref.rho0_edge[n_halo[2]-1]
         return
 
 class ForcingSullivanAndPatton(Forcing.ForcingBase):
@@ -80,9 +133,8 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
 
         self._ug = np.zeros_like(self._Grid.z_global) + 1.0
         self._vg = np.zeros_like(self._ug)
-        
-        return
 
+        return
 
     def update(self):
 
