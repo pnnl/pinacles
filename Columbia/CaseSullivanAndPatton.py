@@ -122,7 +122,7 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
             timeseries_grp['taux'][-1] = taux
             timeseries_grp['tauy'][-1] = tauy
             timeseries_grp['tflx'][-1] = tflx
-            timeseries_grp['shf'][-1] = tflx * parameters.CPD
+            timeseries_grp['shf'][-1] = tflx * parameters.CPD*self._Ref.rho0_edge[n_halo[2]-1]
         return
 
 class ForcingSullivanAndPatton(Forcing.ForcingBase):

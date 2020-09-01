@@ -1,6 +1,8 @@
 import numpy as np
+from mpi4py import MPI
 from Columbia import parameters
 from Columbia import Surface, Surface_impl, Forcing_impl, Forcing
+from Columbia import UtilitiesParallel
 
 class SurfaceBOMEX(Surface.SurfaceBase): 
     def __init__(self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState): 
@@ -23,10 +25,58 @@ class SurfaceBOMEX(Surface.SurfaceBase):
         self._bflx_sfc = np.zeros_like(self._windspeed_sfc) + self._buoyancy_flux
         self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
 
+        return
 
-        return 
+    def io_initialize(self, rt_grp):
 
-    def update(self): 
+        timeseries_grp = rt_grp['timeseries']
+
+        #Add surface windspeed
+        timeseries_grp.createVariable('wind_horizontal', np.double, dimensions=('time',))
+
+        # Add surface stresses
+        timeseries_grp.createVariable('ustar', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('taux', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('tauy', np.double, dimensions=('time',))
+
+        #Add thermodynamic fluxes
+        timeseries_grp.createVariable('tflx', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('shf', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('lhf', np.double, dimensions=('time',))
+
+        return
+
+    def io_update(self, rt_grp):
+    
+        my_rank = MPI.COMM_WORLD.Get_rank()
+        n_halo = self._Grid.n_halo
+        npts = self._Grid.n[0] * self._Grid.n[1]
+
+        windspeed = np.sum(self._windspeed_sfc[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1]])/npts
+        windspeed = UtilitiesParallel.ScalarAllReduce(windspeed)
+
+        taux = np.sum(self._taux_sfc[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1]])/npts
+        taux = UtilitiesParallel.ScalarAllReduce(taux)
+
+        tauy = np.sum(self._taux_sfc[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1]])/npts
+        tauy = UtilitiesParallel.ScalarAllReduce(tauy)
+
+        MPI.COMM_WORLD.barrier()
+        if my_rank == 0:
+            timeseries_grp = rt_grp['timeseries']
+
+            timeseries_grp['wind_horizontal'][-1] = windspeed
+            timeseries_grp['ustar'][-1] = self._ustar
+            timeseries_grp['taux'][-1] = taux
+            timeseries_grp['tauy'][-1] = tauy
+            timeseries_grp['tflx'][-1] = self._theta_flux * self._Ref.exner_edge[n_halo[2]-1]
+            timeseries_grp['shf'][-1] = self._theta_flux * self._Ref.exner_edge[n_halo[2]-1] * parameters.CPD *self._Ref.rho0_edge[n_halo[2]-1]
+            timeseries_grp['lhf'][-1] = self._qv_flux * parameters.LV*self._Ref.rho0_edge[n_halo[2]-1]
+        return
+
+
+
+    def update(self):
 
         nh = self._Grid.n_halo
         dxi2 = self._Grid.dxi[2]
@@ -57,23 +107,16 @@ class SurfaceBOMEX(Surface.SurfaceBase):
         qvtsfc = qvt[:,:,nh[2]]
 
 
-
         Surface_impl.compute_windspeed_sfc(usfc, vsfc, self._Ref.u0, self._Ref.v0, self.gustiness, self._windspeed_sfc)
         Surface_impl.tau_given_ustar(self._ustar_sfc, usfc, vsfc, self._Ref.u0, self._Ref.v0, self._windspeed_sfc, self._taux_sfc, self._tauy_sfc)
 
-        shf = np.zeros_like(self._taux_sfc) + self._theta_flux * exner_edge[nh[2]-1]
+        tflx = np.zeros_like(self._taux_sfc) + self._theta_flux * exner_edge[nh[2]-1]
         qv_flx_sf = np.zeros_like(self._taux_sfc) + self._qv_flux
         Surface_impl.iles_surface_flux_application(1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._taux_sfc, ut)
         Surface_impl.iles_surface_flux_application(1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._tauy_sfc, vt)
-        Surface_impl.iles_surface_flux_application(1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, shf, st)
+        Surface_impl.iles_surface_flux_application(1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, tflx, st)
         Surface_impl.iles_surface_flux_application(1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, qv_flx_sf , qvt)
 
-
-        #import pylab as plt
-        #plt.contourf(self._taux_sfc)
-        #plt.colorbar()
-        #plt.show()
-        #plt.close()
         return
 
 class ForcingBOMEX(Forcing.ForcingBase):
