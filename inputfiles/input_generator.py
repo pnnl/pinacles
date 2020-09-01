@@ -1,3 +1,4 @@
+import pprint
 import argparse
 import json
 
@@ -16,8 +17,9 @@ def main(casename):
     elif casename == 'atex':
         input_dict = atex()
 
-
     write_file(casename, input_dict)
+    #Pretty print the output to the terminal
+    pprint.pprint(input_dict)
 
     return
 
