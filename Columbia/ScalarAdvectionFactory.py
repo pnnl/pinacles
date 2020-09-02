@@ -6,7 +6,7 @@ def factory(namelist, Grid, Ref, ScalarState, VelocityState, TimeStepping):
    try:
       adv_type = namelist['scalar_advection']['type']
    except:
-      adv_type = 'sl2'
+      adv_type = 'weno'
 
 
    if adv_type == 'sl2':

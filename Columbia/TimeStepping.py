@@ -69,7 +69,7 @@ class TimeSteppingController:
         self._TimeStepper = []
         self._times_to_match = []
         self._dt = 0.0
-        self._dt_max = 1.0
+        self._dt_max = 60.0
         self._cfl_target = namelist['time']['cfl']
         self._time_max = namelist['time']['time_max']
         self._time = 0.0
@@ -108,10 +108,11 @@ class TimeSteppingController:
             MPI.COMM_WORLD.Allreduce(np.array([cfl_max_local], dtype=np.double), recv_buffer, op=MPI.MAX)
             cfl_max = recv_buffer[0]
             self._cfl_current = self._dt * cfl_max
+            #print(self._dt_max)
             self._dt = min(self._cfl_target / cfl_max, self._dt_max)
-
+            #print(self._dt)
             self.match_time()
-
+            #print(self._dt)
 
 
             for Stepper in self._TimeStepper:
@@ -127,6 +128,7 @@ class TimeSteppingController:
     def match_time(self):
         #Must be called after dt is computed
         for match in self._times_to_match:
+            print(match)
             if self._time//match < (self._time + self._dt)//match:
                 self._dt = min(match*(1.0+self._time//match) - self._time, self._dt)
 

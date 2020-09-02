@@ -1,3 +1,4 @@
+import pprint
 import argparse
 import json
 
@@ -18,8 +19,9 @@ def main(casename):
     elif casename == 'testbed':
         input_dict = testbed()
 
-
     write_file(casename, input_dict)
+    #Pretty print the output to the terminal
+    pprint.pprint(input_dict)
 
     return
 
@@ -55,7 +57,7 @@ def stable_bubble():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'sl2'
+    input_dict[key]['type'] = 'weno'
     input_dict[key][input_dict[key]['type']] = {}
     input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
 
@@ -135,7 +137,7 @@ def sullivan_and_patton():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'sl2'
+    input_dict[key]['type'] = 'weno'
     input_dict[key][input_dict[key]['type']] = {}
     input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
 
@@ -187,7 +189,7 @@ def bomex():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'sl2'
+    input_dict[key]['type'] = 'weno'
     input_dict[key][input_dict[key]['type']] = {}
     input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
 
@@ -240,7 +242,7 @@ def atex():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'sl2'
+    input_dict[key]['type'] = 'weno'
     input_dict[key][input_dict[key]['type']] = {}
     input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
 
@@ -295,7 +297,7 @@ def rico():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'sl2'
+    input_dict[key]['type'] = 'weno'
     input_dict[key][input_dict[key]['type']] = {}
     input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
 
@@ -351,9 +353,9 @@ def testbed():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'sl2'
+    input_dict[key]['type'] = 'weno'
     input_dict[key][input_dict[key]['type']] = {}
-    input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
+
 
     key = 'sgs'
     input_dict[key] = {}
@@ -386,6 +388,7 @@ def testbed():
     key = 'testbed'
     input_dict[key] = {}
     input_dict[key]['input_filepath'] = 'sgp_inputs.nc'
+    input_dict[key]['momentum_forcing']= 'geostrophic'
     return input_dict
 
 

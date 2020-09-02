@@ -88,6 +88,12 @@ class SurfaceTestbed(Surface.SurfaceBase):
 
 
         return
+'''
+Note regarding set-up of original LASSO cases (e.g. HISCALE tested case)
+These simulations use the initial sounding of horizontal winds as the geostrophic winds.
+Here, I require the proper specification of geostrophic winds to be made in the input file 
+so that the source code remains tidy.
+'''
 
 class ForcingTestbed(Forcing.ForcingBase):
     def __init__(self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState, TimeSteppingController):
@@ -97,6 +103,9 @@ class ForcingTestbed(Forcing.ForcingBase):
         self._TimeSteppingController = TimeSteppingController
         
         file = namelist['testbed']['input_filepath']
+        self._momentum_forcing_method = namelist['testbed']['momentum_forcing']
+        # Options: relaxation, geostrophic
+
         data = nc.Dataset(file, 'r')
         forcing_data = data.groups['forcing']
         lat = forcing_data.variables['latitude'][0]
@@ -107,16 +116,26 @@ class ForcingTestbed(Forcing.ForcingBase):
         # Read in the data, we want to 
         forcing_z = forcing_data.variables['z'][:]
         self._forcing_times =forcing_data.variables['times'][:]
-        raw_ug = forcing_data.variables['u_geostrophic'][:,:]
-        raw_vg = forcing_data.variables['v_geostrophic'][:,:]
+        if self._momentum_forcing_method == 'geostrophic':
+            raw_ug = forcing_data.variables['u_geostrophic'][:,:]
+            raw_vg = forcing_data.variables['v_geostrophic'][:,:]
+        if self._momentum_forcing_method == 'relaxation':
+            raw_ur = forcing_data.variables['u_relaxation'][:,:]
+            raw_vr = forcing_data.variables['v_relaxation'][:,:]
+
         raw_subsidence = forcing_data.variables['subsidence'][:,:]
         raw_adv_qt = forcing_data.variables['qt_advection'][:,:]
         raw_adv_theta = forcing_data.variables['theta_advection'][:,:]
 
         data.close()
 
-        self._ug = interpolate.interp1d(forcing_z, raw_ug, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
-        self._vg = interpolate.interp1d(forcing_z, raw_vg, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
+        if self._momentum_forcing_method == 'geostrophic':
+            self._ug = interpolate.interp1d(forcing_z, raw_ug, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
+            self._vg = interpolate.interp1d(forcing_z, raw_vg, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
+        if self._momentum_forcing_method == 'relaxation':
+            self._ur = interpolate.interp1d(forcing_z, raw_ug, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
+            self._vr = interpolate.interp1d(forcing_z, raw_vg, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
+ 
         self._subsidence = interpolate.interp1d(forcing_z, raw_subsidence, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
         self._adv_qt = interpolate.interp1d(forcing_z, raw_adv_qt, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
         self._adv_theta = interpolate.interp1d(forcing_z, raw_adv_theta, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
@@ -127,8 +146,12 @@ class ForcingTestbed(Forcing.ForcingBase):
         current_time = self._TimeSteppingController.time
 
         # interpolate in time
-        current_ug = interpolate.interp1d(self._forcing_times,self._ug, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
-        current_vg = interpolate.interp1d(self._forcing_times,self._vg, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
+        if self._momentum_forcing_method == 'geostrophic':
+            current_ug = interpolate.interp1d(self._forcing_times,self._ug, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
+            current_vg = interpolate.interp1d(self._forcing_times,self._vg, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
+        if self._momentum_forcing_method == 'relaxation':
+            current_ur = interpolate.interp1d(self._forcing_times,self._ur, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
+            current_vr = interpolate.interp1d(self._forcing_times,self._vr, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
         current_subsidence = interpolate.interp1d(self._forcing_times,self._subsidence, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
         current_adv_qt = interpolate.interp1d(self._forcing_times,self._adv_qt, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
         current_adv_theta = interpolate.interp1d(self._forcing_times,self._adv_theta, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
@@ -150,7 +173,7 @@ class ForcingTestbed(Forcing.ForcingBase):
         st += (current_adv_theta * exner)[np.newaxis, np.newaxis, :]
         qvt += (current_adv_qt)[np.newaxis, np.newaxis, :]
 
-        # Forcing_impl.large_scale_pgf(current_ug, current_vg, self._f ,u, v, self._Ref.u0, self._Ref.v0, ut, vt)
+        Forcing_impl.large_scale_pgf(current_ug, current_vg, self._f ,u, v, self._Ref.u0, self._Ref.v0, ut, vt)
 
         Forcing_impl.apply_subsidence(current_subsidence, self._Grid.dxi[2],s, st)
         Forcing_impl.apply_subsidence(current_subsidence, self._Grid.dxi[2],qv, qvt)

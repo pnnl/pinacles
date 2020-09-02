@@ -1,7 +1,9 @@
 import numpy as np
+from mpi4py import MPI
 from Columbia import parameters
 from Columbia import Surface, Surface_impl, Forcing_impl, Forcing
 from Columbia.WRF_Micro_Kessler import compute_qvs
+from Columbia import UtilitiesParallel
 
 class SurfaceRICO(Surface.SurfaceBase):
     def __init__(self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState):
@@ -23,7 +25,68 @@ class SurfaceRICO(Surface.SurfaceBase):
         self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
         self._taux_sfc = np.zeros_like(self._windspeed_sfc)
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
+        self._qvflx = np.zeros_like(self._windspeed_sfc)
+        self._tflx = np.zeros_like(self._windspeed_sfc)
+
+
+        return
+
+    def io_initialize(self, rt_grp):
+    
+        timeseries_grp = rt_grp['timeseries']
+
+        #Add surface windspeed
+        timeseries_grp.createVariable('wind_horizontal', np.double, dimensions=('time',))
+
+        # Add surface stresses
+        #timeseries_grp.createVariable('ustar', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('taux', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('tauy', np.double, dimensions=('time',))
+
+        #Add thermodynamic fluxes
+        timeseries_grp.createVariable('tflx', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('qvflx', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('shf', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('lhf', np.double, dimensions=('time',))
+
+        return
+
+    def io_update(self, rt_grp):
+        
+        my_rank = MPI.COMM_WORLD.Get_rank()
+        n_halo = self._Grid.n_halo
+        npts = self._Grid.n[0] * self._Grid.n[1]
+
+        windspeed = np.sum(self._windspeed_sfc[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1]])/npts
+        windspeed = UtilitiesParallel.ScalarAllReduce(windspeed)
+
+        taux = np.sum(self._taux_sfc[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1]])/npts
+        taux = UtilitiesParallel.ScalarAllReduce(taux)
+
+        tauy = np.sum(self._taux_sfc[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1]])/npts
+        tauy = UtilitiesParallel.ScalarAllReduce(tauy)
+
+        tauy = np.sum(self._taux_sfc[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1]])/npts
+        tauy = UtilitiesParallel.ScalarAllReduce(tauy)
+
+        tflx = np.sum(self._tflx[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1]])/npts
+        tflx = UtilitiesParallel.ScalarAllReduce(tflx)
+
+        qvflx = np.sum(self._qvflx[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1]])/npts
+        qvflx = UtilitiesParallel.ScalarAllReduce(qvflx)
  
+
+        MPI.COMM_WORLD.barrier()
+        if my_rank == 0:
+            timeseries_grp = rt_grp['timeseries']
+
+            timeseries_grp['wind_horizontal'][-1] = windspeed
+            #timeseries_grp['ustar'][-1] = self._ustar
+            timeseries_grp['taux'][-1] = taux
+            timeseries_grp['tauy'][-1] = tauy
+            timeseries_grp['tflx'][-1] = tflx
+            timeseries_grp['shf'][-1] = tflx * parameters.CPD *self._Ref.rho0_edge[n_halo[2]-1]
+            timeseries_grp['lhf'][-1] = qvflx * parameters.LV*self._Ref.rho0_edge[n_halo[2]-1]
         return
 
     def update(self):
@@ -54,17 +117,13 @@ class SurfaceRICO(Surface.SurfaceBase):
         vsfc = v[:,:,nh[2]]
         Ssfc = s[:,:,nh[2]]
         qvsfc = qv[:,:,nh[2]]
-        utsfc = ut[:,:,nh[2]]
-        vtsfc = vt[:,:,nh[2]]
-        stsfc = st[:,:,nh[2]]
-        qvtsfc = qvt[:,:,nh[2]]
 
         Surface_impl.compute_windspeed_sfc(usfc, vsfc, self._Ref.u0, self._Ref.v0, self.gustiness, self._windspeed_sfc)
         #Surface_impl.tau_given_ustar(self._ustar_sfc, usfc, vsfc, self._Ref.u0, self._Ref.v0, self._windspeed_sfc, self._taux_sfc, self._tauy_sfc)
-        
+
         #TODO Not not optimized code
-        shf = - self._ch * self._windspeed_sfc * (Ssfc - self._T0)
-        qv_flx_sfc = - self._cq * self._windspeed_sfc * (qvsfc - self._qs0)
+        self._tflx = - self._ch * self._windspeed_sfc * (Ssfc - self._T0)
+        self._qvflx = - self._cq * self._windspeed_sfc * (qvsfc - self._qs0)
         Surface_impl.momentum_bulk_aero(self._windspeed_sfc, self._cm, usfc, vsfc, self._Ref.u0, self._Ref.v0, self._taux_sfc, self._tauy_sfc)
         self._taux_sfc = -self._cm * self._windspeed_sfc * (usfc + self._Ref.u0)
         self._tauy_sfc = -self._cm * self._windspeed_sfc * (vsfc + self._Ref.v0)
@@ -72,11 +131,11 @@ class SurfaceRICO(Surface.SurfaceBase):
 
         #shf = np.zeros_like(self._taux_sfc) + self._theta_flux * exner_edge[nh[2]-1]
         #qv_flx_sf = np.zeros_like(self._taux_sfc) + self._qv_flux
-        
+
         Surface_impl.iles_surface_flux_application(10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._taux_sfc, ut)
         Surface_impl.iles_surface_flux_application(10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._tauy_sfc, vt)
-        Surface_impl.iles_surface_flux_application(10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, shf, st)
-        Surface_impl.iles_surface_flux_application(10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, qv_flx_sfc , qvt)
+        Surface_impl.iles_surface_flux_application(10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._tflx, st)
+        Surface_impl.iles_surface_flux_application(10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._qvflx , qvt)
 
         return
 
@@ -93,7 +152,7 @@ class ForcingRICO(Forcing.ForcingBase):
         self._ug = np.zeros_like(self._Grid.z_global)
         self._subsidence = np.zeros_like(self._Grid.z_global)
         self._ls_mositure = np.zeros_like(self._Grid.z_global)
-        
+
         for k in range(zl.shape[0]):
             self._ug[k] = -9.9 + 2.0e-3*zl[k]
             if zl[k] <= 2260.0:
@@ -108,7 +167,7 @@ class ForcingRICO(Forcing.ForcingBase):
         self._vg = np.zeros_like(self._ug)-3.8
 
         #Set heating rate
-        self._heating_rate = np.zeros_like(self._Grid.z_global) -2.5/86400.0 
+        self._heating_rate = np.zeros_like(self._Grid.z_global) -2.5/86400.0
 
 
         return

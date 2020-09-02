@@ -4,20 +4,18 @@ import numba
 
 
 @numba.njit(fastmath=True)
-def compute_visc(dx, strain_rate_mag, bvf, cs, pr,
-                 eddy_viscosity, eddy_diffusivity):
+def compute_visc(dx, z, strain_rate_mag, bvf, cs, pr,
+                 eddy_viscosity, eddy_diffusivity, tke_sgs):
 
     shape = eddy_viscosity.shape
 
-    # Compute filter scale
-    filt_scale = (dx[0] * dx[1] * dx[2])**(1.0 / 3.0)
-
-    # Compute the inverse Prandtl number
-    pri = 1.0 / pr
+    filt_scale  = (dx[0] * dx[1] * dx[2] )**(1.0/3.0)
+    pri = 1.0/pr
 
     for i in range(shape[0]):
         for j in range(shape[1]):
             for k in range(shape[2]):
+                filt_scale  = np.sqrt(1.0/(1.0/((dx[0] * dx[1] * dx[2] )**(1.0/3.0))**2.0 + 1.0/(0.4 * z[k])**2.0))
                 # Compute the stratification correction
                 fb = 1
                 if bvf[i, j, k] > 0 and strain_rate_mag[i, j, k] > 0.0:
@@ -27,12 +25,13 @@ def compute_visc(dx, strain_rate_mag, bvf, cs, pr,
                               strain_rate_mag[i, j, k] *
                                  strain_rate_mag[i, j, k]))**(1.0 /
                                                               2.0)
-
                 # Compute the eddy viscosity with a correction for
                 # stratification
                 eddy_viscosity[i, j, k] = (
-                    cs * filt_scale) ** 2.0 * fb * strain_rate_mag[i, j, k]
+                    (cs * filt_scale) ** 2.0 * (fb * strain_rate_mag[i, j, k]))
 
+
+                tke_sgs[i,j,k] = (eddy_viscosity[i, j, k]/(filt_scale*0.1))**2.0
                 # Compute the eddy diffusivty from the  eddy viscosity using an assumed
                 # inverse SGS Prandtl number tune this using
                 eddy_diffusivity[i, j, k] = eddy_viscosity[i, j, k] * pri
@@ -54,6 +53,7 @@ class Smagorinsky(SGSBase):
 
         # Add diagnostic fields
         self._DiagnosticState.add_variable('eddy_diffusivity')
+        self._DiagnosticState.add_variable('tke_sgs')
         self._DiagnosticState.add_variable('eddy_viscosity')
 
         # Read values in from namelist if not there set defaults
@@ -63,7 +63,7 @@ class Smagorinsky(SGSBase):
             self._cs = 0.17
 
         try:
-            self._prt = namelsit['sgs']['smagorinsky']['Prt']
+            self._prt = namelist['sgs']['smagorinsky']['Prt']
         except BaseException:
             self._prt = 1.0 / 3.0
 
@@ -73,21 +73,24 @@ class Smagorinsky(SGSBase):
 
         # Get the grid spacing from the Grid class
         dx = self._Grid.dx
+        z = self._Grid.z_local
 
         # Get the necessary 3D fields from the field containers
         strain_rate_mag = self._DiagnosticState.get_field('strain_rate_mag')
         eddy_viscosity = self._DiagnosticState.get_field('eddy_viscosity')
         eddy_diffusivity = self._DiagnosticState.get_field('eddy_diffusivity')
+        tke_sgs = self._DiagnosticState.get_field('tke_sgs')
         bvf = self._DiagnosticState.get_field('bvf')
 
         # Compute the viscosity
         compute_visc(
-            dx,
+            dx, z,
             strain_rate_mag,
             bvf,
             self._cs,
             self._prt,
             eddy_viscosity,
-            eddy_diffusivity)
+            eddy_diffusivity, 
+            tke_sgs)
 
         return
