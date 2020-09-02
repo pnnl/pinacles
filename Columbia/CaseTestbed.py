@@ -16,9 +16,9 @@ class SurfaceTestbed(Surface.SurfaceBase):
 
         Surface.SurfaceBase.__init__(self, namelist, Grid, Ref, VelocityState,
             ScalarState, DiagnosticState)
-        
+
         self._TimeSteppingController = TimeSteppingController
-        
+
         file = namelist['testbed']['input_filepath']
         data = nc.Dataset(file, 'r')
         surface_data = data.groups['surface']
@@ -36,15 +36,14 @@ class SurfaceTestbed(Surface.SurfaceBase):
         self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
         self._taux_sfc = np.zeros_like(self._windspeed_sfc)
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
-        
+
         return
-    
-    
+
     def update(self):
         current_time = self._TimeSteppingController.time
- 
+
         # Interpolate to the current time
-     
+
         shf_interp = interpolate.interp1d(self._forcing_times, self._forcing_shf,fill_value='extrapolate', assume_sorted=True )(current_time)
         lhf_interp = interpolate.interp1d(self._forcing_times, self._forcing_lhf,fill_value='extrapolate', assume_sorted=True )(current_time)
         ustar_interp = interpolate.interp1d(self._forcing_times, self._forcing_ustar,fill_value='extrapolate', assume_sorted=True )(current_time)
@@ -65,11 +64,9 @@ class SurfaceTestbed(Surface.SurfaceBase):
         st = self._ScalarState.get_tend('s')
         qvt = self._ScalarState.get_tend('qv')
 
-        
         # Get surface slices
         usfc = u[:,:,nh[2]]
         vsfc = v[:,:,nh[2]]
-       
 
         # Compute the surface stress & apply it
         ustar_sfc = np.zeros_like(self._windspeed_sfc) + ustar_interp
@@ -98,10 +95,10 @@ so that the source code remains tidy.
 class ForcingTestbed(Forcing.ForcingBase):
     def __init__(self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState, TimeSteppingController):
 
-        Forcing.ForcingBase.__init__(self, namelist, Grid, 
+        Forcing.ForcingBase.__init__(self, namelist, Grid,
         Ref, VelocityState, ScalarState, DiagnosticState)
         self._TimeSteppingController = TimeSteppingController
-        
+
         file = namelist['testbed']['input_filepath']
         self._momentum_forcing_method = namelist['testbed']['momentum_forcing']
         # Options: relaxation, geostrophic
@@ -111,9 +108,8 @@ class ForcingTestbed(Forcing.ForcingBase):
         lat = forcing_data.variables['latitude'][0]
         self._f = 2.0 * parameters.OMEGA* np.sin(lat * np.pi / 180.0 )
         zl = self._Grid.z_local
-      
 
-        # Read in the data, we want to 
+        # Read in the data, we want to
         forcing_z = forcing_data.variables['z'][:]
         self._forcing_times =forcing_data.variables['times'][:]
         if self._momentum_forcing_method == 'geostrophic':
@@ -135,13 +131,13 @@ class ForcingTestbed(Forcing.ForcingBase):
         if self._momentum_forcing_method == 'relaxation':
             self._ur = interpolate.interp1d(forcing_z, raw_ug, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
             self._vr = interpolate.interp1d(forcing_z, raw_vg, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
- 
+
         self._subsidence = interpolate.interp1d(forcing_z, raw_subsidence, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
         self._adv_qt = interpolate.interp1d(forcing_z, raw_adv_qt, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
         self._adv_theta = interpolate.interp1d(forcing_z, raw_adv_theta, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
 
         return
-        
+
     def update(self):
         current_time = self._TimeSteppingController.time
 
@@ -156,7 +152,6 @@ class ForcingTestbed(Forcing.ForcingBase):
         current_adv_qt = interpolate.interp1d(self._forcing_times,self._adv_qt, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
         current_adv_theta = interpolate.interp1d(self._forcing_times,self._adv_theta, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
 
-       
         exner = self._Ref.exner
 
         u = self._VelocityState.get_field('u')
@@ -177,17 +172,5 @@ class ForcingTestbed(Forcing.ForcingBase):
 
         Forcing_impl.apply_subsidence(current_subsidence, self._Grid.dxi[2],s, st)
         Forcing_impl.apply_subsidence(current_subsidence, self._Grid.dxi[2],qv, qvt)
-        
+
         return
-
-
-
-
-
-
-
-
-        
-
-
-
