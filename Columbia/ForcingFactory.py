@@ -16,7 +16,7 @@ def factory(namelist, Grid, Ref, Microphysics, VelocityState, ScalarState, Diagn
     elif casename == 'atex':
         return CaseATEX.ForcingATEX(namelist, Grid, Ref, Microphysics, VelocityState, ScalarState, DiagnosticState, TimeSteppingController)
     elif casename == 'testbed':
-        return CaseTestbed.ForcingTestbed(namelist, Grid, Ref, Microphysics, VelocityState, ScalarState, DiagnosticState, TimeSteppingController)
+        return CaseTestbed.ForcingTestbed(namelist, Grid, Ref,  VelocityState, ScalarState, DiagnosticState, TimeSteppingController)
 
     else: 
         return Forcing.ForcingBase(namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState)

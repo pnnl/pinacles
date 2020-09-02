@@ -89,7 +89,7 @@ def main(namelist):
     Initializaiton.initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
     RayleighDamping.init_means()
-    Surf = SurfaceFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState, TimeSteppingController))
+    Surf = SurfaceFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState, TimeSteppingController)
 
     PSolver.initialize() #Must be called after reference profile is integrated
 

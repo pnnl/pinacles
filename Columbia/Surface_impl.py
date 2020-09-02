@@ -91,6 +91,7 @@ def compute_ustar(windspeed, buoyancy_flux, z0, zb):
 def compute_windspeed_sfc(u, v, u0, v0, gustiness, windspeed):
 
     shape = windspeed.shape
+    
     for i in range(1,shape[0]):
         for j in range(1,shape[1]):
             ui = 0.5 * (u[i-1,j] + u[i,j]) + u0

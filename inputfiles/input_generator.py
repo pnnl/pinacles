@@ -15,6 +15,8 @@ def main(casename):
         input_dict = rico()
     elif casename == 'atex':
         input_dict = atex()
+    elif casename == 'testbed':
+        input_dict = testbed()
 
 
     write_file(casename, input_dict)
@@ -328,13 +330,73 @@ def rico():
     return input_dict
 
 
+def testbed():
+    input_dict = {}
+
+    key = 'meta'
+    input_dict[key] = {}
+    input_dict[key]['casename'] = 'testbed'
+    input_dict[key]['simname'] = input_dict[key]['casename']
+    input_dict[key]['output_directory'] = './'
+
+    key = 'grid'
+    input_dict[key] = {}
+    #Set the number of grid points in the domain
+    input_dict[key]['n'] = [144, 144, 200]
+    #Set the number of halo points in each direct
+    input_dict[key]['n_halo'] = [3, 3, 3]
+    #Set the domain length, dx will be determined from n and L
+    input_dict[key]['l'] = [14400.0, 14400.0, 5000.0]
+
+
+    key = 'scalar_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'sl2'
+    input_dict[key][input_dict[key]['type']] = {}
+    input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
+
+    key = 'sgs'
+    input_dict[key] = {}
+    input_dict[key]['model'] = 'smagorinsky'
+    input_dict[key][input_dict[key]['model']] = {}
+    input_dict[key][input_dict[key]['model']]['cs'] = 0.17
+    input_dict[key][input_dict[key]['model']]['prt'] = 1.0/3.0
+
+
+    key = 'microphysics'
+    input_dict[key] = {}
+    input_dict[key]['scheme'] = 'kessler'
+
+    key = 'damping'
+    input_dict[key] = {}
+    input_dict[key]['vars'] = ['u', 'v', 'w', 's']
+    input_dict[key]['depth'] = 1000.0
+    input_dict[key]['timescale'] = 60.0
+
+    key = 'time'
+    input_dict[key] = {}
+    input_dict[key]['cfl'] = 0.6
+    input_dict[key]['time_max'] = 3600.0 * 12.0
+
+    key = 'stats'
+    input_dict[key] = {}
+    input_dict[key]['frequency'] = 60.0
+    input_dict[key]['modules'] = []
+
+    key = 'testbed'
+    input_dict[key] = {}
+    input_dict[key]['input_filepath'] = 'sgp_inputs.nc'
+    return input_dict
+
+
 
 LIST_OF_CASES = ['colliding_blocks',
                  'stable_bubble',
                 'sullivan_and_patton', 
                 'bomex',
                 'rico',
-                'atex']
+                'atex',
+                'testbed']
 
 if __name__ == '__main__':
 

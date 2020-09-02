@@ -19,7 +19,7 @@ def factory(namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState, Ti
         return CaseRICO.SurfaceRICO(namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState)
     elif casename == 'atex':
         return CaseATEX.SurfaceATEX(namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState)
-    elif casenane == 'testbed':
-        returb CaseTestbed.SurfaceTestbed(namelist,Grid, Ref, VelocityState,ScalarState,DiagnosticState,TimeSteppingController)
+    elif casename == 'testbed':
+        return CaseTestbed.SurfaceTestbed(namelist,Grid, Ref, VelocityState,ScalarState,DiagnosticState,TimeSteppingController)
     else:
         return Surface.SurfaceBase(namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState)
