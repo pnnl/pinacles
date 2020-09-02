@@ -1,8 +1,10 @@
-import numpy as np 
+import numpy as np
 import netCDF4 as nc
+from mpi4py import MPI
 from Columbia import Surface, Surface_impl, Forcing, Forcing_impl
 from Columbia import parameters
 from scipy import interpolate
+from Columbia import UtilitiesParallel
 
 '''
 CK: Here I am starting with the simplest case and assuming the start time of the forcing
@@ -37,13 +39,43 @@ class SurfaceTestbed(Surface.SurfaceBase):
         self._taux_sfc = np.zeros_like(self._windspeed_sfc)
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
 
+        # Use these to store the fluxes for output
+        self._shf = self._forcing_shf[0]
+        self._lhf = self._forcing_lhf[0]
+        self._ustar = self._forcing_ustar[0]
+        return
+
+    def io_initialize(self, rt_grp):
+
+        timeseries_grp = rt_grp['timeseries']
+
+        #Add thermodynamic fluxes
+        timeseries_grp.createVariable('shf', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('lhf', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('ustar', np.double, dimensions=('time',))
+        return
+
+    def io_update(self, rt_grp):
+
+        my_rank = MPI.COMM_WORLD.Get_rank()
+        n_halo = self._Grid.n_halo
+        npts = self._Grid.n[0] * self._Grid.n[1]
+
+        MPI.COMM_WORLD.barrier()
+        if my_rank == 0:
+            timeseries_grp = rt_grp['timeseries']
+
+            timeseries_grp['shf'][-1] = self._shf
+            timeseries_grp['lhf'][-1] = self._lhf
+
+            timeseries_grp['ustar'][-1] = self._ustar
+
         return
 
     def update(self):
         current_time = self._TimeSteppingController.time
 
         # Interpolate to the current time
-
         shf_interp = interpolate.interp1d(self._forcing_times, self._forcing_shf,fill_value='extrapolate', assume_sorted=True )(current_time)
         lhf_interp = interpolate.interp1d(self._forcing_times, self._forcing_lhf,fill_value='extrapolate', assume_sorted=True )(current_time)
         ustar_interp = interpolate.interp1d(self._forcing_times, self._forcing_ustar,fill_value='extrapolate', assume_sorted=True )(current_time)
@@ -75,16 +107,21 @@ class SurfaceTestbed(Surface.SurfaceBase):
         Surface_impl.surface_flux_application(dxi2, nh, alpha0, alpha0_edge, self._taux_sfc, ut)
         Surface_impl.surface_flux_application(dxi2, nh, alpha0, alpha0_edge, self._tauy_sfc, vt)
 
-
-
        # Apply the heat fluxes
         s_flx_sf = np.zeros_like(self._taux_sfc) + shf_interp * alpha0_edge[nh[2]-1]/parameters.CPD
         qv_flx_sf = np.zeros_like(self._taux_sfc) + lhf_interp * alpha0_edge[nh[2]-1]/parameters.LV
         Surface_impl.surface_flux_application(dxi2, nh, alpha0, alpha0_edge, s_flx_sf, st)
         Surface_impl.surface_flux_application(dxi2, nh, alpha0, alpha0_edge, qv_flx_sf , qvt)
 
+        # Store the surface fluxes for output
+        self._shf = shf_interp
+        self._lhf = lhf_interp
+        self._ustar = ustar_interp
 
         return
+
+
+
 '''
 Note regarding set-up of original LASSO cases (e.g. HISCALE tested case)
 These simulations use the initial sounding of horizontal winds as the geostrophic winds.
