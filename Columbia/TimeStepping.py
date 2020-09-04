@@ -125,6 +125,13 @@ class TimeSteppingController:
 
         return
 
+    def set_dt(self, newdt):
+        for Stepper in self._TimeStepper:
+            Stepper._dt = newdt
+
+        self._dt = newdt
+        return
+
     def match_time(self):
         #Must be called after dt is computed
         for match in self._times_to_match:

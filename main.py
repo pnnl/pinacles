@@ -20,6 +20,7 @@ from Columbia import Kinematics
 from Columbia import SGSFactory
 from Columbia import DiagnosticsTurbulence
 from Columbia import DiagnosticsClouds
+from Columbia import PlatformSimulator
 from mpi4py import MPI
 import numpy as np
 import time
@@ -126,6 +127,8 @@ def main(namelist):
 
     StatsIO.initialize()
 
+    UAVSim = PlatformSimulator.PlatformSimulator('uav1', TimeSteppingController, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState)
+    UAVSim.initialize()
 
     s = ScalarState.get_field('s')
     #qv = ScalarState.get_field('qv')
@@ -150,6 +153,10 @@ def main(namelist):
         t0 = time.time()
         for n in range(ScalarTimeStepping.n_rk_step):
             TimeSteppingController.adjust_timestep(n)
+
+            # Run the platform simulator only on the first timestep
+            if n == 0:
+                UAVSim.update()
 
             #Update Thermodynamics
             Thermo.update()
