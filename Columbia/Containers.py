@@ -241,21 +241,23 @@ class ModelState:
 
         #Now loop over variables creating profiles for each
         for var in self._dofs:
-            if self._loc[var] != 'z':
-                profiles_grp.createVariable(var, np.double, dimensions=('time', 'z',))
-                profiles_grp.createVariable(var + '_squared', np.double, dimensions=('time', 'z',))
-                profiles_grp.createVariable(var + '_min', np.double, dimensions=('time', 'z',))
-                profiles_grp.createVariable(var + '_max', np.double, dimensions=('time', 'z',))
-            else:
-                profiles_grp.createVariable(var, np.double, dimensions=('time', 'z_edge',))
-                profiles_grp.createVariable(var + '_squared', np.double, dimensions=('time', 'z_edge',))
-                profiles_grp.createVariable(var + '_min', np.double, dimensions=('time', 'z_edge'))
-                profiles_grp.createVariable(var + '_max', np.double, dimensions=('time', 'z_edge'))
+            if  not 'ff' in  var:  #Avoid SBM Bins
+                if self._loc[var] != 'z':
+                    profiles_grp.createVariable(var, np.double, dimensions=('time', 'z',))
+                    profiles_grp.createVariable(var + '_squared', np.double, dimensions=('time', 'z',))
+                    profiles_grp.createVariable(var + '_min', np.double, dimensions=('time', 'z',))
+                    profiles_grp.createVariable(var + '_max', np.double, dimensions=('time', 'z',))
+                else:
+                    profiles_grp.createVariable(var, np.double, dimensions=('time', 'z_edge',))
+                    profiles_grp.createVariable(var + '_squared', np.double, dimensions=('time', 'z_edge',))
+                    profiles_grp.createVariable(var + '_min', np.double, dimensions=('time', 'z_edge'))
+                    profiles_grp.createVariable(var + '_max', np.double, dimensions=('time', 'z_edge'))
 
         #Now loop over variables createing domain max/min timeseries for each
         for var in self._dofs:
-            timeseries_grp.createVariable(var + '_max', np.double, dimensions=('time',))
-            timeseries_grp.createVariable(var + '_min', np.double, dimensions=('time',))
+            if  not 'ff' in  var: #Avoid SBM Bins
+                timeseries_grp.createVariable(var + '_max', np.double, dimensions=('time',))
+                timeseries_grp.createVariable(var + '_min', np.double, dimensions=('time',))
 
         return
 
@@ -267,36 +269,38 @@ class ModelState:
 
         #Loop over variables and write  profiles
         for var in self._dofs:
-            if self._loc[var] != 'z':
-                var_mean = self.mean(var)[nh[2]:-nh[2]]
-                var_mean_squared = self.mean(var, pow=2.0)[nh[2]:-nh[2]]
-                var_max = self.max_prof(var)[nh[2]:-nh[2]]
-                var_min = self.min_prof(var)[nh[2]:-nh[2]]
-            else:
-                var_mean = self.mean(var)[nh[2]-1:-nh[2]]
-                var_mean_squared = self.mean(var, pow=2.0)[nh[2]-1:-nh[2]]
-                var_max = self.max_prof(var)[nh[2]-1:-nh[2]]
-                var_min = self.min_prof(var)[nh[2]-1:-nh[2]]
+            if  not 'ff' in  var:  #Avoid SBM Bins
+                if self._loc[var] != 'z':
+                    var_mean = self.mean(var)[nh[2]:-nh[2]]
+                    var_mean_squared = self.mean(var, pow=2.0)[nh[2]:-nh[2]]
+                    var_max = self.max_prof(var)[nh[2]:-nh[2]]
+                    var_min = self.min_prof(var)[nh[2]:-nh[2]]
+                else:
+                    var_mean = self.mean(var)[nh[2]-1:-nh[2]]
+                    var_mean_squared = self.mean(var, pow=2.0)[nh[2]-1:-nh[2]]
+                    var_max = self.max_prof(var)[nh[2]-1:-nh[2]]
+                    var_min = self.min_prof(var)[nh[2]-1:-nh[2]]
 
-            #Only write from rank zero
-            if my_rank == 0:
-                profiles_grp = nc_grp['profiles']
+                #Only write from rank zero
+                if my_rank == 0:
+                    profiles_grp = nc_grp['profiles']
 
-                profiles_grp[var][-1,:] = var_mean
-                profiles_grp[var + '_squared'][-1,:] = var_mean_squared
-                profiles_grp[var + '_max'][-1,:] = var_max
-                profiles_grp[var + '_min'][-1,:] = var_min
+                    profiles_grp[var][-1,:] = var_mean
+                    profiles_grp[var + '_squared'][-1,:] = var_mean_squared
+                    profiles_grp[var + '_max'][-1,:] = var_max
+                    profiles_grp[var + '_min'][-1,:] = var_min
 
 
         #Loop over variables and time series
         for var in self._dofs:
-            var_max = self.max(var)
-            var_min = self.min(var)
+            if  not 'ff' in  var:  #Avoid SBM Bins
+                var_max = self.max(var)
+                var_min = self.min(var)
 
-            #Only write from rank zero
-            if my_rank == 0:
-                timeseries_grp = nc_grp['timeseries']
-                timeseries_grp[var + '_max'][-1] = var_max
-                timeseries_grp[var + '_min'][-1] = var_min
+                #Only write from rank zero
+                if my_rank == 0:
+                    timeseries_grp = nc_grp['timeseries']
+                    timeseries_grp[var + '_max'][-1] = var_max
+                    timeseries_grp[var + '_min'][-1] = var_min
 
         return

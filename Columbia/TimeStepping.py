@@ -69,7 +69,7 @@ class TimeSteppingController:
         self._TimeStepper = []
         self._times_to_match = []
         self._dt = 0.0
-        self._dt_max = 60.0
+        self._dt_max = 10.0
         self._cfl_target = namelist['time']['cfl']
         self._time_max = namelist['time']['time_max']
         self._time = 0.0
@@ -128,7 +128,6 @@ class TimeSteppingController:
     def match_time(self):
         #Must be called after dt is computed
         for match in self._times_to_match:
-            print(match)
             if self._time//match < (self._time + self._dt)//match:
                 self._dt = min(match*(1.0+self._time//match) - self._time, self._dt)
 

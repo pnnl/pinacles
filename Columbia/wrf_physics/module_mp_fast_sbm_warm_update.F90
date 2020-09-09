@@ -1214,14 +1214,18 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
        RETURN
        END SUBROUTINE FALFLUXHUCM_Z
  ! +----------------------------------+
-   SUBROUTINE WARM_HUCMINIT(DT)
-
+   SUBROUTINE WARM_HUCMINIT(DT, ccncon1,radius_mean1,sig1, &
+    ccncon2,radius_mean2,sig2, &
+    ccncon3,radius_mean3,sig3)
  !	  USE module_domain
  !	  USE module_dm
 
  	  IMPLICIT NONE
 
     double precision,intent(in) :: DT
+    double precision,intent(in) :: ccncon1,radius_mean1,sig1
+    double precision,intent(in) :: ccncon2,radius_mean2,sig2
+    double precision,intent(in) :: ccncon3,radius_mean3,sig3
 
     LOGICAL , EXTERNAL      :: wrf_dm_on_monitor
     LOGICAL :: opened
@@ -1706,8 +1710,14 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
   RCCN = 0.0
 
   IF(ILogNormal_modes_Aerosol == 1)THEN
- 	  CALL LogNormal_modes_Aerosol(FCCNR_CON,FCCNR_MAR,NKR_aerosol,COL,XL,XCCN,RCCN,RO_SOLUTE,Scale_CCN_Factor,1)
- 	  CALL LogNormal_modes_Aerosol(FCCNR_CON,FCCNR_MAR,NKR_aerosol,COL,XL,XCCN,RCCN,RO_SOLUTE,Scale_CCN_Factor,2)
+    CALL LogNormal_modes_Aerosol(FCCNR_CON,FCCNR_MAR,NKR_aerosol,COL,XL,XCCN,RCCN,RO_SOLUTE,Scale_CCN_Factor,1, &
+    ccncon1,radius_mean1,sig1, &
+    ccncon2,radius_mean2,sig2, &
+    ccncon3,radius_mean3,sig3)
+    CALL LogNormal_modes_Aerosol(FCCNR_CON,FCCNR_MAR,NKR_aerosol,COL,XL,XCCN,RCCN,RO_SOLUTE,Scale_CCN_Factor,2, &
+    ccncon1,radius_mean1,sig1, &
+    ccncon2,radius_mean2,sig2, &
+    ccncon3,radius_mean3,sig3)
  	  print *, 'FAST_SBM_INIT : succesfull reading "LogNormal_modes_Aerosol" '
     !CALL wrf_debug(000, errmess)
     !---YZ2020Mar:read aerosol size distribution from observation----@
@@ -5128,80 +5138,107 @@ C3=C1*(F*A1/3.0D0)**(0.75D0)*DSQRT(3.0D0*RO_A/(4.0D0*pi*RO_W*A2))
 RETURN
 END SUBROUTINE SupMax_COEFF
 ! +----------------------------------------------------------------------------------------------------+
-SUBROUTINE LogNormal_modes_Aerosol(FCCNR_CON,FCCNR_MAR,NKR_local,COL,XL,XCCN,RCCN,RO_SOLUTE,Scale_Fa,IType)
+! +----------------------------------------------------------------------------------------------------+
+SUBROUTINE LogNormal_modes_Aerosol(FCCNR_CON,FCCNR_MAR,NKR_local,COL,XL,XCCN,RCCN,RO_SOLUTE,Scale_Fa,IType, &
+  ccncon1,radius_mean1,sig1, &
+  ccncon2,radius_mean2,sig2, &
+  ccncon3,radius_mean3,sig3)
 
 implicit none
 ! ... Interface
-integer,intent(in) :: NKR_local, Itype
-double precision ,intent(in) :: XL(:), COL, RO_SOLUTE, Scale_Fa
-double precision ,intent(out) :: FCCNR_CON(:), FCCNR_MAR(:)
-double precision ,intent(out) :: XCCN(:),RCCN(:)
+  integer,intent(in) :: NKR_local, Itype
+  double precision ,intent(in) :: XL(:), COL, RO_SOLUTE, Scale_Fa
+  double precision ,intent(out) :: FCCNR_CON(:), FCCNR_MAR(:)
+  double precision ,intent(out) :: XCCN(:),RCCN(:)
+  double precision, intent(in) :: ccncon1,radius_mean1,sig1
+  double precision, intent(in) :: ccncon2,radius_mean2,sig2
+  double precision, intent(in) :: ccncon3,radius_mean3,sig3
 ! ... Interface
 ! ... Local
-integer :: mode_num, KR
-integer,parameter :: modemax = 3
-double precision  :: ccncon1, ccncon2, ccncon3, radius_mean1, radius_mean2, radius_mean3,  &
-                               sig1, sig2, sig3,													                  &
-                              ccncon(modemax), sig(modemax), radius_mean(modemax)
-double precision  :: CONCCCNIN, FCCNR_tmp(NKR_local), DEG01, X0DROP,                           &
-                      XOCCN, X0, R0, RCCN_MICRON, S_KR, S(NKR_local), X0CCN, ROCCN(NKR_local),  &
-                      RO_SOLUTE_Ammon, RO_SOLUTE_NaCl,arg11,arg12,arg13,arg21,arg22,arg23,      & 
-                      arg31,arg32,arg33,dNbydlogR_norm1,dNbydlogR_norm2,dNbydlogR_norm3
+  integer :: mode_num, KR
+  integer,parameter :: modemax = 3
+  double precision  :: ccncon(modemax), sig(modemax), radius_mean(modemax)
+  double precision  :: CONCCCNIN, FCCNR_tmp(NKR_local), DEG01, X0DROP, &
+                        XOCCN, X0, R0, RCCN_MICRON, S_KR, S(NKR_local), X0CCN, ROCCN(NKR_local), &
+                        RO_SOLUTE_Ammon, RO_SOLUTE_NaCl,arg11,arg12,arg13,arg21,arg22,arg23, & 
+                        arg31,arg32,arg33,dNbydlogR_norm1,dNbydlogR_norm2,dNbydlogR_norm3
 
 
-double precision ,PARAMETER :: RCCN_MAX = 0.4D-4         ! [cm]
-double precision ,PARAMETER :: RCCN_MIN = 0.003D-4		    ! [cm]
-! ... Minimal radii for dry aerosol for the 3 log normal distribution
-double precision ,PARAMETER :: RCCN_MIN_3LN = 0.00048D-4 ! [cm]
-double precision ,PARAMETER :: PI = 3.14159265D0
-double precision ,PARAMETER :: ROCCN0 = 0.1000E01 !---YZ2020Mar
+  double precision ,PARAMETER :: RCCN_MAX = 0.4D-4         ! [cm]
+  double precision ,PARAMETER :: RCCN_MIN = 0.003D-4		! [cm]
+  ! ... Minimal radii for dry aerosol for the 3 log normal distribution
+   double precision ,PARAMETER :: RCCN_MIN_3LN = 0.00048D-4 ! [cm]
+  double precision ,PARAMETER :: PI = 3.14159265D0
+              double precision ,PARAMETER :: ROCCN0 = 0.1000E01 !---YZ2020Mar
 ! ... Local
 
 ! ... Calculating the CCN radius grid
 !RO_SOLUTE_NaCl = 2.16D0  ! [g/cm3]
 !RO_SOLUTE_Ammon = 1.79	 ! [g/cm3]
 
-! NOTE: rccn(1) = 1.2 nm
+  ! NOTE: rccn(1) = 1.2 nm
 !       rccn(33) = 2.1 um  
 
-DEG01 = 1.0D0/3.0D0
-X0DROP = XL(1)
+  DEG01 = 1.0D0/3.0D0
+X0DROP = XL(2)
+!X0CCN = X0DROP/(2.0**(NKR_local-1))
 X0CCN = X0DROP/(2.0**(NKR_local))
-DO KR = NKR_local,1,-1
-  ROCCN(KR) = ROCCN0
-  X0 = X0CCN*2.0D0**(KR)
-  R0 = (3.0D0*X0/4.0D0/3.141593D0/ROCCN(KR))**DEG01
-  XCCN(KR) = X0
-  RCCN(KR) = R0
-ENDDO
-
+!--YZ2020Mar:change to bin size from old version---@
+!	DO KR = NKR_local,1,-1
+!	   ROCCN(KR) = RO_SOLUTE
+!     !X0 = X0CCN*2.0D0**(KR-1)
+!     X0 = X0CCN*2.0D0**(KR)
+!	   R0 = (3.0D0*X0/4.0D0/3.141593D0/ROCCN(KR))**DEG01
+!	   XCCN(KR) = X0
+!	   RCCN(KR) = R0
+!	ENDDO
+ DO KR=1,NKR_local
+    ROCCN(KR)=ROCCN0
+    X0=X0CCN*2.**(KR-1)
+    R0=(3.*X0/4./3.141593/ROCCN(KR))**DEG01
+    XCCN(KR)=X0
+    RCCN(KR)=R0
+ END DO
+!-----------------------------------------------@
 IF(IType == 1) THEN ! Maritime regime
 
-    ccncon1 = 340.000
-    radius_mean1 = 0.00500D-04
-    sig1 = 1.60000
+  !ccncon1 = 90.0 !340.000
+  !radius_mean1 = 0.03d-4 !0.00500D-04
+  !sig1 = 1.28!1.60000
 
-    ccncon2 = 60.0000
-    radius_mean2 = 0.03500D-04
-    sig2 = 2.00000
+  !ccncon2 = 15 !60.0000 
+  !radius_mean2 =  0.14d-4!0.03500D-04
+  !sig2 = 1.75 !2.00000
 
-    ccncon3 = 3.10000
-    radius_mean3 = 0.31000D-04
-    sig3 = 2.70000
+  !ccncon3 = 0.0 !3.10000
+  !radius_mean3 = 0.31000D-04
+  !sig3 = 2.70000
+
+  !ccncon1 = 340.000
+  !radius_mean1 = 0.00500D-04
+  !sig1 = 1.60000
+
+  !ccncon2 = 60.0000
+  !radius_mean2 = 0.03500D-04
+  !sig2 = 2.00000
+
+  !ccncon3 = 3.10000
+  !radius_mean3 = 0.31000D-04
+  !sig3 = 2.70000
 
 ELSE IF(IType == 2) THEN ! Continental regime
 
-    ccncon1 = 1000.000
-    radius_mean1 = 0.00800D-04
-    sig1 = 1.60000
+  !ccncon1 = 1000.000
+  !radius_mean1 = 0.00800D-04
+  !sig1 = 1.60000
 
-    ccncon2 = 800.0000
-    radius_mean2 = 0.03400D-04
-    sig2 = 2.10000
+  !ccncon2 = 800.0000
+  !radius_mean2 = 0.03400D-04
+  !sig2 = 2.10000
 
-    ccncon3 = 0.72000
-    radius_mean3 = 0.46000D-04
-    sig3 = 2.20000
+  !ccncon3 = 0.72000
+  !radius_mean3 = 0.46000D-04
+  !sig3 = 2.20000
 
 ENDIF
 
@@ -5216,24 +5253,24 @@ dNbydlogR_norm1 = 0.0
 dNbydlogR_norm2 = 0.0
 dNbydlogR_norm3 = 0.0
 do kr = NKR_local,1,-1
-  if(RCCN(kr) > RCCN_MIN_3LN .and. RCCN(kr) < RCCN_MAX)then
-    arg12 = (log(RCCN(kr)/radius_mean1))**2.0
-    arg13 = 2.0D0*((log(sig1))**2.0);
-    dNbydlogR_norm1 = arg11*exp(-arg12/arg13)*(log(2.0)/3.0)
-    arg22 = (log(RCCN(kr)/radius_mean2))**2.0
-    arg23 = 2.0D0*((log(sig2))**2.0)
-    dNbydlogR_norm2 = dNbydlogR_norm1 + arg21*exp(-arg22/arg23)*(log(2.0)/3.0)
-    arg32 = (log(RCCN(kr)/radius_mean3))**2.0
-    arg33 = 2.0D0*((log(sig3))**2.0)
-    dNbydlogR_norm3 = dNbydlogR_norm2 + arg31*exp(-arg32/arg33)*(log(2.0)/3.0);
-    FCCNR_tmp(kr) = dNbydlogR_norm3
-  endif
+    if(RCCN(kr) > RCCN_MIN_3LN .and. RCCN(kr) < RCCN_MAX)then
+        arg12 = (log(RCCN(kr)/radius_mean1))**2.0
+        arg13 = 2.0D0*((log(sig1))**2.0);
+        dNbydlogR_norm1 = arg11*exp(-arg12/arg13)*(log(2.0)/3.0)
+        arg22 = (log(RCCN(kr)/radius_mean2))**2.0
+        arg23 = 2.0D0*((log(sig2))**2.0)
+        dNbydlogR_norm2 = dNbydlogR_norm1 + arg21*exp(-arg22/arg23)*(log(2.0)/3.0)
+        arg32 = (log(RCCN(kr)/radius_mean3))**2.0
+        arg33 = 2.0D0*((log(sig3))**2.0)
+        dNbydlogR_norm3 = dNbydlogR_norm2 + arg31*exp(-arg32/arg33)*(log(2.0)/3.0);
+        FCCNR_tmp(kr) = dNbydlogR_norm3/col
+    endif
 enddo
 
-CONCCCNIN = sum(FCCNR_tmp(:))
+CONCCCNIN = col * sum(FCCNR_tmp(:))
 print*,'CONCCCNIN',CONCCCNIN
-if(IType == 1) FCCNR_MAR = Scale_Fa*FCCNR_tmp/col
-if(IType == 2) FCCNR_CON = Scale_Fa*FCCNR_tmp/col
+if(IType == 1) FCCNR_MAR = Scale_Fa*FCCNR_tmp
+if(IType == 2) FCCNR_CON = Scale_Fa*FCCNR_tmp
 
 RETURN
 END SUBROUTINE LogNormal_modes_Aerosol

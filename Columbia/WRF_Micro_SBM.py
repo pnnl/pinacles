@@ -38,39 +38,26 @@ class MicroSBM(MicrophysicsBase):
             self._ScalarState.add_variable(var, units='kg kg^-1', latex_name=var, long_name=long_names[var])
 
         #Add new diag fields
-        self._io_fields = ['MA', 'LH_rate', 'CE_rate', 'DS_rate', 'Melt_rate',
-            'Frz_rate', 'CldNucl_rate', 'IceNucl_rate', 'difful_tend', 'diffur_tend',
-            'tempdiffl', 'automass_tend', 'autonum_tend', 'saturation','n_reg_ccn']
+        self._io_fields = ['MA', 'LH_rate', 'CE_rate', 'CldNucl_rate', 'difful_tend', 'diffur_tend',
+            'tempdiffl', 'saturation', 'n_reg_ccn']
 
         long_names = {'MA': '', 
                       'LH_rate':'Latent heat rate',
                       'CE_rate':'Condensation / evaporation rate',
-                      'DS_rate':'Deposition / sublimation rate',
-                      'Melt_rate':'Ice melting rate',
-                      'Frz_rate':'Liquid freezing rate',
                       'CldNucl_rate':'Cloud nucleation rate',
-                      'IceNucl_rate':'Ice nucleation rate',
                       'difful_tend':'liquid mass change rate due to droplet diffusional growth',
                       'diffur_tend':'rain mass change rate due to droplet diffusional growth',
                       'tempdiffl':'latent heat rate due to droplet diffusional growth',
-                      'automass_tend':'cloud droplet mass change due to collision-coalescence',
-                      'autonum_tend':'cloud droplet number change due to collision-coalescence',
                       'saturation':'Saturaiton Ratio',
                       'n_reg_ccn':'Aerosol Regeneration Rate'}
 
         units = {'MA': '',
                       'LH_rate':'K s^{-1}',
                       'CE_rate':'kg kg^{-1} s^{-1}',
-                      'DS_rate':'kg kg^{-1} s^{-1}',
-                      'Melt_rate':'kg kg^{-1} s^{-1}',
-                      'Frz_rate':'kg kg^{-1} s^{-1}',
                       'CldNucl_rate':'kg kg^{-1} s^{-1}',
-                      'IceNucl_rate':'kg kg^{-1} s^{-1}',
                       'difful_tend':'kg kg^{-1} s^{-1}',
                       'diffur_tend':'kg kg^{-1} s^{-1}',
                       'tempdiffl':'K s^{-1}',
-                      'automass_tend':'kg kg^{-1} s^{-1}',
-                      'autonum_tend':'kg kg^{-1} s^{-1}',
                       'saturation':'',
                       'n_reg_ccn':''}
 
@@ -117,6 +104,9 @@ class MicroSBM(MicrophysicsBase):
             self._ScalarState.add_variable(name,units='kg kg^{-1}', long_name='(regeneration) aerosol bin mass ' + str(i))
         self._bin_end = self._ScalarState.nvars
 
+        # Call add output container diagnostics to the container
+        self.add_output_container_diags()
+
         nhalo = self._Grid.n_halo
         self._our_dims = self._Grid.ngrid_local
         nhalo = self._Grid.n_halo
@@ -133,26 +123,75 @@ class MicroSBM(MicrophysicsBase):
 
         self._itimestep = 1
         self._call_count = 0
-        
-        ccncon1 = 90.0 
-        radius_mean1 = 0.03e-4 
+
+        ccncon1 = 90.0
+        radius_mean1 = 0.03e-4
         sig1 = 1.28
-        
+
         ccncon2 = 15
         radius_mean2 =  0.14e-4
-        sig2 = 1.75 
-		
+        sig2 = 1.75
+
         ccncon3 = 0.0
         radius_mean3 = 0.31000e-04
         sig3 = 2.70000
 
 
-        module_mp_fast_sbm.module_mp_warm_sbm.warm_hucminit(5.0)
-        #ccncon1, radius_mean1, sig1, 
-        #ccncon2, radius_mean2, sig2,
-        #ccncon3, radius_mean3, sig3)
+        module_mp_fast_sbm.module_mp_warm_sbm.warm_hucminit(5.0,
+        ccncon1, radius_mean1, sig1,
+        ccncon2, radius_mean2, sig2,
+        ccncon3, radius_mean3, sig3)
 
         return
+
+    def add_output_container_diags(self):
+
+        # Add the drop/droplet mass bins
+        self.sbm_output_container_index_map = {}
+        meta = []
+        for i in range(33):
+            self.sbm_output_container_index_map['ff1i' + str(i) + '_bfcc'] = i
+            meta.append(('kg kg^{-1}', 'liquid bin mass ' + str(i) +' at coal'))
+
+       # Set the indicies for the process rates
+        names = ['nc_autoconv',
+                'qc_autoconv',
+                'qr_autoconv',
+                'nr_autoconv',
+                'qv_autoconv',
+                't_autoconv',
+                'w_autoconv',
+                'auto_cldmsink_b',
+                'auto_cldnsink_b',
+                'accr_cldmsink_b',
+                'accr_cldnsink_b',
+                'selfc_rainnchng_b']
+
+        meta.append(('kg^-1', 'cloud water autoconversion number'))
+        meta.append(('kg kg^-1', 'cloud water autoconversion mass'))
+
+        meta.append(('kg kg^-1', 'rain water autoconversion mass'))
+        meta.append(('kg^-1', 'rain water autoconversion number'))
+        meta.append(('kg kg^-1', 'water vapor autoconversion mass'))
+        meta.append(('K', 'temperature'))
+        meta.append(('m s^-1', 'autoconversion vertical velocity'))
+        meta.append(('kg kg^-1 s^-1', 'autoconversion cloud mass sink'))
+        meta.append(('kg^-1 s^-1', 'autoconversion cloud number sink'))
+        meta.append(('kg kg^-1 s^-1', 'accretion cloud mass sink'))
+        meta.append(('kg^-1 s^-1', 'accretion cloud number sink'))
+        meta.append(('kg^-1 s^-1', 'self-collection cloud number change'))
+
+        # Compute the inidicies
+        for name in names:
+            self.sbm_output_container_index_map[name] = len(self.sbm_output_container_index_map) 
+
+        #Add variables to the diagnostic state
+        count = 0
+        for name in self.sbm_output_container_index_map:
+            self._DiagnosticState.add_variable(name, units=meta[count][0], long_name=meta[count][1])
+            count += 1
+        return
+
 
     def update(self):
 
@@ -189,8 +228,6 @@ class MicroSBM(MicrophysicsBase):
             self._qv_old[:,:,:] = wrf_vars['qv'][:,:,:]
         wrf_vars['th_phy']=np.zeros(self._wrf_dims, order='F', dtype=np.double)
         to_wrf_order(nhalo, T/exner[np.newaxis, np.newaxis, :], wrf_vars['th_phy'])
-        #print(np.amin(T), np.amax(T))
-        #import sys; sys.exit()
 
         #Now reorder the bin array
         wrf_vars['chem_new'] = np.zeros((self._wrf_dims[0], self._wrf_dims[1], self._wrf_dims[2], 99),
@@ -254,13 +291,8 @@ class MicroSBM(MicrophysicsBase):
         z = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         z[:,:,:] = self._Grid.z_global[np.newaxis, nhalo[2]:-nhalo[2], np.newaxis]
 
-        #print('th_old', np.min(wrf_vars['th_old']), np.amax(wrf_vars['th_old']))
-        #print('th_phy', np.min(wrf_vars['th_old']), np.amax(wrf_vars['th_old']))
-
-
         sbm_output_container = np.zeros((self._wrf_dims[0],self._wrf_dims[1],self._wrf_dims[2],45),dtype=np.double,order='F')
         KRDROP=14
-        #self.plot_wrf_vars(wrf_vars)
 
         #Call sbm!
 
@@ -280,9 +312,7 @@ class MicroSBM(MicrophysicsBase):
         rain_accum_old = np.sum(self._RAINNC)
         MPI.COMM_WORLD.barrier()
         t0 = time.time()
-        #import pylab as plt
-        #plt.plot(np.mean(np.mean(wrf_vars['th_phy'],axis=2),axis=0), 'o',label='th_phy b4')
-        #plt.plot(np.mean(np.mean(wrf_vars['th_old'],axis=2),axis=0), '.', label='th_old b4')
+
         module_mp_fast_sbm.module_mp_warm_sbm.warm_sbm(wrf_vars['w'],
                                                       wrf_vars['u'],
                                                       wrf_vars['v'],
@@ -326,11 +356,6 @@ class MicroSBM(MicrophysicsBase):
                                                       rainncv=wrf_vars['RAINNCV'],
                                                       sr=wrf_vars['SR'])
 
-        #plt.plot(np.mean(np.mean(wrf_vars['th_phy'],axis=2),axis=0), 'o',label='th_phy after')
-        #plt.plot(np.mean(np.mean(wrf_vars['th_old'],axis=2),axis=0), '.', label='th_old after')
-        #plt.legend()
-        #plt.show()
-
 
         t1 = time.time()
         MPI.COMM_WORLD.barrier()
@@ -355,11 +380,14 @@ class MicroSBM(MicrophysicsBase):
             to_our_order(nhalo, wrf_vars[v], var)
 
 
+        for item, key in self.sbm_output_container_index_map.items():
+            var = self._DiagnosticState.get_field(item)
+            to_our_order(nhalo, sbm_output_container[:,:,:,key], var)
+
         s_wrf = wrf_vars['th_phy']* self._Ref.exner[np.newaxis, nhalo[2]:-nhalo[2], np.newaxis]  +  (parameters.G*z- parameters.LV*(wrf_vars['qc'] + wrf_vars['qr']))*parameters.ICPD
         to_our_order(nhalo, s_wrf, s)
 
         to_our_order(nhalo, wrf_vars['qv'], qv)
-
 
         self._call_count += 1
         self._itimestep  += 1

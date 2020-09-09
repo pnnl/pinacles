@@ -69,7 +69,8 @@ class DiagnosticsTurbulence:
         profiles_grp.createVariable('wqt', np.double, dimensions=('time', 'z',))
         profiles_grp.createVariable('wthetali', np.double, dimensions=('time', 'z',))
         for var in self._ScalarState.names:
-            profiles_grp.createVariable('w' + var, np.double, dimensions=('time', 'z',))
+            if  not 'ff' in  var:  #Avoid SBM Bins
+                profiles_grp.createVariable('w' + var, np.double, dimensions=('time', 'z',))
 
 
         profiles_grp.createVariable('qtthetali', np.double, dimensions=('time', 'z',))
@@ -317,18 +318,19 @@ class DiagnosticsTurbulence:
                 profiles_grp['w'+key][-1,:]  = item_fluxz[n_halo[2]:-n_halo[2]]
 
         for key in self._ScalarState.names:
-            item = self._ScalarState.get_field(key)
-            item_mean = UtilitiesParallel.ScalarAllReduce(np.sum(np.sum(item[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1],:],axis=0),axis=0)/npts)
-            item_fluxz = np.zeros_like(w_mean)
-            self.compute_vertical_fluxes(n_halo, w_mean, item_mean, w, item, item_fluxz)
-            item_fluxz = UtilitiesParallel.ScalarAllReduce(item_fluxz/npts)
+            if  not 'ff' in  key:  #Avoid SBM Bins
+                item = self._ScalarState.get_field(key)
+                item_mean = UtilitiesParallel.ScalarAllReduce(np.sum(np.sum(item[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1],:],axis=0),axis=0)/npts)
+                item_fluxz = np.zeros_like(w_mean)
+                self.compute_vertical_fluxes(n_halo, w_mean, item_mean, w, item, item_fluxz)
+                item_fluxz = UtilitiesParallel.ScalarAllReduce(item_fluxz/npts)
 
 
-            #Only do IO on rank 0
-            MPI.COMM_WORLD.barrier()
-            if my_rank == 0:
-                profiles_grp = this_grp['profiles']
-                profiles_grp['w'+key][-1,:]  = item_fluxz[n_halo[2]:-n_halo[2]]
+                #Only do IO on rank 0
+                MPI.COMM_WORLD.barrier()
+                if my_rank == 0:
+                    profiles_grp = this_grp['profiles']
+                    profiles_grp['w'+key][-1,:]  = item_fluxz[n_halo[2]:-n_halo[2]]
 
         return
 
