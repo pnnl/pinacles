@@ -147,10 +147,10 @@ class MicroSBM(MicrophysicsBase):
         sig3 = 2.70000
 
 
-        module_mp_fast_sbm.module_mp_fast_sbm.fast_hucminit(5.0,
-        ccncon1, radius_mean1, sig1, 
-        ccncon2, radius_mean2, sig2,
-        ccncon3, radius_mean3, sig3)
+        module_mp_fast_sbm.module_mp_warm_sbm.warm_hucminit(5.0)
+        #ccncon1, radius_mean1, sig1, 
+        #ccncon2, radius_mean2, sig2,
+        #ccncon3, radius_mean3, sig3)
 
         return
 
@@ -258,6 +258,8 @@ class MicroSBM(MicrophysicsBase):
         #print('th_phy', np.min(wrf_vars['th_old']), np.amax(wrf_vars['th_old']))
 
 
+        sbm_output_container = np.zeros((self._wrf_dims[0],self._wrf_dims[1],self._wrf_dims[2],45),dtype=np.double,order='F')
+        KRDROP=14
         #self.plot_wrf_vars(wrf_vars)
 
         #Call sbm!
@@ -278,7 +280,10 @@ class MicroSBM(MicrophysicsBase):
         rain_accum_old = np.sum(self._RAINNC)
         MPI.COMM_WORLD.barrier()
         t0 = time.time()
-        module_mp_fast_sbm.module_mp_fast_sbm.warm_sbm(wrf_vars['w'],
+        #import pylab as plt
+        #plt.plot(np.mean(np.mean(wrf_vars['th_phy'],axis=2),axis=0), 'o',label='th_phy b4')
+        #plt.plot(np.mean(np.mean(wrf_vars['th_old'],axis=2),axis=0), '.', label='th_old b4')
+        module_mp_fast_sbm.module_mp_warm_sbm.warm_sbm(wrf_vars['w'],
                                                       wrf_vars['u'],
                                                       wrf_vars['v'],
                                                       wrf_vars['th_old'],
@@ -305,26 +310,26 @@ class MicroSBM(MicrophysicsBase):
                                                       ids,ide, jds,jde, kds,kde,
                                                       ims,ime, jms,jme, kms,kme,
                                                       its,ite, jts,jte, kts,kte,
+                                                      KRDROP,
                                                       wrf_vars['sbmradar'],
                                                       wrf_vars['MA'],
                                                       wrf_vars['LH_rate'],
                                                       wrf_vars['CE_rate'],
-                                                      wrf_vars['DS_rate'],
-                                                      wrf_vars['Melt_rate'],
-                                                      wrf_vars['Frz_rate'],
                                                       wrf_vars['CldNucl_rate'],
-                                                      wrf_vars['IceNucl_rate'],
                                                       wrf_vars['n_reg_ccn'],
+                                                      sbm_output_container,
                                                       wrf_vars['difful_tend'],
                                                       wrf_vars['diffur_tend'],
                                                       wrf_vars['tempdiffl'],
-                                                      wrf_vars['automass_tend'],
-                                                      wrf_vars['autonum_tend'],
-                                                      wrf_vars['nprc_tend'],
                                                       diagflag= wrf_vars['diagflag'],
                                                       rainnc=wrf_vars['RAINNC'],
                                                       rainncv=wrf_vars['RAINNCV'],
                                                       sr=wrf_vars['SR'])
+
+        #plt.plot(np.mean(np.mean(wrf_vars['th_phy'],axis=2),axis=0), 'o',label='th_phy after')
+        #plt.plot(np.mean(np.mean(wrf_vars['th_old'],axis=2),axis=0), '.', label='th_old after')
+        #plt.legend()
+        #plt.show()
 
 
         t1 = time.time()
@@ -348,9 +353,6 @@ class MicroSBM(MicrophysicsBase):
         for v in self._io_fields:
             var = self._DiagnosticState.get_field(v)
             to_our_order(nhalo, wrf_vars[v], var)
-
-
-
 
 
         s_wrf = wrf_vars['th_phy']* self._Ref.exner[np.newaxis, nhalo[2]:-nhalo[2], np.newaxis]  +  (parameters.G*z- parameters.LV*(wrf_vars['qc'] + wrf_vars['qr']))*parameters.ICPD
