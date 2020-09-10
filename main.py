@@ -20,6 +20,7 @@ from Columbia import Kinematics
 from Columbia import SGSFactory
 from Columbia import DiagnosticsTurbulence
 from Columbia import DiagnosticsClouds
+from Columbia import RadiationFactory
 from mpi4py import MPI
 import numpy as np
 import time
@@ -63,6 +64,7 @@ def main(namelist):
     SGS = SGSFactory.factory(namelist, ModelGrid, Ref, VelocityState, DiagnosticState)
     Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
     Thermo = Thermodynamics.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, Micro)
+    Rad = RadiationFactory.factory(namelist, Grid, Ref, ScalarState, DiagnosticState)
 
     # In the future the microphyics should be initialized here
 
