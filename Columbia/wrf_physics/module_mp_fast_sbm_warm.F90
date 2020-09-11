@@ -3951,7 +3951,7 @@ end module module_mp_SBM_Auxiliary
   arg11 = ccncon1/(sqrt(2.0D0*pi)*log(sig1))
   arg21 = ccncon2/(sqrt(2.0D0*pi)*log(sig2))
   arg31 = ccncon3/(sqrt(2.0D0*pi)*log(sig3))
-  
+
   dNbydlogR_norm1 = 0.0
   dNbydlogR_norm2 = 0.0
   dNbydlogR_norm3 = 0.0
@@ -3966,11 +3966,11 @@ end module module_mp_SBM_Auxiliary
           arg32 = (log(RCCN(kr)/radius_mean3))**2.0
           arg33 = 2.0D0*((log(sig3))**2.0)
           dNbydlogR_norm3 = dNbydlogR_norm2 + arg31*exp(-arg32/arg33)*(log(2.0)/3.0);
-          FCCNR_tmp(kr) = dNbydlogR_norm3/col
+          FCCNR_tmp(kr) = dNbydlogR_norm3
       endif
-enddo
-  
-  CONCCCNIN = col*sum(FCCNR_tmp(:))
+  enddo
+
+  CONCCCNIN = sum(FCCNR_tmp(:))
   print*,'CONCCCNIN',CONCCCNIN
   if(IType == 1) FCCNR_MAR = Scale_Fa*FCCNR_tmp
   if(IType == 2) FCCNR_CON = Scale_Fa*FCCNR_tmp
