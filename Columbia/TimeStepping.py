@@ -69,7 +69,7 @@ class TimeSteppingController:
         self._TimeStepper = []
         self._times_to_match = []
         self._dt = 0.0
-        self._dt_max = 10.0
+        self._dt_max = 60.0
         self._cfl_target = namelist['time']['cfl']
         self._time_max = namelist['time']['time_max']
         self._time = 0.0

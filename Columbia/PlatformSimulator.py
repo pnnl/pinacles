@@ -1,6 +1,7 @@
 import numpy as np
 import netCDF4 as nc
 from mpi4py import MPI
+import pickle 
 class PlatformSimulator:
 
     def __init__(self, name, TimeSteppingController, Grid, Ref, 
@@ -22,10 +23,17 @@ class PlatformSimulator:
         self._endtime = 9600.0
 
         self._location[0] = 0.0
-        self._location[1] = 0.0
-        self._location[2] = 200.0
+        self._location[1] = 100.0
+        self._location[2] = 100.0
 
         self._up_or_down = 1
+
+        self._count = 0
+        with open('/Users/pres026/Desktop/HISCALE_airplane/2016/sgp/hiscale/mei-iwg1/fligh_path.pkl','rb') as f:
+            self._flight_path = pickle.load(f)
+            self._starttime = self._flight_path['start_time']
+            self._endtime = self._flight_path['end_time']
+
 
         return
 
@@ -56,19 +64,21 @@ class PlatformSimulator:
         return
 
     def update(self):
+
         if (self._TimeSteppingController.time < self._starttime  or 
             self._TimeSteppingController.time   > self._endtime):
             return
 
         self._TimeSteppingController.set_dt(self._output_dt)
-        self.update_position()
+        self.update_position_file()
 
         nh = self._Grid.n_halo
-        x = self._Grid.x_edge_global[nh[0]-1: -nh[0]]
-        y = self._Grid.y_edge_global[nh[1]-1: -nh[1]]
-        z = self._Grid.z_edge_global[nh[2]-1: -nh[2]]
 
-        xpos = self._location[0]
+        x = self._Grid.x_edge_local[nh[0]-1: -nh[0]]
+        y = self._Grid.y_edge_local[nh[1]-1: -nh[1]]
+        z = self._Grid.z_edge_local[nh[2]-1: -nh[2]]
+
+        xpos = self._location[0]%np.max(self._Grid.x_edge_global[nh[0]-1: -nh[0]])
         ypos = self._location[1]
         zpos = self._location[2]
 
@@ -79,10 +89,9 @@ class PlatformSimulator:
         if ypos < np.min(y) or ypos > np.max(y):
             return
 
-        xind = int(xpos//self._Grid.dx[0] - 1 + nh[0])
-        yind = int(ypos//self._Grid.dx[1] - 1 + nh[1])
+        xind = int((xpos - np.min(x))//self._Grid.dx[0] - 1 + nh[0])
+        yind = int((ypos - np.min(y))//self._Grid.dx[1] - 1 + nh[1])
         zind = int(zpos//self._Grid.dx[2] - 1 + nh[2])
-
 
         rt_grp = nc.Dataset(self._path, 'r+')
         time = rt_grp['time']
@@ -90,7 +99,7 @@ class PlatformSimulator:
 
         for name in self._ScalarState.names:
             data = self._ScalarState.get_field(name)
-            rt_grp[name][-1] = data[xind, yind, zind]
+            rt_grp[name][-1] = data[xind, yind, zind] 
 
         for name in self._VelocityState.names:
             data = self._VelocityState.get_field(name)
@@ -120,6 +129,17 @@ class PlatformSimulator:
 
         self._location[2] += 0.5 * self._up_or_down
 
+        return
+
+    def update_position_file(self):
+
+
+        #self._location[0] = 2560.0 + 500.0 * np.sin(2.0 * np.pi * self._TimeSteppingController.time/360.0)
+        #self._location[1] = 2560.0 + 500.0 *  np.cos(2.0 * np.pi * self._TimeSteppingController.time/360.0)#
+        self._location[0] += self._flight_path['air_speed'][self._count]
+        self._location[2] = self._flight_path['radar_alt'][self._count]
+
+        self._count += 1
         return
 
 
