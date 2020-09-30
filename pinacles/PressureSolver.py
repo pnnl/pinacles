@@ -1,6 +1,6 @@
 import numpy as np
-from Columbia.PressureSolver_impl import divergence, fill_pressure, apply_pressure
-from Columbia.TDMA import Thomas, PressureTDMA
+from pinacles.PressureSolver_impl import divergence, fill_pressure, apply_pressure
+from pinacles.TDMA import Thomas, PressureTDMA
 import mpi4py_fft as fft
 from mpi4py import MPI
 

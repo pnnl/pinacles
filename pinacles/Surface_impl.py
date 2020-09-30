@@ -1,6 +1,6 @@
 import numpy as np
 import numba
-from Columbia import Surface_impl
+from pinacles import Surface_impl
 
 GAMMA_M = 15.0
 GAMMA_H = 9.0

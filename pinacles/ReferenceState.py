@@ -1,4 +1,4 @@
-from Columbia import ThermodynamicsDry_impl, parameters
+from pinacles import ThermodynamicsDry_impl, parameters
 import numpy as np
 from scipy.integrate import odeint
 import numba

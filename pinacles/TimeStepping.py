@@ -1,6 +1,6 @@
 import numpy as np
-from Columbia import TimeStepping_impl as TS_impl
-from Columbia import UtilitiesParallel
+from pinacles import TimeStepping_impl as TS_impl
+from pinacles import UtilitiesParallel
 from mpi4py import MPI
 
 class RungeKuttaBase:

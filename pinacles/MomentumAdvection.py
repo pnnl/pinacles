@@ -1,6 +1,6 @@
 import numpy as np
 import time
-from Columbia import MomentumAdvection_impl
+from pinacles import MomentumAdvection_impl
 
 class MomentumAdvectionBase:
     def __init__(self, Grid, Ref, ScalarState, VelocityState):

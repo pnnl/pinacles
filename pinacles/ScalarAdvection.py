@@ -1,7 +1,7 @@
 import numba
 import numpy as np
-from Columbia.interpolation_impl import interp_weno5, centered_second
-from Columbia import UtilitiesParallel, parameters
+from pinacles.interpolation_impl import interp_weno5, centered_second
+from pinacles import UtilitiesParallel, parameters
 from mpi4py import MPI
 
 class ScalarAdvectionBase:

@@ -1,7 +1,7 @@
 import numpy as np
 import numba
 import time
-from Columbia import ScalarAdvection
+from pinacles import ScalarAdvection
 
 @numba.njit()
 def compute_coeff_tensor(u, v, w, dxi, dt, coeff_tensor):

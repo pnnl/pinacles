@@ -18,8 +18,8 @@ class ThermodynamicsBase:
 
         return
 
-from Columbia import ThermodynamicsDry
-from Columbia import ThermodynamicsMoist
+from pinacles import ThermodynamicsDry
+from pinacles import ThermodynamicsMoist
 def factory(namelist, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro):
     try:
         thermo_type = namelist['Thermodynamics']['type']

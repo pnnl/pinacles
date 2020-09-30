@@ -1,9 +1,9 @@
-from Columbia import CaseSullivanAndPatton
-from Columbia import CaseBOMEX
-from Columbia import CaseRICO
-from Columbia import CaseATEX
-from Columbia import CaseTestbed
-from Columbia import Forcing
+from pinacles import CaseSullivanAndPatton
+from pinacles import CaseBOMEX
+from pinacles import CaseRICO
+from pinacles import CaseATEX
+from pinacles import CaseTestbed
+from pinacles import Forcing
 
 def factory(namelist, Grid, Ref, Microphysics, VelocityState, ScalarState, DiagnosticState, TimeSteppingController):
     casename = namelist['meta']['casename']

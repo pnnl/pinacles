@@ -1,5 +1,5 @@
 import numba
-from Columbia import parameters
+from pinacles import parameters
 
 @numba.njit()
 def s(z, T):

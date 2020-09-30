@@ -1,7 +1,7 @@
 import numpy as np
 import pylab as plt
 
-from Columbia import Kinematics_impl
+from pinacles import Kinematics_impl
 
 
 class Kinematics:

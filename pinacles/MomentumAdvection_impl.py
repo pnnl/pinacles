@@ -1,5 +1,5 @@
 import numba
-from Columbia import interpolation_impl
+from pinacles import interpolation_impl
 
 
 

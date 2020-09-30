@@ -1,7 +1,7 @@
 import numpy as np
 import numba
-from Columbia import Surface, Surface_impl
-from Columbia import parameters
+from pinacles import Surface, Surface_impl
+from pinacles import parameters
 
 
 class SurfaceStableBubble(Surface.SurfaceBase):

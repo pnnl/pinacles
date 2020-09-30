@@ -1,5 +1,5 @@
 import numpy as np
-from Columbia import Damping_impl
+from pinacles import Damping_impl
 
 class Damping:
     def __init__(self, namelist, Grid):

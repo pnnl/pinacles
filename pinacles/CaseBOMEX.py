@@ -1,8 +1,8 @@
 import numpy as np
 from mpi4py import MPI
-from Columbia import parameters
-from Columbia import Surface, Surface_impl, Forcing_impl, Forcing
-from Columbia import UtilitiesParallel
+from pinacles import parameters
+from pinacles import Surface, Surface_impl, Forcing_impl, Forcing
+from pinacles import UtilitiesParallel
 
 class SurfaceBOMEX(Surface.SurfaceBase): 
     def __init__(self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState): 

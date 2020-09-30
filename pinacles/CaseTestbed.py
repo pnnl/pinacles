@@ -1,10 +1,10 @@
 import numpy as np
 import netCDF4 as nc
 from mpi4py import MPI
-from Columbia import Surface, Surface_impl, Forcing, Forcing_impl
-from Columbia import parameters
+from pinacles import Surface, Surface_impl, Forcing, Forcing_impl
+from pinacles import parameters
 from scipy import interpolate
-from Columbia import UtilitiesParallel
+from pinacles import UtilitiesParallel
 
 '''
 CK: Here I am starting with the simplest case and assuming the start time of the forcing

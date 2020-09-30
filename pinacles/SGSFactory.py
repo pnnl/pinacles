@@ -1,5 +1,5 @@
-from Columbia import SGS
-from Columbia import SGSSmagorinsky
+from pinacles import SGS
+from pinacles import SGSSmagorinsky
 
 from mpi4py import MPI
 

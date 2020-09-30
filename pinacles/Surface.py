@@ -1,4 +1,4 @@
-from Columbia import parameters
+from pinacles import parameters
 class SurfaceBase:
 
     def __init__(self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState):

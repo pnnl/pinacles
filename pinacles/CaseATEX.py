@@ -1,9 +1,9 @@
 import numpy as np
 import numba
-from Columbia import parameters
-from Columbia import Surface, Surface_impl, Forcing_impl, Forcing
-from Columbia.WRF_Micro_Kessler import compute_qvs
-from Columbia import parameters
+from pinacles import parameters
+from pinacles import Surface, Surface_impl, Forcing_impl, Forcing
+from pinacles.WRF_Micro_Kessler import compute_qvs
+from pinacles import parameters
 
 
 class SurfaceATEX(Surface.SurfaceBase):

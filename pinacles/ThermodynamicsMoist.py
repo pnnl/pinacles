@@ -1,5 +1,5 @@
-from Columbia import Thermodynamics, ThermodynamicsMoist_impl
-from Columbia import parameters
+from pinacles import Thermodynamics, ThermodynamicsMoist_impl
+from pinacles import parameters
 import numpy as np
 import numba
 

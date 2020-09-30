@@ -1,9 +1,9 @@
 import numpy as np
 from mpi4py import MPI
-from Columbia import parameters
-from Columbia import Surface, Surface_impl, Forcing_impl, Forcing
-from Columbia.WRF_Micro_Kessler import compute_qvs
-from Columbia import UtilitiesParallel
+from pinacles import parameters
+from pinacles import Surface, Surface_impl, Forcing_impl, Forcing
+from pinacles.WRF_Micro_Kessler import compute_qvs
+from pinacles import UtilitiesParallel
 
 class SurfaceRICO(Surface.SurfaceBase):
     def __init__(self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState):

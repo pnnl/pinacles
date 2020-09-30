@@ -1,5 +1,5 @@
 import numpy as np
-import Columbia.ThermodynamicsDry_impl as DryThermo
+import pinacles.ThermodynamicsDry_impl as DryThermo
 import netCDF4 as nc
 from scipy import interpolate
 

@@ -1,5 +1,5 @@
-from Columbia.ScalarAdvection import ScalarWENO5
-from Columbia.SLScalarAdvection import CTU
+from pinacles.ScalarAdvection import ScalarWENO5
+from pinacles.SLScalarAdvection import CTU
 
 def factory(namelist, Grid, Ref, ScalarState, VelocityState, TimeStepping):
    

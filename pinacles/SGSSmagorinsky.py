@@ -1,4 +1,4 @@
-from Columbia.SGS import SGSBase
+from pinacles.SGS import SGSBase
 import numpy as np
 import numba
 
