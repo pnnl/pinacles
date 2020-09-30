@@ -1,14 +1,14 @@
 from mpi4py import MPI 
 def start_message():
     if MPI.COMM_WORLD.Get_rank() == 0: 
-        print('Hello from Colombia!')
+        print('Hello from PINACLES!')
         print('\t Today I am running on ', 
         MPI.COMM_WORLD.Get_size(), ' MPI ranks!')
     return  
 
 def end_message(): 
     if MPI.COMM_WORLD.Get_rank() == 0: 
-        print('Colombia is all done!')
+        print('PINACLES is all done!')
         print('\t Good Day!')
     return 
 
