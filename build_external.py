@@ -2,10 +2,10 @@ import subprocess
 import os
 
 def main():
-    f2py_file('Columbia/wrf_physics/', 'module_mp_p3.f95', 'p3')
-    f2py_file('Columbia/wrf_physics/', 'module_mp_kessler.f95', 'kessler')
+    f2py_file('pinacles/wrf_physics/', 'module_mp_p3.f95', 'p3')
+    f2py_file('pinacles/wrf_physics/', 'module_mp_kessler.f95', 'kessler')
 
-    download_data('Columbia/wrf_physics/') 
+    download_data('pinacles/wrf_physics/') 
 
     return 
 

@@ -3,23 +3,23 @@ import json
 import argparse
 import uuid
 import datetime
-from Columbia import Initializaiton
-from Columbia import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
-from Columbia import ScalarAdvectionFactory
-from Columbia import ScalarAdvection, TimeStepping, ReferenceState
-from Columbia import ScalarDiffusion, MomentumDiffusion
-from Columbia import MomentumAdvection
-from Columbia import PressureSolver
-from Columbia import Damping
-from Columbia import SurfaceFactory
-from Columbia import ForcingFactory
-from Columbia.Stats import Stats
-from Columbia import DumpFields
-from Columbia import MicrophysicsFactory
-from Columbia import Kinematics
-from Columbia import SGSFactory
-from Columbia import DiagnosticsTurbulence
-from Columbia import DiagnosticsClouds
+from pinacles import Initializaiton
+from pinacles import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
+from pinacles import ScalarAdvectionFactory
+from pinacles import ScalarAdvection, TimeStepping, ReferenceState
+from pinacles import ScalarDiffusion, MomentumDiffusion
+from pinacles import MomentumAdvection
+from pinacles import PressureSolver
+from pinacles import Damping
+from pinacles import SurfaceFactory
+from pinacles import ForcingFactory
+from pinacles.Stats import Stats
+from pinacles import DumpFields
+from pinacles import MicrophysicsFactory
+from pinacles import Kinematics
+from pinacles import SGSFactory
+from pinacles import DiagnosticsTurbulence
+from pinacles import DiagnosticsClouds
 from mpi4py import MPI
 import numpy as np
 import time
@@ -244,7 +244,7 @@ def main(namelist):
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='Input for Columbia an LES!')
+    parser = argparse.ArgumentParser(description='Input for pinacles an LES!')
     parser.add_argument('inputfile')
     args = parser.parse_args()
 
