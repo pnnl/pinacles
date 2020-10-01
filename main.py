@@ -64,8 +64,7 @@ def main(namelist):
     SGS = SGSFactory.factory(namelist, ModelGrid, Ref, VelocityState, DiagnosticState)
     Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
     Thermo = Thermodynamics.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, Micro)
-    Surf = SurfaceFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState)
-    Rad = RadiationFactory.factory(namelist, ModelGrid, Ref, ScalarState, DiagnosticState, Surf)
+
 
     # In the future the microphyics should be initialized here
 
@@ -94,7 +93,9 @@ def main(namelist):
     Initializaiton.initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
     RayleighDamping.init_means()
- 
+    Surf = SurfaceFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState, TimeSteppingController)
+    Rad = RadiationFactory.factory(namelist, ModelGrid, Ref, ScalarState, DiagnosticState, Surf)
+
     PSolver.initialize() #Must be called after reference profile is integrated
 
     #Setup Stats-IO

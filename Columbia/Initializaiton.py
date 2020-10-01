@@ -1,12 +1,15 @@
 import numpy as np
 import Columbia.ThermodynamicsDry_impl as DryThermo
+import netCDF4 as nc
+from scipy import interpolate
 
 CASENAMES = ['colliding_blocks',
             'sullivan_and_patton',
             'stable_bubble',
             'bomex',
             'rico',
-            'atex']
+            'atex',
+            'testbed']
 
 def colliding_blocks(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
@@ -181,7 +184,7 @@ def atex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     exner = Ref.exner
 
-    #Wind is uniform initiall
+    #Wind is uniform initially
     u.fill(0.0)
     v.fill(0.0)
     w.fill(0.0)
@@ -365,6 +368,66 @@ def stable_bubble(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     #import sys; sys.exit()
     return
 
+def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
+    file = namelist['testbed']['input_filepath']
+    data = nc.Dataset(file, 'r')
+    init_data = data.groups['initialization']
+    psfc = init_data.variables['surface_pressure'][0] * 100.0 # Convert from hPa to Pa
+    tsfc = init_data.variables['surface_temperature'][0]
+    u0 = init_data.variables['reference_u0'][0]
+    v0 = init_data.variables['reference_v0'][0]
+    
+    Ref.set_surface(Psfc=psfc, Tsfc=tsfc, u0=u0, v0=v0)
+    Ref.integrate()
+
+    u = VelocityState.get_field('u')
+    v = VelocityState.get_field('v')
+    w = VelocityState.get_field('w')
+    s = ScalarState.get_field('s')
+    qv = ScalarState.get_field('qv')
+    zl = ModelGrid.z_local
+
+    init_z = init_data.variables['z'][:]
+    raw_theta = init_data.variables['potential_temperature'][:]
+    raw_qv = init_data.variables['vapor_mixing_ratio'][:]/1000.0
+    raw_u = init_data.variables['u'][:]
+    raw_v = init_data.variables['v'][:]
+    
+    init_var_from_sounding(raw_u, init_z, zl, u)
+    init_var_from_sounding(raw_v, init_z, zl, v)
+    init_var_from_sounding(raw_qv, init_z, zl, qv)
+    init_var_from_sounding(raw_theta, init_z, zl, s)
+
+    u -= Ref.u0
+    v -= Ref.v0
+
+
+    # hardwire for now, could make inputs in namelist or data file
+    pert_amp = 0.1
+    pert_max_height = 200.0
+    shape = s.shape
+    perts = np.random.uniform(pert_amp*-1.0, pert_amp,(shape[0],shape[1],shape[2]))
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            for k in range(shape[2]):
+                t = s[i,j,k] * Ref.exner[k]
+                if zl[k] < pert_max_height:
+                    t += perts[i,j,k]
+                s[i,j,k] = DryThermo.s(zl[k], t)
+    
+    return
+       
+
+def init_var_from_sounding(profile_data, profile_z,  grid_z, var3d):
+    var3d.fill(0.0)
+    grid_profile = interpolate.interp1d(profile_z, profile_data, fill_value='extrapolate',assume_sorted=True)(grid_z)
+    var3d += grid_profile[np.newaxis, np.newaxis, :]
+    return 
+    
+
+    # Integrate the reference profile
+
+
 def factory(namelist):
     assert(namelist['meta']['casename'] in CASENAMES)
 
@@ -380,6 +443,8 @@ def factory(namelist):
         return rico
     elif namelist['meta']['casename'] == 'atex':
         return atex
+    elif namelist['meta']['casename'] == 'testbed':
+        return testbed
 
 
 def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
