@@ -38,13 +38,21 @@ class RRTMG:
         self._lib_lw.c_rrtmg_lw_init(parameters.CPD)
         self._lib_sw.c_rrtmg_sw_init(parameters.CPD)
 
-        self._DiagnosticState.add_variable('heating_rate_lw')
-        self._DiagnosticState.add_variable('heating_rate_sw')
-        self._DiagnosticState.add_variable('dTdt_rad')
-        self._DiagnosticState.add_variable('uflux_lw')
-        self._DiagnosticState.add_variable('dflux_lw')
-        self._DiagnosticState.add_variable('uflux_sw')
-        self._DiagnosticState.add_variable('dflux_sw')
+        # self._DiagnosticState.add_variable('heating_rate_lw')
+        # self._DiagnosticState.add_variable('heating_rate_sw')
+        # self._DiagnosticState.add_variable('dTdt_rad')
+        # self._DiagnosticState.add_variable('uflux_lw')
+        # self._DiagnosticState.add_variable('dflux_lw')
+        # self._DiagnosticState.add_variable('uflux_sw')
+        # self._DiagnosticState.add_variable('dflux_sw')
+
+        DiagnosticState.add_variable('heating_rate_lw',units='K',  latex_name = 'T', long_name='Temperature')
+        DiagnosticState.add_variable('heating_rate_sw',units='K',  latex_name = 'T', long_name='Temperature')
+        # DiagnosticState.add_variable('dTdt_rad')
+        # DiagnosticState.add_variable('uflux_lw')
+        # DiagnosticState.add_variable('dflux_lw')
+        # DiagnosticState.add_variable('uflux_sw')
+        # DiagnosticState.add_variable('dflux_sw')
         
         # self._DiagnosticState.add_variable('heating_rate_clear')
         # self._DiagnosticState.add_variable('uflux_lw_clear')
@@ -243,28 +251,28 @@ class RRTMG:
         # plt.plot(hr_sw[0,:],play[0,:])
         # plt.show()
 
-        ds_hr_lw = self._DiagnosticState.get_field('heating_rate_lw')
-        ds_hr_sw = self._DiagnosticState.get_field('heating_rate_sw')
-        ds_dTdt_rad = self._DiagnosticState.get_field('dTdt_rad')
-        ds_uflux_lw = self._DiagnosticState.get_field('uflux_lw')
-        ds_dflux_lw = self._DiagnosticState.get_field('dflux_lw')
-        ds_uflux_sw = self._DiagnosticState.get_field('uflux_sw')
-        ds_dflux_sw = self._DiagnosticState.get_field('dflux_sw')
+        # ds_hr_lw = self._DiagnosticState.get_field('heating_rate_lw')
+        # ds_hr_sw = self._DiagnosticState.get_field('heating_rate_sw')
+        # ds_dTdt_rad = self._DiagnosticState.get_field('dTdt_rad')
+        # ds_uflux_lw = self._DiagnosticState.get_field('uflux_lw')
+        # ds_dflux_lw = self._DiagnosticState.get_field('dflux_lw')
+        # ds_uflux_sw = self._DiagnosticState.get_field('uflux_sw')
+        # ds_dflux_sw = self._DiagnosticState.get_field('dflux_sw')
 
         st = self._ScalarState.get_tend('s')
         alpha0 = self._Ref._alpha0
 
-        to_our_shape(_nhalo, hr_lw, ds_hr_lw)
-        to_our_shape(_nhalo, hr_sw, ds_hr_sw)
-        to_our_shape(_nhalo, uflx_lw, ds_uflux_lw)
-        to_our_shape(_nhalo, dflx_lw, ds_dflux_lw)
-        to_our_shape(_nhalo, uflx_sw, ds_uflux_sw)
-        to_our_shape(_nhalo, dflx_sw, ds_dflux_sw)
+        # to_our_shape(_nhalo, hr_lw, ds_hr_lw)
+        # to_our_shape(_nhalo, hr_sw, ds_hr_sw)
+        # to_our_shape(_nhalo, uflx_lw, ds_uflux_lw)
+        # to_our_shape(_nhalo, dflx_lw, ds_dflux_lw)
+        # to_our_shape(_nhalo, uflx_sw, ds_uflux_sw)
+        # to_our_shape(_nhalo, dflx_sw, ds_dflux_sw)
 
 
-        ds_dTdt_rad = (ds_hr_lw + ds_hr_sw) * alpha0[np.newaxis,np.newaxis,:] /parameters.CPD
+        # ds_dTdt_rad = (ds_hr_lw + ds_hr_sw) * alpha0[np.newaxis,np.newaxis,:] /parameters.CPD
 
-        st += ds_dTdt_rad
+        # st += ds_dTdt_rad
 
 
         return

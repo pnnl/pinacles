@@ -174,6 +174,7 @@ class ModelState:
         return
 
     def mean(self, name, pow=1.0):
+        print(name)
         dof = self._dofs[name]
         return self._state_array.mean(dof, pow=pow)
 

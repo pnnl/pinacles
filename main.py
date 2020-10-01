@@ -81,6 +81,9 @@ def main(namelist):
 
     # Allocate all of the big parallel arrays needed for the container classes
     Force = ForcingFactory.factory(namelist, ModelGrid, Ref, Micro, VelocityState, ScalarState, DiagnosticState, TimeSteppingController)
+    Surf = SurfaceFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState, TimeSteppingController)
+    Rad = RadiationFactory.factory(namelist, ModelGrid, Ref, ScalarState, DiagnosticState, Surf)
+
 
     ScalarState.allocate()
     VelocityState.allocate()
@@ -93,9 +96,6 @@ def main(namelist):
     Initializaiton.initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
     RayleighDamping.init_means()
-    Surf = SurfaceFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState, TimeSteppingController)
-    Rad = RadiationFactory.factory(namelist, ModelGrid, Ref, ScalarState, DiagnosticState, Surf)
-
     PSolver.initialize() #Must be called after reference profile is integrated
 
     #Setup Stats-IO
