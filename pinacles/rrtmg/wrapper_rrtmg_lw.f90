@@ -127,9 +127,11 @@ contains
                                                           !    Dimensions: (ncol,nlay+1)
         
         integer(c_int) :: icld_local
+        ! real(c_double) :: tic, toc
 
         icld_local = icld
 
+        ! call cpu_time(tic)
         call rrtmg_lw &
                 (ncol    ,nlay    ,icld_local    ,idrv    , &
                  play    ,plev    ,tlay    ,tlev    ,tsfc    , &
@@ -140,6 +142,8 @@ contains
                  tauaer  , &
                  uflx    ,dflx    ,hr      ,uflxc   ,dflxc,  hrc, &
                  duflx_dt,duflxc_dt )
+        ! call cpu_time(toc)
+        ! write(*,*) 'inside lw wrapper', toc - tic
         end subroutine c_rrtmg_lw
     
     

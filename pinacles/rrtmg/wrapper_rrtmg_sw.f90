@@ -139,11 +139,12 @@ subroutine c_rrtmg_sw &
     real(c_double), intent(out) :: swhrc(ncol,nlay)        ! Clear sky shortwave radiative heating rate (K/d)
                                                       !    Dimensions: (ncol,nlay)
     integer(c_int) :: icld_local, iaer_local
+    real(c_double) :: tic, toc
 
     icld_local = icld    
     iaer_local = iaer                                              
     
-    
+    ! call cpu_time(tic)
     call rrtmg_sw &
             (ncol    ,nlay    ,icld_local    ,iaer_local    , &    ! idelm added by ZTAN
              play    ,plev    ,tlay    ,tlev    ,tsfc    , &
@@ -155,6 +156,8 @@ subroutine c_rrtmg_sw &
              cicewp  ,cliqwp  ,reice   ,reliq   , &
              tauaer  ,ssaaer  ,asmaer  ,ecaer   , &
              swuflx  ,swdflx  ,swhr    ,swuflxc ,swdflxc ,swhrc)
+    ! call cpu_time(toc)
+    write(*,*) "time in shortwave wrapper", toc-tic
 end subroutine c_rrtmg_sw
 
 
