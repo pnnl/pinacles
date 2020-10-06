@@ -1,4 +1,4 @@
-from Columbia.Radiation import RRTMG
+from pinacles.Radiation import RRTMG
 
 
 from mpi4py import MPI

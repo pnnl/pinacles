@@ -138,7 +138,8 @@ class ForcingTestbed(Forcing.ForcingBase):
 
         file = namelist['testbed']['input_filepath']
         self._momentum_forcing_method = namelist['testbed']['momentum_forcing']
-        # Options: relaxation, geostrophic
+        # Options: relaxation, geostrophic, none
+
 
         data = nc.Dataset(file, 'r')
         forcing_data = data.groups['forcing']

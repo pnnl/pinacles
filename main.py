@@ -95,6 +95,7 @@ def main(namelist):
 
     Initializaiton.initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
+    Rad.init_profiles()
     RayleighDamping.init_means()
     PSolver.initialize() #Must be called after reference profile is integrated
 
