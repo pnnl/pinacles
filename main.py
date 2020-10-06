@@ -82,7 +82,7 @@ def main(namelist):
     # Allocate all of the big parallel arrays needed for the container classes
     Force = ForcingFactory.factory(namelist, ModelGrid, Ref, Micro, VelocityState, ScalarState, DiagnosticState, TimeSteppingController)
     Surf = SurfaceFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState, TimeSteppingController)
-    Rad = RadiationFactory.factory(namelist, ModelGrid, Ref, ScalarState, DiagnosticState, Surf)
+    Rad = RadiationFactory.factory(namelist, ModelGrid, Ref, ScalarState, DiagnosticState, Surf, TimeSteppingController)
 
 
     ScalarState.allocate()
@@ -168,7 +168,7 @@ def main(namelist):
 
             #Update the forcing
             Force.update()
-            Rad.update()
+            Rad.update(n)
 
             #Update Kinematics
             Kine.update()
