@@ -20,6 +20,7 @@ from pinacles import Kinematics
 from pinacles import SGSFactory
 from pinacles import DiagnosticsTurbulence
 from pinacles import DiagnosticsClouds
+from pinacles import Particles
 from mpi4py import MPI
 import numpy as np
 import time
@@ -98,6 +99,7 @@ def main(namelist):
     #Setup Stats-IO
     StatsIO = Stats(namelist, ModelGrid, Ref, TimeSteppingController)
 
+    Parts = Particles.ParticlesSimple(Grid, VelocityState, ScalarState, DiagnosticState)
 
     DiagClouds = DiagnosticsClouds.DiagnosticsClouds(ModelGrid, Ref, Thermo, Micro, VelocityState, ScalarState, DiagnosticState)
     DiagTurbulence = DiagnosticsTurbulence.DiagnosticsTurbulence(ModelGrid, Ref, Thermo, Micro, VelocityState, ScalarState, DiagnosticState)
@@ -192,12 +194,14 @@ def main(namelist):
             #Call pressure solver
             PSolver.update()
 
-            if n== 1: 
+            if n== 1:
                 Thermo.update(apply_buoyancy=False)
                 #We call the microphysics update at the end of the RK steps.
                 Micro.update()
                 ScalarState.boundary_exchange()
                 ScalarState.update_all_bcs()
+
+                Parts.update()
 
         i += 1
 
