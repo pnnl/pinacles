@@ -14,7 +14,7 @@ class MicroP3(MicrophysicsBase):
             MicrophysicsBase.__init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
 
 
-            lookup_file_dir = '/Users/pres026/pinaclesDev/pinacles/pinacles/wrf_physics/data'
+            lookup_file_dir = '/Users/kaul025/PINACLES/Columbia/pinacles/wrf_physics/data'
             nCat = 1
             stat = 1
             abort_on_err = False
@@ -130,7 +130,7 @@ class MicroP3(MicrophysicsBase):
 
 
         n_iceCat = 1
-        nc_wrf[:,:,:] = 70e6
+        nc_wrf[:,:,:] = 500e6 # 70e6
         #T_wrf,qv_wrf,qc_wrf,qr_wrf,qnr_wrf)
         p3.module_mp_p3.mp_p3_wrapper_wrf(T_wrf,qv_wrf,qc_wrf,qr_wrf,qnr_wrf,
                                 th_old, qv_old,

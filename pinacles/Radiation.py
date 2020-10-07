@@ -24,13 +24,16 @@ class RRTMG:
         try:
             self._compute_radiation = namelist['radiation']['compute_radiation']
         except:
-            if MPI.COMM_WORLD.Get_rank() == 0:
-                print('Looks like there is no radiation model specified in the namelist!')
-            self._compute_radiation = False
+            if namelist['meta']['casename'] == 'testbed':
+                self._compute_radiation = True
+                if MPI.COMM_WORLD.Get_rank() == 0:
+                    print('Assuming RRTMG should be used for testbed case.')
+            else:
+                self._compute_radiation = False
+                if MPI.COMM_WORLD.Get_rank() == 0:
+                    print('Assuming RRTMG should not be used for this case.')
 
-        # HACK
-        self._compute_radiation = True
-        
+        #
 
         ffi.cdef("void c_rrtmg_lw_init(double cpdair);",override=True)
         ffi.cdef("void c_rrtmg_sw_init(double cpdair);", override=True)
@@ -77,6 +80,8 @@ class RRTMG:
         return
 
     def init_profiles(self):
+        if not self._compute_radiation:
+            return
         n_halo = self._Grid.n_halo[2]
        
         data = nc.Dataset(self._radiation_file_path, 'r')
@@ -94,17 +99,17 @@ class RRTMG:
         dp_geom = np.geomspace(dp_model_top, dp_trial,num=10)
         p_buffer = np.array([self._Ref._P0[-n_halo]])
 
-        print('p_model top', self._Ref._P0[-n_halo])
-        print('dp_model_top', dp_model_top)
-        print('p_trial[0,1,2]', p_trial[0], p_trial[1],p_trial[2])
-        print('dp_trial',dp_trial)
+        # print('p_model top', self._Ref._P0[-n_halo])
+        # print('dp_model_top', dp_model_top)
+        # print('p_trial[0,1,2]', p_trial[0], p_trial[1],p_trial[2])
+        # print('dp_trial',dp_trial)
         i=0     
         while p_buffer[i] + 2*dp_trial > p_trial[1] and i < 10:
             p_buffer = np.append(p_buffer,p_buffer[i]-dp_geom[i])
           
-            print(i, np.round(p_buffer[i],2), np.round(np.abs(p_buffer[i]-p_buffer[i+1]),2))
+            # print(i, np.round(p_buffer[i],2), np.round(np.abs(p_buffer[i]-p_buffer[i+1]),2))
             i+=1
-        print(np.round(p_buffer[-1]), np.abs(p_buffer[-1]-p_trial[1]))
+        # print(np.round(p_buffer[-1]), np.abs(p_buffer[-1]-p_trial[1]))
         
 
         
@@ -157,7 +162,7 @@ class RRTMG:
         # get the pointers we need in any case  
         ds_dTdt_rad = self._DiagnosticState.get_field('dTdt_rad')
         st = self._ScalarState.get_tend('s')
-        print('The RK step is ', _rk_step)
+        
         
 
         if _rk_step == 0:
@@ -319,7 +324,7 @@ class RRTMG:
             ds_hr_lw = self._DiagnosticState.get_field('heating_rate_lw')
             ds_hr_sw = self._DiagnosticState.get_field('heating_rate_sw')
 
-            alpha0 = self._Ref._alpha0
+            rho0 = self._Ref._rho0
 
             to_our_shape(_nhalo, hr_lw, ds_hr_lw)
             to_our_shape(_nhalo, hr_sw, ds_hr_sw)
@@ -328,17 +333,22 @@ class RRTMG:
             # to_our_shape(_nhalo, uflx_sw, ds_uflux_sw)
             # to_our_shape(_nhalo, dflx_sw, ds_dflux_sw)
 
+            # _ngrid_local = self._Grid._ngrid_local
+            # for i in range(_ngrid_local[0]):
+            #     for j in range(_ngrid_local[1]):
+            #         for k in range(_ngrid_local[2]):
+            #             ds_dTdt_rad[i,j,k] =  (ds_hr_lw[i,j,k] + ds_hr_sw[i,j,k])  /86400.0
 
-            # ds_dTdt_rad = (ds_hr_lw + ds_hr_sw) * alpha0[np.newaxis,np.newaxis,:] /parameters.CPD /86400.0
-            ds_dTdt_rad = (ds_hr_lw + ds_hr_sw)  /86400.0
-            ds_hr_lw  *= alpha0[np.newaxis,np.newaxis,:] /parameters.CPD /86400.0
-            ds_hr_sw *= alpha0[np.newaxis,np.newaxis,:] /parameters.CPD /86400.0
+
+            ds_dTdt_rad[:,:,:] = (ds_hr_lw + ds_hr_sw)  /86400.0
+            ds_hr_lw[:,:,:]  *= rho0[np.newaxis,np.newaxis,:] * parameters.CPD /86400.0
+            ds_hr_sw[:,:,:] *= rho0[np.newaxis,np.newaxis,:] * parameters.CPD /86400.0
             # plt.figure()
             # plt.plot(ds_dTdt_rad[4,4,_nhalo[2]:-_nhalo[2]])
             # plt.show()
 
         # FOR ALL RK STEPS
-        st += ds_dTdt_rad
+        st[:,:,:] += ds_dTdt_rad
 
 
         return
