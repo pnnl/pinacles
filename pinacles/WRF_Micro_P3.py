@@ -39,7 +39,8 @@ class MicroP3(MicrophysicsBase):
             self._our_dims = self._Grid.ngrid_local
             nhalo = self._Grid.n_halo
             self._wrf_dims = (self._our_dims[0] -2*nhalo[0], self._our_dims[2]-2*nhalo[2], self._our_dims[1]-2*nhalo[1])
-
+            
+         
 
             self._itimestep = 0
             self._RAINNC = np.zeros((self._wrf_dims[0], self._wrf_dims[2]), order='F', dtype=np.float32)
@@ -88,6 +89,8 @@ class MicroP3(MicrophysicsBase):
         qir1_wrf = np.empty_like(rho_wrf)
         qib1_wrf = np.empty_like(rho_wrf)
         w_wrf = np.empty_like(rho_wrf)
+        th_old = np.empty_like(rho_wrf)
+        qv_old = np.empty_like(rho_wrf)
 
 
         reflectivity_wrf = np.empty_like(rho_wrf)
@@ -127,6 +130,14 @@ class MicroP3(MicrophysicsBase):
         to_wrf_order(nhalo, qni1, qni1_wrf)
         to_wrf_order(nhalo, qir1, qir1_wrf)
         to_wrf_order(nhalo, qib1, qib1_wrf)
+
+        for i in range(self._wrf_dims[0]):
+            for j in range(self._wrf_dims[1]):
+                for k in range(self._wrf_dims[2]):
+                    th_old[i,j,k] = T_wrf[i,j,k]
+                    qv_old[i,j,k] = qv_wrf[i,j,k]
+
+
 
 
         n_iceCat = 1
@@ -250,3 +261,7 @@ class MicroP3(MicrophysicsBase):
             timeseries_grp['RAINNCV'][-1] = rainncv
 
         return
+    
+
+    def get_qc(self):
+        return self._ScalarState.get_field('qc') + self._ScalarState.get_field('qr')
