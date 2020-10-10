@@ -20,13 +20,13 @@ from pinacles import Kinematics
 from pinacles import SGSFactory
 from pinacles import DiagnosticsTurbulence
 from pinacles import DiagnosticsClouds
-from pinacles import Particles
+from pinacles import ParticlesGrid
 from mpi4py import MPI
 import numpy as np
 import time
 import pylab as plt
 
-import os 
+import os
 os.environ["HDF5_USE_FILE_LOCKING"]="FALSE"
 
 def main(namelist):
@@ -81,6 +81,8 @@ def main(namelist):
     # Allocate all of the big parallel arrays needed for the container classes
     Force = ForcingFactory.factory(namelist, ModelGrid, Ref, Micro, VelocityState, ScalarState, DiagnosticState, TimeSteppingController)
 
+    Parts = ParticlesGrid.ParticlesSimple(ModelGrid, TimeSteppingController, VelocityState, ScalarState, DiagnosticState)
+
     ScalarState.allocate()
     VelocityState.allocate()
     DiagnosticState.allocate()
@@ -98,8 +100,6 @@ def main(namelist):
 
     #Setup Stats-IO
     StatsIO = Stats(namelist, ModelGrid, Ref, TimeSteppingController)
-
-    Parts = Particles.ParticlesSimple(Grid, VelocityState, ScalarState, DiagnosticState)
 
     DiagClouds = DiagnosticsClouds.DiagnosticsClouds(ModelGrid, Ref, Thermo, Micro, VelocityState, ScalarState, DiagnosticState)
     DiagTurbulence = DiagnosticsTurbulence.DiagnosticsTurbulence(ModelGrid, Ref, Thermo, Micro, VelocityState, ScalarState, DiagnosticState)

@@ -199,6 +199,20 @@ class GridBase:
         '''
         return np.copy(self._local_axes)
 
+    @property
+    def x_range(self):
+        return (self._global_axes_edge[0][self._n_halo[0]-1],
+            self._global_axes_edge[0][-self._n_halo[0]-1])
+
+    @property
+    def y_range(self):
+        return (self._global_axes_edge[1][self._n_halo[1]-1],
+            self._global_axes_edge[1][-self._n_halo[1]-1])
+
+    @property
+    def z_range(self):
+        return (self._global_axes_edge[2][self._n_halo[2]-1],
+            self._global_axes_edge[2][-self._n_halo[2]-1])
 
     def get_DistArray(self): 
         return mpi4py_fft.DistArray(self._n, self.subcomms)
