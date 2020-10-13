@@ -21,7 +21,7 @@ class ParticlesBase:
         self._nointerp_particle_dofs = 0
         self._particle_data = None
         self._initialzied = False
-        self._n_buffer = 256 #The size of the buffer
+        self._n_buffer =  4 #The size of the buffer
 
         # These are numba dictionaries
         self._particle_varnames = Dict.empty(key_type=types.unicode_type, value_type=types.int64)
@@ -39,10 +39,10 @@ class ParticlesBase:
         self.add_particle_variable('w')
 
 
-        n = 64 * 64 * 64
-        xp = np.random.uniform(1000.0, 2000.0, n) 
-        yp = np.random.uniform(1000.0, 2000.0, n)
-        zp = np.random.uniform(100.0, 200.0, n)
+        n = 64 * 64 * 64 * 10
+        xp = np.random.uniform(0.0, 5120.0, n) 
+        yp = np.random.uniform(0.0, 5120.0, n)
+        zp = np.random.uniform(10,900.0, n)
 
 
         self._allocate_memory()
@@ -150,15 +150,25 @@ class ParticlesBase:
 
 
     def update_position(self):
+
+
+        u = self._VelocityState.get_field('u')
+        v = self._VelocityState.get_field('v')
+        w = self._VelocityState.get_field('w')
+
         local_shape = self._Grid.local_shape
         low_corner = (self._Grid.x_range[0], self._Grid.y_range[0], self._Grid.z_range[0])
         high_corner = (self._Grid.x_range[1], self._Grid.y_range[1], self._Grid.z_range[1])
        # #print(xdof, ydof, zdof)
         import time
         t0 = time.perf_counter()
-        self.compute_new_position(local_shape, self._n, self._particle_varnames, self._particle_data, self._TimeSteppingController.dt)
-        
+        self.compute_new_position(local_shape, self._n, self._particle_varnames, self._particle_data, self._TimeSteppingController.dt) 
+        self._surface_bounce(local_shape, self._n, self._particle_varnames, self._particle_data)
+        self._boundary_periodic_serial(local_shape, high_corner, self._n, self._particle_varnames, self._particle_data)
         self.move_particles_on_grid(low_corner, local_shape, self._Grid.dx, self._n_buffer, self._n, self._particle_varnames, self._particle_data)
+        self.interpolate_pt(local_shape, self._Grid.n_halo, low_corner, self._Grid.dx, self._n, self._particle_varnames, self._particle_data, u, 'u', 0)
+        self.interpolate_pt(local_shape, self._Grid.n_halo, low_corner, self._Grid.dx, self._n, self._particle_varnames, self._particle_data, v, 'v', 1)
+        self.interpolate_pt(local_shape, self._Grid.n_halo, low_corner, self._Grid.dx, self._n, self._particle_varnames, self._particle_data, w, 'w', 2)
         t1 = time.perf_counter()
     
         print(low_corner)
@@ -217,12 +227,118 @@ class ParticlesBase:
                                 arr[ydof,p] += arr[vdof,p] * dt
                                 arr[zdof,p] += arr[wdof,p] * dt
 
+        return
 
-                                arr[udof,p] = 5.0
+
+    @staticmethod
+    @numba.njit()
+    def _surface_bounce(local_shape, n, particle_varnames, particle_data):
+        zdof = particle_varnames['z']
+        valid = particle_varnames['valid']
+        ishift = local_shape[1] * local_shape[2]
+        jshift = local_shape[2]
+        for i in range(local_shape[0]):
+            ii = i * ishift
+            for j in range(local_shape[1]):
+                jj = j * jshift
+                for k in range(local_shape[2]):
+                    if n[i,j,k] > 0:
+                        arr = particle_data[ii + jj + k]
+                        for p in range(arr.shape[1]):
+                            if arr[valid,p] != 0.0:
+                                arr[zdof,p] = np.abs(arr[zdof,p])
+        return
+
+    @staticmethod
+    @numba.njit()
+    def _boundary_periodic_serial(local_shape, high_corner, n, particle_varnames, particle_data):
+        xdof = particle_varnames['x']
+        ydof = particle_varnames['y']
+        valid = particle_varnames['valid']
+        ishift = local_shape[1] * local_shape[2]
+        jshift = local_shape[2]
+        for i in range(local_shape[0]):
+            ii = i * ishift
+            for j in range(local_shape[1]):
+                jj = j * jshift
+                for k in range(local_shape[2]):
+                    if n[i,j,k] > 0:
+                        arr = particle_data[ii + jj + k]
+                        for p in range(arr.shape[1]):
+                            if arr[valid,p] != 0.0:
+                                arr[xdof,p] = arr[xdof, p]%high_corner[0]
+                                arr[ydof,p] = arr[ydof, p]%high_corner[1]
+        return
 
 
+
+    @staticmethod
+    @numba.njit()
+    def interpolate_pt(local_shape, n_halo,low_corner, dx, n, particle_varnames, particle_data, u, var, loc):
+
+
+        #Compute points
+        if loc ==0:
+            xpos_shift = 0.0
+            ypos_shift = 0.5 * dx[1]
+            zpos_shift = 0.5 * dx[2]
+        elif loc==1:
+            xpos_shift = 0.5 * dx[0]
+            ypos_shift = 0.0
+            zpos_shift = 0.5 * dx[2]
+        elif loc==2:
+            xpos_shift = 0.5 * dx[0]
+            ypos_shift = 0.5 * dx[1]
+            zpos_shift = 0.0
+        else:
+            xpos_shift = 0.0
+            ypos_shift = 0.0
+            zpos_shift = 0.0
+
+
+        xdof = particle_varnames['x']
+        ydof = particle_varnames['y']
+        zdof = particle_varnames['z']
+        valid = particle_varnames['valid']
+        var_dof = particle_varnames[var]
+
+
+        ishift = local_shape[1] * local_shape[2]
+        jshift = local_shape[2]
+        for i in range(local_shape[0]):
+            ii = i * ishift
+            for j in range(local_shape[1]):
+                jj = j * jshift
+                for k in range(local_shape[2]):
+                    if n[i,j,k] > 0:
+                        arr = particle_data[ii + jj + k]
+                        for p in range(arr.shape[1]):
+                            if arr[valid,p] != 0.0:
+                                xl = (arr[xdof, p] - low_corner[0] - xpos_shift)
+                                yl = (arr[ydof, p] - low_corner[1] - ypos_shift)
+                                zl = (arr[zdof, p] - low_corner[2] - zpos_shift)
+
+                                ix = int(xl//dx[0]) - 1 + n_halo[0]
+                                iy = int(yl//dx[1]) - 1 + n_halo[1]
+                                iz = int(zl//dx[2]) - 1 + n_halo[2]
+
+                                xd = (xl%dx[0])/dx[0]
+                                yd = (yl%dx[1])/dx[1]
+                                zd = (zl%dx[2])/dx[2]
+
+                                c00 = (1.-xd)*u[ix,iy,iz] + xd*u[ix+1,iy,iz]
+                                c01 = (1.-xd)*u[ix,iy,iz+1] + xd*u[ix+1,iy,iz+1]
+                                c10 = (1.-xd)*u[ix,iy+1,iz] + xd*u[ix+1,iy+1,iz]
+                                c11 = (1.-xd)*u[ix,iy+1,iz+1] + xd*u[ix+1,iy+1,iz+1]
+
+                                c0 = c00*(1. - yd) + c10 * yd
+                                c1 = c01*(1. - yd) + c11 * yd
+
+                                arr[var_dof, p] = c0 * (1.0 - zd) + c1 * zd
 
         return
+
+
 
     @staticmethod
     @numba.njit()
@@ -292,7 +408,7 @@ class ParticlesBase:
                                         arr_new = particle_data[inew * ishift + jnew * jshift + knew]
                                         for d in range(arr.shape[0]):
                                             arr_new[d,n_arr] =  arr[d,pi]
-                                        
+
                                     n[i,j,k] -= 1
                                     n[inew, jnew, knew] += 1
 
