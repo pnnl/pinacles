@@ -143,14 +143,20 @@ class RRTMG:
         self._vmr_cfc12 = 0.538e-9
         self._vmr_cfc22 = 0.169e-9
         self._vmr_ccl4  = 0.093e-9
+        self._vmr_o3 = 70.0e-9
         
-        self._emis = 0.95
-        self._coszen = 0.5
-        self._adir = 0.1
-        self._adif = 0.1
+        self._emis = 1.0
+        self.coszen = 0.5
+        self._adir = 0.2
+        self._adif = 0.2
         self._scon = 1365.0
         self._adjes = 1.0
-        self._dyofyr = 0
+        self.dyofyr = 0
+        self.hourz = 0
+        self._dyofyr_init = 242.5
+        self._hourz_init = 12.0
+
+        self.time_elapsed = 10000.0
         
         return
 
@@ -162,10 +168,20 @@ class RRTMG:
         # get the pointers we need in any case  
         ds_dTdt_rad = self._DiagnosticState.get_field('dTdt_rad')
         st = self._ScalarState.get_tend('s')
+        self.time_elapsed += self._TimeSteppingController.dt
         
         
 
-        if _rk_step == 0:
+        if _rk_step == 0 and self.time_elapsed > 0.0:
+            self.time_elapsed = 0.0
+            # THis should get tested
+            self.hourz = self._hourz_init + self._TimeSteppingController.time/3600.0
+            self.dyofyr = self._dyofyr_init + np.floor_divide(self._TimeSteppingController.time,86400.0)
+            if self.hourz > 24.0:
+                self.hourz = np.remainder(self.hourz,24.0)
+            self.coszen = cos_sza(self.dyofyr,self.hourz, 36.6, 97.5 )
+            print("cosine zenith angle", self.dyofyr, self.hourz, self.coszen)
+
             # RRTMG flags. Hardwiring for now
             icld = 1
             idrv = 0
@@ -190,7 +206,7 @@ class RRTMG:
             tlev = np.zeros((_ncol,_nlay + 1), dtype=np.double, order='F')
             tsfc = np.ones((_ncol),dtype=np.double,order='F') * self._Surf.T_surface
             h2ovmr = np.zeros((_ncol,_nlay),dtype=np.double,order='F')
-            o3vmr  = np.zeros((_ncol,_nlay),dtype=np.double,order='F') 
+            o3vmr  = np.ones((_ncol,_nlay),dtype=np.double,order='F') *self._vmr_o3
             co2vmr = np.ones((_ncol,_nlay),dtype=np.double,order='F') * self._vmr_co2
             ch4vmr = np.ones((_ncol,_nlay),dtype=np.double,order='F') * self._vmr_ch4
             n2ovmr = np.ones((_ncol,_nlay),dtype=np.double,order='F') * self._vmr_n2o
@@ -205,7 +221,7 @@ class RRTMG:
             cliqwp = np.zeros((_ncol,_nlay),dtype=np.double,order='F')
             reice  = np.zeros((_ncol,_nlay),dtype=np.double,order='F')
             reliq  = np.zeros((_ncol,_nlay),dtype=np.double,order='F')
-            coszen = np.ones((_ncol),dtype=np.double,order='F') *self._coszen
+            coszen = np.ones((_ncol),dtype=np.double,order='F') *self.coszen
             asdir = np.ones((_ncol),dtype=np.double,order='F') * self._adir
             asdif = np.ones((_ncol),dtype=np.double,order='F') * self._adif
             aldir = np.ones((_ncol),dtype=np.double,order='F') * self._adir
@@ -281,7 +297,6 @@ class RRTMG:
             plev *= 0.01
 
     
-            tic = time.perf_counter()
             self._lib_lw.c_rrtmg_lw(_ncol, _nlay,  icld, idrv, 
             as_pointer(play), as_pointer(plev), as_pointer(tlay), as_pointer(tlev), 
             as_pointer(tsfc), as_pointer(h2ovmr), as_pointer(o3vmr), as_pointer(co2vmr), 
@@ -292,15 +307,13 @@ class RRTMG:
             as_pointer(tauaer_lw), as_pointer(uflx_lw), as_pointer(dflx_lw), as_pointer(hr_lw),
             as_pointer(uflxc_lw), as_pointer(dflxc_lw),  as_pointer(hrc_lw), as_pointer(duflx_dt),as_pointer(duflxc_dt))
             
-            toc = time.perf_counter()
-            print('longwave timing', toc-tic)
-            tic = time.perf_counter()
+           
 
             self._lib_sw.c_rrtmg_sw(_ncol, _nlay, icld, iaer, as_pointer(play), 
             as_pointer(plev), as_pointer(tlay), as_pointer(tlev), as_pointer(tsfc), 
             as_pointer(h2ovmr), as_pointer(o3vmr), as_pointer(co2vmr), as_pointer(ch4vmr),
             as_pointer(n2ovmr), as_pointer(o2vmr), as_pointer(asdir), as_pointer(asdif), 
-            as_pointer(aldir), as_pointer(aldif), as_pointer(coszen), self._adjes, self._dyofyr,
+            as_pointer(aldir), as_pointer(aldif), as_pointer(coszen), self._adjes, np.int(self.dyofyr),
             self._scon, inflgsw, iceflgsw, liqflgsw, as_pointer(cldfr), as_pointer(taucld_sw), 
             as_pointer(ssacld_sw), as_pointer(asmcld_sw), as_pointer(fsfcld_sw), as_pointer(cicewp),
             as_pointer(cliqwp),as_pointer(reice), as_pointer(reliq), 
@@ -308,8 +321,7 @@ class RRTMG:
             as_pointer(uflx_sw), as_pointer(dflx_sw), as_pointer(hr_sw), as_pointer(uflxc_sw),\
             as_pointer(dflxc_sw) , as_pointer(hrc_sw))
 
-            toc = time.perf_counter()
-            print('shortwave timing', toc-tic)
+          
             # plt.figure()
             # plt.plot(hr_lw[0,:],play[0,:])
             # plt.plot(hr_sw[0,:],play[0,:])
@@ -399,3 +411,22 @@ def as_pointer(numpy_array):
     assert numpy_array.flags['F_CONTIGUOUS'], \
         "array is not contiguous in memory (Fortran order)"
     return ffi.cast("double*", numpy_array.ctypes.data)
+
+def  cos_sza(jday, hourz,  dlat,  dlon):
+
+    epsiln = 0.016733
+    sinob = 0.3978
+    dpy = 365.242 #degrees per year
+    dph = 15.0 #degrees per hour
+    day_angle = 2.0*np.pi*(jday-1.)/dpy
+    #Hours of Meridian Passage (true solar noon)
+    homp =((12.0 + 0.12357*np.sin(day_angle) - 0.004289*np.cos(day_angle) 
+            + 0.153809*np.sin(2*day_angle) + 0.060783*np.cos(2*day_angle)))
+    hour_angle = dph*(hourz - homp) - dlon
+    ang = 279.9348*np.pi/180. + day_angle
+    sigma = (ang*180./np.pi + 0.4087*np.sin(ang) + 1.8724*np.cos(ang) - 0.0182*np.sin(2.*ang) + 0.0083*np.cos(2.*ang))*np.pi/180.
+    sindlt = sinob*np.sin(sigma)
+    cosdlt = np.sqrt(1. - sindlt*sindlt)
+    return np.maximum(sindlt*np.sin(np.pi/180.*dlat) +cosdlt*np.cos(np.pi/180.*dlat)*np.cos(np.pi/180.*hour_angle), 0.0)
+
+    
