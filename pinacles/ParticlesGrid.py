@@ -39,10 +39,10 @@ class ParticlesBase:
         self.add_particle_variable('w')
 
 
-        n = 64 * 64 * 64 * 10
-        xp = np.random.uniform(0.0, 5120.0, n) 
-        yp = np.random.uniform(0.0, 5120.0, n)
-        zp = np.random.uniform(10,900.0, n)
+        n = 0
+        xp = np.random.uniform(2600, 2650, n) 
+        yp = np.random.uniform(2600, 2650, n)
+        zp = np.random.uniform(50,100.0, n)
 
 
         self._allocate_memory()
@@ -136,6 +136,77 @@ class ParticlesBase:
         return
 
 
+    @staticmethod
+    #@numba.njit()
+    def point_inject(low_corner, high_corner, local_shape, dx, n, particle_varnames, particle_data, x, y, z, n_total):
+
+        #If the point is not on this rank then reutrn
+        for lp, li, hi in zip([x,y,z], low_corner, high_corner):
+            if lp  <= li or lp > hi:
+                return
+
+
+        #Now that we are on the correct rank let's find compute the i,j,k index
+        i = int((x - low_corner[0])//dx[0])
+        j = int((y - low_corner[1])//dx[1])
+        k = int((z - low_corner[2])//dx[2])
+
+
+        # Now let's check and see if we need to add particles to this rank
+        if n[i,j,k] >= n_total:
+            return
+
+        #Get the particle array at this point
+        ishift = local_shape[1] * local_shape[2]
+        jshift = local_shape[2]
+        ii = i * ishift
+        jj = j * jshift
+        arr = particle_data[ii + jj + k]
+        n_arr = arr.shape[1]
+
+        #Get the particle  dofs for the position
+        xdof = particle_varnames['x']
+        ydof = particle_varnames['y']
+        zdof = particle_varnames['z']
+        valid = particle_varnames['valid']
+
+        #Now let check an see if we need to allocate more memory
+        if n_arr < n_total:
+            new_buf = np.zeros((arr.shape[0], n_total - n_arr), dtype=np.double)
+            particle_data[ii + jj + k] = np.concatenate((arr, new_buf),axis=1)
+            arr = particle_data[ii + jj + k]
+
+       # print("adding particles", arr.shape)
+        for pi in range(arr.shape[1]):
+            if arr[valid, pi] == 0.0:
+                arr[xdof, pi] = np.random.uniform(low_corner[0] + dx[0]*i, low_corner[0] + dx[0]*(i+1))
+                arr[ydof, pi] = np.random.uniform(low_corner[1] + dx[1]*j, low_corner[1] + dx[1]*(j+1))
+                arr[zdof, pi] = np.random.uniform(low_corner[2] + dx[2]*k, low_corner[2] + dx[2]*(k+1))
+                arr[valid,pi] = 1.0
+                n[i,j,k] += 1
+
+        #xdof = particle_varnames['x']
+        #ydof = particle_varnames['y']
+        #zdof = particle_varnames['z']
+        #valid = particle_varnames['val']
+
+        #ishift = local_shape[1] * local_shape[2]
+        #jshift = local_shape[2]
+        #ii = i * ishift
+        #jj = j * jshift
+        #arr = particle_data[ii + jj + k]
+        #n_arr = arr.shape[1]
+        #if n[i,j,k] < ntotal:
+        #    if n_arr != ntotal:
+        #        #Create a new buffer
+        #        new_buf = np.zeros((arr.shape[0], ntotal - n_arr), dtype=np.double)
+        #    particle_data[ii + jj + k] = np.concatenate((arr, new_buf),axis=1)
+
+
+
+
+        return
+
     def get_particle_var(self, name):
         if name in self._interp_particle_varnames:
             indx = self._interp_particle_varnames[name]
@@ -145,6 +216,7 @@ class ParticlesBase:
             return  indx
 
     def update(self):
+
 
         return
 
@@ -159,13 +231,20 @@ class ParticlesBase:
         local_shape = self._Grid.local_shape
         low_corner = (self._Grid.x_range[0], self._Grid.y_range[0], self._Grid.z_range[0])
         high_corner = (self._Grid.x_range[1], self._Grid.y_range[1], self._Grid.z_range[1])
+        l = self._Grid.l
        # #print(xdof, ydof, zdof)
-        import time
+
         t0 = time.perf_counter()
         self.compute_new_position(local_shape, self._n, self._particle_varnames, self._particle_data, self._TimeSteppingController.dt) 
+
         self._surface_bounce(local_shape, self._n, self._particle_varnames, self._particle_data)
-        self._boundary_periodic_serial(local_shape, high_corner, self._n, self._particle_varnames, self._particle_data)
+
+        self._boundary_exit_serial(local_shape, l, self._n, self._particle_varnames, self._particle_data)
+
         self.move_particles_on_grid(low_corner, local_shape, self._Grid.dx, self._n_buffer, self._n, self._particle_varnames, self._particle_data)
+
+        self.point_inject(low_corner, high_corner, local_shape, self._Grid.dx, self._n, self._particle_varnames, self._particle_data, 10240./10.0, 10240.0/2, 80.0, 1024)
+
         self.interpolate_pt(local_shape, self._Grid.n_halo, low_corner, self._Grid.dx, self._n, self._particle_varnames, self._particle_data, u, 'u', 0)
         self.interpolate_pt(local_shape, self._Grid.n_halo, low_corner, self._Grid.dx, self._n, self._particle_varnames, self._particle_data, v, 'v', 1)
         self.interpolate_pt(local_shape, self._Grid.n_halo, low_corner, self._Grid.dx, self._n, self._particle_varnames, self._particle_data, w, 'w', 2)
@@ -176,27 +255,28 @@ class ParticlesBase:
         print(np.sum(self._n))
         #import sys; sys.exit()
 
+        xp = np.empty((np.sum(self._n),), dtype=np.double)
+        yp = np.empty((np.sum(self._n),), dtype=np.double)
+        zp = np.empty((np.sum(self._n),), dtype=np.double)
+        self.distill_dof(self._particle_varnames, self._n,  'x', self._particle_data, xp)
+        self.distill_dof(self._particle_varnames, self._n,  'y', self._particle_data, yp)
+        self.distill_dof(self._particle_varnames, self._n,  'z', self._particle_data, zp)
 
-        xp = self.distill_dof(self._particle_varnames, self._n,  'x', self._particle_data)
-        yp = self.distill_dof(self._particle_varnames, self._n,  'y', self._particle_data)
-        zp = self.distill_dof(self._particle_varnames, self._n,  'z', self._particle_data)
-        u = self.distill_dof(self._particle_varnames, self._n,  'u', self._particle_data)
 
 
-        print(np.shape(xp))
+        #print(np.amin(xp), np.amax(xp), np.amin(yp), np.amax(yp), np.amin(zp), np.amax(zp), np.shape(xp))
         import pylab as plt
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         ax.scatter(xp, yp, zp, s=0.1)
-        plt.xlim(low_corner[0], high_corner[0])
-        plt.ylim(low_corner[0], high_corner[1])
-        ax.axes.set_xlim3d(left=0, right=5120.0)
-        ax.axes.set_ylim3d(bottom=0, top=5120.0)
+        ax.axes.set_xlim3d(left=0, right=10240.0)
+        ax.axes.set_ylim3d(bottom=0, top=10240.0)
         ax.axes.set_zlim3d(bottom=0, top=2048.0)
         plt.savefig('./part_figs/' + str(self.call_count) + '.png' ,dpi=300)
         plt.close()
         #import sys; sys.exit()
         self.call_count += 1
+        print('plot finished')
         return
 
     @staticmethod
@@ -223,9 +303,9 @@ class ParticlesBase:
                         arr = particle_data[ii + jj + k]
                         for p in range(arr.shape[1]):
                             if arr[valid,p] != 0.0:
-                                arr[xdof,p] += arr[udof,p] * dt
-                                arr[ydof,p] += arr[vdof,p] * dt
-                                arr[zdof,p] += arr[wdof,p] * dt
+                                arr[xdof,p] += (arr[udof,p] + np.random.normal(loc=0.0, scale=0.4)) * dt
+                                arr[ydof,p] += (arr[vdof,p] + np.random.normal(loc=0.0, scale=0.4))* dt
+                                arr[zdof,p] += (arr[wdof,p]+ np.random.normal(loc=0.0, scale=0.4)) * dt
 
         return
 
@@ -268,6 +348,31 @@ class ParticlesBase:
                             if arr[valid,p] != 0.0:
                                 arr[xdof,p] = arr[xdof, p]%high_corner[0]
                                 arr[ydof,p] = arr[ydof, p]%high_corner[1]
+        return
+
+
+    @staticmethod
+    @numba.njit()
+    def _boundary_exit_serial(local_shape, high_corner, n, particle_varnames, particle_data):
+        xdof = particle_varnames['x']
+        ydof = particle_varnames['y']
+        valid = particle_varnames['valid']
+        ishift = local_shape[1] * local_shape[2]
+        jshift = local_shape[2]
+        for i in range(local_shape[0]):
+            ii = i * ishift
+            for j in range(local_shape[1]):
+                jj = j * jshift
+                for k in range(local_shape[2]):
+                    if n[i,j,k] > 0:
+                        arr = particle_data[ii + jj + k]
+                        for p in range(arr.shape[1]):
+                            if arr[valid,p] != 0.0:
+                                if arr[xdof,p] >= high_corner[0] or arr[ydof,p] <= 0  or arr[ydof,p] >= high_corner[1] or arr[ydof,p] <= 0:
+                                    arr[valid,p] = 0.0
+                                    n[i,j,k] -= 1
+                                #arr[xdof,p] = arr[xdof, p]%high_corner[0]
+                                #arr[ydof,p] = arr[ydof, p]%high_corner[1]
         return
 
 
@@ -420,9 +525,8 @@ class ParticlesBase:
 
 
     @staticmethod
-    @numba.njit()
-    def distill_dof(particle_varnames, n, var, particle_data):
-        data = np.empty((np.sum(n),), dtype=np.double)
+    @numba.jit()
+    def distill_dof(particle_varnames, n, var, particle_data, data):
         dof = particle_varnames[var]
         valid = particle_varnames['valid']
         count = 0
@@ -431,7 +535,7 @@ class ParticlesBase:
                 if arr[valid,p] != 0.0:
                     data[count] = arr[dof,p]
                     count += 1
-        return data
+        return
 
 
 
