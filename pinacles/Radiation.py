@@ -77,6 +77,35 @@ class RRTMG:
         # self._DiagnosticState.add_variable('uflux_sw')
         # self._DiagnosticState.add_variable('dflux_sw')
         self._radiation_file_path = namelist['radiation']['input_filepath']
+
+        self._latitude = namelist['radiation']['latitude']
+        self._longitude = namelist['radiation']['longitude']        
+                    
+
+  
+        # CL WRF values based on 2005 values from 2007 IPCC report
+        self._vmr_co2   = 379.0e-6
+        self._vmr_ch4   = 1774.0e-9
+        self._vmr_n2o   = 319.0e-9
+        self._vmr_o2    = 0.209448
+        self._vmr_cfc11 = 0.251e-9
+        self._vmr_cfc12 = 0.538e-9
+        self._vmr_cfc22 = 0.169e-9
+        self._vmr_ccl4  = 0.093e-9
+        self._vmr_o3 = 70.0e-9
+        
+        self._emis = 1.0
+        self.coszen = 0.5
+        self._adir = 0.2
+        self._adif = 0.2
+        self._scon = 1365.0
+        self._adjes = 1.0
+        self.dyofyr = 0
+        self.hourz = 0
+        self._dyofyr_init = 242.5
+        self._hourz_init = 12.0
+
+        self.time_elapsed = 10000.0      
         return
 
     def init_profiles(self):
@@ -134,29 +163,6 @@ class RRTMG:
         # self.ql_extension =np.array([0.,0.,0.]) #None
         # self.qi_extension = np.array([0.,0.,0.])#None
 
-        # CL WRF values based on 2005 values from 2007 IPCC report
-        self._vmr_co2   = 379.0e-6
-        self._vmr_ch4   = 1774.0e-9
-        self._vmr_n2o   = 319.0e-9
-        self._vmr_o2    = 0.209448
-        self._vmr_cfc11 = 0.251e-9
-        self._vmr_cfc12 = 0.538e-9
-        self._vmr_cfc22 = 0.169e-9
-        self._vmr_ccl4  = 0.093e-9
-        self._vmr_o3 = 70.0e-9
-        
-        self._emis = 1.0
-        self.coszen = 0.5
-        self._adir = 0.2
-        self._adif = 0.2
-        self._scon = 1365.0
-        self._adjes = 1.0
-        self.dyofyr = 0
-        self.hourz = 0
-        self._dyofyr_init = 242.5
-        self._hourz_init = 12.0
-
-        self.time_elapsed = 10000.0
         
         return
 
@@ -179,7 +185,7 @@ class RRTMG:
             self.dyofyr = self._dyofyr_init + np.floor_divide(self._TimeSteppingController.time,86400.0)
             if self.hourz > 24.0:
                 self.hourz = np.remainder(self.hourz,24.0)
-            self.coszen = cos_sza(self.dyofyr,self.hourz, 36.6, 97.5 )
+            self.coszen = cos_sza(self.dyofyr,self.hourz, self._latitude, self._longitude )
             print("cosine zenith angle", self.dyofyr, self.hourz, self.coszen)
 
             # RRTMG flags. Hardwiring for now
@@ -412,6 +418,7 @@ def as_pointer(numpy_array):
         "array is not contiguous in memory (Fortran order)"
     return ffi.cast("double*", numpy_array.ctypes.data)
 
+@numba.njit
 def  cos_sza(jday, hourz,  dlat,  dlon):
 
     epsiln = 0.016733
