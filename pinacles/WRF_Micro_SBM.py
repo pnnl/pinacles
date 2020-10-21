@@ -1,12 +1,12 @@
 import numpy as np
-from pinacles import parameters
+from Columbia import parameters
 from mpi4py import MPI
-from pinacles import UtilitiesParallel
+from Columbia import UtilitiesParallel
 import time
-from pinacles.Microphysics import MicrophysicsBase, water_path, water_fraction, water_fraction_profile
-from pinacles.wrf_physics import module_mp_fast_sbm_warm
-from pinacles.WRFUtil import to_wrf_order, to_wrf_order_4d, to_our_order_4d, to_our_order
-from pinacles.WRFUtil import to_wrf_order_halo, to_wrf_order_4d_halo, to_our_order_4d_halo, to_our_order_halo
+from Columbia.Microphysics import MicrophysicsBase, water_path, water_fraction, water_fraction_profile
+from Columbia.wrf_physics import module_mp_fast_sbm_warm
+from Columbia.WRFUtil import to_wrf_order, to_wrf_order_4d, to_our_order_4d, to_our_order
+from Columbia.WRFUtil import to_wrf_order_halo, to_wrf_order_4d_halo, to_our_order_4d_halo, to_our_order_halo
 module_mp_fast_sbm = module_mp_fast_sbm_warm
 class MicroSBM(MicrophysicsBase):
 
