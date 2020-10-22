@@ -18,6 +18,11 @@ class MicroP3(MicrophysicsBase):
             except:
                 if MPI.COMM_WORLD.Get_rank() == 0:
                     print('Need to provide location of P3 lookup files in namelist')
+            
+            try:
+                self._nc = namelist['microphyics']['Nc']
+            except:
+                self._nc = 70.0e6
                 
             nCat = 1
             stat = 1
@@ -145,7 +150,7 @@ class MicroP3(MicrophysicsBase):
 
 
         n_iceCat = 1
-        nc_wrf[:,:,:] = 100.0e6 # 70e6
+        nc_wrf[:,:,:] = self._nc
         #T_wrf,qv_wrf,qc_wrf,qr_wrf,qnr_wrf)
         p3.module_mp_p3.mp_p3_wrapper_wrf(T_wrf,qv_wrf,qc_wrf,qr_wrf,qnr_wrf,
                                 th_old, qv_old,
