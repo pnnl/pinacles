@@ -36,7 +36,7 @@ class RRTMG:
         try:
             self._radiation_frequency = namelist['radiation']['update_frequency']
         except:
-            self._radiation_frequency = 30.0
+            self._radiation_frequency = 60.0
 
         #
 
@@ -166,14 +166,14 @@ class RRTMG:
         index_o3 = 7
 
         self._profile_o3 = interpolate_trace_gas(lw_pressure,lw_absorber[:,index_o3],plev_col)
-        plt.figure(1)
-        plt.plot(plev_col[:-1]-plev_col[1:],'o')
-        plt.plot(play_col[:-1]-play_col[1:],'s')
+        # plt.figure(1)
+        # plt.plot(plev_col[:-1]-plev_col[1:],'o')
+        # plt.plot(play_col[:-1]-play_col[1:],'s')
 
-        plt.figure(2)
-        plt.plot(lw_pressure,lw_absorber[:,index_o3],'o')
-        plt.plot(play_col,self._profile_o3, 's')
-        plt.show()
+        # plt.figure(2)
+        # plt.plot(lw_pressure,lw_absorber[:,index_o3],'o')
+        # plt.plot(play_col,self._profile_o3, 's')
+        # plt.show()
         return
 
     def update(self,  _rk_step):
@@ -184,7 +184,8 @@ class RRTMG:
         # get the pointers we need in any case  
         ds_dTdt_rad = self._DiagnosticState.get_field('dTdt_rad')
         st = self._ScalarState.get_tend('s')
-        self.time_elapsed += self._TimeSteppingController.dt
+        if _rk_step == 0:
+            self.time_elapsed += self._TimeSteppingController.dt
         
         
 
