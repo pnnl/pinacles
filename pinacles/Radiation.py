@@ -105,8 +105,8 @@ class RRTMG:
         
         self._emis = 1.0
         self.coszen = 0.5
-        self._adir = 0.2
-        self._adif = 0.2
+        self._adir = 0.05
+        self._adif = 0.05
         self._scon = 1365.0
         self._adjes = 1.0
         self.dyofyr = 0
@@ -166,14 +166,14 @@ class RRTMG:
         index_o3 = 7
 
         self._profile_o3 = interpolate_trace_gas(lw_pressure,lw_absorber[:,index_o3],plev_col)
-        # plt.figure(1)
-        # plt.plot(plev_col[:-1]-plev_col[1:],'o')
-        # plt.plot(play_col[:-1]-play_col[1:],'s')
+        plt.figure(1)
+        plt.plot(plev_col[:-1]-plev_col[1:],'o')
+        plt.plot(play_col[:-1]-play_col[1:],'s')
 
-        # plt.figure(2)
-        # plt.plot(lw_pressure,lw_absorber[:,index_o3],'o')
-        # plt.plot(play_col,self._profile_o3, 's')
-        # plt.show()
+        plt.figure(2)
+        plt.plot(lw_pressure,lw_absorber[:,index_o3],'o')
+        plt.plot(play_col,self._profile_o3, 's')
+        plt.show()
         return
 
     def update(self,  _rk_step):
@@ -197,7 +197,7 @@ class RRTMG:
             if self.hourz > 24.0:
                 self.hourz = np.remainder(self.hourz,24.0)
             self.coszen = cos_sza(self.dyofyr,self.hourz, self._latitude, self._longitude )
-            # print("cosine zenith angle", self.dyofyr, self.hourz, self.coszen)
+            print("cosine zenith angle", self.dyofyr, self.hourz, self.coszen)
 
             # RRTMG flags. Hardwiring for now
             icld = 1
@@ -223,7 +223,7 @@ class RRTMG:
             tlev = np.zeros((_ncol,_nlay + 1), dtype=np.double, order='F')
             tsfc = np.ones((_ncol),dtype=np.double,order='F') * self._Surf.T_surface
             h2ovmr = np.zeros((_ncol,_nlay),dtype=np.double,order='F')
-            o3vmr  = np.ones((_ncol,_nlay),dtype=np.double,order='F') *self._vmr_o3
+            o3vmr  = np.ones((_ncol,_nlay),dtype=np.double,order='F') * self._vmr_o3
             co2vmr = np.ones((_ncol,_nlay),dtype=np.double,order='F') * self._vmr_co2
             ch4vmr = np.ones((_ncol,_nlay),dtype=np.double,order='F') * self._vmr_ch4
             n2ovmr = np.ones((_ncol,_nlay),dtype=np.double,order='F') * self._vmr_n2o
@@ -313,6 +313,9 @@ class RRTMG:
             play *= 0.01
             plev *= 0.01
 
+            o3vmr = np.asfortranarray(np.repeat(self._profile_o3[np.newaxis,:],_ncol,axis=0))
+
+
     
             self._lib_lw.c_rrtmg_lw(_ncol, _nlay,  icld, idrv, 
             as_pointer(play), as_pointer(plev), as_pointer(tlay), as_pointer(tlev), 
@@ -339,11 +342,12 @@ class RRTMG:
             as_pointer(dflxc_sw) , as_pointer(hrc_sw))
 
           
-            # plt.figure()
-            # plt.plot(hr_lw[0,:],play[0,:])
-            # plt.plot(hr_sw[0,:],play[0,:])
-            # plt.gca().invert_yaxis()
-            # plt.show()
+            plt.figure()
+            plt.plot(hr_lw[0,:],play[0,:],label='lw')
+            plt.plot(hr_sw[0,:],play[0,:],label='sw')
+            plt.legend()
+            plt.gca().invert_yaxis()
+            plt.show()
 
 
             # ds_uflux_lw = self._DiagnosticState.get_field('uflux_lw')
