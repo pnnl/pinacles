@@ -32,6 +32,11 @@ class RRTMG:
                 self._compute_radiation = False
                 if MPI.COMM_WORLD.Get_rank() == 0:
                     print('Assuming RRTMG should not be used for this case.')
+        
+        try:
+            self._radiation_frequency = namelist['radiation']['update_frequency']
+        except:
+            self._radiation_frequency = 30.0
 
         #
 
@@ -59,11 +64,11 @@ class RRTMG:
                 double swuflx[], double swdflx[], double swhr[], double swuflxc[],\
                  double swdflxc[] , double swhrc[]);", override=True)
 
-        rrtmg_lib_path = namelist['radiation']['rrtmg_lib_path']
-        if rrtmg_lib_path[-1] != '/':
-            rrtmg_lib_path += '/'
-        self._lib_lw = ffi.dlopen(rrtmg_lib_path + 'librrtmglw.so')
-        self._lib_sw = ffi.dlopen(rrtmg_lib_path + 'librrtmgsw.so')
+        self._rrtmg_lib_path = namelist['radiation']['rrtmg_lib_path']
+        if self._rrtmg_lib_path[-1] != '/':
+            self._rrtmg_lib_path += '/'
+        self._lib_lw = ffi.dlopen(self._rrtmg_lib_path + 'librrtmglw.so')
+        self._lib_sw = ffi.dlopen(self._rrtmg_lib_path + 'librrtmgsw.so')
        
 
         self._lib_lw.c_rrtmg_lw_init(parameters.CPD)
@@ -77,12 +82,16 @@ class RRTMG:
         # self._DiagnosticState.add_variable('uflux_sw')
         # self._DiagnosticState.add_variable('dflux_sw')
         self._radiation_file_path = namelist['radiation']['input_filepath']
+        data = nc.Dataset(self._radiation_file_path, 'r')
+        rad_data = data.groups['radiation']
+        self._latitude = rad_data.variables['latitude'][0]
+        self._longitude = rad_data.variables['longitude'][0]
+        day  = rad_data.variables['day_of_year'][0]
+        self._hourz_init = rad_data.variables['hour_utc'][0]
+        
+        self._dyofyr_init = np.floor(day) + self._hourz_init/24.0
+        data.close()
 
-        self._latitude = namelist['radiation']['latitude']
-        self._longitude = namelist['radiation']['longitude']        
-                    
-
-  
         # CL WRF values based on 2005 values from 2007 IPCC report
         self._vmr_co2   = 379.0e-6
         self._vmr_ch4   = 1774.0e-9
@@ -102,8 +111,7 @@ class RRTMG:
         self._adjes = 1.0
         self.dyofyr = 0
         self.hourz = 0
-        self._dyofyr_init = 242.5
-        self._hourz_init = 12.0
+
 
         self.time_elapsed = 10000.0      
         return
@@ -114,56 +122,58 @@ class RRTMG:
         n_halo = self._Grid.n_halo[2]
        
         data = nc.Dataset(self._radiation_file_path, 'r')
-        profile_data = data.groups['radiation_profiles']
-        p_data = profile_data.variables['pressure'][:]
-        t_data = profile_data.variables['temperature'][:]
-        qv_data = profile_data.variables['vapor_mixing_ratio'][:]
-        ql_data = profile_data.variables['liquid_mixing_ratio'][:]
-        qi_data = profile_data.variables['ice_mixing_ratio'][:]
+        rad_data = data.groups['radiation']
+        p_data = rad_data.variables['pressure'][:]
+        t_data = rad_data.variables['temperature'][:]
+        qv_data = rad_data.variables['vapor_mixing_ratio'][:]
+        ql_data = rad_data.variables['liquid_mixing_ratio'][:]
+        qi_data = rad_data.variables['ice_mixing_ratio'][:]
+        data.close()
 
         # Configure a few buffer points in the pressure profile
-        dp_model_top = np.abs(self._Ref._P0[-n_halo] - self._Ref._P0[-n_halo-1])
+        dp_model_top = np.abs(self._Ref._P0_edge[-n_halo] - self._Ref._P0_edge[-n_halo-1])
         p_trial = p_data[p_data<self._Ref._P0[-n_halo]]
         dp_trial = np.abs(p_trial[1]-p_trial[2])
-        dp_geom = np.geomspace(dp_model_top, dp_trial,num=10)
-        p_buffer = np.array([self._Ref._P0[-n_halo]])
+        dp_geom = np.geomspace(dp_model_top*1.5, dp_trial,num=10)
+        p_buffer = np.array([self._Ref._P0_edge[-n_halo]])
 
-        # print('p_model top', self._Ref._P0[-n_halo])
-        # print('dp_model_top', dp_model_top)
-        # print('p_trial[0,1,2]', p_trial[0], p_trial[1],p_trial[2])
-        # print('dp_trial',dp_trial)
+      
         i=0     
         while p_buffer[i] + 2*dp_trial > p_trial[1] and i < 10:
             p_buffer = np.append(p_buffer,p_buffer[i]-dp_geom[i])
-          
-            # print(i, np.round(p_buffer[i],2), np.round(np.abs(p_buffer[i]-p_buffer[i+1]),2))
             i+=1
-        # print(np.round(p_buffer[-1]), np.abs(p_buffer[-1]-p_trial[1]))
-        
-
-        
-
-        self.p_buffer = p_buffer
+     
+        self.p_buffer = p_buffer[1:]
         self.p_extension = p_data[p_data<p_buffer[-1]]
         self.t_extension = t_data[p_data<p_buffer[-1]]
         self.qv_extension = qv_data[p_data<p_buffer[-1]]
         self.ql_extension = ql_data[p_data<p_buffer[-1]]
         self.qi_extension = qi_data[p_data<p_buffer[-1]]
-        # plt.figure()
-        # plt.plot(p_data)
-        # plt.plot(self.p_extension,'--')
-        # plt.show()
 
        
-   
 
-        # self.p_extension = np.array([600.e2,100.e2,50.e2]) #None
-        # self.t_extension = np.array([275.0, 275.0,275.0]) #None
-        # self.qv_extension = np.array([1e-2, 1e-3,1e-4])#None
-        # self.ql_extension =np.array([0.,0.,0.]) #None
-        # self.qi_extension = np.array([0.,0.,0.])#None
+        # Set plev
+        _nhalo = self._Grid.n_halo
+        play_col = np.concatenate((self._Ref._P0[_nhalo[2]:-_nhalo[2]],self.p_buffer, self.p_extension))
+        p_ext_full = np.concatenate((self.p_buffer,self.p_extension))
+        plev_col = np.append(self._Ref._P0_edge[_nhalo[2]-1:-_nhalo[2]],  0.5 * (p_ext_full + np.append(p_ext_full[1:],0)))
+        lw_input_file = self._rrtmg_lib_path + 'rrtmg_lw.nc'
+        lw_gas = nc.Dataset(lw_input_file,  "r")
 
-        
+        lw_pressure = np.asarray(lw_gas.variables['Pressure']) * 100.0
+        lw_absorber = np.asarray(lw_gas.variables['AbsorberAmountMLS'])
+        lw_absorber = np.where(lw_absorber>2.0, np.zeros_like(lw_absorber), lw_absorber)
+        index_o3 = 7
+
+        self._profile_o3 = interpolate_trace_gas(lw_pressure,lw_absorber[:,index_o3],plev_col)
+        plt.figure(1)
+        plt.plot(plev_col[:-1]-plev_col[1:],'o')
+        plt.plot(play_col[:-1]-play_col[1:],'s')
+
+        plt.figure(2)
+        plt.plot(lw_pressure,lw_absorber[:,index_o3],'o')
+        plt.plot(play_col,self._profile_o3, 's')
+        plt.show()
         return
 
     def update(self,  _rk_step):
@@ -178,7 +188,7 @@ class RRTMG:
         
         
 
-        if _rk_step == 0 and self.time_elapsed > 0.0:
+        if _rk_step == 0 and self.time_elapsed > self._radiation_frequency:
             self.time_elapsed = 0.0
             # THis should get tested
             self.hourz = self._hourz_init + self._TimeSteppingController.time/3600.0
@@ -186,7 +196,7 @@ class RRTMG:
             if self.hourz > 24.0:
                 self.hourz = np.remainder(self.hourz,24.0)
             self.coszen = cos_sza(self.dyofyr,self.hourz, self._latitude, self._longitude )
-            print("cosine zenith angle", self.dyofyr, self.hourz, self.coszen)
+            # print("cosine zenith angle", self.dyofyr, self.hourz, self.coszen)
 
             # RRTMG flags. Hardwiring for now
             icld = 1
@@ -437,3 +447,26 @@ def  cos_sza(jday, hourz,  dlat,  dlon):
     return np.maximum(sindlt*np.sin(np.pi/180.*dlat) +cosdlt*np.cos(np.pi/180.*dlat)*np.cos(np.pi/180.*hour_angle), 0.0)
 
     
+def interpolate_trace_gas(p_trace_pa, trace_vmr, p_pa):
+    nlev = np.shape(p_pa)[0]
+    trpath = np.zeros(nlev)
+    ntrace = np.shape(p_trace_pa)[0]
+    interp_vmr = np.zeros(nlev-1)
+    for i in range(1,nlev):
+        trpath[i] = trpath[i-1]
+        if p_pa[i-1]>p_trace_pa[0]:
+            trpath[i]+= (p_pa[i-1] - np.maximum(p_pa[i],p_trace_pa[0]))/9.81 * trace_vmr[0]
+        for m in range(1,ntrace):
+            plow = np.minimum(p_pa[i-1],np.maximum(p_pa[i],p_trace_pa[m-1]))
+            pupp = np.minimum(p_pa[i-1],np.maximum(p_pa[i],p_trace_pa[m]))
+            if plow>pupp:
+                pmid = 0.5 * (plow + pupp)
+                wgtlow = (pmid - p_trace_pa[m])/(p_trace_pa[m-1]-p_trace_pa[m])
+                wgtupp = (p_trace_pa[m-1]-pmid)/(p_trace_pa[m-1]-p_trace_pa[m])
+                trpath[i] += (plow-pupp)/9.81*(wgtlow*trace_vmr[m-1]  + wgtupp*trace_vmr[m])
+        if (p_pa[i] < p_trace_pa[-1]):
+            trpath[i] += (np.minimum(p_pa[i-1],p_trace_pa[-1]) - p_pa[i])/9.81 * trace_vmr[-1]
+    
+    for i in range(nlev-1):
+        interp_vmr[i] = 9.81 /(p_pa[i]-p_pa[i+1]) * (trpath[i+1] - trpath[i])
+    return interp_vmr
