@@ -192,7 +192,7 @@ def main(namelist):
             #Call pressure solver
             PSolver.update()
 
-            if n== 1: 
+            if n== 1:
                 Thermo.update(apply_buoyancy=False)
                 #We call the microphysics update at the end of the RK steps.
                 Micro.update()

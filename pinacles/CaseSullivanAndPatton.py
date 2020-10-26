@@ -138,8 +138,6 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
 
     def update(self):
 
-        print('Applying forcing: ')
-
         u = self._VelocityState.get_field('u')
         v = self._VelocityState.get_field('v')
 
@@ -147,7 +145,7 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
         vt = self._VelocityState.get_tend('v')
 
         u0 = self._Ref.u0
-        v0 = self._Ref.v0 
+        v0 = self._Ref.v0
 
         Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, u0, v0, vt, ut)
         return
