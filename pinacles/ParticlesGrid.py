@@ -44,7 +44,7 @@ class ParticlesBase:
 
 
 
-        n = 8000000
+        n = 0
         if MPI.COMM_WORLD.Get_rank() == 0:
             xp = np.random.uniform(0.0, 5120, n) 
             yp = np.random.uniform(0.0, 5120, n)
@@ -68,6 +68,7 @@ class ParticlesBase:
         nglob =np.empty((1,), dtype=np.int)
         MPI.COMM_WORLD.Allreduce(np.array(np.sum(self._n), dtype=np.int), nglob, op=MPI.SUM)
         print(nglob)
+
         return
 
     def _allocate_memory(self):
@@ -281,8 +282,8 @@ class ParticlesBase:
 
 
             # Apply global lateral boundaries here. I think we can use the serial code
-            self._boundary_periodic_serial(local_shape, high_corner, self._n, self._particle_varnames, self._particle_data)
-
+            #self._boundary_periodic_serial(local_shape, high_corner, self._n, self._particle_varnames, self._particle_data)
+            self._boundary_exit_serial(local_shape, l, self._n, self._particle_varnames, self._particle_data)
 
             #Compute the number of boundary crossers in the x-direction
             t00 =  time.perf_counter()
@@ -456,7 +457,8 @@ class ParticlesBase:
 
         # Inject new particles
         t00 = time.perf_counter()
-        #self.point_inject(low_corner_local, high_corner_local, local_shape, self._Grid.dx, self._n, self._particle_varnames, self._particle_data, 4.0 * 10240./10.0, 10240.0/8, 80.0, 1024)
+        if self._TimeSteppingController.time > 1800.0:
+            self.point_inject(low_corner_local, high_corner_local, local_shape, self._Grid.dx, self._n, self._particle_varnames, self._particle_data, 5120/8.0, 5120.0/2.0, 80.0, 1024)
         t1 = time.perf_counter()
        # print('Inject at a pont: ', t1 - t00)
 
@@ -473,27 +475,42 @@ class ParticlesBase:
         print(np.sum(self._n))
         #import sys; sys.exit()
 
-        xp = np.empty((np.sum(self._n),), dtype=np.double)
-        yp = np.empty((np.sum(self._n),), dtype=np.double)
-        zp = np.empty((np.sum(self._n),), dtype=np.double)
-        self.distill_dof(self._particle_varnames, self._n,  'x', self._particle_data, xp)
-        self.distill_dof(self._particle_varnames, self._n,  'y', self._particle_data, yp)
-        self.distill_dof(self._particle_varnames, self._n,  'z', self._particle_data, zp)
+        xp_loc = np.empty((np.sum(self._n),), dtype=np.double)
+        yp_loc = np.empty((np.sum(self._n),), dtype=np.double)
+        zp_loc = np.empty((np.sum(self._n),), dtype=np.double)
+        self.distill_dof(self._particle_varnames, self._n,  'x', self._particle_data, xp_loc)
+        self.distill_dof(self._particle_varnames, self._n,  'y', self._particle_data, yp_loc)
+        self.distill_dof(self._particle_varnames, self._n,  'z', self._particle_data, zp_loc)
 
 
+        xp_tuple = MPI.COMM_WORLD.allgather(xp_loc)
+        yp_tuple = MPI.COMM_WORLD.allgather(yp_loc)
+        zp_tuple = MPI.COMM_WORLD.allgather(zp_loc)
+
+        #print(xp_tuple)
+
+        xp = np.empty((0,), dtype=np.double)
+        yp = np.empty((0,), dtype=np.double)
+        zp = np.empty((0,), dtype=np.double)
+        for i in range(len(xp_tuple)):
+            xp = np.concatenate((xp, xp_tuple[i]))
+            yp = np.concatenate((yp, yp_tuple[i]))
+            zp = np.concatenate((zp, zp_tuple[i]))
+
+        if MPI.COMM_WORLD.Get_rank() == 0:
 
         #print(np.amin(xp), np.amax(xp), np.amin(yp), np.amax(yp), np.amin(zp), np.amax(zp), np.shape(xp))
-        #import pylab as plt
-        #fig = plt.figure()
-        #ax = fig.add_subplot(111, projection='3d')
-        #ax.scatter(xp, yp, zp, s=0.1)
-        #ax.axes.set_xlim3d(left=0, right=5120.0)
-        #ax.axes.set_ylim3d(bottom=0, top=5120.0)
-        #ax.axes.set_zlim3d(bottom=0, top=2048.0)
-        #plt.savefig('./part_figs/' + str(self.call_count) + '_' + str(MPI.COMM_WORLD.Get_rank()) + '.png' ,dpi=300)
-        #plt.close()
+            import pylab as plt
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+            ax.scatter(xp, yp, zp, s=0.1)
+            ax.axes.set_xlim3d(left=0, right=5120.0)
+            ax.axes.set_ylim3d(bottom=0, top=5120.0)
+            ax.axes.set_zlim3d(bottom=0, top=2048.0)
+            plt.savefig('./part_figs/' + str(self.call_count) + '_' + str(MPI.COMM_WORLD.Get_rank()) + '.png' ,dpi=300)
+            plt.close()
         ##import sys; sys.exit()
-        #self.call_count += 1
+            self.call_count += 1
         #print('plot finished')
         return
 
@@ -521,9 +538,9 @@ class ParticlesBase:
                         arr = particle_data[ii + jj + k]
                         for p in range(arr.shape[1]):
                             if arr[valid,p] != 0.0:
-                                arr[xdof,p] += (arr[udof,p] + np.random.normal(loc=0.0, scale=0.4)) * dt
-                                arr[ydof,p] += (arr[vdof,p] + np.random.normal(loc=0.0, scale=0.4))* dt
-                                arr[zdof,p] += (arr[wdof,p]+ np.random.normal(loc=0.0, scale=0.4)) * dt
+                                arr[xdof,p] += (arr[udof,p])*dt  #+ np.random.normal(loc=0.0, scale=0.1)) * dt
+                                arr[ydof,p] += (arr[vdof,p])*dt  #+ np.random.normal(loc=0.0, scale=0.1))* dt
+                                arr[zdof,p] += (arr[wdof,p])*dt  #+ np.random.normal(loc=0.0, scale=0.1)) * dt
 
         return
 
@@ -673,8 +690,8 @@ class ParticlesBase:
             j = max(min(int(((recv_buffer[y_dof, bi]%high_corner_global[1] ) - low_corner_local[1])//dx[1]), shape[0] -1), 0)
             k = int((recv_buffer[z_dof, bi]  - low_corner_local[2])//dx[2])
 
-            if( i < 0 or i>31 or j < 0 or j > 31):
-                print('bi ', bi, 'buf ', recv_buffer[x_dof, bi], 'i ',  i, 'j ', j, 'k ',  k, i * ishift + j * jshift + k)
+            #if( i < 0 or i>31 or j < 0 or j > 31):
+            #    print('bi ', bi, 'buf ', recv_buffer[x_dof, bi], 'i ',  i, 'j ', j, 'k ',  k, i * ishift + j * jshift + k)
 
             arr = particle_data[i * ishift + j * jshift + k]
 
@@ -920,6 +937,8 @@ class ParticlesBase:
                 if arr[valid,p] != 0.0:
                     data[count] = arr[dof,p]
                     count += 1
+
+
         return
 
 

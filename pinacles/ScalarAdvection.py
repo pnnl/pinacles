@@ -427,7 +427,7 @@ class ScalarWENO5(ScalarAdvectionBase):
                 if np.amax(np.abs(phi)) > 0.0: #If fields are zero everywhere no need to do any advection so skip-it! 
                     #TODO This could probably be made faster
                     # First compute the higher order fluxes, for now we do it with WENO
-                    weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
+                    weno7_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
 
                     #Now compute the lower order upwind fluxes these are used if high-order fluxes 
                     # break boundness. 
@@ -438,7 +438,7 @@ class ScalarWENO5(ScalarAdvectionBase):
                         alpha0, fluxx, fluxy, fluxz, fluxx_low, fluxy_low, fluxz_low, dt, phi, io_flux, phi_t)
                  #   weno5_advection_flux_limit(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
             else:
-                weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
+                weno7_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
                 #second_order(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
                 #Now compute the flux divergences
                 flux_divergence(nhalo, self._Grid.dxi[0], self._Grid.dxi[1], self._Grid.dxi[2],

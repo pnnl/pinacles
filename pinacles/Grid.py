@@ -25,6 +25,7 @@ class GridBase:
         self._global_axes  = None
         self._global_axes_edge = None
         self._local_axes = None
+        self._local_axes_edge = None
 
         #Set the grid spacing
         self._dx = None
@@ -193,11 +194,20 @@ class GridBase:
 
     @property
     def local_axes(self):
-        ''' Copy here is forced to keep _global_axes externally immutable,
+        ''' Copy here is forced to keep _local_axes externally immutable,
         if performace becomes an issue we can provide a property that return a
         view so that copy occurs.
         '''
         return np.copy(self._local_axes)
+
+    @property
+    def local_axes_edge(self):
+        '''
+        Copy here is forced to keep _local_axes externally immutable,
+        if performace becomes an issue we can provide a property that return a
+        view so that copy occurs.
+        '''
+        return np.copy(self._local_axes_edge)
 
     @property
     def x_range(self):
@@ -214,7 +224,23 @@ class GridBase:
         return (self._global_axes_edge[2][self._n_halo[2]-1],
             self._global_axes_edge[2][-self._n_halo[2]-1])
 
-    def get_DistArray(self): 
+
+    @property
+    def x_range_local(self):
+        return (self._local_axes_edge[0][self._n_halo[0]-1],
+            self._local_axes_edge[0][-self._n_halo[0]-1])
+
+    @property
+    def y_range_local(self):
+        return (self._local_axes_edge[1][self._n_halo[1]-1],
+            self._local_axes_edge[1][-self._n_halo[1]-1])
+
+    @property
+    def z_range_local(self):
+        return (self._local_axes_edge[2][self._n_halo[2]-1],
+            self._local_axes_edge[2][-self._n_halo[2]-1])
+
+    def get_DistArray(self):
         return mpi4py_fft.DistArray(self._n, self.subcomms)
 
     def _create_subcomms(self):
@@ -252,6 +278,9 @@ class RegularCartesian(GridBase):
 
         self._global_axes = []
         self._global_axes_edge = []
+
+        self._local_axes_edge = []
+        self._local_axes = []
         dx_list = []
         for i in range(3):
             dx = self._l[i]/self._n[i]
@@ -265,6 +294,12 @@ class RegularCartesian(GridBase):
             #Generate an axis based on upper and lower points
             self._global_axes.append(np.linspace(lx, ux, self.ngrid[i]))
             self._global_axes_edge.append(self._global_axes[i] + 0.5 * dx)
+
+            # Compute the local axes form the global axes
+            start = self._local_start[i]
+            end = self._local_end[i] + 2*self._n_halo[i]
+            self._local_axes.append(self._global_axes[i][start:end])
+            self._local_axes_edge.append(self._global_axes_edge[i][start:end])
 
         self._dx = np.array(dx_list)
         self._dxi = 1.0/self._dx

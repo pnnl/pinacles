@@ -155,6 +155,26 @@ def test_muiltiple_namelist():
                     with pytest.raises(AttributeError):
                         TestGrid.z_range = (0.0, 0.0)
 
+                    #Check the local ranges
+                    x_range_local = TestGrid.x_range_local
+                    assert(np.isclose(x_range_local[0],0.0))
+                    assert(np.isclose(x_range_local[1],l[0]))
+                    with pytest.raises(AttributeError):
+                        TestGrid.x_range_local = (10.0,10.0)
+
+                    y_range_local = TestGrid.y_range_local
+                    assert(np.isclose(y_range_local[0],0.0))
+                    assert(np.isclose(y_range_local[1],l[1]))
+                    with pytest.raises(AttributeError):
+                        TestGrid.y_range_local = (10.0,10.0)
+
+                    z_range_local = TestGrid.z_range_local
+                    assert(np.isclose(z_range_local[0],0.0))
+                    assert(np.isclose(z_range_local[1],l[2]))
+                    with pytest.raises(AttributeError):
+                        TestGrid.z_range_local = (10.0,10.0)
+
+
                 check_axes(n, l, n_halo, TestGrid)
 
     return

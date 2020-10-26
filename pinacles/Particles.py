@@ -243,8 +243,6 @@ class ParticlesBase:
             yl = (y[pi] - low_corner[1] - ypos_shift)
             zl = (z[pi] - low_corner[2] - zpos_shift)
 
-
-
             ix = int(xl//dx[0]) - 1 + n_halo[0]
             iy = int(yl//dx[1]) - 1 + n_halo[1]
             iz = int(zl//dx[2]) - 1 + n_halo[2]
@@ -252,7 +250,6 @@ class ParticlesBase:
             xd = (xl%dx[0])/dx[0]
             yd = (yl%dx[1])/dx[1]
             zd = (zl%dx[2])/dx[2]
-
 
             c00 = (1.-xd)*u[ix,iy,iz] + xd*u[ix+1,iy,iz]
             c01 = (1.-xd)*u[ix,iy,iz+1] + xd*u[ix+1,iy,iz+1]
