@@ -5267,7 +5267,7 @@ do kr = NKR_local,1,-1
     endif
 enddo
 
-CONCCCNIN = col * sum(FCCNR_tmp(:))
+CONCCCNIN = sum(FCCNR_tmp(:))
 print*,'CONCCCNIN',CONCCCNIN
 if(IType == 1) FCCNR_MAR = Scale_Fa*FCCNR_tmp
 if(IType == 2) FCCNR_CON = Scale_Fa*FCCNR_tmp
