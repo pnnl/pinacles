@@ -197,7 +197,7 @@ def main(namelist):
             #Call pressure solver
             PSolver.update()
 
-            if n== 1: 
+            if n== 1:
                 Thermo.update(apply_buoyancy=False)
                 #We call the microphysics update at the end of the RK steps.
                 Micro.update()
@@ -218,7 +218,7 @@ def main(namelist):
         # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         xl = ModelGrid.x_local
         zl = ModelGrid.z_local
-        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%300.0,0.0):
+        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%60.0,0.0):
             FieldsIO.update()
             if MPI.COMM_WORLD.Get_rank() == 0:
                 pass 

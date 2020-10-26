@@ -113,12 +113,28 @@ class GridBase:
         return np.copy(self._global_axes[0])
 
     @property
+    def x_edge_global(self):
+        ''' Copy here is forced to keep _global_axes externally immutable,
+        if performace becomes an issue we can provide a property that return a
+        view so that copy occurs.
+        '''
+        return np.copy(self._global_axes_edge[0])
+
+    @property
     def y_global(self):
         ''' Copy here is forced to keep _global_axes externally immutable,
         if performace becomes an issue we can provide a property that return a
         view so that copy occurs.
         '''
         return np.copy(self._global_axes[1])
+
+    @property
+    def y_edge_global(self):
+        ''' Copy here is forced to keep _global_axes externally immutable,
+        if performace becomes an issue we can provide a property that return a
+        view so that copy occurs.
+        '''
+        return np.copy(self._global_axes_edge[1])
 
     @property
     def z_global(self):
