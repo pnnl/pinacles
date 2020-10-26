@@ -76,10 +76,10 @@ def interp_weno7( phim3,  phim2, phim1, phi, phip1,  phip2,  phip3):
                          + phip2*(7043.0*phip2 - 3882.0*phip3)
                          + 547.0*phip3*phip3)
 
-    alpha0 = (1.0/35.0)/((beta0 + 1e-6) * (beta0 + 1e-6))
-    alpha1 = (12.0/35.0)/((beta1 + 1e-6) * (beta1 + 1e-6))
-    alpha2 = (18.0/35.0)/((beta2 + 1e-6) * (beta2 + 1e-6))
-    alpha3 = (4.0/35.0)/((beta3 + 1e-6) * (beta3 + 1e-6))
+    alpha0 = (1.0/35.0)/((beta0 + 1e-8) * (beta0 + 1e-8))
+    alpha1 = (12.0/35.0)/((beta1 + 1e-8) * (beta1 + 1e-8))
+    alpha2 = (18.0/35.0)/((beta2 + 1e-8) * (beta2 + 1e-8))
+    alpha3 = (4.0/35.0)/((beta3 + 1e-8) * (beta3 + 1e-8))
 
 
 
