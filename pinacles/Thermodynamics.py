@@ -18,6 +18,12 @@ class ThermodynamicsBase:
 
         return
 
+    def get_qc(self):
+        return np.zeros((self._Grid.ngrid_local), dtype=np.double)
+    
+    def get_qi(self):
+        return np.zeros((self._Grid.ngrid_local), dtype=np.double)
+    
 from pinacles import ThermodynamicsDry
 from pinacles import ThermodynamicsMoist
 def factory(namelist, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro):
