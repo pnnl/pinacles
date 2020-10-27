@@ -259,7 +259,8 @@ class MicroP3(MicrophysicsBase):
 
         if my_rank == 0:
             timeseries_grp = nc_grp['timeseries']
-
+            profiles_grp = nc_grp['profiles']
+            
             timeseries_grp['CF'][-1] = cf
             timeseries_grp['RF'][-1] = rf
             timeseries_grp['LWP'][-1] = lwp
@@ -268,9 +269,15 @@ class MicroP3(MicrophysicsBase):
 
             timeseries_grp['RAINNC'][-1] = rainnc
             timeseries_grp['RAINNCV'][-1] = rainncv
+            
+            profiles_grp['CF'][-1,:] = cf_prof[n_halo[2]:-n_halo[2]]
+            profiles_grp['RF'][-1,:] = rf_prof[n_halo[2]:-n_halo[2]]
 
         return
     
 
     def get_qc(self):
         return self._ScalarState.get_field('qc') + self._ScalarState.get_field('qr')
+    
+    def get_qi(self):
+        return self._ScalarState.get_field('qi1')
