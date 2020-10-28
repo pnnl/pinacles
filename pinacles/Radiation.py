@@ -105,8 +105,8 @@ class RRTMG:
         
         self._emis = 1.0
         self.coszen = 0.5
-        self._adir = 0.05
-        self._adif = 0.05
+        self._adir = 0.2
+        self._adif = 0.2
         self._scon = 1365.0
         self._adjes = 1.0
         self.dyofyr = 0
@@ -166,14 +166,14 @@ class RRTMG:
         index_o3 = 7
 
         self._profile_o3 = interpolate_trace_gas(lw_pressure,lw_absorber[:,index_o3],plev_col)
-        plt.figure(1)
-        plt.plot(plev_col[:-1]-plev_col[1:],'o')
-        plt.plot(play_col[:-1]-play_col[1:],'s')
+        # plt.figure(1)
+        # plt.plot(plev_col[:-1]-plev_col[1:],'o')
+        # plt.plot(play_col[:-1]-play_col[1:],'s')
 
-        plt.figure(2)
-        plt.plot(lw_pressure,lw_absorber[:,index_o3],'o')
-        plt.plot(play_col,self._profile_o3, 's')
-        plt.show()
+        # plt.figure(2)
+        # plt.plot(lw_pressure,lw_absorber[:,index_o3],'o')
+        # plt.plot(play_col,self._profile_o3, 's')
+        # plt.show()
         return
 
     def update(self,  _rk_step):
@@ -197,7 +197,7 @@ class RRTMG:
             if self.hourz > 24.0:
                 self.hourz = np.remainder(self.hourz,24.0)
             self.coszen = cos_sza(self.dyofyr,self.hourz, self._latitude, self._longitude )
-            print("cosine zenith angle", self.dyofyr, self.hourz, self.coszen)
+           
 
             # RRTMG flags. Hardwiring for now
             icld = 1
@@ -342,13 +342,7 @@ class RRTMG:
             as_pointer(dflxc_sw) , as_pointer(hrc_sw))
 
           
-            plt.figure()
-            plt.plot(hr_lw[0,:],play[0,:],label='lw')
-            plt.plot(hr_sw[0,:],play[0,:],label='sw')
-            plt.legend()
-            plt.gca().invert_yaxis()
-            plt.show()
-
+        
 
             # ds_uflux_lw = self._DiagnosticState.get_field('uflux_lw')
             # ds_dflux_lw = self._DiagnosticState.get_field('dflux_lw')
@@ -376,9 +370,7 @@ class RRTMG:
             ds_dTdt_rad[:,:,:] = (ds_hr_lw + ds_hr_sw)  /86400.0
             ds_hr_lw[:,:,:]  *= rho0[np.newaxis,np.newaxis,:] * parameters.CPD /86400.0
             ds_hr_sw[:,:,:] *= rho0[np.newaxis,np.newaxis,:] * parameters.CPD /86400.0
-            # plt.figure()
-            # plt.plot(ds_dTdt_rad[4,4,_nhalo[2]:-_nhalo[2]])
-            # plt.show()
+          
 
         # FOR ALL RK STEPS
         st[:,:,:] += ds_dTdt_rad
