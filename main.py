@@ -21,6 +21,7 @@ from pinacles import Kinematics
 from pinacles import SGSFactory
 from pinacles import DiagnosticsTurbulence
 from pinacles import DiagnosticsClouds
+from pinacles import TowersIO
 from mpi4py import MPI
 import numpy as np
 import time
@@ -45,7 +46,7 @@ def main(namelist):
     RayleighDamping.add_state(VelocityState)
     RayleighDamping.add_state(ScalarState)
 
-
+    IOTower= TowersIO.Tower(namelist, ModelGrid, TimeSteppingController)
 
     TimeSteppingController.add_timestepper(ScalarTimeStepping)
     TimeSteppingController.add_timestepper(VelocityTimeStepping)
@@ -88,6 +89,13 @@ def main(namelist):
     ScalarState.allocate()
     VelocityState.allocate()
     DiagnosticState.allocate()
+
+
+    IOTower.add_state_container(VelocityState)
+    IOTower.add_state_container(ScalarState)
+    IOTower.add_state_container(DiagnosticState)
+    IOTower.initialize()
+
 
     ScalarTimeStepping.initialize()
     VelocityTimeStepping.initialize()
@@ -162,6 +170,7 @@ def main(namelist):
             if n == 0:
                 StatsIO.update()
                 MPI.COMM_WORLD.barrier()
+                IOTower.update()
 
             #Update the surface
             Surf.update()
@@ -218,7 +227,7 @@ def main(namelist):
         # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         xl = ModelGrid.x_local
         zl = ModelGrid.z_local
-        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%60.0,0.0):
+        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%600.0,0.0):
             FieldsIO.update()
             if MPI.COMM_WORLD.Get_rank() == 0:
                 pass 
