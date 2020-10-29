@@ -175,7 +175,6 @@ class MicroP3(MicrophysicsBase):
         to_our_order(nhalo, qnr_wrf, qnr)
         to_our_order(nhalo, qi1_wrf, qi1)
         to_our_order(nhalo, qni1_wrf, qni1)
-        #to_our_order(nhalo, nc_wrf, nc)
 
 
         #Update the energys (TODO Move this to numba)
@@ -184,19 +183,8 @@ class MicroP3(MicrophysicsBase):
         to_our_order(nhalo, s_wrf, s)
 
 
-        #wrf_theta_tend_to_our_tend(nhalo, dt, exner, T_wrf, T, s_tend)
-        #wrf_tend_to_our_tend(nhalo, dt, qv_wrf, qv, qv_tend)
-        #wrf_tend_to_our_tend(nhalo, dt, qc_wrf, qc, qc_tend)
-        #wrf_tend_to_our_tend(nhalo, dt, qr_wrf, qr, qr_tend)
-        #wrf_tend_to_our_tend(nhalo, dt, qnr_wrf, qnr, qnr_tend)
-        #wrf_tend_to_our_tend(nhalo, dt, qi1_wrf, qi1, qi1_tend)
-        #wrf_tend_to_our_tend(nhalo, dt, qni1_wrf, qni1, qni1_tend)
-        #wrf_tend_to_our_tend(nhalo, dt, nc_wrf, nc, nc_tend)
         to_our_order(nhalo, diag_effc_3d_wrf, diag_effc_3d)
         to_our_order(nhalo, reflectivity_wrf, reflectivity)
-
-        #Add in tendencies
-        #s_tend -= parameters.LV*parameters.ICPD * np.add(qc_tend, qr_tend)
 
         self._itimestep += 1
         return
