@@ -46,7 +46,7 @@ def main(namelist):
     RayleighDamping.add_state(VelocityState)
     RayleighDamping.add_state(ScalarState)
 
-    IOTower= TowersIO.Tower(namelist, ModelGrid, TimeSteppingController)
+
 
     TimeSteppingController.add_timestepper(ScalarTimeStepping)
     TimeSteppingController.add_timestepper(VelocityTimeStepping)
@@ -91,12 +91,6 @@ def main(namelist):
     DiagnosticState.allocate()
 
 
-    IOTower.add_state_container(VelocityState)
-    IOTower.add_state_container(ScalarState)
-    IOTower.add_state_container(DiagnosticState)
-    IOTower.initialize()
-
-
     ScalarTimeStepping.initialize()
     VelocityTimeStepping.initialize()
 
@@ -110,6 +104,15 @@ def main(namelist):
     #Setup Stats-IO
     StatsIO = Stats(namelist, ModelGrid, Ref, TimeSteppingController)
 
+    IOTower= TowersIO.Tower(namelist, ModelGrid, TimeSteppingController)
+
+    IOTower.add_state_container(VelocityState)
+    IOTower.add_state_container(ScalarState)
+    IOTower.add_state_container(DiagnosticState)
+    IOTower.initialize()
+
+    
+ 
 
     DiagClouds = DiagnosticsClouds.DiagnosticsClouds(ModelGrid, Ref, Thermo, Micro, VelocityState, ScalarState, DiagnosticState)
     DiagTurbulence = DiagnosticsTurbulence.DiagnosticsTurbulence(ModelGrid, Ref, Thermo, Micro, VelocityState, ScalarState, DiagnosticState)

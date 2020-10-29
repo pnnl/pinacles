@@ -35,6 +35,7 @@ class MicroP3(MicrophysicsBase):
             #Allocate microphysical/thermodyamic variables
             self._ScalarState.add_variable('qv')
             self._ScalarState.add_variable('qc')
+            self._ScalarState.add_variable('qnc')
             self._ScalarState.add_variable('qr')
             self._ScalarState.add_variable('qnr')
             self._ScalarState.add_variable('qi1')
@@ -69,7 +70,9 @@ class MicroP3(MicrophysicsBase):
         s = self._ScalarState.get_field('s')
         qv = self._ScalarState.get_field('qv')
         qc = self._ScalarState.get_field('qc')
+        qnc = self._ScalarState.get_field('qnc')
         qr = self._ScalarState.get_field('qr')
+
         qnr = self._ScalarState.get_field('qnr')
         qi1 = self._ScalarState.get_field('qi1')
         qni1 = self._ScalarState.get_field('qni1')
@@ -135,6 +138,7 @@ class MicroP3(MicrophysicsBase):
         to_wrf_order(nhalo, qr, qr_wrf)
         to_wrf_order(nhalo, w, w_wrf)
         to_wrf_order(nhalo, qnr, qnr_wrf)
+        to_wrf_order(nhalo, qnc, nc_wrf)
         to_wrf_order(nhalo, qi1, qi1_wrf)
         to_wrf_order(nhalo, qni1, qni1_wrf)
         to_wrf_order(nhalo, qir1, qir1_wrf)
@@ -146,11 +150,8 @@ class MicroP3(MicrophysicsBase):
                     th_old[i,j,k] = T_wrf[i,j,k]
                     qv_old[i,j,k] = qv_wrf[i,j,k]
 
-
-
-
         n_iceCat = 1
-        nc_wrf[:,:,:] = self._nc
+        #nc_wrf[:,:,:] = self._nc
         #T_wrf,qv_wrf,qc_wrf,qr_wrf,qnr_wrf)
         p3.module_mp_p3.mp_p3_wrapper_wrf(T_wrf,qv_wrf,qc_wrf,qr_wrf,qnr_wrf,
                                 th_old, qv_old,
@@ -167,6 +168,7 @@ class MicroP3(MicrophysicsBase):
         #Update prognosed fields
         to_our_order(nhalo, qv_wrf, qv)
         to_our_order(nhalo, qc_wrf, qc)
+        to_our_order(nhalo, nc_wrf, qnc)
         to_our_order(nhalo, qr_wrf, qr)
         to_our_order(nhalo, qnr_wrf, qnr)
         to_our_order(nhalo, qi1_wrf, qi1)

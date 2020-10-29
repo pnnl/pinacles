@@ -697,14 +697,13 @@ END subroutine p3_init
 
    log_predictNc=.false.
    if (present(nc_3d)) log_predictNc = .true.
-
    do j = jts,jte      ! j loop (north-south)
 
       if (log_predictNc) then
          nc(its:ite,kts:kte)=nc_3d(its:ite,kts:kte,j)
      ! if Nc is specified then set nc array to zero
       else
-         nc=0.
+         nc=0.0
       endif
 
      ! note: code for prediction of ssat not currently avaiable, set 2D array to 0
@@ -880,7 +879,6 @@ END subroutine p3_init
 
    log_predictNc=.false.
    if (present(nc_3d)) log_predictNc = .true.
-
    do j = jts,jte      ! j loop (north-south)
 
       if (log_predictNc) then
