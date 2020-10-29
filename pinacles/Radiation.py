@@ -32,7 +32,11 @@ class RRTMG:
                 self._compute_radiation = False
                 if MPI.COMM_WORLD.Get_rank() == 0:
                     print('Assuming RRTMG should not be used for this case.')
-        
+     
+        if not self._compute_radiation:
+            return
+
+
         try:
             self._radiation_frequency = namelist['radiation']['update_frequency']
         except:
@@ -90,6 +94,12 @@ class RRTMG:
         self._hourz_init = rad_data.variables['hour_utc'][0]
         
         self._dyofyr_init = np.floor(day) + self._hourz_init/24.0
+
+        self._emis =  rad_data.variables['emissivity'][0]
+        
+        self._adir =  rad_data.variables['albedo'][0]
+        self._adif = rad_data.variables['albedo'][0]
+        print(self._emis, self._adir, self._adif)
         data.close()
 
         # CL WRF values based on 2005 values from 2007 IPCC report
@@ -104,7 +114,7 @@ class RRTMG:
         self._vmr_o3 = 70.0e-9
         
         self._emis = 1.0
-        self.coszen = 0.5
+        
         self._adir = 0.2
         self._adif = 0.2
         self._scon = 1365.0
