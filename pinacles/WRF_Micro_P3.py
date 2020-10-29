@@ -44,6 +44,7 @@ class MicroP3(MicrophysicsBase):
             self._ScalarState.add_variable('qib1')
 
             self._DiagnosticState.add_variable('reflectivity')
+            self._DiagnosticState.add_variable('diag_effc_3d')
 
             nhalo = self._Grid.n_halo
             self._our_dims = self._Grid.ngrid_local
@@ -82,6 +83,7 @@ class MicroP3(MicrophysicsBase):
         w = self._VelocityState.get_field('w')
 
         reflectivity = self._DiagnosticState.get_field('reflectivity')
+        diag_effc_3d = self._DiagnosticState.get_field('diag_effc_3d')
 
         exner = self._Ref.exner
         p0 = self._Ref.p0
@@ -106,7 +108,7 @@ class MicroP3(MicrophysicsBase):
 
 
         reflectivity_wrf = np.empty_like(rho_wrf)
-        diag_effc = np.empty_like(rho_wrf)
+        diag_effc_3d_wrf= np.empty_like(rho_wrf)
         diag_effi = np.empty_like(rho_wrf)
         diag_vmi = np.empty_like(rho_wrf)
         diag_di = np.empty_like(rho_wrf)
@@ -160,7 +162,7 @@ class MicroP3(MicrophysicsBase):
                                 ids, ide, jds, jde, kds, kde ,
                                 ims, ime, jms, jme, kms, kme ,
                                 its, ite, jts, jte, kts, kte ,
-                                reflectivity_wrf,diag_effc,diag_effi,
+                                reflectivity_wrf,diag_effc_3d_wrf,diag_effi,
                                 diag_vmi,diag_di,diag_rhopo,
                                 qi1_wrf,qni1_wrf,qir1_wrf,qib1_wrf,nc_wrf)
 
@@ -190,6 +192,7 @@ class MicroP3(MicrophysicsBase):
         #wrf_tend_to_our_tend(nhalo, dt, qi1_wrf, qi1, qi1_tend)
         #wrf_tend_to_our_tend(nhalo, dt, qni1_wrf, qni1, qni1_tend)
         #wrf_tend_to_our_tend(nhalo, dt, nc_wrf, nc, nc_tend)
+        to_our_order(nhalo, diag_effc_3d_wrf, diag_effc_3d)
         to_our_order(nhalo, reflectivity_wrf, reflectivity)
 
         #Add in tendencies
