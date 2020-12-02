@@ -28,6 +28,7 @@ import time
 import pylab as plt
 
 import os 
+from termcolor import colored
 os.environ["HDF5_USE_FILE_LOCKING"]="FALSE"
 
 def main(namelist):
@@ -219,9 +220,8 @@ def main(namelist):
         t1 = time.time()
         MPI.COMM_WORLD.barrier()
         if MPI.COMM_WORLD.Get_rank() == 0:
-
-            print(t1 -t0)
-        s_slice = DiagnosticState.get_field_slice_z('T', indx=5)
+            print(colored('\t Walltime: ', 'green'), colored(t1 -t0, 'green'), colored('\tModeltime/Walltime: ', 'green'), colored(TimeSteppingController._dt/(t1 - t0), 'green'))
+        #s_slice = DiagnosticState.get_field_slice_z('T', indx=5)
         #s_slice = VelocityState.get_field_slice_z('w', indx=5)
         # b = DiagnosticState.get_field('T')
         # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
