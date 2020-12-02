@@ -104,15 +104,12 @@ def main(namelist):
     #Setup Stats-IO
     StatsIO = Stats(namelist, ModelGrid, Ref, TimeSteppingController)
 
-    IOTower= TowersIO.Tower(namelist, ModelGrid, TimeSteppingController)
+    IOTower= TowersIO.Towers(namelist, ModelGrid, TimeSteppingController)
 
     IOTower.add_state_container(VelocityState)
     IOTower.add_state_container(ScalarState)
     IOTower.add_state_container(DiagnosticState)
     IOTower.initialize()
-
-    
- 
 
     DiagClouds = DiagnosticsClouds.DiagnosticsClouds(ModelGrid, Ref, Thermo, Micro, VelocityState, ScalarState, DiagnosticState)
     DiagTurbulence = DiagnosticsTurbulence.DiagnosticsTurbulence(ModelGrid, Ref, Thermo, Micro, VelocityState, ScalarState, DiagnosticState)

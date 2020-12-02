@@ -14,7 +14,7 @@ class Tower():
         xbnds = self._Grid.x_range_local
         ybnds = self._Grid.y_range_local
         dx = self._Grid.dx
-    
+
         #Get the tower indicies
         self._i_indx = int((loc[0] - xbnds[0])//dx[0]) + self._Grid.n_halo[0]
         self._j_indx = int((loc[1] - ybnds[0])//dx[1]) + self._Grid.n_halo[1]
@@ -31,12 +31,6 @@ class Tower():
         self._out_file = os.path.join(namelist['meta']['output_directory'], namelist['meta']['simname'])
         self._out_file = os.path.join(self._out_file, 'tower_' + str(loc[0]) + '_' + str(loc[1]) + '.nc')
 
-
-
-        
-
-
-
         return
 
 
@@ -51,9 +45,6 @@ class Tower():
         if not self._tower_on_this_rank:
             return
 
-
-
-        print(self._out_file)
         rt_grp = nc.Dataset(self._out_file, 'w')
 
         nh = self._Grid.n_halo
@@ -71,13 +62,11 @@ class Tower():
         rt_grp.createDimension('time')
         rt_grp.createVariable('time', np.double, dimensions=('time'),)
 
- 
-
         for con in self._containers:
             for var in con._dofs.keys():
                 if con._loc[var] != 'z':
                     rt_grp.createVariable(var, np.double, dimensions=('time', 'z' ) )
-                else: 
+                else:
                     rt_grp.createVariable(var, np.double, dimensions=('time', 'z_edge' ) )
 
 
@@ -103,15 +92,49 @@ class Tower():
             for var in con._dofs.keys():
                 if con._loc[var] != 'z':
                     phi = con.get_field(var)
-                    rt_grp[var][-1,:] = phi[self._i_indx, self._j_indx,nh[2]:-nh[2]] 
-                else: 
+                    rt_grp[var][-1,:] = phi[self._i_indx, self._j_indx,nh[2]:-nh[2]]
+                else:
                     phi = con.get_field(var)
-                    rt_grp[var][-1,:] = phi[self._i_indx, self._j_indx,nh[2]-1:-nh[2]] 
-
-
+                    rt_grp[var][-1,:] = phi[self._i_indx, self._j_indx,nh[2]-1:-nh[2]]
 
         rt_grp.close()
+
+        return
+
+
+class Towers:
+    def __init__(self, namelist, Grid, TimeSteppingController):
+
+
+        self._list_of_towers = []
+
+        if 'towers' not in namelist:
+            return
+
+        tower_locations = namelist['towers']['location']
+
+        for loc in tower_locations:
+            self._list_of_towers.append(Tower(namelist, Grid, TimeSteppingController, loc=tuple(loc)))
 
 
         return
 
+    def add_state_container(self, state_container):
+
+        for tower in self._list_of_towers:
+            tower.add_state_container(state_container)
+
+        return
+
+    def initialize(self):
+
+        for tower in self._list_of_towers:
+            tower.initialize()
+
+        return
+
+    def update(self):
+        for tower in self._list_of_towers:
+            tower.update()
+
+        return
