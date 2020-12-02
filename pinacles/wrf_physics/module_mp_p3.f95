@@ -245,16 +245,16 @@
 ! inv_bact = (map*rhow)/(vi*osm*epsm*mw*rhoa)    *** to replace /bact **
 
 ! mode 1
- inv_rm1 = 2.e+7           ! inverse aerosol mean size (m-1)
- sig1    = 2.0             ! aerosol standard deviation
- nanew1  = 300.e6          ! aerosol number mixing ratio (kg-1)
+ inv_rm1 = 2.37064444e+07  ! inverse aerosol mean size (m-1)
+ sig1    = 2.75840200e+00  ! aerosol standard deviation
+ nanew1  = 1.36121337e+08  ! aerosol number mixing ratio (kg-1)
  f11     = 0.5*exp(2.5*(log(sig1))**2)
  f21     = 1. + 0.25*log(sig1)
 
 ! mode 2
- inv_rm2 = 7.6923076e+5    ! inverse aerosol mean size (m-1)
- sig2    = 2.5             ! aerosol standard deviation
- nanew2  = 0.              ! aerosol number mixing ratio (kg-1)
+ inv_rm2 = 8.61501056e+07  ! inverse aerosol mean size (m-1)
+ sig2    = 1.29753603e+00  ! aerosol standard deviation
+ nanew2  = 1.17744602e+08  ! aerosol number mixing ratio (kg-1)
  f12     = 0.5*exp(2.5*(log(sig2))**2)
  f22     = 1. + 0.25*log(sig2)
 
