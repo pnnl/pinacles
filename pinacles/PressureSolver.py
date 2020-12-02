@@ -21,7 +21,11 @@ class PressureSolver:
         #Setup the Fourier Transform
         div =  fft.DistArray(self._Grid.n , self._Grid.subcomms, dtype=np.complex)
         div = div.redistribute(0)
-        self._fft =  fft.PFFT(self._Grid.subcomms, darray=div, axes=(1,0), transforms={}, backend='mkl_fft')
+
+        try:
+            self._fft =  fft.PFFT(self._Grid.subcomms, darray=div, axes=(1,0), transforms={}, backend='mkl_fft')
+        except:
+            self._fft =  fft.PFFT(self._Grid.subcomms, darray=div, axes=(1,0), transforms={})
 
         self.fft_local_starts()
 
