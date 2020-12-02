@@ -433,7 +433,6 @@ class ScalarWENO5(ScalarAdvectionBase):
                     #Divide by range
                     np.divide(phi, phi_range, out=phi_norm)
 
-                    print(var, np.amax(phi), np.amax(phi_range), np.amax(phi_norm))
                     # First compute the higher order fluxes, for now we do it with WENO
                     weno7_advection(nhalo, rho0, rho0_edge, u, v, w, phi_norm, fluxx, fluxy, fluxz, phi_t)
 

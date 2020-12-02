@@ -13,6 +13,10 @@ __pycache__/
 .Python
 build/
 develop-eggs/
+
+*.o
+*.mod
+*.plist
 dist/
 downloads/
 eggs/

@@ -60,3 +60,8 @@ class MicrophysicsBase:
     def io_update(self, nc_grp):
         return
 
+    def get_qc(self):
+        return np.zeros((self._Grid._ngrid_local), dtype=np.double)
+    
+    def get_qi(self):
+        return np.zeros((self._Grid._ngrid_local), dtype=np.double)

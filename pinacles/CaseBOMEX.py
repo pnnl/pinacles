@@ -15,6 +15,7 @@ class SurfaceBOMEX(Surface.SurfaceBase):
         self._qv_flux = 5.2e-5
         self._ustar = 0.28 #m/s
         self._theta_surface = 299.1 #K
+        self.T_surface = 299.1
         self.bflux_from_thflux()
 
         nl = self._Grid.ngrid_local
