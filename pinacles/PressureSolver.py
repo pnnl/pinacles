@@ -16,7 +16,7 @@ class PressureSolver:
         self._wavenumber_n = None
 
         #Add dynamic pressure as a diagnsotic state
-        self._DiagnosticState.add_variable('dynamic pressure')
+        self._DiagnosticState.add_variable('dynamic pressure', long_name='Dynamic Pressure', units='Pa', latex_name='p^*')
 
         #Setup the Fourier Transform
         div =  fft.DistArray(self._Grid.n , self._Grid.subcomms, dtype=np.complex)

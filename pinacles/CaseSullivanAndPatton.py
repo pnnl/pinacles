@@ -78,17 +78,37 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
         timeseries_grp = rt_grp['timeseries']
 
         #Add surface windspeed
-        timeseries_grp.createVariable('wind_horizontal', np.double, dimensions=('time',))
+        v = timeseries_grp.createVariable('wind_horizontal', np.double, dimensions=('time',))
+        v.long_name = 'Surface layer wind speed'
+        v.unts = 'm s^{-1}'
+        v.standard_name = 'surface wind'
 
         # Add surface stresses
-        timeseries_grp.createVariable('ustar', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('taux', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('tauy', np.double, dimensions=('time',))
+        v = timeseries_grp.createVariable('ustar', np.double, dimensions=('time',))
+        v.long_name = 'friction velocity'
+        v.units = 'm s^{-1}'
+        v.standard_name = 'u^{\star}'
+
+        v = timeseries_grp.createVariable('taux', np.double, dimensions=('time',))
+        v.long_name = 'surface shear stress x-component'
+        v.unts = 'm^2 s^{-2}'
+        v.standard_name = '\tau{13}'
+
+        v = timeseries_grp.createVariable('tauy', np.double, dimensions=('time',))
+        v.long_name = 'surface shear stress y-component'
+        v.units = 'm^2 s^{-2}'
+        v.standard_name = '\tau{23}'
 
         #Add thermodynamic fluxes
-        timeseries_grp.createVariable('tflx', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('shf', np.double, dimensions=('time',))
+        v = timeseries_grp.createVariable('tflx', np.double, dimensions=('time',))
+        v.long_name = 'surface temperature flux'
+        v.units = 'K m s^{-2}'
+        v.standard_name =  'surface temperature flux'
 
+        v = timeseries_grp.createVariable('shf', np.double, dimensions=('time',))
+        v.long_name = 'surface sensible heat flux'
+        v.units = 'W m^{-2}'
+        v.standard_name = 'shf'
 
         return
 

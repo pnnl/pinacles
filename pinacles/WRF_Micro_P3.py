@@ -33,25 +33,23 @@ class MicroP3(MicrophysicsBase):
             p3.module_mp_p3.p3_init(lookup_file_dir, nCat, model, stat, abort_on_err)
 
             #Allocate microphysical/thermodyamic variables
-            self._ScalarState.add_variable('qv')
-            self._ScalarState.add_variable('qc')
-            self._ScalarState.add_variable('qnc')
-            self._ScalarState.add_variable('qr')
-            self._ScalarState.add_variable('qnr')
-            self._ScalarState.add_variable('qi1')
-            self._ScalarState.add_variable('qni1')
-            self._ScalarState.add_variable('qir1')
-            self._ScalarState.add_variable('qib1')
+            self._ScalarState.add_variable('qv', long_name = 'water vapor mixing ratio', units='kg kg^{-1}', latex_name = 'q_v')
+            self._ScalarState.add_variable('qc', long_name = 'cloud water mixing ratio', units='kg kg^{-1}', latex_name = 'q_c')
+            self._ScalarState.add_variable('qnc', long_name= 'cloud number concentration', units='# kg^{-1}', latex_name = 'q_{nc}')
+            self._ScalarState.add_variable('qr', long_name = 'rain water mixing ratio', units='kg kg^{-1}', latex_name = 'q_{r}')
+            self._ScalarState.add_variable('qnr', long_name = 'rain number concentration', units='# kg^{-1}', latex_name = 'q_{nr}')
+            self._ScalarState.add_variable('qi1', long_name=  'total ice mixing ratio', units='kg kg^{-1}', latex_name = 'q_{i}')
+            self._ScalarState.add_variable('qni1', long_name = 'ice number concentration', units='# kg^{-1}', latex_name = 'q_{ni}')
+            self._ScalarState.add_variable('qir1', long_name = 'rime ice mixing ratio', units='kg kg^{-1}', latex_name = 'q_{ir}')
+            self._ScalarState.add_variable('qib1', long_name = 'ice rime volume mixing ratio', units='m^{-3} kg^{-1}', latex_name = 'q_{ib}')
 
-            self._DiagnosticState.add_variable('reflectivity')
-            self._DiagnosticState.add_variable('diag_effc_3d')
+            self._DiagnosticState.add_variable('reflectivity', long_name='radar reflectivity', units='dBz', latex_name = 'reflectivity')
+            self._DiagnosticState.add_variable('diag_effc_3d',  long_name='cloud droplet effective radius', units='m', latex_name='r_e')
 
             nhalo = self._Grid.n_halo
             self._our_dims = self._Grid.ngrid_local
             nhalo = self._Grid.n_halo
             self._wrf_dims = (self._our_dims[0] -2*nhalo[0], self._our_dims[2]-2*nhalo[2], self._our_dims[1]-2*nhalo[1])
-            
-         
 
             self._itimestep = 0
             self._RAINNC = np.zeros((self._wrf_dims[0], self._wrf_dims[2]), order='F', dtype=np.float32)
@@ -193,18 +191,53 @@ class MicroP3(MicrophysicsBase):
         timeseries_grp = nc_grp['timeseries']
         profiles_grp = nc_grp['profiles']
 
-        timeseries_grp.createVariable('CF', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('RF', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('LWP', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('RWP', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('VWP', np.double, dimensions=('time',))
+        v = timeseries_grp.createVariable('CF', np.double, dimensions=('time',))
+        v.long_name = 'Cloud Fraction'
+        v.standard_name = 'CF'
+        v.units = ''
 
-        timeseries_grp.createVariable('RAINNC', np.double, dimensions=('time',))
+        v = timeseries_grp.createVariable('RF', np.double, dimensions=('time',))
+        v.long_name = 'Rain Fraction'
+        v.standard_name = 'RF'
+        v.units = ''
+
+        v = timeseries_grp.createVariable('LWP', np.double, dimensions=('time',))
+        v.long_name = 'Liquid Water Path'
+        v.standard_name = 'LWP'
+        v.units = 'kg/m^2'
+
+        v = timeseries_grp.createVariable('RWP', np.double, dimensions=('time',))
+        v.long_name = 'Rain Water Path'
+        v.standard_name = 'RWP'
+        v.units = 'kg/m^2'
+
+        v = timeseries_grp.createVariable('VWP', np.double, dimensions=('time',))
+        v.long_name = 'Water Vapor Path'
+        v.standard_name = 'VWP'
+        v.units = 'kg/m^2'
+
+        v = timeseries_grp.createVariable('RAINNC', np.double, dimensions=('time',))
+        v.long_name = 'accumulated surface precip'
+        v.units = 'mm'
+        v.latex_name = 'rainnc'
+
         timeseries_grp.createVariable('RAINNCV', np.double, dimensions=('time',))
+        v.long_name = 'one time step accumulated surface precip'
+        v.units = 'mm'
+        v.latex_name = 'rainncv'
+
 
         #Now add cloud fraction and rain fraction profiles
-        profiles_grp.createVariable('CF', np.double, dimensions=('time', 'z',))
+        v = profiles_grp.createVariable('CF', np.double, dimensions=('time', 'z',))
+        v.long_name = 'Cloud Fraction'
+        v.standard_name = 'CF'
+        v.units = ''
+
         profiles_grp.createVariable('RF', np.double, dimensions=('time', 'z',))
+        v.long_name = 'Rain Fraction'
+        v.standard_name = 'RF'
+        v.units = ''
+
 
         return
 

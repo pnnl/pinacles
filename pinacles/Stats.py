@@ -62,10 +62,16 @@ class Stats:
         ref_grp.createDimension('z', size=self._Grid.n[2])
         vh = ref_grp.createVariable('z', np.double, dimensions=('z',))
         vh[:] = self._Grid.z_global[nh[2]:-nh[2]]
+        vh.long_name = 'height of cell-center above surface'
+        vh.units = 'm'
+        vh.standard_name = 'cell-center height'
 
         ref_grp.createDimension('z_edge', size=self._Grid.n[2]+1)
         vh = ref_grp.createVariable('z_edge', np.double, dimensions=('z_edge',))
         vh[:] = self._Grid.z_edge_global[nh[2]-1:-nh[2]]
+        vh.long_name = 'height of cell-edge above surface'
+        vh.units = 'm'
+        vh.standard_name = 'cell-edge height'
 
         #Now write the reference profiles
         self._Ref.write_stats(ref_grp)
@@ -80,7 +86,10 @@ class Stats:
 
             #Create dimensions for timeseries
             timeseries_grp.createDimension('time')
-            timeseries_grp.createVariable('time', np.double, dimensions=('time',))
+            time = timeseries_grp.createVariable('time', np.double, dimensions=('time',))
+            time.long_name = 'time since beginning of simulation'
+            time.units = 's'
+            time.standard_name = 'time'
 
             #Create dimensions for profiles
             profiles_grp.createDimension('time')
@@ -88,10 +97,16 @@ class Stats:
             profiles_grp.createDimension('z', size=self._Grid.n[2])
             vh = profiles_grp.createVariable('z', np.double, dimensions=('z',))
             vh[:] = self._Grid.z_global[nh[2]:-nh[2]]
+            vh.long_name = 'height of cell-center above surface'
+            vh.units = 'm'
+            vh.standard_name = 'cell-center height'
 
             profiles_grp.createDimension('z_edge', size=self._Grid.n[2]+1)
             vh = profiles_grp.createVariable('z_edge', np.double, dimensions=('z_edge',))
             vh[:] = self._Grid.z_edge_global[nh[2]-1:-nh[2]]
+            vh.long_name = 'height of cell-edge above surface'
+            vh.units = 'm'
+            vh.standard_name = 'cell-edge height'
 
         self._rt_grp.sync()
 

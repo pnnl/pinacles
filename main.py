@@ -57,9 +57,9 @@ def main(namelist):
 
 
     # Add velocity variables
-    VelocityState.add_variable('u')
-    VelocityState.add_variable('v')
-    VelocityState.add_variable('w', loc='z', bcs='value zero')
+    VelocityState.add_variable('u', long_name = 'u velocity component', units='m/s', latex_name = 'u')
+    VelocityState.add_variable('v', long_name = 'v velocity component', units='m/s', latex_name = 'v')
+    VelocityState.add_variable('w', long_name = 'w velocity component', units='m/s', latex_name = 'w', loc='z', bcs='value zero')
 
     # Set up the thermodynamics class
     Kine = Kinematics.Kinematics(ModelGrid, Ref, VelocityState, DiagnosticState)

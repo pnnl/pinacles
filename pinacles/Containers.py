@@ -243,21 +243,59 @@ class ModelState:
         for var in self._dofs:
             if  not 'ff' in  var:  #Avoid SBM Bins
                 if self._loc[var] != 'z':
-                    profiles_grp.createVariable(var, np.double, dimensions=('time', 'z',))
-                    profiles_grp.createVariable(var + '_squared', np.double, dimensions=('time', 'z',))
-                    profiles_grp.createVariable(var + '_min', np.double, dimensions=('time', 'z',))
-                    profiles_grp.createVariable(var + '_max', np.double, dimensions=('time', 'z',))
+                    v = profiles_grp.createVariable(var, np.double, dimensions=('time', 'z',))
+                    v.units = self._units[var]
+                    v.long_name = self._long_names[var]
+                    v.standard_name = '\bar{' + self._latex_names[var] + '}'
+
+                    v = profiles_grp.createVariable(var + '_squared', np.double, dimensions=('time', 'z',))
+                    v.units = '{' + self._units[var] + '}^2'
+                    v.long_name = self._long_names[var] + ' mean of squared'
+                    v.standard_name = self._latex_names[var]
+
+                    v = profiles_grp.createVariable(var + '_min', np.double, dimensions=('time', 'z',))
+                    v.units = self._units[var]
+                    v.long_name = 'minimum '+ self._long_names[var]
+                    v.standard_name = 'min{' + self._latex_names[var] + '}'
+
+                    v = profiles_grp.createVariable(var + '_max', np.double, dimensions=('time', 'z',))
+                    v.units = self._units[var]
+                    v.long_name = 'maximum '+ self._long_names[var]
+                    v.standard_name = 'max{' + self._latex_names[var] + '}'
+
                 else:
-                    profiles_grp.createVariable(var, np.double, dimensions=('time', 'z_edge',))
-                    profiles_grp.createVariable(var + '_squared', np.double, dimensions=('time', 'z_edge',))
-                    profiles_grp.createVariable(var + '_min', np.double, dimensions=('time', 'z_edge'))
-                    profiles_grp.createVariable(var + '_max', np.double, dimensions=('time', 'z_edge'))
+                    v = profiles_grp.createVariable(var, np.double, dimensions=('time', 'z_edge',))
+                    v.units = self._units[var]
+                    v.long_name = self._long_names[var]
+                    v.standard_name = '\bar{' + self._latex_names[var] + '}'
+
+                    v = profiles_grp.createVariable(var + '_squared', np.double, dimensions=('time', 'z_edge',))
+                    v.units = '{' + self._units[var] + '}^2'
+                    v.long_name = self._long_names[var] + ' mean of squared'
+                    v.standard_name = '\bar{' + self._latex_names[var] + '^2}'
+
+                    v = profiles_grp.createVariable(var + '_min', np.double, dimensions=('time', 'z_edge'))
+                    v.units = self._units[var]
+                    v.long_name = 'minimum '+ self._long_names[var]
+                    v.standard_name = 'min{' + self._latex_names[var] + '}'
+
+                    v = profiles_grp.createVariable(var + '_max', np.double, dimensions=('time', 'z_edge'))
+                    v.units = self._units[var]
+                    v.long_name = 'maximum '+ self._long_names[var]
+                    v.standard_name = 'max{' + self._latex_names[var] + '}'
 
         #Now loop over variables createing domain max/min timeseries for each
         for var in self._dofs:
             if  not 'ff' in  var: #Avoid SBM Bins
-                timeseries_grp.createVariable(var + '_max', np.double, dimensions=('time',))
-                timeseries_grp.createVariable(var + '_min', np.double, dimensions=('time',))
+                v = timeseries_grp.createVariable(var + '_max', np.double, dimensions=('time',))
+                v.units = self._units[var]
+                v.long_name = 'minimum '+ self._long_names[var]
+                v.standard_name = 'min{' + self._latex_names[var] + '}'
+
+                v = timeseries_grp.createVariable(var + '_min', np.double, dimensions=('time',))
+                v.units = self._units[var]
+                v.long_name = 'maximum '+ self._long_names[var]
+                v.standard_name = 'max{' + self._latex_names[var] + '}'
 
         return
 

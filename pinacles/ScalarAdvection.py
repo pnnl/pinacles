@@ -332,12 +332,23 @@ class ScalarWENO5(ScalarAdvectionBase):
     def io_initialize(self, this_grp):
         profiles_grp = this_grp['profiles']
         for var in self._ScalarState.names:
-            profiles_grp.createVariable('w' + var + '_resolved', np.double, dimensions=('time', 'z',))
+            if 'ff' in var:
+                continue
+            v = profiles_grp.createVariable('w' + var + '_resolved', np.double, dimensions=('time', 'z',))
+            v.long_name = 'Resolved flux of ' + var
+            v.units = 'm s^{-1} ' + self._ScalarState.get_units(var)
+            v.standard_name = 'w ' + self._ScalarState._latex_names[var]
 
         #Add the thetali flux
-        profiles_grp.createVariable('w' + 'T' + '_resolved', np.double, dimensions=('time', 'z',))
-        profiles_grp.createVariable('w' + 'thetali' + '_resolved', np.double, dimensions=('time', 'z',))
+        v = profiles_grp.createVariable('w' + 'T' + '_resolved', np.double, dimensions=('time', 'z',))
+        v.long_name = 'Resolved flux of temperature'
+        v.units = 'm s^{-1} K'
+        v.standard_name = 'wT'
 
+        v = profiles_grp.createVariable('w' + 'thetali' + '_resolved', np.double, dimensions=('time', 'z',))
+        v.long_name = 'Resolved flux of liquid-ice potential temperature'
+        v.units = 'm s^{-1} K'
+        v.standard_name = 'w \theta_{li}'
 
         return
 

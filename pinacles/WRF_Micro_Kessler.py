@@ -29,9 +29,9 @@ class MicroKessler(MicrophysicsBase):
 
         MicrophysicsBase.__init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
 
-        self._ScalarState.add_variable('qv')
-        self._ScalarState.add_variable('qc')
-        self._ScalarState.add_variable('qr')
+        self._ScalarState.add_variable('qv', long_name = 'water vapor mixing ratio', units='kg kg^{-1}', latex_name = 'q_v')
+        self._ScalarState.add_variable('qc', long_name = 'cloud water mixing ratio', units='kg kg^{-1}', latex_name = 'q_c')
+        self._ScalarState.add_variable('qr', long_name = 'rain water mixing ratio', units='kg kg^{-1}', latex_name = 'q_{r}')
 
         nhalo = self._Grid.n_halo
         self._our_dims = self._Grid.ngrid_local
@@ -129,20 +129,54 @@ class MicroKessler(MicrophysicsBase):
         profiles_grp = nc_grp['profiles']
         
         #Cloud fractions 
-        timeseries_grp.createVariable('CF', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('RF', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('LWP', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('RWP', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('VWP', np.double, dimensions=('time',))
+        v = timeseries_grp.createVariable('CF', np.double, dimensions=('time',))
+        v.long_name = 'Cloud Fraction'
+        v.standard_name = 'CF'
+        v.units = ''
+
+        v = timeseries_grp.createVariable('RF', np.double, dimensions=('time',))
+        v.long_name = 'Rain Fraction'
+        v.standard_name = 'RF'
+        v.units = ''
+
+        v = timeseries_grp.createVariable('LWP', np.double, dimensions=('time',))
+        v.long_name = 'Liquid Water Path'
+        v.standard_name = 'LWP'
+        v.units = 'kg/m^2'
+
+        v = timeseries_grp.createVariable('RWP', np.double, dimensions=('time',))
+        v.long_name = 'Rain Water Path'
+        v.standard_name = 'RWP'
+        v.units = 'kg/m^2'
+
+        v = timeseries_grp.createVariable('VWP', np.double, dimensions=('time',))
+        v.long_name = 'Water Vapor Path'
+        v.standard_name = 'VWP'
+        v.units = 'kg/m^2'
 
         #Precipitation
-        timeseries_grp.createVariable('RAINNC', np.double, dimensions=('time',))
+        v = timeseries_grp.createVariable('RAINNC', np.double, dimensions=('time',))
+        v.long_name = 'accumulated surface precip'
+        v.units = 'mm'
+        v.latex_name = 'rainnc'
+
         timeseries_grp.createVariable('RAINNCV', np.double, dimensions=('time',))
+        v.long_name = 'one time step accumulated surface precip'
+        v.units = 'mm'
+        v.latex_name = 'rainncv'
+
         timeseries_grp.createVariable('rain_rate', np.double, dimensions=('time',))
 
         #Now add cloud fraction and rain fraction profiles
-        profiles_grp.createVariable('CF', np.double, dimensions=('time', 'z',))
+        v = profiles_grp.createVariable('CF', np.double, dimensions=('time', 'z',))
+        v.long_name = 'Cloud Fraction'
+        v.standard_name = 'CF'
+        v.units = ''
+
         profiles_grp.createVariable('RF', np.double, dimensions=('time', 'z',))
+        v.long_name = 'Rain Fraction'
+        v.standard_name = 'RF'
+        v.units = ''
 
         return
 

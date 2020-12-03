@@ -27,15 +27,47 @@ class DiagnosticsClouds:
         timeseries_grp = this_grp['timeseries']
         profiles_grp = this_grp['profiles']
 
-        profiles_grp.createVariable('cloud_frac', np.double, dimensions=('time', 'z',))
-        profiles_grp.createVariable('core_frac', np.double, dimensions=('time', 'z',))
-        profiles_grp.createVariable('u_core', np.double, dimensions=('time', 'z',))
-        profiles_grp.createVariable('v_core', np.double, dimensions=('time', 'z',))
-        profiles_grp.createVariable('w_core', np.double, dimensions=('time', 'z',))
-        profiles_grp.createVariable('u_cloud', np.double, dimensions=('time', 'z',))
-        profiles_grp.createVariable('v_cloud', np.double, dimensions=('time', 'z',))
-        profiles_grp.createVariable('w_cloud', np.double, dimensions=('time', 'z',))
+        v = profiles_grp.createVariable('cloud_frac', np.double, dimensions=('time', 'z',))
+        v.long_name = 'Cloud fraction'
+        v.units = ''
+        v.standard_name = 'Cloud'
 
+        v = profiles_grp.createVariable('core_frac', np.double, dimensions=('time', 'z',))
+        v.long_name = 'Core fraction'
+        v.units = ''
+        v.standard_name = 'Core'
+
+        v = profiles_grp.createVariable('u_core', np.double, dimensions=('time', 'z',))
+        v.long_name = 'u velocity core conditional mean'
+        v.units = 'm/s'
+        v.standard_name = 'u_{core}'
+
+        v = profiles_grp.createVariable('v_core', np.double, dimensions=('time', 'z',))
+        v.long_name = 'v velocity core conditional mean'
+        v.units = 'm/s'
+        v.standard_name = 'v_{core}'
+
+
+        v = profiles_grp.createVariable('w_core', np.double, dimensions=('time', 'z',))
+        v.long_name = 'w velocity core conditional mean'
+        v.units = 'm/s'
+        v.standard_name = 'w_{core}'
+
+
+        v = profiles_grp.createVariable('u_cloud', np.double, dimensions=('time', 'z',))
+        v.long_name = 'u velocity cloud conditional mean'
+        v.units = 'm/s'
+        v.standard_name = 'u_{cloud}'
+
+        v = profiles_grp.createVariable('v_cloud', np.double, dimensions=('time', 'z',))
+        v.long_name = 'v velocity cloud conditional mean'
+        v.units = 'm/s'
+        v.standard_name = 'v_{cloud}'
+
+        v = profiles_grp.createVariable('w_cloud', np.double, dimensions=('time', 'z',))
+        v.long_name = 'w velocity cloud conditional mean'
+        v.units = 'm/s'
+        v.standard_name = 'w_{cloud}'
 
         return
 

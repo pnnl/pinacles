@@ -210,33 +210,63 @@ class ReferenceDry(ReferenceBase):
 
         nh = self._Grid.n_halo
         P0 = nc_ref_grp.createVariable('P0', np.double, dimensions=('z'))
+        P0.long_name = 'Reference state pressure at cell center'
+        P0.latex_name = 'P_0'
+        P0.units = 'Pa'
         P0[:] = self._P0[nh[2]:-nh[2]]
 
         P0_edge = nc_ref_grp.createVariable('P0_edge', np.double, dimensions=('z_edge'))
+        P0_edge.long_name = 'Reference state pressure at cell edge'
+        P0_edge.latex_name = 'P_0'
+        P0_edge.units = 'Pa'
         P0_edge[:] = self._P0_edge[nh[2]-1:-nh[2]]
 
         T0 = nc_ref_grp.createVariable('T0', np.double, dimensions=('z'))
+        T0.long_name = 'Reference state temperature at cell center'
+        T0.latex_name = 'T_0'
+        T0.units = 'K'
         T0[:] = self._T0[nh[2]:-nh[2]]
 
         T0_edge = nc_ref_grp.createVariable('T0_edge', np.double, dimensions=('z_edge'))
+        T0_edge.long_name = 'Reference state temperature at cell edge'
+        T0_edge.latex_name = 'T_0'
+        T0_edge.units = 'K'
         T0_edge[:] = self._T0_edge[nh[2]-1:-nh[2]]
 
         rho0 = nc_ref_grp.createVariable('rho0', np.double, dimensions=('z'))
+        rho0.long_name = 'Reference state density at cell center'
+        rho0.latex_name = '\rho_0'
+        rho0.units = 'kg m^{-3}'
         rho0[:] = self._rho0[nh[2]:-nh[2]]
 
         rho0_edge = nc_ref_grp.createVariable('rho0_edge', np.double, dimensions=('z_edge'))
+        rho0_edge.long_name = 'Reference state density at cell edge'
+        rho0_edge.latex_name = '\rho_0'
+        rho0_edge.units = 'kg m^{-3}'
         rho0_edge[:] = self._rho0_edge[nh[2]-1:-nh[2]]
 
         alpha0 = nc_ref_grp.createVariable('alpha0', np.double, dimensions=('z'))
+        alpha0.long_name = 'Reference state specific volume at cell center'
+        alpha0.latex_name = '\alpha_0'
+        alpha0.units = ' m^{3} kg^-1'
         alpha0[:] = self._alpha0[nh[2]:-nh[2]]
 
         alpha0_edge = nc_ref_grp.createVariable('alpha0_edge', np.double, dimensions=('z_edge'))
+        alpha0_edge.long_name = 'Reference state specific volume at cell edge'
+        alpha0_edge.latex_name = '\alpha_0'
+        alpha0_edge.units = ' m^{3} kg^-1'
         alpha0_edge[:] = self._alpha0_edge[nh[2]-1:-nh[2]]
 
         exner = nc_ref_grp.createVariable('exner', np.double, dimensions=('z'))
+        exner.long_name = 'Reference state exner function at cell center'
+        exner.latex_name = '\pi_0'
+        exner.units = ''
         exner[:] = self._exner[nh[2]:-nh[2]]
 
         exner_edge = nc_ref_grp.createVariable('exner_edge', np.double, dimensions=('z_edge'))
+        exner_edge.long_name = 'Reference state exner function at cell edge'
+        exner_edge.latex_name = '\pi_0'
+        exner_edge.units = ''
         exner_edge[:] = self._exner_edge[nh[2]-1:-nh[2]]
 
         return
