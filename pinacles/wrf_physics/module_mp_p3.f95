@@ -87,7 +87,7 @@
 
 !==================================================================================================!
 
- subroutine p3_init(lookup_file_dir,nCat,model,stat,abort_on_err)
+ subroutine p3_init(lookup_file_dir,nCat,model,stat,abort_on_err, aero_inv_rm1, aero_sig1, aero_nanew1, aero_inv_rm2, aero_sig2, aero_nanew2)
 
 !------------------------------------------------------------------------------------------!
 ! This subroutine initializes all physical constants and parameters needed by the P3       !
@@ -106,6 +106,10 @@
  integer,       intent(inout)           :: stat                       !return status of subprogram
  logical,       intent(in)            :: abort_on_err               !abort when an error is encountered [.false.]
  character(len=*), intent(in)         :: model                      !driving model
+
+
+ real,       intent(in) :: aero_inv_rm1, aero_sig1, aero_nanew1
+ real,       intent(in) :: aero_inv_rm2, aero_sig2, aero_nanew2
 
 ! Local variables and parameters:
  logical, save                :: is_init = .false.
@@ -244,16 +248,16 @@
 ! inv_bact = (map*rhow)/(vi*osm*epsm*mw*rhoa)    *** to replace /bact **
 
 ! mode 1
- inv_rm1 = 2.37064444e+07  ! inverse aerosol mean size (m-1)
- sig1    = 2.75840200e+00  ! aerosol standard deviation
- nanew1  = 1.36121337e+08  ! aerosol number mixing ratio (kg-1)
+ inv_rm1 = aero_inv_rm1!2.37064444e+07  ! inverse aerosol mean size (m-1)
+ sig1    = aero_sig1 !2.75840200e+00  ! aerosol standard deviation
+ nanew1  = aero_nanew1 !1.36121337e+08  ! aerosol number mixing ratio (kg-1)
  f11     = 0.5*exp(2.5*(log(sig1))**2)
  f21     = 1. + 0.25*log(sig1)
 
 ! mode 2
- inv_rm2 = 8.61501056e+07  ! inverse aerosol mean size (m-1)
- sig2    = 1.29753603e+00  ! aerosol standard deviation
- nanew2  = 1.17744602e+08  ! aerosol number mixing ratio (kg-1)
+ inv_rm2 = aero_inv_rm2 !8.61501056e+07  ! inverse aerosol mean size (m-1)
+ sig2    = aero_sig2 !1.29753603e+00  ! aerosol standard deviation
+ nanew2  = aero_nanew2 !1.17744602e+08  ! aerosol number mixing ratio (kg-1)
  f12     = 0.5*exp(2.5*(log(sig2))**2)
  f22     = 1. + 0.25*log(sig2)
 
