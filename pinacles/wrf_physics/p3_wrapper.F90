@@ -3,14 +3,17 @@ module p3_wrapper
     use iso_c_binding, only: c_double, c_int, C_CHAR, C_NULL_CHAR, c_ptr, c_f_pointer
 contains
 
-subroutine c_p3_init(dir_path_c, dir_path_len, nCat) bind(C)
+subroutine c_p3_init(dir_path_c, dir_path_len, nCat, &
+                     aero_inv_rm1, aero_sig1, aero_nanew1, &
+                     aero_inv_rm2, aero_sig2, aero_nanew2) bind(C)
 
 
     character(kind=c_char),  intent(in)  :: dir_path_c(100)
     character(256) :: dir_path = ''
     integer, value, intent(in) :: dir_path_len
     integer, value, intent(in) :: nCat
-    character(len=256) :: lookup_file_dir = './'
+    real, value, intent(in) :: aero_inv_rm1, aero_sig1, aero_nanew1
+    real, value, intent(in) :: aero_inv_rm2, aero_sig2, aero_nanew2
 
     integer :: stat
     character(8) :: model = 'PINACLES'
@@ -23,7 +26,9 @@ subroutine c_p3_init(dir_path_c, dir_path_len, nCat) bind(C)
     end do
 
     ! Call the fortran subroutine
-    call p3_init(dir_path , nCat, model, stat, abort_on_error)
+    call p3_init(dir_path , nCat, model, stat, abort_on_error, &
+                aero_inv_rm1, aero_sig1, aero_nanew1, &
+                aero_inv_rm2, aero_sig2, aero_nanew2)
 
 end subroutine
 

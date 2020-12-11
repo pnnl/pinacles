@@ -16,7 +16,9 @@ class P3:
         self._lib_p3= self.ffi.dlopen(os.path.join(path, 'lib_p3.so'))
 
         # Define the interfaces
-        self.ffi.cdef("void c_p3_init(char dir_path_c[], int dir_path_len, int nCat);", override=True)
+        self.ffi.cdef("void c_p3_init(char dir_path_c[], int dir_path_len, int nCat, \
+            double aero_inv_rm1, double aero_sig1, double aero_nanew1, \
+            double aero_inv_rm2, double aero_sig2, double aero_nanew2);", override=True)
 
         self.ffi.cdef("void c_p3_main(int ids, int ide, int jds, int jde, int kds, int kde, \
             int ims, int ime, int jms, int jme, int kms, int kme, \
@@ -32,12 +34,16 @@ class P3:
 
         return
 
-    def init(self, nCat=1):
+    def init(self, nCat=1, 
+            aero_inv_rm1=2.e+7, aero_sig1=2.0, aero_nanew1=300.e6,
+            aero_inv_rm2=7.6923076e+5, aero_sig2=2.5, aero_nanew2=0):
 
         path = str(pathlib.Path(__file__).parent.absolute())
         path = path.encode('ascii')
 
-        self._lib_p3.c_p3_init(self.ffi.new("char[]", path), len(path), nCat)
+        self._lib_p3.c_p3_init(self.ffi.new("char[]", path), len(path), nCat,
+            aero_inv_rm1, aero_sig1, aero_nanew1, 
+            aero_inv_rm2, aero_sig2, aero_nanew2)
 
         return
 
