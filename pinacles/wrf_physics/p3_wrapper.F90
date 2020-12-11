@@ -3,14 +3,15 @@ module p3_wrapper
     use iso_c_binding, only: c_double, c_int, C_CHAR, C_NULL_CHAR, c_ptr, c_f_pointer
 contains
 
-subroutine c_p3_init(dir_path_c, dir_path_len) bind(C)
+subroutine c_p3_init(dir_path_c, dir_path_len, nCat) bind(C)
 
 
     character(kind=c_char),  intent(in)  :: dir_path_c(100)
     character(256) :: dir_path = ''
     integer, value, intent(in) :: dir_path_len
+    integer, value, intent(in) :: nCat
     character(len=256) :: lookup_file_dir = './'
-    integer :: nCat = 1 
+
     integer :: stat
     character(8) :: model = 'PINACLES'
     logical :: abort_on_error = .True.

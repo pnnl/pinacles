@@ -10,7 +10,7 @@ class P3:
         self._lib_p3= self.ffi.dlopen('./lib_p3.so')
 
         # Define the interfaces
-        self.ffi.cdef("void c_p3_init(char dir_path_c[], int dir_path_len);", override=True)
+        self.ffi.cdef("void c_p3_init(char dir_path_c[], int dir_path_len, int nCat);", override=True)
 
         self.ffi.cdef("void c_p3_main(int ids, int ide, int jds, int jde, int kds, int kde, \
             int ims, int ime, int jms, int jme, int kms, int kme, \
@@ -26,16 +26,12 @@ class P3:
 
         return
 
-    def init(self):
-        #x = self.ffi.cast("char*", b"hello world"[0])
-        #x = self.ffi.cast("char *", "hh")
-        #keep_alive = []
+    def init(self, nCat=1):
+
         path = './'
         path = path.encode('ascii')
 
-        self._lib_p3.c_p3_init(self.ffi.new("char[]", path), len(path))
-
-        import sys; sys.exit()
+        self._lib_p3.c_p3_init(self.ffi.new("char[]", path), len(path), nCat)
 
         return
 
