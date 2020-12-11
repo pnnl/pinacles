@@ -12,22 +12,32 @@ class MicroP3(MicrophysicsBase):
 
             MicrophysicsBase.__init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
 
-            try:
-                lookup_file_dir = namelist['microphysics']['lookup_file_dir']
-            except:
-                if MPI.COMM_WORLD.Get_rank() == 0:
-                    print('Need to provide location of P3 lookup files in namelist')
-            
-            try:
-                self._nc = namelist['microphyics']['Nc']
-            except:
-                self._nc = 70.0e6
-
 
             self._p3_cffi = p3_via_cffi.P3()
-            self._p3_cffi.init()
+            try:
+                aero_in = namelist['microphysics']['aero']
+                inv_rm1 = aero_in['inv_rm1']
+                sig1 = aero_in['sig1']
+                nanew1 = aero_in['nanew1 ']
 
-            #p3.module_mp_p3.p3_init(lookup_file_dir, nCat, model, stat, abort_on_err)
+                inv_rm2 = aero_in['inv_rm2']
+                sig2 = aero_in['sig2']
+                nanew2 = aero_in['nanew2']
+
+                self._p3_cffi.init(aero_inv_rm1 = inv_rm1, aero_sig1=sig1, aero_nanew1=nanew1,
+                    aero_inv_rm2 = inv_rm2, aero_sig2=sig2, aero_nanew2=nanew2)
+
+                if MPI.COMM_WORLD.Get_rank() == 0:
+                    print('\t Initialized with custom aerosol distn')
+                    print(inv_rm1, sig1, nanew1)
+                    print(inv_rm2, sig2, nanew2)
+            
+            except:
+                self._p3_cffi.init()
+                
+                if MPI.COMM_WORLD.Get_rank() == 0:
+                    print('\t Initialized with default aerosol distn')
+
 
             #Allocate microphysical/thermodyamic variables
             self._ScalarState.add_variable('qv', long_name = 'water vapor mixing ratio', units='kg kg^{-1}', latex_name = 'q_v')
