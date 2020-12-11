@@ -127,7 +127,6 @@
 !#endif
 
  !------------------------------------------------------------------------------------------!
-
  lookup_file_1 = trim(lookup_file_dir)//'/'//'p3_lookup_table_1.dat-v'//trim(version_intended_table_1)
  lookup_file_2 = trim(lookup_file_dir)//'/'//'p3_lookup_table_2.dat-v'//trim(version_intended_table_2)
 
@@ -691,6 +690,7 @@ END subroutine p3_init
 
    !------------------------------------------------------------------------------------------!
 
+
    scpf_on=.false. ! cloud fraction version not used with WRF
    scpf_pfrac=0.   ! dummy variable (not used), set to 0
    scpf_resfact=0. ! dummy variable (not used), set to 0
@@ -698,7 +698,6 @@ END subroutine p3_init
    log_predictNc=.false.
    if (present(nc_3d)) log_predictNc = .true.
    do j = jts,jte      ! j loop (north-south)
-
       if (log_predictNc) then
          nc(its:ite,kts:kte)=nc_3d(its:ite,kts:kte,j)
      ! if Nc is specified then set nc array to zero
@@ -1800,6 +1799,7 @@ END subroutine p3_init
 ! to be added as namelist parameters (future)
  logical, parameter :: debug_ABORT  = .true.  !.true. will result in forced abort in s/r 'check_values'
 
+
 !-----------------------------------------------------------------------------------!
 !  End of variables/parameters declarations
 !-----------------------------------------------------------------------------------!
@@ -1931,6 +1931,8 @@ END subroutine p3_init
  t_old   = th_old*tmparr1    !compute temperature from theta (value at beginning of model time step)
  qv      = max(qv,0.)        !clip water vapor to prevent negative values passed in (beginning of microphysics)
 !==
+
+
 
 !-----------------------------------------------------------------------------------!
  i_loop_main: do i = its,ite  ! main i-loop (around the entire scheme)

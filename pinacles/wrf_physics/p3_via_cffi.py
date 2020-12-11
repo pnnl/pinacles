@@ -1,13 +1,19 @@
 from cffi import FFI
 import numpy as np
-import sys
+import os
+import pathlib
+
 class P3:
 
     def __init__(self):
         self.ffi = FFI()
 
+
+        path = pathlib.Path(__file__).parent.absolute()
+
+
         # Grab the shared library we are building a ffi for
-        self._lib_p3= self.ffi.dlopen('./lib_p3.so')
+        self._lib_p3= self.ffi.dlopen(os.path.join(path, 'lib_p3.so'))
 
         # Define the interfaces
         self.ffi.cdef("void c_p3_init(char dir_path_c[], int dir_path_len, int nCat);", override=True)
@@ -28,7 +34,7 @@ class P3:
 
     def init(self, nCat=1):
 
-        path = './'
+        path = str(pathlib.Path(__file__).parent.absolute())
         path = path.encode('ascii')
 
         self._lib_p3.c_p3_init(self.ffi.new("char[]", path), len(path), nCat)
@@ -46,7 +52,6 @@ class P3:
             nc_3d, pii, p, dz, w,
             RAINNC, RAINNCV ,SR, SNOWNC, SNOWNCV,
             dt, itimestep, n_iceCat):
-
 
         self._lib_p3.c_p3_main(
             ids, ide, jds, jde, kds, kde,
@@ -81,7 +86,7 @@ def main():
     ids = 1; jds = 1; kds = 1
     ide = 1; jde = 1; kde = 1
     ims=1; jms = 1; kms = 1
-    ime=6; jme=6; kme=64
+    ime=64; jme=64; kme=100
     its=1; jts=1; kts=1
     ite=ime; jte=jme; kte=kme
 

@@ -52,7 +52,7 @@ real(c_double), dimension(ims:ime, kms:kme, jms:jme), intent(inout):: th_3d,qv_3
 real(c_double), dimension(ims:ime, kms:kme, jms:jme), intent(inout):: qi1_3d,qni1_3d,qir1_3d,    &
 qib1_3d
 
-real(c_double), dimension(ims:ime, kms:kme, jms:jme), intent(inout), optional :: nc_3d
+real(c_double), dimension(ims:ime, kms:kme, jms:jme), intent(inout) :: nc_3d
 
 real(c_double), dimension(ims:ime, kms:kme, jms:jme), intent(in) :: pii, p, dz, w
 
@@ -60,9 +60,6 @@ real(c_double), dimension(ims:ime, jms:jme), intent(inout) :: RAINNC,RAINNCV,SR,
 real(c_double), value, intent(in)    :: dt
 integer(c_int), value, intent(in) :: itimestep
 integer(c_int), value, intent(in) :: n_iceCat
-
-
-!print  *,  !kme, dt, itimestep, n_iceCat
 
 call mp_p3_wrapper_wrf(th_3d,qv_3d,qc_3d,qr_3d,qnr_3d,                            &
                               th_old_3d,qv_old_3d,                                       &

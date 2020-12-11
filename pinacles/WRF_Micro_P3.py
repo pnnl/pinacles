@@ -1,6 +1,5 @@
 from pinacles.Microphysics import MicrophysicsBase, water_path, water_fraction, water_fraction_profile
-from pinacles.wrf_physics import kessler
-from pinacles.wrf_physics import p3
+from pinacles.wrf_physics import p3_via_cffi
 from pinacles import UtilitiesParallel
 from pinacles.WRFUtil import to_wrf_order, wrf_tend_to_our_tend, wrf_theta_tend_to_our_tend, to_our_order
 from pinacles import parameters
@@ -23,14 +22,12 @@ class MicroP3(MicrophysicsBase):
                 self._nc = namelist['microphyics']['Nc']
             except:
                 self._nc = 70.0e6
-                
-            nCat = 1
-            stat = 1
-            abort_on_err = False
-            model = 'PINACLES'
 
 
-            p3.module_mp_p3.p3_init(lookup_file_dir, nCat, model, stat, abort_on_err)
+            self._p3_cffi = p3_via_cffi.P3()
+            self._p3_cffi.init()
+
+            #p3.module_mp_p3.p3_init(lookup_file_dir, nCat, model, stat, abort_on_err)
 
             #Allocate microphysical/thermodyamic variables
             self._ScalarState.add_variable('qv', long_name = 'water vapor mixing ratio', units='kg kg^{-1}', latex_name = 'q_v')
@@ -52,7 +49,7 @@ class MicroP3(MicrophysicsBase):
             self._wrf_dims = (self._our_dims[0] -2*nhalo[0], self._our_dims[2]-2*nhalo[2], self._our_dims[1]-2*nhalo[1])
 
             self._itimestep = 0
-            self._RAINNC = np.zeros((self._wrf_dims[0], self._wrf_dims[2]), order='F', dtype=np.float32)
+            self._RAINNC = np.zeros((self._wrf_dims[0], self._wrf_dims[2]), order='F', dtype=np.double)
             self._SR = np.zeros_like(self._RAINNC)
             self._RAINNCV =  np.zeros_like(self._RAINNC)
             self._SNOWNC = np.zeros_like(self._RAINNC)
@@ -87,7 +84,7 @@ class MicroP3(MicrophysicsBase):
         p0 = self._Ref.p0
         nhalo = self._Grid.n_halo
 
-        rho_wrf = np.empty(self._wrf_dims, order='F',dtype=np.float32)
+        rho_wrf = np.empty(self._wrf_dims, order='F',dtype=np.double)
         exner_wrf = np.empty_like(rho_wrf)
         p0_wrf = np.empty_like(rho_wrf)
         T_wrf = np.empty_like(rho_wrf)
@@ -153,16 +150,29 @@ class MicroP3(MicrophysicsBase):
         n_iceCat = 1
         #nc_wrf[:,:,:] = self._nc
         #T_wrf,qv_wrf,qc_wrf,qr_wrf,qnr_wrf)
-        p3.module_mp_p3.mp_p3_wrapper_wrf(T_wrf,qv_wrf,qc_wrf,qr_wrf,qnr_wrf,
-                                th_old, qv_old,
-                                exner_wrf, p0_wrf, dz_wrf, w_wrf, dt, self._itimestep,
-                                self._RAINNC,self._RAINNCV,self._SR,self._SNOWNC,self._SNOWNCV,n_iceCat,
-                                ids, ide, jds, jde, kds, kde ,
-                                ims, ime, jms, jme, kms, kme ,
-                                its, ite, jts, jte, kts, kte ,
-                                reflectivity_wrf,diag_effc_3d_wrf,diag_effi,
-                                diag_vmi,diag_di,diag_rhopo,
-                                qi1_wrf,qni1_wrf,qir1_wrf,qib1_wrf,nc_wrf)
+        #p3.module_mp_p3.mp_p3_wrapper_wrf(T_wrf,qv_wrf,qc_wrf,qr_wrf,qnr_wrf,
+        #                        th_old, qv_old,
+        #                        exner_wrf, p0_wrf, dz_wrf, w_wrf, dt, self._itimestep,
+        #                        self._RAINNC,self._RAINNCV,self._SR,self._SNOWNC,self._SNOWNCV,n_iceCat,
+        #                        ids, ide, jds, jde, kds, kde ,
+        #                        ims, ime, jms, jme, kms, kme ,
+        #                        its, ite, jts, jte, kts, kte ,
+        #                        reflectivity_wrf,diag_effc_3d_wrf,diag_effi,
+        #                        diag_vmi,diag_di,diag_rhopo,
+        #                        qi1_wrf,qni1_wrf,qir1_wrf,qib1_wrf,nc_wrf)
+
+        self._p3_cffi.update( ids, ide, jds, jde, kds, kde ,
+                   ims, ime, jms, jme, kms, kme ,
+                   its, ite, jts, jte, kts, kte ,
+                   T_wrf, qv_wrf, qc_wrf, qr_wrf,
+                   qnr_wrf, reflectivity_wrf, diag_effc_3d_wrf,
+                   diag_effi, diag_vmi, diag_di,
+                   diag_rhopo, th_old, qv_old,
+                   qi1_wrf, qni1_wrf, qir1_wrf, qib1_wrf,
+                   nc_wrf, exner_wrf, p0_wrf, dz_wrf, w_wrf,
+                   self._RAINNC,self._RAINNCV,self._SR,self._SNOWNC,self._SNOWNCV,
+                   dt, self._itimestep, n_iceCat
+                   )
 
 
         #Update prognosed fields
@@ -286,7 +296,7 @@ class MicroP3(MicrophysicsBase):
         if my_rank == 0:
             timeseries_grp = nc_grp['timeseries']
             profiles_grp = nc_grp['profiles']
-            
+
             timeseries_grp['CF'][-1] = cf
             timeseries_grp['RF'][-1] = rf
             timeseries_grp['LWP'][-1] = lwp
