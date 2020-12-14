@@ -176,18 +176,34 @@ class MicroP3(MicrophysicsBase):
 
         n_iceCat = 1
 
-        self._p3_cffi.update( ids, ide, jds, jde, kds, kde ,
-                   ims, ime, jms, jme, kms, kme ,
-                   its, ite, jts, jte, kts, kte ,
-                   T_wrf, qv_wrf, qc_wrf, qr_wrf,
-                   qnr_wrf, reflectivity_wrf, diag_effc_3d_wrf,
-                   diag_effi, diag_vmi, diag_di,
-                   diag_rhopo, th_old, qv_old,
-                   qi1_wrf, qni1_wrf, qir1_wrf, qib1_wrf,
-                   nc_wrf, exner_wrf, p0_wrf, dz_wrf, w_wrf,
-                   self._RAINNC,self._RAINNCV,self._SR,self._SNOWNC,self._SNOWNCV,
-                   dt, self._itimestep, n_iceCat
-                   )
+
+
+        if self._rain_moment == 2:
+            self._p3_cffi.update( ids, ide, jds, jde, kds, kde ,
+                    ims, ime, jms, jme, kms, kme ,
+                    its, ite, jts, jte, kts, kte ,
+                    T_wrf, qv_wrf, qc_wrf, qr_wrf,
+                    qnr_wrf, reflectivity_wrf, diag_effc_3d_wrf,
+                    diag_effi, diag_vmi, diag_di,
+                    diag_rhopo, th_old, qv_old,
+                    qi1_wrf, qni1_wrf, qir1_wrf, qib1_wrf,
+                    nc_wrf, exner_wrf, p0_wrf, dz_wrf, w_wrf,
+                    self._RAINNC,self._RAINNCV,self._SR,self._SNOWNC,self._SNOWNCV,
+                    dt, self._itimestep, n_iceCat
+                    )
+        else:
+            self._p3_cffi.update_1mom( ids, ide, jds, jde, kds, kde ,
+                    ims, ime, jms, jme, kms, kme ,
+                    its, ite, jts, jte, kts, kte ,
+                    T_wrf, qv_wrf, qc_wrf, qr_wrf,
+                    qnr_wrf, reflectivity_wrf, diag_effc_3d_wrf,
+                    diag_effi, diag_vmi, diag_di,
+                    diag_rhopo, th_old, qv_old,
+                    qi1_wrf, qni1_wrf, qir1_wrf, qib1_wrf,
+                    exner_wrf, p0_wrf, dz_wrf, w_wrf,
+                    self._RAINNC,self._RAINNCV,self._SR,self._SNOWNC,self._SNOWNCV,
+                    dt, self._itimestep, n_iceCat
+                    )
 
 
         #Update prognosed fields

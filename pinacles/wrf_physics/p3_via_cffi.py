@@ -73,7 +73,6 @@ class P3:
             RAINNC, RAINNCV ,SR, SNOWNC, SNOWNCV,
             dt, itimestep, n_iceCat):
 
-        print('Calling 2-moment rain P3!')
         self._lib_p3.c_p3_main(
             ids, ide, jds, jde, kds, kde,
             ims, ime, jms, jme, kms, kme,
@@ -87,7 +86,21 @@ class P3:
             self.as_pointer(RAINNC), self.as_pointer(RAINNCV) ,self.as_pointer(SR), self.as_pointer(SNOWNC), self.as_pointer(SNOWNCV),
             dt, itimestep, n_iceCat)
 
-        print('Calling 1-moment rain P3!')
+        return
+
+
+    def update_1mom(self, ids, ide, jds, jde, kds, kde,
+            ims, ime, jms, jme, kms, kme,
+            its, ite, jts, jte, kts, kte,
+            th_3d, qv_3d, qc_3d, qr_3d,
+            qnr_3d, diag_zdbz_3d, diag_effc_3d,
+            diag_effi_3d, diag_vmi_3d, diag_di_3d,
+            diag_rhopo_3d, th_old_3d, qv_old_3d,
+            qi1_3d, qni1_3d, qir1_3d, qib1_3d,
+            pii, p, dz, w,
+            RAINNC, RAINNCV ,SR, SNOWNC, SNOWNCV,
+            dt, itimestep, n_iceCat):
+
         self._lib_p3.c_p3_main_1mom(
             ids, ide, jds, jde, kds, kde,
             ims, ime, jms, jme, kms, kme,
@@ -101,7 +114,6 @@ class P3:
             self.as_pointer(RAINNC), self.as_pointer(RAINNCV) ,self.as_pointer(SR), self.as_pointer(SNOWNC), self.as_pointer(SNOWNCV),
             dt, itimestep, n_iceCat)
 
-        return
 
     # function creates cdata variables of a type "double *" from a numpy array
     # additionally checks if the array is contiguous
