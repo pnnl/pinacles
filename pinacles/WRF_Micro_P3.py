@@ -28,7 +28,7 @@ class MicroP3(MicrophysicsBase):
                 self._nccnst = namelist['microphysics']['nccnst']
             except:
                 pass
-            if MPI.COMM_WORLD.Get_rank() == 0:
+            if MPI.COMM_WORLD.Get_rank() == 0 and self._rain_moment==1:
                 print('\t\tP3: Using fixed cloud droplet concentration of: ', str(self._nccnst), 'm-3.' )
 
             self._p3_cffi = p3_via_cffi.P3()
