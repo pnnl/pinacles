@@ -18,8 +18,9 @@ class P3:
         # Define the interfaces
         self.ffi.cdef("void c_p3_init(char dir_path_c[], int dir_path_len, int nCat, \
             double aero_inv_rm1, double aero_sig1, double aero_nanew1, \
-            double aero_inv_rm2, double aero_sig2, double aero_nanew2);", override=True)
+            double aero_inv_rm2, double aero_sig2, double aero_nanew2, double nccnst_in);", override=True)
 
+        #This function is for the 1-moment version of p3
         self.ffi.cdef("void c_p3_main(int ids, int ide, int jds, int jde, int kds, int kde, \
             int ims, int ime, int jms, int jme, int kms, int kme, \
             int its, int ite, int jts, int jte, int kts, int kte, \
@@ -32,18 +33,31 @@ class P3:
             double RAINNC[], double RAINNCV[] ,double SR[], double SNOWNC[],double SNOWNCV[], \
             double dt, int itimestep, int n_iceCat  ); ", override=True)
 
+        #This function is for the 1-moment version of p3
+        self.ffi.cdef("void c_p3_main_1mom(int ids, int ide, int jds, int jde, int kds, int kde, \
+            int ims, int ime, int jms, int jme, int kms, int kme, \
+            int its, int ite, int jts, int jte, int kts, int kte, \
+            double th_3d[], double qv_3d[], double qc_3d[], double qr_3d[], \
+            double qnr_3d[], double diag_zdbz_3d[], double diag_effc_3d[], \
+            double diag_effi_3d[], double diag_vmi_3d[], double diag_di_3d[], \
+            double diag_rhopo_3d[], double th_old_3d[], double qv_old_3d[], \
+            double qi1_3d[], double qni1_3d[], double qir1_3d[], double qib1_3d[], \
+            double pii[], double p[], double dz[], double w[], \
+            double RAINNC[], double RAINNCV[] ,double SR[], double SNOWNC[],double SNOWNCV[], \
+            double dt, int itimestep, int n_iceCat  ); ", override=True)
+
         return
 
     def init(self, nCat=1, 
             aero_inv_rm1=2.e+7, aero_sig1=2.0, aero_nanew1=300.e6,
-            aero_inv_rm2=7.6923076e+5, aero_sig2=2.5, aero_nanew2=0):
+            aero_inv_rm2=7.6923076e+5, aero_sig2=2.5, aero_nanew2=0, nccnst_in=200e6):
 
         path = str(pathlib.Path(__file__).parent.absolute())
         path = path.encode('ascii')
 
         self._lib_p3.c_p3_init(self.ffi.new("char[]", path), len(path), nCat,
             aero_inv_rm1, aero_sig1, aero_nanew1, 
-            aero_inv_rm2, aero_sig2, aero_nanew2)
+            aero_inv_rm2, aero_sig2, aero_nanew2, nccnst_in)
 
         return
 
@@ -59,6 +73,7 @@ class P3:
             RAINNC, RAINNCV ,SR, SNOWNC, SNOWNCV,
             dt, itimestep, n_iceCat):
 
+        print('Calling 2-moment rain P3!')
         self._lib_p3.c_p3_main(
             ids, ide, jds, jde, kds, kde,
             ims, ime, jms, jme, kms, kme,
@@ -69,6 +84,20 @@ class P3:
             self.as_pointer(diag_rhopo_3d), self.as_pointer(th_old_3d), self.as_pointer(qv_old_3d),
             self.as_pointer(qi1_3d), self.as_pointer(qni1_3d), self.as_pointer(qir1_3d), self.as_pointer(qib1_3d),
             self.as_pointer(nc_3d), self.as_pointer(pii), self.as_pointer(p), self.as_pointer(dz), self.as_pointer(w),
+            self.as_pointer(RAINNC), self.as_pointer(RAINNCV) ,self.as_pointer(SR), self.as_pointer(SNOWNC), self.as_pointer(SNOWNCV),
+            dt, itimestep, n_iceCat)
+
+        print('Calling 1-moment rain P3!')
+        self._lib_p3.c_p3_main_1mom(
+            ids, ide, jds, jde, kds, kde,
+            ims, ime, jms, jme, kms, kme,
+            its, ite, jts, jte, kts, kte,
+            self.as_pointer(th_3d), self.as_pointer(qv_3d), self.as_pointer(qc_3d), self.as_pointer(qr_3d),
+            self.as_pointer(qnr_3d), self.as_pointer(diag_zdbz_3d), self.as_pointer(diag_effc_3d),
+            self.as_pointer(diag_effi_3d), self.as_pointer(diag_vmi_3d), self.as_pointer(diag_di_3d),
+            self.as_pointer(diag_rhopo_3d), self.as_pointer(th_old_3d), self.as_pointer(qv_old_3d),
+            self.as_pointer(qi1_3d), self.as_pointer(qni1_3d), self.as_pointer(qir1_3d), self.as_pointer(qib1_3d),
+            self.as_pointer(pii), self.as_pointer(p), self.as_pointer(dz), self.as_pointer(w),
             self.as_pointer(RAINNC), self.as_pointer(RAINNCV) ,self.as_pointer(SR), self.as_pointer(SNOWNC), self.as_pointer(SNOWNCV),
             dt, itimestep, n_iceCat)
 

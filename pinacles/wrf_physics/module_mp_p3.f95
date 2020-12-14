@@ -87,7 +87,7 @@
 
 !==================================================================================================!
 
- subroutine p3_init(lookup_file_dir,nCat,model,stat,abort_on_err, aero_inv_rm1, aero_sig1, aero_nanew1, aero_inv_rm2, aero_sig2, aero_nanew2)
+ subroutine p3_init(lookup_file_dir,nCat,model,stat,abort_on_err, aero_inv_rm1, aero_sig1, aero_nanew1, aero_inv_rm2, aero_sig2, aero_nanew2, nccnst_in)
 
 !------------------------------------------------------------------------------------------!
 ! This subroutine initializes all physical constants and parameters needed by the P3       !
@@ -110,6 +110,7 @@
 
  real,       intent(in) :: aero_inv_rm1, aero_sig1, aero_nanew1
  real,       intent(in) :: aero_inv_rm2, aero_sig2, aero_nanew2
+ real,       intent(in) :: nccnst_in
 
 ! Local variables and parameters:
  logical, save                :: is_init = .false.
@@ -170,7 +171,7 @@
  iparam = 3
 
 ! droplet concentration (m-3)
- nccnst = 200.e+6
+ nccnst = nccnst_in
 
 ! parameters for Seifert and Beheng (2001) autoconversion/accretion
  kc     = 9.44e+9
