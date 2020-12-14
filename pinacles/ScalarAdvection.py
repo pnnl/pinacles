@@ -358,6 +358,8 @@ class ScalarWENO5(ScalarAdvectionBase):
         my_rank = MPI.COMM_WORLD.Get_rank()
 
         for var in self._ScalarState.names:
+            if 'ff' in var:
+                continue
             flux_mean = UtilitiesParallel.ScalarAllReduce(self._flux_profiles[var]/npts)
 
             MPI.COMM_WORLD.barrier()

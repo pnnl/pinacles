@@ -99,11 +99,11 @@
 
  PRIVATE
 
- PUBLIC WARM_SBM,WARM_HUCMINIT,falfluxhucm_z,ckern_z,coal_bott_new_warm,breakinit_ks,ecoalmass,&
+ PUBLIC WARM_SBM,WARM_HUCMINIT,falfluxhucm_z,falfluxhucm_z_weno,ckern_z,coal_bott_new_warm,breakinit_ks,ecoalmass,&
  ecoaldiam,ecoallowlist,ecoalochs,vtbeard,coll_xxx_lwf,coll_breakup_ks,courant_bott_ks,polysvp,&
  jersupsat_ks,jerdfun_ks,jernewf_ks,jerdfun_new_ks,relaxation_time,ccn_regeneration,jernucl01_ks,&
  water_nucleation,cloud_base_super,lognormal_modes_aerosol,coll_xxx_bott,coll_xxx_bott_mod1,&
- coll_xxx_bott_mod2,supmax_coeff,jertimesc_ks,jerrate_ks,collenergy,onecond1,kernals_ks
+ coll_xxx_bott_mod2,supmax_coeff,jertimesc_ks,jerrate_ks,collenergy,onecond1,kernals_ks, weno3_interp
 
 
 ! Kind paramater
@@ -1025,7 +1025,7 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
             ffx_z(k,krr)=chem_new(i,k,j,kr)/rhocgs(i,k,j)
           end do
         end do
-        call FALFLUXHUCM_Z(ffx_z,VRX,RHOCGS_z,PCGS_z,ZCGS_z,DT,kts,kte,nkr)
+        call FALFLUXHUCM_Z_WENO(ffx_z,VRX,RHOCGS_z,PCGS_z,ZCGS_z,DT,kts,kte,nkr)
         do k = kts,kte
           krr = 0
           do kr=p_ff1i01,p_ff1i33
@@ -1214,6 +1214,95 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
        RETURN
        END SUBROUTINE FALFLUXHUCM_Z
  ! +----------------------------------+
+
+ ! +-------------------------------------------------------------+
+       SUBROUTINE FALFLUXHUCM_Z_WENO(chem_new,VR1,RHOCGS,PCGS,ZCGS,DT, &
+        kts,kte,nkr)
+
+IMPLICIT NONE
+
+integer,intent(in) :: kts,kte,nkr
+double precision,intent(inout) :: chem_new(:,:)
+double precision,intent(in) :: rhocgs(:),pcgs(:),zcgs(:),VR1(:,:),DT
+
+! ... Locals
+integer :: I,J,K,KR
+double precision :: TFALL,DTFALL,VFALL(KTE),DWFLUX(KTE)
+integer :: IFALL,N,NSUB
+
+! FALLING FLUXES FOR EACH KIND OF CLOUD PARTICLES: C.G.S. UNIT
+! ADAPTED FROM GSFC CODE FOR HUCM
+!  The flux at k=1 is assumed to be the ground so FLUX(1) is the
+! flux into the ground. DWFLUX(1) is at the lowest half level where
+! Q(1) etc are defined. The formula for FLUX(1) uses Q(1) etc which
+! is actually half a grid level above it. This is what is meant by
+! an upstream method. Upstream in this case is above because the
+! velocity is downwards.
+! USE UPSTREAM METHOD (VFALL IS POSITIVE)
+
+DO KR=1,NKR
+IFALL=0
+DO k = kts,kte
+IF(chem_new(K,KR).GE.1.E-20)IFALL=1
+END DO
+IF (IFALL.EQ.1)THEN
+TFALL=1.E10
+DO K=kts,kte
+! [KS] VFALL(K) = VR1(K,KR)*SQRT(1.E6/PCGS(K))
+VFALL(K) = VR1(K,KR) ! ... [KS] : The pressure effect is taken into account at the beggining of the calculations
+TFALL=AMIN1(TFALL,ZCGS(K)/(VFALL(K)+1.E-20))
+END DO
+IF(TFALL.GE.1.E10)STOP
+NSUB=(INT(2.0*DT/TFALL)+1)
+DTFALL=DT/NSUB
+
+DO N=1,NSUB
+K=KTS
+DWFLUX(K)=-(RHOCGS(K)*VFALL(K)*chem_new(k,kr)- &
+RHOCGS(K+1)* &
+VFALL(K+1)*chem_new(K+1,KR))/(RHOCGS(K)*(ZCGS(K+1)- &
+ZCGS(K)))
+DO K=KTS+1,KTE-2
+
+  DWFLUX(K)= -(weno3_interp(RHOCGS(K-1)*VFALL(K-1)*chem_new(k-1,kr), &
+                          RHOCGS(K)*VFALL(K)*chem_new(k,kr), &
+                          RHOCGS(K+1)*VFALL(K+1)*chem_new(k+1,kr)) -  &
+
+                          weno3_interp(RHOCGS(K)*VFALL(K)*chem_new(k,kr), &
+                          RHOCGS(K+1)*VFALL(K+1)*chem_new(k+1,kr), &
+                          RHOCGS(K+2)*VFALL(K+2)*chem_new(k+2,kr))) &
+                          /(RHOCGS(K)*(ZCGS(K+1)- &
+                          ZCGS(K)))
+
+!DWFLUX(K)=-(RHOCGS(K)*VFALL(K)*chem_new(k,kr)- &
+!RHOCGS(K+1)* &
+!VFALL(K+1)*chem_new(K+1,KR))/(RHOCGS(K)*(ZCGS(K+1)- &
+!ZCGS(K)))
+
+
+!DWFLUX(K)= -(RHOCGS(K)*VFALL(K)*chem_new(k,kr)- &
+!RHOCGS(K+1)* &
+!VFALL(K+1)*chem_new(K+1,KR))/(RHOCGS(K)*(ZCGS(K+1)- &
+!ZCGS(K)))
+
+END DO
+! NO Z ABOVE TOP, SO USE THE SAME DELTAZ
+DWFLUX(KTE-1)=-(RHOCGS(KTE-1)*VFALL(KTE-1)* &
+&                 chem_new(kte-1,kr))/(RHOCGS(KTE-1)*(ZCGS(KTE-1)-ZCGS(KTE-2)))
+DWFLUX(KTE)=-(RHOCGS(KTE)*VFALL(KTE)* &
+&                 chem_new(kte,kr))/(RHOCGS(KTE)*(ZCGS(KTE)-ZCGS(KTE-1)))
+DO K=kts,kte
+chem_new(k,kr)=chem_new(k,kr)+DWFLUX(K)*DTFALL
+END DO
+END DO
+END IF
+END DO
+
+RETURN
+END SUBROUTINE FALFLUXHUCM_Z_WENO
+! +----------------------------------+
+
+
    SUBROUTINE WARM_HUCMINIT(DT, ccncon1,radius_mean1,sig1, &
     ccncon2,radius_mean2,sig2, &
     ccncon3,radius_mean3,sig3)
@@ -1837,6 +1926,35 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
   return
   end function ckern_z
  ! +----------------------------------------------------------------------------+
+
+double precision function weno3_interp(phim1, phi, phip1)
+  double precision, intent(in) :: phim1, phi, phip1
+  double precision :: p0 , p1
+  double precision :: beta1, beta0
+  double precision :: alpha0, alpha1
+  double precision :: alpha_sum_inv
+  double precision :: w0, w1
+
+  p0 = (-1.0/2.0) * phim1 + (3.0/2.0) * phi
+  p1 = (1.0/2.0) * phi + (1.0/2.0) * phip1
+
+  beta1 = (phip1 - phi) * (phip1 - phi);
+  beta0 = (phi - phim1) * (phi - phim1);
+
+  alpha0 = (1.0/3.0) /((beta0 + 1e-10) * (beta0 + 1.0e-10));
+  alpha1 = (2.0/3.0)/((beta1 + 1e-10) * (beta1 + 1.0e-10));
+
+  alpha_sum_inv = 1.0/(alpha0 + alpha1)
+  w0 = alpha0 * alpha_sum_inv
+  w1 = alpha1 * alpha_sum_inv
+
+  weno3_interp = w0 * p0 + w1 * p1
+return
+
+end function weno3_interp
+
+
+
    SUBROUTINE ONECOND1 &
 				 & (TT,QQ,PP,ROR &
 				 & ,VR1,PSINGLE &
