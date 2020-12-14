@@ -20,7 +20,7 @@ class P3:
             double aero_inv_rm1, double aero_sig1, double aero_nanew1, \
             double aero_inv_rm2, double aero_sig2, double aero_nanew2, double nccnst_in);", override=True)
 
-        #This function is for the 1-moment version of p3
+        #This function is for the 2-moment version of p3
         self.ffi.cdef("void c_p3_main(int ids, int ide, int jds, int jde, int kds, int kde, \
             int ims, int ime, int jms, int jme, int kms, int kme, \
             int its, int ite, int jts, int jte, int kts, int kte, \
