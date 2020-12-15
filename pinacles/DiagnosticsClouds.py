@@ -244,7 +244,6 @@ class DiagnosticsClouds:
 
                 MPI.COMM_WORLD.barrier()
 
-                print('core', np.amax(phi_core[n_halo[2]:-n_halo[2]]), 'cloud',  np.amax(phi_cloud[n_halo[2]:-n_halo[2]]))
                 if my_rank == 0:
                     profiles_grp = this_grp['profiles']
                     profiles_grp[var + '_core'][-1,:] = phi_core[n_halo[2]:-n_halo[2]]
