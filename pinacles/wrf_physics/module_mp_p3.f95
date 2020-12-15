@@ -87,7 +87,7 @@
 
 !==================================================================================================!
 
- subroutine p3_init(lookup_file_dir,nCat,model,stat,abort_on_err)
+ subroutine p3_init(lookup_file_dir,nCat,model,stat,abort_on_err, aero_inv_rm1, aero_sig1, aero_nanew1, aero_inv_rm2, aero_sig2, aero_nanew2, nccnst_in)
 
 !------------------------------------------------------------------------------------------!
 ! This subroutine initializes all physical constants and parameters needed by the P3       !
@@ -106,6 +106,11 @@
  integer,       intent(inout)           :: stat                       !return status of subprogram
  logical,       intent(in)            :: abort_on_err               !abort when an error is encountered [.false.]
  character(len=*), intent(in)         :: model                      !driving model
+
+
+ real,       intent(in) :: aero_inv_rm1, aero_sig1, aero_nanew1
+ real,       intent(in) :: aero_inv_rm2, aero_sig2, aero_nanew2
+ real,       intent(in) :: nccnst_in
 
 ! Local variables and parameters:
  logical, save                :: is_init = .false.
@@ -127,7 +132,6 @@
 !#endif
 
  !------------------------------------------------------------------------------------------!
-
  lookup_file_1 = trim(lookup_file_dir)//'/'//'p3_lookup_table_1.dat-v'//trim(version_intended_table_1)
  lookup_file_2 = trim(lookup_file_dir)//'/'//'p3_lookup_table_2.dat-v'//trim(version_intended_table_2)
 
@@ -167,7 +171,7 @@
  iparam = 3
 
 ! droplet concentration (m-3)
- nccnst = 200.e+6
+ nccnst = nccnst_in
 
 ! parameters for Seifert and Beheng (2001) autoconversion/accretion
  kc     = 9.44e+9
@@ -245,16 +249,16 @@
 ! inv_bact = (map*rhow)/(vi*osm*epsm*mw*rhoa)    *** to replace /bact **
 
 ! mode 1
- inv_rm1 = 2.37064444e+07  ! inverse aerosol mean size (m-1)
- sig1    = 2.75840200e+00  ! aerosol standard deviation
- nanew1  = 1.36121337e+08  ! aerosol number mixing ratio (kg-1)
+ inv_rm1 = aero_inv_rm1!2.37064444e+07  ! inverse aerosol mean size (m-1)
+ sig1    = aero_sig1 !2.75840200e+00  ! aerosol standard deviation
+ nanew1  = aero_nanew1 !1.36121337e+08  ! aerosol number mixing ratio (kg-1)
  f11     = 0.5*exp(2.5*(log(sig1))**2)
  f21     = 1. + 0.25*log(sig1)
 
 ! mode 2
- inv_rm2 = 8.61501056e+07  ! inverse aerosol mean size (m-1)
- sig2    = 1.29753603e+00  ! aerosol standard deviation
- nanew2  = 1.17744602e+08  ! aerosol number mixing ratio (kg-1)
+ inv_rm2 = aero_inv_rm2 !8.61501056e+07  ! inverse aerosol mean size (m-1)
+ sig2    = aero_sig2 !1.29753603e+00  ! aerosol standard deviation
+ nanew2  = aero_nanew2 !1.17744602e+08  ! aerosol number mixing ratio (kg-1)
  f12     = 0.5*exp(2.5*(log(sig2))**2)
  f22     = 1. + 0.25*log(sig2)
 
@@ -691,6 +695,7 @@ END subroutine p3_init
 
    !------------------------------------------------------------------------------------------!
 
+
    scpf_on=.false. ! cloud fraction version not used with WRF
    scpf_pfrac=0.   ! dummy variable (not used), set to 0
    scpf_resfact=0. ! dummy variable (not used), set to 0
@@ -698,7 +703,6 @@ END subroutine p3_init
    log_predictNc=.false.
    if (present(nc_3d)) log_predictNc = .true.
    do j = jts,jte      ! j loop (north-south)
-
       if (log_predictNc) then
          nc(its:ite,kts:kte)=nc_3d(its:ite,kts:kte,j)
      ! if Nc is specified then set nc array to zero
@@ -1800,6 +1804,7 @@ END subroutine p3_init
 ! to be added as namelist parameters (future)
  logical, parameter :: debug_ABORT  = .true.  !.true. will result in forced abort in s/r 'check_values'
 
+
 !-----------------------------------------------------------------------------------!
 !  End of variables/parameters declarations
 !-----------------------------------------------------------------------------------!
@@ -1931,6 +1936,8 @@ END subroutine p3_init
  t_old   = th_old*tmparr1    !compute temperature from theta (value at beginning of model time step)
  qv      = max(qv,0.)        !clip water vapor to prevent negative values passed in (beginning of microphysics)
 !==
+
+
 
 !-----------------------------------------------------------------------------------!
  i_loop_main: do i = its,ite  ! main i-loop (around the entire scheme)

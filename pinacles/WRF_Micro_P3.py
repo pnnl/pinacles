@@ -1,6 +1,5 @@
 from pinacles.Microphysics import MicrophysicsBase, water_path, water_fraction, water_fraction_profile
-from pinacles.wrf_physics import kessler
-from pinacles.wrf_physics import p3
+from pinacles.wrf_physics import p3_via_cffi
 from pinacles import UtilitiesParallel
 from pinacles.WRFUtil import to_wrf_order, wrf_tend_to_our_tend, wrf_theta_tend_to_our_tend, to_our_order
 from pinacles import parameters
@@ -13,24 +12,49 @@ class MicroP3(MicrophysicsBase):
 
             MicrophysicsBase.__init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
 
+
+            # Determine which rain microphysics scheme to use
+            self._rain_moment = 1
             try:
-                lookup_file_dir = namelist['microphysics']['lookup_file_dir']
+                self._rain_moment = namelist['microphysics']['rain_moment']
             except:
+                pass
+            if MPI.COMM_WORLD.Get_rank() == 0:
+                print('\tP3: Using the ' + str(self._rain_moment) + '-moment rain scheme')
+
+            #Set the default droplet conencentration for 1-moment rain scheme.
+            self._nccnst =  200.e+6
+            try:
+                self._nccnst = namelist['microphysics']['nccnst']
+            except:
+                pass
+            if MPI.COMM_WORLD.Get_rank() == 0 and self._rain_moment==1:
+                print('\t\tP3: Using fixed cloud droplet concentration of: ', str(self._nccnst), 'm-3.' )
+
+            self._p3_cffi = p3_via_cffi.P3()
+            try:
+                aero_in = namelist['microphysics']['aero']
+                inv_rm1 = aero_in['inv_rm1']
+                sig1 = aero_in['sig1']
+                nanew1 = aero_in['nanew1 ']
+
+                inv_rm2 = aero_in['inv_rm2']
+                sig2 = aero_in['sig2']
+                nanew2 = aero_in['nanew2']
+
+                self._p3_cffi.init(aero_inv_rm1 = inv_rm1, aero_sig1=sig1, aero_nanew1=nanew1,
+                    aero_inv_rm2 = inv_rm2, aero_sig2=sig2, aero_nanew2=nanew2)
+
                 if MPI.COMM_WORLD.Get_rank() == 0:
-                    print('Need to provide location of P3 lookup files in namelist')
-            
-            try:
-                self._nc = namelist['microphyics']['Nc']
+                    print('\tP3: Initialized with custom aerosol distn')
+                    print(inv_rm1, sig1, nanew1)
+                    print(inv_rm2, sig2, nanew2)
             except:
-                self._nc = 70.0e6
-                
-            nCat = 1
-            stat = 1
-            abort_on_err = False
-            model = 'PINACLES'
+                self._p3_cffi.init()
+                if MPI.COMM_WORLD.Get_rank() == 0:
+                    print('\tP3: Initialized with default aerosol distn')
 
 
-            p3.module_mp_p3.p3_init(lookup_file_dir, nCat, model, stat, abort_on_err)
 
             #Allocate microphysical/thermodyamic variables
             self._ScalarState.add_variable('qv', long_name = 'water vapor mixing ratio', units='kg kg^{-1}', latex_name = 'q_v')
@@ -52,7 +76,7 @@ class MicroP3(MicrophysicsBase):
             self._wrf_dims = (self._our_dims[0] -2*nhalo[0], self._our_dims[2]-2*nhalo[2], self._our_dims[1]-2*nhalo[1])
 
             self._itimestep = 0
-            self._RAINNC = np.zeros((self._wrf_dims[0], self._wrf_dims[2]), order='F', dtype=np.float32)
+            self._RAINNC = np.zeros((self._wrf_dims[0], self._wrf_dims[2]), order='F', dtype=np.double)
             self._SR = np.zeros_like(self._RAINNC)
             self._RAINNCV =  np.zeros_like(self._RAINNC)
             self._SNOWNC = np.zeros_like(self._RAINNC)
@@ -87,7 +111,7 @@ class MicroP3(MicrophysicsBase):
         p0 = self._Ref.p0
         nhalo = self._Grid.n_halo
 
-        rho_wrf = np.empty(self._wrf_dims, order='F',dtype=np.float32)
+        rho_wrf = np.empty(self._wrf_dims, order='F',dtype=np.double)
         exner_wrf = np.empty_like(rho_wrf)
         p0_wrf = np.empty_like(rho_wrf)
         T_wrf = np.empty_like(rho_wrf)
@@ -151,18 +175,35 @@ class MicroP3(MicrophysicsBase):
                     qv_old[i,j,k] = qv_wrf[i,j,k]
 
         n_iceCat = 1
-        #nc_wrf[:,:,:] = self._nc
-        #T_wrf,qv_wrf,qc_wrf,qr_wrf,qnr_wrf)
-        p3.module_mp_p3.mp_p3_wrapper_wrf(T_wrf,qv_wrf,qc_wrf,qr_wrf,qnr_wrf,
-                                th_old, qv_old,
-                                exner_wrf, p0_wrf, dz_wrf, w_wrf, dt, self._itimestep,
-                                self._RAINNC,self._RAINNCV,self._SR,self._SNOWNC,self._SNOWNCV,n_iceCat,
-                                ids, ide, jds, jde, kds, kde ,
-                                ims, ime, jms, jme, kms, kme ,
-                                its, ite, jts, jte, kts, kte ,
-                                reflectivity_wrf,diag_effc_3d_wrf,diag_effi,
-                                diag_vmi,diag_di,diag_rhopo,
-                                qi1_wrf,qni1_wrf,qir1_wrf,qib1_wrf,nc_wrf)
+
+
+
+        if self._rain_moment == 2:
+            self._p3_cffi.update( ids, ide, jds, jde, kds, kde ,
+                    ims, ime, jms, jme, kms, kme ,
+                    its, ite, jts, jte, kts, kte ,
+                    T_wrf, qv_wrf, qc_wrf, qr_wrf,
+                    qnr_wrf, reflectivity_wrf, diag_effc_3d_wrf,
+                    diag_effi, diag_vmi, diag_di,
+                    diag_rhopo, th_old, qv_old,
+                    qi1_wrf, qni1_wrf, qir1_wrf, qib1_wrf,
+                    nc_wrf, exner_wrf, p0_wrf, dz_wrf, w_wrf,
+                    self._RAINNC,self._RAINNCV,self._SR,self._SNOWNC,self._SNOWNCV,
+                    dt, self._itimestep, n_iceCat
+                    )
+        else:
+            self._p3_cffi.update_1mom( ids, ide, jds, jde, kds, kde ,
+                    ims, ime, jms, jme, kms, kme ,
+                    its, ite, jts, jte, kts, kte ,
+                    T_wrf, qv_wrf, qc_wrf, qr_wrf,
+                    qnr_wrf, reflectivity_wrf, diag_effc_3d_wrf,
+                    diag_effi, diag_vmi, diag_di,
+                    diag_rhopo, th_old, qv_old,
+                    qi1_wrf, qni1_wrf, qir1_wrf, qib1_wrf,
+                    exner_wrf, p0_wrf, dz_wrf, w_wrf,
+                    self._RAINNC,self._RAINNCV,self._SR,self._SNOWNC,self._SNOWNCV,
+                    dt, self._itimestep, n_iceCat
+                    )
 
 
         #Update prognosed fields
@@ -286,7 +327,7 @@ class MicroP3(MicrophysicsBase):
         if my_rank == 0:
             timeseries_grp = nc_grp['timeseries']
             profiles_grp = nc_grp['profiles']
-            
+
             timeseries_grp['CF'][-1] = cf
             timeseries_grp['RF'][-1] = rf
             timeseries_grp['LWP'][-1] = lwp
@@ -295,15 +336,14 @@ class MicroP3(MicrophysicsBase):
 
             timeseries_grp['RAINNC'][-1] = rainnc
             timeseries_grp['RAINNCV'][-1] = rainncv
-            
+
             profiles_grp['CF'][-1,:] = cf_prof[n_halo[2]:-n_halo[2]]
             profiles_grp['RF'][-1,:] = rf_prof[n_halo[2]:-n_halo[2]]
 
         return
-    
 
     def get_qc(self):
         return self._ScalarState.get_field('qc') + self._ScalarState.get_field('qr')
-    
+
     def get_qi(self):
         return self._ScalarState.get_field('qi1')
