@@ -2,10 +2,10 @@ import subprocess
 import os
 
 def main():
-    f2py_file('Columbia/wrf_physics/', 'module_mp_p3.f95', 'p3')
-    f2py_file('Columbia/wrf_physics/', 'module_mp_kessler.f95', 'kessler')
+    build_script('pinacles/wrf_physics', 'build_p3.sh', 'p3')
+    f2py_file('pinacles/wrf_physics/', 'module_mp_kessler.f95', 'kessler')
 
-    download_data('Columbia/wrf_physics/') 
+    download_data('pinacles/wrf_physics/') 
 
     return 
 
@@ -29,6 +29,17 @@ def f2py_file(path, source, extname):
     orig_path = os.getcwd()
     os.chdir(path)
     cmd = 'f2py ' + ' -c ' + source +  ' -m ' + extname
+    subprocess.call([cmd], shell=True)
+    os.chdir(orig_path)
+
+    return
+
+def build_script(path, source, extname):
+
+    print('Running build script for: ', extname)
+    orig_path = os.getcwd()
+    os.chdir(path)
+    cmd = 'sh ' + source
     subprocess.call([cmd], shell=True)
     os.chdir(orig_path)
 

@@ -1,4 +1,4 @@
-from Columbia import Kinematics_impl
+from pinacles import Kinematics_impl
 
 import numpy as np
 

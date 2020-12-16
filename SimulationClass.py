@@ -1,25 +1,28 @@
 import numba
 import json
 import argparse
-from Columbia import Initializaiton
-from Columbia import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
-from Columbia import ScalarAdvection, TimeStepping, ReferenceState
-from Columbia import ScalarDiffusion, MomentumDiffusion
-from Columbia import MomentumAdvection
-from Columbia import PressureSolver
-from Columbia import Damping
-from Columbia import SurfaceFactory
-from Columbia import ForcingFactory
-from Columbia.Stats import Stats
-from Columbia import DumpFields
-from Columbia import MicrophysicsFactory
-from Columbia import Kinematics
-from Columbia import SGSFactory
+from pinacles import Initializaiton
+from pinacles import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
+from pinacles import ScalarAdvectionFactory
+from pinacles import ScalarAdvection, TimeStepping, ReferenceState
+from pinacles import ScalarDiffusion, MomentumDiffusion
+from pinacles import MomentumAdvection
+from pinacles import PressureSolver
+from pinacles import Damping
+from pinacles import SurfaceFactory
+from pinacles import ForcingFactory
+from pinacles.Stats import Stats
+from pinacles import DumpFields
+from pinacles import MicrophysicsFactory
+from pinacles import Kinematics
+from pinacles import SGSFactory
 from mpi4py import MPI
 import numpy as np
 import time
 import pylab as plt
 import copy
+import uuid
+import datetime
 
 import os 
 os.environ["HDF5_USE_FILE_LOCKING"]="FALSE"
@@ -33,6 +36,13 @@ class Simulation:
     
     def initialize(self):
         namelist = self._namelist
+        unique_id= None
+        wall_time = None
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            unique_id = str(uuid.uuid4())
+            wall_time = str(datetime.datetime.now())
+        namelist['meta']['unique_id'] = unique_id
+        namelist['meta']['wall_time'] = wall_time
 
         self.ModelGrid = Grid.RegularCartesian(namelist)
         self.ScalarState = Containers.ModelState(self.ModelGrid, container_name='ScalarState', prognostic=True)
@@ -64,7 +74,7 @@ class Simulation:
         # In the future the microphyics should be initialized here
 
         #Setup the scalar advection calss
-        self.ScalarAdv = ScalarAdvection.factory(namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.ScalarTimeStepping)
+        self.ScalarAdv = ScalarAdvectionFactory.factory(namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.ScalarTimeStepping)
         self.MomAdv = MomentumAdvection.factory(namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState)
 
         self.ScalarDiff = ScalarDiffusion.ScalarDiffusion(namelist, self.ModelGrid, self.Ref, self.DiagnosticState, self.ScalarState)
@@ -86,12 +96,15 @@ class Simulation:
         Initializaiton.initialize(namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState)
 
         self.RayleighDamping.init_means()
-        self.Surf = SurfaceFactory.factory(namelist, self.ModelGrid, self.Ref, self.VelocityState, self.ScalarState, self.DiagnosticState)
-        self.Force = ForcingFactory.factory(namelist, self.ModelGrid, self.Ref, self.VelocityState, self.ScalarState, self.DiagnosticState)
+        self.Surf = SurfaceFactory.factory(namelist, self.ModelGrid, self.Ref, self.VelocityState, self.ScalarState, self.DiagnosticState, self.TimeSteppingController)
+        self.Force = ForcingFactory.factory(namelist, self.ModelGrid, self.Ref, self.Micro, self.VelocityState, self.ScalarState, self.DiagnosticState, self.TimeSteppingController)
         self.PSolver.initialize() #Must be called after reference profile is integrated
 
         #Setup Stats-IO
         self.StatsIO = Stats(namelist, self.ModelGrid, self.Ref, self.TimeSteppingController)
+
+        self.ScalarDiff.initialize_io_arrays()
+        self.ScalarAdv.initialize_io_arrays()
 
         self.StatsIO.add_class(self.VelocityState)
         self.StatsIO.add_class(self.ScalarState)

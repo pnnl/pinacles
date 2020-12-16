@@ -13,6 +13,10 @@ __pycache__/
 .Python
 build/
 develop-eggs/
+
+*.o
+*.mod
+*.plist
 dist/
 downloads/
 eggs/
@@ -105,3 +109,10 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# built code
+*.o
+*.mod
+
+# downloaded data
+*.dat-v4.1
