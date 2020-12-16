@@ -1264,16 +1264,22 @@ VFALL(K+1)*chem_new(K+1,KR))/(RHOCGS(K)*(ZCGS(K+1)- &
 ZCGS(K)))
 DO K=KTS+1,KTE-2
 
-  DWFLUX(K)= -(weno3_interp(RHOCGS(K-1)*VFALL(K-1)*chem_new(k-1,kr), &
+  DWFLUX(K)= -(weno3_interp(RHOCGS(K+1)*VFALL(K+1)*chem_new(k+1,kr), &
                           RHOCGS(K)*VFALL(K)*chem_new(k,kr), &
-                          RHOCGS(K+1)*VFALL(K+1)*chem_new(k+1,kr)) -  &
+                          RHOCGS(K-1)*VFALL(K-1)*chem_new(k-1,kr)) -  &
 
-                          weno3_interp(RHOCGS(K)*VFALL(K)*chem_new(k,kr), &
+                          weno3_interp(RHOCGS(K+2)*VFALL(K+2)*chem_new(k+2,kr), &
                           RHOCGS(K+1)*VFALL(K+1)*chem_new(k+1,kr), &
-                          RHOCGS(K+2)*VFALL(K+2)*chem_new(k+2,kr))) &
+                          RHOCGS(K)*VFALL(K)*chem_new(k,kr))) &
                           /(RHOCGS(K)*(ZCGS(K+1)- &
                           ZCGS(K)))
 
+  if (chem_new(k,kr)+DWFLUX(K)*DTFALL < 1e-14) then
+    DWFLUX(K)=-(RHOCGS(K)*VFALL(K)*chem_new(k,kr)- &
+    RHOCGS(K+1)* &
+    VFALL(K+1)*chem_new(K+1,KR))/(RHOCGS(K)*(ZCGS(K+1)- &
+    ZCGS(K)))
+  end if 
 !DWFLUX(K)=-(RHOCGS(K)*VFALL(K)*chem_new(k,kr)- &
 !RHOCGS(K+1)* &
 !VFALL(K+1)*chem_new(K+1,KR))/(RHOCGS(K)*(ZCGS(K+1)- &
