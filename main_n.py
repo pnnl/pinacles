@@ -21,20 +21,18 @@ def main(namelist):
         domains.append(SimulationClass.Simulation(namelist, i))
         domains[i].initialize()
 
-
-    
     if MPI.COMM_WORLD.Get_rank() == 0:
         rt_grp = nc.Dataset('couple_out.nc', 'w')
-        
+
         for i in range(n):
             cpl_grp = rt_grp.createGroup('couple_' + str(i))
             print(domains[i].ModelGrid.n[2])
             cpl_grp.createDimension('z', size=domains[i].ModelGrid.n[2])
             z = cpl_grp.createVariable('z', np.double,  dimensions=('z',))
-            
+
             cpl_grp.createDimension('t')
             t = cpl_grp.createVariable('t', np.double, dimensions=('t',))
-            
+
             nh = domains[i].ModelGrid.n_halo
             z[:] = domains[i].ModelGrid.z_global[nh[2]:-nh[2]]
 

@@ -250,7 +250,7 @@ def atex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 def rico(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     #Integrate the reference profile.
-    Ref.set_surface(Tsfc=299.8, Psfc=1.0154e5, u0=-9.9, v0=-3.8)
+    Ref.set_surface(Tsfc=299.8, Psfc=1.0154e5, u0=10.0, v0=0)
     Ref.integrate()
 
     u = VelocityState.get_field('u')
@@ -301,8 +301,8 @@ def rico(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                     t += perts[i,1,k]
                 s[i,j,k] = DryThermo.s(z, t)
                 qv[i,j,k] = q
-                u[i,j,k] =  -9.9 + 2.0e-3 * z
-                v[i,j,k] =  -3.8
+                u[i,j,k] =  10.0 #0.0 #-9.9 + 2.0e-3 * z
+                v[i,j,k] =  0.0 #-3.8
     u -= Ref.u0
     v -= Ref.v0
 

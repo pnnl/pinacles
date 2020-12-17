@@ -11,7 +11,7 @@ def divergence(n_halo, dxs, rho0, rho0_edge, u, v, w, div):
         for j in range(nh1,shape[1]-nh1):
             for k in range(nh2,shape[2]-nh2):
                 div[i-nh0,j-nh1,k-nh2] = ((u[i,j,k]-u[i-1,j,k])/dxs[0]*rho0[k]
-                    + (v[i,j,k] - v[i,j-1,k])/dxs[1]*rho0[k]
+                    + (v[i,j,k] - v[i,j-1,k])/dxs[1]*rho0[k] 
                     + (w[i,j,k]*rho0_edge[k] - w[i,j,k-1]*rho0_edge[k-1])/dxs[2])
 
     return
@@ -37,5 +37,6 @@ def apply_pressure(dxs, dynp, u, v, w):
                 u[i,j,k] -=  (dynp[i+1,j,k] - dynp[i,j,k])/dxs[0]
                 v[i,j,k] -=  (dynp[i,j+1,k] - dynp[i,j,k])/dxs[1]
                 w[i,j,k] -=  (dynp[i,j,k+1] - dynp[i,j,k])/dxs[2]
+
 
     return

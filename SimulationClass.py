@@ -179,6 +179,7 @@ class Simulation:
 
                 #Call pressure solver
                 self.PSolver.update()
+
                 if n== 1: 
                     self.Thermo.update(apply_buoyancy=False)
                     #We call the microphysics update at the end of the RK steps.

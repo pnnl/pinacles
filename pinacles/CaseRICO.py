@@ -149,7 +149,7 @@ class SurfaceRICO(Surface.SurfaceBase):
         self._qvflx = - self._cq * self._windspeed_sfc * (qvsfc - self._qs0)
         Surface_impl.momentum_bulk_aero(self._windspeed_sfc, self._cm, usfc, vsfc, self._Ref.u0, self._Ref.v0, self._taux_sfc, self._tauy_sfc)
         self._taux_sfc = -self._cm * self._windspeed_sfc * (usfc + self._Ref.u0)
-        self._tauy_sfc = -self._cm * self._windspeed_sfc * (vsfc + self._Ref.v0)
+        self._tauy_sfc = -self._cm * self._windspeed_sfc * (vsfc + self._Ref.v0) * 0.0
 
 
         #shf = np.zeros_like(self._taux_sfc) + self._theta_flux * exner_edge[nh[2]-1]
@@ -212,8 +212,11 @@ class ForcingRICO(Forcing.ForcingBase):
         st += (self._heating_rate* exner)[np.newaxis, np.newaxis, :]
         qvt += self._ls_mositure[np.newaxis, np.newaxis, :]
 
-        Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f ,u, v, self._Ref.u0, self._Ref.v0, ut, vt)
+        #Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f ,u, v, self._Ref.u0, self._Ref.v0, ut, vt)
 
+
+        u_mean = self._VelocityState.mean('u')
+        ut[:,:,:] += (0.0 - u_mean[np.newaxis,np.newaxis,:])/1800.0 
 
         #Now ad large scale subsidence
         Forcing_impl.apply_subsidence(self._subsidence, self._Grid.dxi[2],s, st)

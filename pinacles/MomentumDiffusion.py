@@ -167,10 +167,10 @@ class MomentumDiffusion:
                        fluxx, fluxy, fluxz, ut)
 
 
-        compute_v_fluxes(n_halo, dx, dxi, rho0, rho0_edge, eddy_viscosity,
-                        dvdx, dvdy, dvdz,
-                        dudy, dwdy,
-                        fluxx, fluxy, fluxz, vt)
+        #compute_v_fluxes(n_halo, dx, dxi, rho0, rho0_edge, eddy_viscosity,
+        #                dvdx, dvdy, dvdz,
+        #                dudy, dwdy,
+        #                fluxx, fluxy, fluxz, vt)
 
         compute_w_fluxes(n_halo, dx, dxi, rho0, rho0_edge, eddy_viscosity,
                         dwdx, dwdy, dwdz,
