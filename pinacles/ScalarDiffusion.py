@@ -72,6 +72,9 @@ class ScalarDiffusion:
         my_rank = MPI.COMM_WORLD.Get_rank()
 
         for var in self._ScalarState.names:
+            if 'ff' in var:
+                return
+
             flux_mean = UtilitiesParallel.ScalarAllReduce(self._flux_profiles[var]/npts)
 
             MPI.COMM_WORLD.barrier()

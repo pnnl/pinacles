@@ -69,6 +69,17 @@ class DiagnosticsClouds:
         v.units = 'm/s'
         v.standard_name = 'w_{cloud}'
 
+        for container in [self._ScalarState, self._DiagnosticState]:
+            for var in container.names:
+                if 'ff' in var:
+                    continue
+
+                for stype in ['cloud', 'core']:
+                    v = profiles_grp.createVariable(var +  '_' + stype, np.double, dimensions=('time', 'z',))
+                    v.long_name = container.get_long_name(var) + ' ' + stype
+                    v.units = container.get_units(var)
+                    v.standard_name = container.get_standard_name(var) +  '_{' + stype + '}'
+
         return
 
 
@@ -105,6 +116,27 @@ class DiagnosticsClouds:
 
         return
 
+    @staticmethod
+    @numba.njit()
+    def _comptue_cloud_conditional_scalars(n_halo, qc, w, phi, cloud_count, core_count, phi_cloud, phi_core):
+
+        shape = qc.shape
+        for i in range(n_halo[0], shape[0] - n_halo[0]):
+            for j in range(n_halo[1], shape[1] - n_halo[1]):
+                for k in range(n_halo[2], shape[2] - n_halo[2]):
+                    # Cloud stats
+                    if qc[i,j,k] > 1e-5:
+
+                        cloud_count[k] += 1.0
+                        phi_cloud[k] += phi[i,j,k]
+
+                        # Cloud core stats
+                        wc = 0.5 * (w[i,j,k] + w[i,j,k-1])
+                        if wc > 0.0:
+                            core_count[k] += 1.0
+                            phi_core[k] += phi[i,j,k]
+
+        return
 
     def _update_cloud_conditional_velocities(self, this_grp):
 
@@ -167,6 +199,55 @@ class DiagnosticsClouds:
         return
 
     def _update_cloud_conditional_scalars(self, this_grp):
+        n_halo = self._Grid.n_halo
+        npts = self._Grid.n[0] * self._Grid.n[1]
+        my_rank = MPI.COMM_WORLD.Get_rank()
+
+        # Get qc
+        qc = self._ScalarState.get_field('qc')
+        w = self._VelocityState.get_field('w')
+
+        cloud_count = np.empty((qc.shape[2],), dtype=np.double, order='C')
+        core_count = np.empty_like(cloud_count)
+        phi_cloud = np.empty_like(cloud_count)
+        phi_core = np.empty_like(core_count)
+
+        for container in [self._ScalarState, self._DiagnosticState]:
+
+            for var in container.names :
+
+                if 'ff' in var:
+                    # Skip SBM bin fields.
+                    continue
+
+                cloud_count.fill(0.0)
+                core_count.fill(0.0)
+                phi_cloud.fill(0.0)
+                phi_core.fill(0.0)
+
+                phi = container.get_field(var)
+
+                self._comptue_cloud_conditional_scalars(n_halo, qc, w, phi, cloud_count, core_count, phi_cloud, phi_core)
+
+                # Todo precompute these they shouldn't change by varaible
+                cloud_count = UtilitiesParallel.ScalarAllReduce(cloud_count)
+                core_count = UtilitiesParallel.ScalarAllReduce(core_count)
+
+                cloud_points = cloud_count > 0
+                core_points = core_count > 0
+
+                phi_cloud[:] = UtilitiesParallel.ScalarAllReduce(phi_cloud)
+                phi_cloud[cloud_points] = phi_cloud[cloud_points]/cloud_count[cloud_points]
+
+                phi_core[:] = UtilitiesParallel.ScalarAllReduce(phi_core)
+                phi_core[core_points] = phi_core[core_points]/core_count[core_points]
+
+                MPI.COMM_WORLD.barrier()
+
+                if my_rank == 0:
+                    profiles_grp = this_grp['profiles']
+                    profiles_grp[var + '_core'][-1,:] = phi_core[n_halo[2]:-n_halo[2]]
+                    profiles_grp[var + '_cloud'][-1,:] = phi_cloud[n_halo[2]:-n_halo[2]]
 
         return
 
@@ -174,6 +255,7 @@ class DiagnosticsClouds:
     def io_update(self, this_grp):
 
         if 'qc' not in self._ScalarState.names:
+            # No qc is allowed in this simulation, so we can skip this output.
             return
 
         self._update_cloud_conditional_velocities(this_grp)

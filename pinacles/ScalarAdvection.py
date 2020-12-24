@@ -358,13 +358,16 @@ class ScalarWENO5(ScalarAdvectionBase):
         my_rank = MPI.COMM_WORLD.Get_rank()
 
         for var in self._ScalarState.names:
+
+            if 'ff' in var:
+                continue
+
             flux_mean = UtilitiesParallel.ScalarAllReduce(self._flux_profiles[var]/npts)
 
             MPI.COMM_WORLD.barrier()
             if my_rank == 0:
                 profiles_grp = this_grp['profiles']
                 profiles_grp['w' + var + '_resolved'][-1,:] = flux_mean[n_halo[2]:-n_halo[2]]
-
 
 
         #Compute the thetali flux
