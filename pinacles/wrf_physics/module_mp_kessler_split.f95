@@ -1,11 +1,12 @@
 !WRF:MODEL_LAYER:PHYSICS
 !
 
-MODULE module_mp_kessler_split
+MODULE module_mp_kessler
+
 
 CONTAINS
 !----------------------------------------------------------------
-   SUBROUTINE kessler( t, qv, qc, qr, rho, pii                  &
+   SUBROUTINE kessler_sed( t, qv, qc, qr, rho, pii                  &
                       ,dt_in, z, xlv, cp                        &
                       ,EP2,SVP1,SVP2,SVP3,SVPT0,rhowater        &
                       ,dz8w                                     &
@@ -184,7 +185,7 @@ CONTAINS
       ELSE  ! this was the last timestep
 
         DO k=kts,kte
-          prod(i,k,j) = prodk(k)
+          qr(i,k,j) = (qr(i,k,j) + prodk(k)-qr(i,k,j)) !prod(i,k,j) = prodk(k)
         ENDDO
         nfall = 0  ! exit condition for sedimentation loop
 
@@ -194,6 +195,89 @@ CONTAINS
 
    ENDDO sedimentation_outer_i_loop
 
+  ENDDO microphysics_outer_j_loop
+
+END SUBROUTINE kessler_sed
+
+!----------------------------------------------------------------
+SUBROUTINE kessler_source( t, qv, qc, qr, rho, pii                  &
+  ,dt_in, z, xlv, cp                        &
+  ,EP2,SVP1,SVP2,SVP3,SVPT0,rhowater        &
+  ,dz8w                                     &
+  ,RAINNC, RAINNCV                          &
+  ,ids,ide, jds,jde, kds,kde                & ! domain dims
+  ,ims,ime, jms,jme, kms,kme                & ! memory dims
+  ,its,ite, jts,jte, kts,kte                & ! tile   dims
+                                            )
+!----------------------------------------------------------------
+IMPLICIT NONE
+!----------------------------------------------------------------
+!  taken from the COMMAS code - WCS 10 May 1999.
+!  converted from FORTRAN 77 to 90, tiled, WCS 10 May 1999.
+!----------------------------------------------------------------
+DOUBLE PRECISION    , PARAMETER ::  c1 = .001 
+DOUBLE PRECISION    , PARAMETER ::  c2 = .001 
+DOUBLE PRECISION    , PARAMETER ::  c3 = 2.2 
+DOUBLE PRECISION    , PARAMETER ::  c4 = .875 
+DOUBLE PRECISION    , PARAMETER ::  fudge = 1.0 
+DOUBLE PRECISION    , PARAMETER ::  mxfall = 10.0 
+!----------------------------------------------------------------
+INTEGER,      INTENT(IN   )    :: ids,ide, jds,jde, kds,kde, &
+                 ims,ime, jms,jme, kms,kme, &
+                 its,ite, jts,jte, kts,kte
+DOUBLE PRECISION   ,      INTENT(IN   )    :: xlv, cp
+DOUBLE PRECISION   ,      INTENT(IN   )    :: EP2,SVP1,SVP2,SVP3,SVPT0
+DOUBLE PRECISION   ,      INTENT(IN   )    :: rhowater
+
+DOUBLE PRECISION, DIMENSION( ims:ime , kms:kme , jms:jme ),              &
+INTENT(INOUT) ::                                       &
+                                        t , &
+                                        qv, &
+                                        qc, &
+                                        qr
+
+DOUBLE PRECISION, DIMENSION( ims:ime , kms:kme , jms:jme ),              &
+INTENT(IN   ) ::                                       &
+                                       rho, &
+                                       pii, &
+                                      dz8w 
+
+DOUBLE PRECISION, DIMENSION( ims:ime , kms:kme , jms:jme ),              &
+INTENT(IN   ) ::                                    z
+
+DOUBLE PRECISION, INTENT(IN   ) :: dt_in
+
+DOUBLE PRECISION, DIMENSION( ims:ime , jms:jme ),                        &
+INTENT(INOUT) ::                               RAINNC, &
+                                   RAINNCV
+
+
+
+! local variables
+
+DOUBLE PRECISION :: qrprod, ern, gam, rcgs, rcgsi
+DOUBLE PRECISION, DIMENSION( its:ite , kts:kte, jts:jte ) ::     prod
+DOUBLE PRECISION, DIMENSION(kts:kte) :: vt, prodk, vtden,rdzk,rhok,factor,rdzw
+INTEGER :: i,j,k
+INTEGER :: nfall, n, nfall_new
+DOUBLE PRECISION    :: qrr, pressure, temp, es, qvs, dz, dt
+DOUBLE PRECISION    :: f5, dtfall, rdz, product
+DOUBLE PRECISION    :: max_heating, max_condense, max_rain, maxqrp
+DOUBLE PRECISION    :: vtmax, ernmax, crmax, factorn, time_sediment
+DOUBLE PRECISION    :: qcr, factorr, ppt
+DOUBLE PRECISION, PARAMETER :: max_cr_sedimentation = 0.75
+!----------------------------------------------------------------
+
+INTEGER :: imax, kmax
+
+dt = dt_in
+
+!   f5 = 237.3 * 17.27 * 2.5e6 / cp 
+f5 = svp2*(svpt0-svp3)*xlv/cp
+ernmax = 0.
+maxqrp = -100.
+
+microphysics_outer_j_loop: DO j = jts, jte
 !------------------------------------------------------------------------------
 ! Production of rain and deletion of qc
 ! Production of qc from supersaturation
@@ -204,11 +288,11 @@ CONTAINS
      DO i = its, ite
        factorn = 1.0 / (1.+c3*dt*amax1(0.,qr(i,k,j))**c4)
        qrprod = qc(i,k,j) * (1.0 - factorn)           &
-             + factorn*c1*dt*amax1(qc(i,k,j)-c2,0.)      
+             + factorn*c1*dt*amax1(qc(i,k,j)-c2,0.)
        rcgs = 0.001*rho(i,k,j)
 
        qc(i,k,j) = amax1(qc(i,k,j) - qrprod,0.)
-       qr(i,k,j) = (qr(i,k,j) + prod(i,k,j)-qr(i,k,j))
+       !qr(i,k,j) = (qr(i,k,j) + prod(i,k,j)-qr(i,k,j))
        qr(i,k,j) = amax1(qr(i,k,j) + qrprod,0.)
 
        temp      = pii(i,k,j)*t(i,k,j)
@@ -229,7 +313,7 @@ CONTAINS
        product = amax1(prod(i,k,j),-qc(i,k,j))
        t (i,k,j) = t(i,k,j) + gam*(product - ern)
        qv(i,k,j) = amax1(qv(i,k,j) - product + ern,0.)
-       qc(i,k,j) = qc(i,k,j) + product 
+       qc(i,k,j) = qc(i,k,j) + product
        qr(i,k,j) = qr(i,k,j) - ern
 
      ENDDO
@@ -238,6 +322,6 @@ CONTAINS
   ENDDO  microphysics_outer_j_loop
   RETURN
 
-  END SUBROUTINE kessler
+  END SUBROUTINE kessler_source
 
-END MODULE module_mp_kessler_split
+END MODULE module_mp_kessler

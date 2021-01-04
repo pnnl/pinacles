@@ -1,11 +1,17 @@
 from pinacles.Microphysics import MicrophysicsBase, water_path, water_fraction, water_fraction_profile
-from pinacles.wrf_physics import kessler
+from pinacles.wrf_physics import kessler_split
 from pinacles import UtilitiesParallel
 from pinacles.WRFUtil import to_wrf_order, wrf_tend_to_our_tend, wrf_theta_tend_to_our_tend, to_our_order
 from pinacles import parameters
 from mpi4py import MPI
 import numpy as np
 import numba
+
+import keras
+import tensorflow as tf
+tf.keras.backend.set_floatx('float64')
+from sklearn.preprocessing import MinMaxScaler, MaxAbsScaler, StandardScaler
+from sklearn.externals.joblib import dump, load
 
 @numba.njit
 def compute_qvs(temp, pressure):
@@ -22,6 +28,7 @@ def compute_qvs(temp, pressure):
 @numba.njit
 def compute_rh(qv, temp, pressure):
     return qv/compute_qvs(temp, pressure)
+
 
 
 class MicroKessler(MicrophysicsBase):
@@ -43,7 +50,17 @@ class MicroKessler(MicrophysicsBase):
         self._RAINNCV =  np.zeros_like(self._RAINNC)
 
         self._rain_rate = 0.0
+
+
+
+        self._dnn = keras.models.load_model('/Users/pres026/ml-les-microphysics/Keras/kessler_dnn.h5' )
+        self._scalar_x = load('/Users/pres026/ml-les-microphysics/Keras/scaler_x.bin')
+        self._scalar_y = load('/Users/pres026/ml-les-microphysics/Keras/scaler_y.bin')
         return
+
+
+
+
 
     def update(self):
 
@@ -102,7 +119,7 @@ class MicroKessler(MicrophysicsBase):
         to_wrf_order(nhalo, qr, qr_wrf)
 
         rain_accum_old = np.sum(self._RAINNC)
-        kessler.module_mp_kessler.kessler(T_wrf, qv_wrf, qc_wrf, qr_wrf, rho_wrf, exner_wrf,
+        kessler_split.module_mp_kessler.kessler_sed(T_wrf, qv_wrf, qc_wrf, qr_wrf, rho_wrf, exner_wrf,
             dt, z, xlv, cp,
             ep2, svp1, svp2, svp3, svpT0, rhow,
             dz_wrf,
@@ -110,6 +127,34 @@ class MicroKessler(MicrophysicsBase):
             ids,iide, jds,jde, kds,kde,
             ims,ime, jms,jme, kms,kme,
             its,ite, jts,jte, kts,kte)
+
+
+        data_keras = np.vstack((T_wrf.flatten(), qv_wrf.flatten(), np.log(qc_wrf.flatten()+1e-11), np.log(qr_wrf.flatten()+1e-11), rho_wrf.flatten(), exner_wrf.flatten())).T
+        data_scale = self._scalar_x.transform(data_keras)
+        prediction = self._dnn.predict(data_scale)
+        prediction_scale = self._scalar_y.inverse_transform(prediction)
+
+        T_wrf = prediction_scale[:,0].reshape(self._wrf_dims, order='F').copy(order='F')
+        qv_wrf = prediction_scale[:,1].reshape(self._wrf_dims, order='F').copy(order='F')
+        qc_wrf = np.exp(prediction_scale[:,2].reshape(self._wrf_dims, order='F').copy(order='F'))-1e-11
+        qr_wrf = np.exp(prediction_scale[:,3].reshape(self._wrf_dims, order='F').copy(order='F'))-1e-11
+
+
+        qc_wrf[qc_wrf <= 1e-11] = 0.0
+        qr_wrf[qr_wrf <= 1e-11] = 0.0
+
+
+        print(T_wrf[5,:,5])
+
+
+        #kessler_split.module_mp_kessler.kessler_source(T_wrf, qv_wrf, qc_wrf, qr_wrf, rho_wrf, exner_wrf,
+        #    dt, z, xlv, cp,
+        #    ep2, svp1, svp2, svp3, svpT0, rhow,
+        #    dz_wrf,
+        #    self._RAINNC, self._RAINNCV,
+        #    ids,iide, jds,jde, kds,kde,
+        #    ims,ime, jms,jme, kms,kme,
+        #    its,ite, jts,jte, kts,kte)
 
         to_our_order(nhalo, qv_wrf, qv)
         to_our_order(nhalo, qc_wrf, qc)

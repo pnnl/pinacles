@@ -227,7 +227,7 @@ def main(namelist):
         # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         xl = ModelGrid.x_local
         zl = ModelGrid.z_local
-        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%600.0,0.0):
+        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%30.0,0.0):
             FieldsIO.update()
             if MPI.COMM_WORLD.Get_rank() == 0:
                 pass 

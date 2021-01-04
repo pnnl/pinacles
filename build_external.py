@@ -2,10 +2,11 @@ import subprocess
 import os
 
 def main():
-    build_script('pinacles/wrf_physics', 'build_p3.sh', 'p3')
-    f2py_file('pinacles/wrf_physics/', 'module_mp_kessler.f95', 'kessler')
+    #build_script('pinacles/wrf_physics', 'build_p3.sh', 'p3')
+    #f2py_file('pinacles/wrf_physics/', 'module_mp_kessler.f95', 'kessler')
+    f2py_file('pinacles/wrf_physics/', 'module_mp_kessler_split.f95', 'kessler_split')
 
-    download_data('pinacles/wrf_physics/') 
+    #download_data('pinacles/wrf_physics/') 
 
     return 
 
