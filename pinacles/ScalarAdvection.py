@@ -8,7 +8,7 @@ from mpi4py import MPI
 class ScalarAdvectionBase:
 
     def __init__(self, Grid, Ref, ScalarState, VelocityState, TimeStepping):
-        
+
         self._name = 'ScalarAdvection'
         self._Grid = Grid
         self._ScalarState = ScalarState
@@ -323,10 +323,32 @@ def flux_divergence_bounded(nhalo, idx, idy, idzi, alpha0, fluxx, fluxy, fluxz,
     return
 
 
-class ScalarWENO5(ScalarAdvectionBase):
-    def __init__(self, Grid, Ref, ScalarState, VelocityState, TimeStepping):
+class ScalarWENO(ScalarAdvectionBase):
+    def __init__(self, namelist, Grid, Ref, ScalarState, VelocityState, TimeStepping):
         ScalarAdvectionBase.__init__(self, Grid, Ref, ScalarState, VelocityState, TimeStepping)
         self._flux_profiles = {}
+
+        self._flux_function = None
+        self.flux_function_factory(namelist)
+
+
+        return
+
+
+    def flux_function_factory(self, namelist):
+        n_halo = self._Grid.n_halo 
+        scheme = namelist['scalar_advection']['type'].upper()
+        if scheme == 'WENO5':
+            UtilitiesParallel.print_root('\t \t Using ' + scheme + ' scalar advection')
+            assert(np.all(n_halo >= 3)) # Check that we have enough halo points
+            self._flux_function = weno5_advection
+        elif scheme == 'WENO7':
+            UtilitiesParallel.print_root('\t \t Using ' + scheme + ' scalar advection')
+            assert(np.all(n_halo >= 4)) # Check that we have enough halo points
+            self._flux_function = weno7_advection
+
+        assert(self._flux_function is not None)
+
         return
 
     def io_initialize(self, this_grp):
@@ -358,13 +380,16 @@ class ScalarWENO5(ScalarAdvectionBase):
         my_rank = MPI.COMM_WORLD.Get_rank()
 
         for var in self._ScalarState.names:
+
+            if 'ff' in var:
+                continue
+
             flux_mean = UtilitiesParallel.ScalarAllReduce(self._flux_profiles[var]/npts)
 
             MPI.COMM_WORLD.barrier()
             if my_rank == 0:
                 profiles_grp = this_grp['profiles']
                 profiles_grp['w' + var + '_resolved'][-1,:] = flux_mean[n_halo[2]:-n_halo[2]]
-
 
 
         #Compute the thetali flux
@@ -401,11 +426,16 @@ class ScalarWENO5(ScalarAdvectionBase):
         # For now we assume that all scalars are advected with this scheme. This doesn't have to
         # remain true.
 
+<<<<<<< HEAD
         #Ge the velocities (No copy done here)
         u = np.copy(self._VelocityState.get_field('u')) + 10.0
+=======
+        #Get the velocities (No copy done here)
+        u = self._VelocityState.get_field('u')
+>>>>>>> master
         v = self._VelocityState.get_field('v')
         w = self._VelocityState.get_field('w')
-        
+
         #Get the releveant reference variables
         #TODO there is acopy hiding here
         rho0 = self._Ref.rho0
@@ -445,10 +475,10 @@ class ScalarWENO5(ScalarAdvectionBase):
                     np.divide(phi, phi_range, out=phi_norm)
 
                     # First compute the higher order fluxes, for now we do it with WENO
-                    weno7_advection(nhalo, rho0, rho0_edge, u, v, w, phi_norm, fluxx, fluxy, fluxz, phi_t)
+                    self._flux_function(nhalo, rho0, rho0_edge, u, v, w, phi_norm, fluxx, fluxy, fluxz, phi_t)
 
-                    #Now compute the lower order upwind fluxes these are used if high-order fluxes 
-                    # break boundness. 
+                    #Now compute the lower order upwind fluxes these are used if high-order fluxes
+                    # break boundness.
                     first_order(nhalo, rho0, rho0_edge, u, v, w, phi_norm, fluxx_low, fluxy_low, fluxz_low, phi_t)
 
                     # Now insure the that the advection does not violate boundeness of scalars.
@@ -461,7 +491,7 @@ class ScalarWENO5(ScalarAdvectionBase):
                 #Divide by range
                 np.divide(phi, phi_range, out=phi_norm)
 
-                weno7_advection(nhalo, rho0, rho0_edge, u, v, w,  phi_norm, fluxx, fluxy, fluxz, phi_t)
+                self._flux_function(nhalo, rho0, rho0_edge, u, v, w,  phi_norm, fluxx, fluxy, fluxz, phi_t)
                 #second_order(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
                 #Now compute the flux divergences
                 flux_divergence(nhalo, self._Grid.dxi[0], self._Grid.dxi[1], self._Grid.dxi[2],

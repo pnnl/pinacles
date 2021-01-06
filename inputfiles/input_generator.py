@@ -57,9 +57,11 @@ def stable_bubble():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'weno'
-    input_dict[key][input_dict[key]['type']] = {}
-    input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
+    input_dict[key]['type'] = 'weno5'
+
+    key = 'momentum_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'weno5'
 
     key = 'sgs'
     input_dict[key] = {}
@@ -116,6 +118,14 @@ def colliding_blocks():
     input_dict[key] = {}
     input_dict[key]['location'] = []
 
+    key = 'scalar_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'weno5'
+
+    key = 'momentum_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'weno5'
+
     return input_dict
 
 
@@ -145,9 +155,11 @@ def sullivan_and_patton():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'weno'
-    input_dict[key][input_dict[key]['type']] = {}
-    input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
+    input_dict[key]['type'] = 'weno5'
+
+    key = 'momentum_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'weno5'
 
     key = 'sgs'
     input_dict[key] = {}
@@ -200,9 +212,11 @@ def bomex():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'weno'
-    input_dict[key][input_dict[key]['type']] = {}
-    input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
+    input_dict[key]['type'] = 'weno5'
+
+    key = 'momentum_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'weno5'
 
     key = 'sgs'
     input_dict[key] = {}
@@ -257,9 +271,11 @@ def atex():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'weno'
-    input_dict[key][input_dict[key]['type']] = {}
-    input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
+    input_dict[key]['type'] = 'weno5'
+
+    key = 'momentum_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'weno5'
 
     key = 'sgs'
     input_dict[key] = {}
@@ -267,7 +283,6 @@ def atex():
     input_dict[key][input_dict[key]['model']] = {}
     input_dict[key][input_dict[key]['model']]['cs'] = 0.17
     input_dict[key][input_dict[key]['model']]['prt'] = 1.0/3.0
-
 
     key = 'microphysics'
     input_dict[key] = {} 
@@ -316,9 +331,11 @@ def rico():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'weno'
-    input_dict[key][input_dict[key]['type']] = {}
-    input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
+    input_dict[key]['type'] = 'weno5'
+
+    key = 'momentum_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'weno5'
 
     key = 'sgs'
     input_dict[key] = {}
@@ -326,7 +343,6 @@ def rico():
     input_dict[key][input_dict[key]['model']] = {}
     input_dict[key][input_dict[key]['model']]['cs'] = 0.17
     input_dict[key][input_dict[key]['model']]['prt'] = 1.0/3.0
-
 
     key = 'microphysics'
     input_dict[key] = {}
@@ -376,9 +392,12 @@ def testbed():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'weno'
+    input_dict[key]['type'] = 'weno5'
     input_dict[key][input_dict[key]['type']] = {}
 
+    key = 'momentum_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'weno5'
 
     key = 'sgs'
     input_dict[key] = {}
@@ -386,7 +405,6 @@ def testbed():
     input_dict[key][input_dict[key]['model']] = {}
     input_dict[key][input_dict[key]['model']]['cs'] = 0.17
     input_dict[key][input_dict[key]['model']]['prt'] = 1.0/3.0
-
 
     key = 'microphysics'
     input_dict[key] = {}

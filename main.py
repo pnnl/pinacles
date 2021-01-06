@@ -95,7 +95,6 @@ def main(namelist):
     ScalarTimeStepping.initialize()
     VelocityTimeStepping.initialize()
 
-
     Initializaiton.initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
     Rad.init_profiles()
