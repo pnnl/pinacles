@@ -371,7 +371,13 @@ def stable_bubble(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     file = namelist['testbed']['input_filepath']
     data = nc.Dataset(file, 'r')
-    init_data = data.groups['initialization']
+    try:
+        init_data = data.groups['initialization_sonde']
+        print('Initializing from the sonde profile')
+        # init_data = data.groups['initialization_varanal]
+        # print('Initializing from the analysis profile')
+    except:
+        init_data = data.groups['initialization']
     psfc = init_data.variables['surface_pressure'][0] * 100.0 # Convert from hPa to Pa
     tsfc = init_data.variables['surface_temperature'][0]
     u0 = init_data.variables['reference_u0'][0]
@@ -388,7 +394,7 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     zl = ModelGrid.z_local
 
     init_z = init_data.variables['z'][:]
-    raw_theta = init_data.variables['potential_temperature'][:]
+    
     raw_qv = init_data.variables['vapor_mixing_ratio'][:]/1000.0
     raw_u = init_data.variables['u'][:]
     raw_v = init_data.variables['v'][:]
@@ -396,24 +402,40 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     init_var_from_sounding(raw_u, init_z, zl, u)
     init_var_from_sounding(raw_v, init_z, zl, v)
     init_var_from_sounding(raw_qv, init_z, zl, qv)
-    init_var_from_sounding(raw_theta, init_z, zl, s)
 
     u -= Ref.u0
     v -= Ref.v0
 
-
-    # hardwire for now, could make inputs in namelist or data file
-    pert_amp = 0.1
-    pert_max_height = 200.0
-    shape = s.shape
-    perts = np.random.uniform(pert_amp*-1.0, pert_amp,(shape[0],shape[1],shape[2]))
-    for i in range(shape[0]):
-        for j in range(shape[1]):
-            for k in range(shape[2]):
-                t = s[i,j,k] * Ref.exner[k]
-                if zl[k] < pert_max_height:
-                    t += perts[i,j,k]
-                s[i,j,k] = DryThermo.s(zl[k], t)
+    try:
+        raw_temperature = init_data.variables['temperature'][:]
+        init_var_from_sounding(raw_temperature, init_z, zl, s)
+            # hardwire for now, could make inputs in namelist or data file
+        pert_amp = 0.1
+        pert_max_height = 200.0
+        shape = s.shape
+        perts = np.random.uniform(pert_amp*-1.0, pert_amp,(shape[0],shape[1],shape[2]))
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                for k in range(shape[2]):
+                    t = s[i,j,k] 
+                    if zl[k] < pert_max_height:
+                        t += perts[i,j,k]
+                    s[i,j,k] = DryThermo.s(zl[k], t)
+    except
+        raw_theta = init_data.variables['potential_temperature'][:]
+        init_var_from_sounding(raw_theta, init_z, zl, s)
+        # hardwire for now, could make inputs in namelist or data file
+        pert_amp = 0.1
+        pert_max_height = 200.0
+        shape = s.shape
+        perts = np.random.uniform(pert_amp*-1.0, pert_amp,(shape[0],shape[1],shape[2]))
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                for k in range(shape[2]):
+                    t = s[i,j,k] * Ref.exner[k]
+                    if zl[k] < pert_max_height:
+                        t += perts[i,j,k]
+                    s[i,j,k] = DryThermo.s(zl[k], t)
     
     return
        

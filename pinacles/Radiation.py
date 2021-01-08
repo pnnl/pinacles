@@ -85,20 +85,34 @@ class RRTMG:
         # self._DiagnosticState.add_variable('dflux_lw')
         # self._DiagnosticState.add_variable('uflux_sw')
         # self._DiagnosticState.add_variable('dflux_sw')
+
+       
         self._radiation_file_path = namelist['radiation']['input_filepath']
         data = nc.Dataset(self._radiation_file_path, 'r')
-        rad_data = data.groups['radiation']
+        try:
+            rad_data = data.groups['radiation_varanal']
+            print('radiation profiles from analysis')
+            # rad_data = data.groups['radiation_sonde']
+            # print('radiation profiles from sonde')
+        except:
+            rad_data = data.groups['radiation']
         self._latitude = rad_data.variables['latitude'][0]
         self._longitude = rad_data.variables['longitude'][0]
         day  = rad_data.variables['day_of_year'][0]
         self._hourz_init = rad_data.variables['hour_utc'][0]
         
         self._dyofyr_init = np.floor(day) + self._hourz_init/24.0
-
-        self._emis =  rad_data.variables['emissivity'][0]
+        try:
+            self._emis =  rad_data.variables['emissivity'][0]
+        except:
+            self._emis = 0.98
+        try:
+            albedo = rad_data.variables['albedo'][0]
+        except:
+            albedo = 0.06
         
-        self._adir =  rad_data.variables['albedo'][0]
-        self._adif = rad_data.variables['albedo'][0]
+        self._adir =  albedo
+        self._adif = albedo
         print(self._emis, self._adir, self._adif)
         data.close()
 
@@ -111,12 +125,14 @@ class RRTMG:
         self._vmr_cfc12 = 0.538e-9
         self._vmr_cfc22 = 0.169e-9
         self._vmr_ccl4  = 0.093e-9
+
+        # These needs to be improved
         self._vmr_o3 = 70.0e-9
         
-        self._emis = 1.0
+        # self._emis = 1.0
         
-        self._adir = 0.2
-        self._adif = 0.2
+        # self._adir = 0.2
+        # self._adif = 0.2
         self._scon = 1365.0
         self._adjes = 1.0
         self.dyofyr = 0
@@ -132,7 +148,13 @@ class RRTMG:
         n_halo = self._Grid.n_halo[2]
        
         data = nc.Dataset(self._radiation_file_path, 'r')
-        rad_data = data.groups['radiation']
+          try:
+            rad_data = data.groups['radiation_varanal']
+            print('radiation profiles from analysis')
+            # rad_data = data.groups['radiation_sonde']
+            # print('radiation profiles from sonde')
+        except:
+            rad_data = data.groups['radiation']
         p_data = rad_data.variables['pressure'][:]
         t_data = rad_data.variables['temperature'][:]
         qv_data = rad_data.variables['vapor_mixing_ratio'][:]

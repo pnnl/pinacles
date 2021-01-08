@@ -158,9 +158,28 @@ class ForcingTestbed(Forcing.ForcingBase):
             raw_ur = forcing_data.variables['u_relaxation'][:,:]
             raw_vr = forcing_data.variables['v_relaxation'][:,:]
 
-        raw_subsidence = forcing_data.variables['subsidence'][:,:]
+        
         raw_adv_qt = forcing_data.variables['qt_advection'][:,:]
-        raw_adv_theta = forcing_data.variables['theta_advection'][:,:]
+        # take temperature over theta if we have both
+        try:
+            raw_adv_temperature= forcing_data.variables['temperature_advection'][:,:]
+            self._use_temperature_advection = True
+        except:
+            raw_adv_theta = forcing_data.variables['theta_advection'][:,:]
+            self._use_temperature_advection = False
+        
+        # take given vertical advection tendencies over subsidence if we have both
+        # But we still need to get the subsidence 
+        raw_subsidence = forcing_data.variables['subsidence'][:,:]
+        try:
+            raw_vtend_qt = forcing_data.variables['qt_vertical_tendency'][:,:]
+            # I am omitting the logic here to get vertical advection of theta
+            raw_vtend_temperature =  forcing_data.variables['temperature_vertical_tendency'][:,:]
+            self._use_vertical_tendency = True
+        
+        except:
+            
+            self._use_vertical_tendency = False
 
         data.close()
 
@@ -173,7 +192,21 @@ class ForcingTestbed(Forcing.ForcingBase):
 
         self._subsidence = interpolate.interp1d(forcing_z, raw_subsidence, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
         self._adv_qt = interpolate.interp1d(forcing_z, raw_adv_qt, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
-        self._adv_theta = interpolate.interp1d(forcing_z, raw_adv_theta, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
+        if self._use_temperature_advection:
+            self._adv_temperature = interpolate.interp1d(forcing_z, raw_adv_temperature, 
+                                                            axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
+        else:
+            self._adv_theta = interpolate.interp1d(forcing_z, raw_adv_theta, 
+                                                    axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
+        if self._use_vertical_tendency:
+            self._vtend_temperature = interpolate.interp1d(forcing_z, raw_vtend_temperature, 
+                                                            axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
+            
+            self._vtend_qt = interpolate.interp1d(forcing_z, raw_vtend_qt, 
+                                                            axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
+
+        
+
 
         return
 
@@ -189,7 +222,14 @@ class ForcingTestbed(Forcing.ForcingBase):
             current_vr = interpolate.interp1d(self._forcing_times,self._vr, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
         current_subsidence = interpolate.interp1d(self._forcing_times,self._subsidence, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
         current_adv_qt = interpolate.interp1d(self._forcing_times,self._adv_qt, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
-        current_adv_theta = interpolate.interp1d(self._forcing_times,self._adv_theta, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
+        if self._use_temperature_advection:
+            current_adv_temperature = interpolate.interp1d(self._forcing_times,self._adv_temperature, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
+        else:
+            current_adv_theta = interpolate.interp1d(self._forcing_times,self._adv_theta, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
+        if self._use_vertical_tendency:
+            current_vtend_temperature = interpolate.interp1d(self._forcing_times,self._vtend_temperature, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
+            current_vtend_qt = interpolate.interp1d(self._forcing_times,self._vtend_qt, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
+
 
         exner = self._Ref.exner
 
@@ -204,13 +244,21 @@ class ForcingTestbed(Forcing.ForcingBase):
         st = self._ScalarState.get_tend('s')
         qvt = self._ScalarState.get_tend('qv')
 
-        st += (current_adv_theta * exner)[np.newaxis, np.newaxis, :]
+        if self._use_temperature_advection:
+            st += (current_adv_temperature)[np.newaxis, np.newaxis, :]
+        else:
+            st += (current_adv_theta * exner)[np.newaxis, np.newaxis, :]
         qvt += (current_adv_qt)[np.newaxis, np.newaxis, :]
         if self._momentum_forcing_method == 'geostrophic':
             Forcing_impl.large_scale_pgf(current_ug, current_vg, self._f ,u, v, self._Ref.u0, self._Ref.v0, ut, vt)
         if self._momentum_forcing_method == 'relaxation':
             Forcing_impl.relax_velocities(current_ur, current_vr,  u, v, self._Ref.u0, self._Ref.v0, ut, vt, 3600.0)
-        Forcing_impl.apply_subsidence(current_subsidence, self._Grid.dxi[2],s, st)
-        Forcing_impl.apply_subsidence(current_subsidence, self._Grid.dxi[2],qv, qvt)
+        
+        if self._use_vertical_tendency:
+             st += (current_vtend_temperature + current_subsidence * parameters.G * parameters.ICPD)[np.newaxis, np.newaxis, :]
+             qvt += (current_vtend_qt)[np.newaxis, np.newaxis, :]
+        else:
+            Forcing_impl.apply_subsidence(current_subsidence, self._Grid.dxi[2],s, st)
+            Forcing_impl.apply_subsidence(current_subsidence, self._Grid.dxi[2],qv, qvt)
 
         return
