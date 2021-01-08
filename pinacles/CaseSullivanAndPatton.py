@@ -13,21 +13,23 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
 
         self._theta_flux = 0.24
         self._z0 = 0.1
-        self.bflux_from_thflux()
 
         nl = self._Grid.ngrid_local
 
         self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
         self._taux_sfc = np.zeros_like(self._windspeed_sfc)
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
-        self._bflx_sfc = np.zeros_like(self._windspeed_sfc) + self._buoyancy_flux
+        self._bflx_sfc = np.zeros_like(self._windspeed_sfc) 
         self._ustar_sfc = np.zeros_like(self._windspeed_sfc)
         self._tflx = np.zeros_like(self._windspeed_sfc)
+
 
         return
 
     def update(self):
+        self.bflux_from_thflux()
 
+        self._bflx_sfc[:,:] = self._buoyancy_flux
         nh = self._Grid.n_halo
         dxi2 = self._Grid.dxi[2]
         z_edge = self._Grid.z_edge_global
@@ -65,9 +67,9 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
         #Compute the surface temperature flux
         self._tflx[:,:] =  self._theta_flux * exner_edge[nh[2]-1]
 
-        Surface_impl.iles_surface_flux_application(25.0, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._taux_sfc, ut)
-        Surface_impl.iles_surface_flux_application(25.0, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tauy_sfc, vt)
-        Surface_impl.iles_surface_flux_application(25.0, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tflx, st)
+        Surface_impl.iles_surface_flux_application(1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._taux_sfc, ut)
+        Surface_impl.iles_surface_flux_application(1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tauy_sfc, vt)
+        Surface_impl.iles_surface_flux_application(1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tflx, st)
 
 
         return
@@ -78,17 +80,37 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
         timeseries_grp = rt_grp['timeseries']
 
         #Add surface windspeed
-        timeseries_grp.createVariable('wind_horizontal', np.double, dimensions=('time',))
+        v = timeseries_grp.createVariable('wind_horizontal', np.double, dimensions=('time',))
+        v.long_name = 'Surface layer wind speed'
+        v.unts = 'm s^{-1}'
+        v.standard_name = 'surface wind'
 
         # Add surface stresses
-        timeseries_grp.createVariable('ustar', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('taux', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('tauy', np.double, dimensions=('time',))
+        v = timeseries_grp.createVariable('ustar', np.double, dimensions=('time',))
+        v.long_name = 'friction velocity'
+        v.units = 'm s^{-1}'
+        v.standard_name = 'u^{\star}'
+
+        v = timeseries_grp.createVariable('taux', np.double, dimensions=('time',))
+        v.long_name = 'surface shear stress x-component'
+        v.unts = 'm^2 s^{-2}'
+        v.standard_name = '\tau{13}'
+
+        v = timeseries_grp.createVariable('tauy', np.double, dimensions=('time',))
+        v.long_name = 'surface shear stress y-component'
+        v.units = 'm^2 s^{-2}'
+        v.standard_name = '\tau{23}'
 
         #Add thermodynamic fluxes
-        timeseries_grp.createVariable('tflx', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('shf', np.double, dimensions=('time',))
+        v = timeseries_grp.createVariable('tflx', np.double, dimensions=('time',))
+        v.long_name = 'surface temperature flux'
+        v.units = 'K m s^{-2}'
+        v.standard_name =  'surface temperature flux'
 
+        v = timeseries_grp.createVariable('shf', np.double, dimensions=('time',))
+        v.long_name = 'surface sensible heat flux'
+        v.units = 'W m^{-2}'
+        v.standard_name = 'shf'
 
         return
 
@@ -145,7 +167,7 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
         vt = self._VelocityState.get_tend('v')
 
         u0 = self._Ref.u0
-        v0 = self._Ref.v0 
+        v0 = self._Ref.v0
 
         Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, u0, v0, vt, ut)
         return

@@ -402,22 +402,56 @@ class MicroSBM(MicrophysicsBase):
         profiles_grp = nc_grp['profiles']
 
         #Cloud fractions
-        timeseries_grp.createVariable('CF', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('RF', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('LWP', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('RWP', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('VWP', np.double, dimensions=('time',))
+        v = timeseries_grp.createVariable('CF', np.double, dimensions=('time',))
+        v.long_name = 'Cloud Fraction'
+        v.standard_name = 'CF'
+        v.units = ''
+
+        v = timeseries_grp.createVariable('RF', np.double, dimensions=('time',))
+        v.long_name = 'Rain Fraction'
+        v.standard_name = 'RF'
+        v.units = ''
+
+        v = timeseries_grp.createVariable('LWP', np.double, dimensions=('time',))
+        v.long_name = 'Liquid Water Path'
+        v.standard_name = 'LWP'
+        v.units = 'kg/m^2'
+
+        v = timeseries_grp.createVariable('RWP', np.double, dimensions=('time',))
+        v.long_name = 'Rain Water Path'
+        v.standard_name = 'RWP'
+        v.units = 'kg/m^2'
+
+        v = timeseries_grp.createVariable('VWP', np.double, dimensions=('time',))
+        v.long_name = 'Water Vapor Path'
+        v.standard_name = 'VWP'
+        v.units = 'kg/m^2'
 
 
         #Precipitation
-        timeseries_grp.createVariable('RAINNC', np.double, dimensions=('time',))
+        v = timeseries_grp.createVariable('RAINNC', np.double, dimensions=('time',))
+        v.long_name = 'accumulated surface precip'
+        v.units = 'mm'
+        v.latex_name = 'rainnc'
+
         timeseries_grp.createVariable('RAINNCV', np.double, dimensions=('time',))
+        v.long_name = 'one time step accumulated surface precip'
+        v.units = 'mm'
+        v.latex_name = 'rainncv'
+
         timeseries_grp.createVariable('rain_rate', np.double, dimensions=('time',))
 
 
         #Now add cloud fraction and rain fraction profiles
-        profiles_grp.createVariable('CF', np.double, dimensions=('time', 'z',))
+        v = profiles_grp.createVariable('CF', np.double, dimensions=('time', 'z',))
+        v.long_name = 'Cloud Fraction'
+        v.standard_name = 'CF'
+        v.units = ''
+
         profiles_grp.createVariable('RF', np.double, dimensions=('time', 'z',))
+        v.long_name = 'Rain Fraction'
+        v.standard_name = 'RF'
+        v.units = ''
 
         return
 

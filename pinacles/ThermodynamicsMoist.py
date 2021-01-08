@@ -35,7 +35,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         #ql = np.add(qc, qr)
         qv = self._ScalarState.get_field('qv')
         ql = self._Micro.get_qc()
-        qi = np.zeros_like(ql)
+        qi = self._Micro.get_qi()
 
         T = self._DiagnosticState.get_field('T')
         thetav = self._DiagnosticState.get_field('thetav')
@@ -82,5 +82,6 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
 
         qv = self._ScalarState.get_field('qv')
         qc = self._Micro.get_qc()
+        qi = self._Micro.get_qi()
 
-        return qv + qc
+        return qv + qc + qi

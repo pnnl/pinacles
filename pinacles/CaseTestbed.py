@@ -6,6 +6,7 @@ from pinacles import parameters
 from scipy import interpolate
 from pinacles import UtilitiesParallel
 
+
 '''
 CK: Here I am starting with the simplest case and assuming the start time of the forcing
 files is the same as the simulation start time. This can easily be revisited, and made 
@@ -138,7 +139,8 @@ class ForcingTestbed(Forcing.ForcingBase):
 
         file = namelist['testbed']['input_filepath']
         self._momentum_forcing_method = namelist['testbed']['momentum_forcing']
-        # Options: relaxation, geostrophic
+        # Options: relaxation, geostrophic, none
+
 
         data = nc.Dataset(file, 'r')
         forcing_data = data.groups['forcing']
@@ -166,8 +168,8 @@ class ForcingTestbed(Forcing.ForcingBase):
             self._ug = interpolate.interp1d(forcing_z, raw_ug, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
             self._vg = interpolate.interp1d(forcing_z, raw_vg, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
         if self._momentum_forcing_method == 'relaxation':
-            self._ur = interpolate.interp1d(forcing_z, raw_ug, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
-            self._vr = interpolate.interp1d(forcing_z, raw_vg, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
+            self._ur = interpolate.interp1d(forcing_z, raw_ur, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
+            self._vr = interpolate.interp1d(forcing_z, raw_vr, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
 
         self._subsidence = interpolate.interp1d(forcing_z, raw_subsidence, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
         self._adv_qt = interpolate.interp1d(forcing_z, raw_adv_qt, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
@@ -204,9 +206,10 @@ class ForcingTestbed(Forcing.ForcingBase):
 
         st += (current_adv_theta * exner)[np.newaxis, np.newaxis, :]
         qvt += (current_adv_qt)[np.newaxis, np.newaxis, :]
-
-        Forcing_impl.large_scale_pgf(current_ug, current_vg, self._f ,u, v, self._Ref.u0, self._Ref.v0, ut, vt)
-
+        if self._momentum_forcing_method == 'geostrophic':
+            Forcing_impl.large_scale_pgf(current_ug, current_vg, self._f ,u, v, self._Ref.u0, self._Ref.v0, ut, vt)
+        if self._momentum_forcing_method == 'relaxation':
+            Forcing_impl.relax_velocities(current_ur, current_vr,  u, v, self._Ref.u0, self._Ref.v0, ut, vt, 3600.0)
         Forcing_impl.apply_subsidence(current_subsidence, self._Grid.dxi[2],s, st)
         Forcing_impl.apply_subsidence(current_subsidence, self._Grid.dxi[2],qv, qvt)
 

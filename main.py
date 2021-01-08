@@ -16,16 +16,19 @@ from pinacles import ForcingFactory
 from pinacles.Stats import Stats
 from pinacles import DumpFields
 from pinacles import MicrophysicsFactory
+from pinacles import RadiationFactory
 from pinacles import Kinematics
 from pinacles import SGSFactory
 from pinacles import DiagnosticsTurbulence
 from pinacles import DiagnosticsClouds
+from pinacles import TowersIO
 from mpi4py import MPI
 import numpy as np
 import time
 import pylab as plt
 
 import os 
+from termcolor import colored
 os.environ["HDF5_USE_FILE_LOCKING"]="FALSE"
 
 def main(namelist):
@@ -54,15 +57,16 @@ def main(namelist):
 
 
     # Add velocity variables
-    VelocityState.add_variable('u')
-    VelocityState.add_variable('v')
-    VelocityState.add_variable('w', loc='z', bcs='value zero')
+    VelocityState.add_variable('u', long_name = 'u velocity component', units='m/s', latex_name = 'u')
+    VelocityState.add_variable('v', long_name = 'v velocity component', units='m/s', latex_name = 'v')
+    VelocityState.add_variable('w', long_name = 'w velocity component', units='m/s', latex_name = 'w', loc='z', bcs='value zero')
 
     # Set up the thermodynamics class
     Kine = Kinematics.Kinematics(ModelGrid, Ref, VelocityState, DiagnosticState)
     SGS = SGSFactory.factory(namelist, ModelGrid, Ref, VelocityState, DiagnosticState)
     Micro = MicrophysicsFactory.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
     Thermo = Thermodynamics.factory(namelist, ModelGrid, Ref, ScalarState, VelocityState, DiagnosticState, Micro)
+
 
     # In the future the microphyics should be initialized here
 
@@ -79,25 +83,33 @@ def main(namelist):
 
     # Allocate all of the big parallel arrays needed for the container classes
     Force = ForcingFactory.factory(namelist, ModelGrid, Ref, Micro, VelocityState, ScalarState, DiagnosticState, TimeSteppingController)
+    Surf = SurfaceFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState, TimeSteppingController)
+    Rad = RadiationFactory.factory(namelist, ModelGrid, Ref, ScalarState, DiagnosticState, Surf, TimeSteppingController)
+
 
     ScalarState.allocate()
     VelocityState.allocate()
     DiagnosticState.allocate()
 
+
     ScalarTimeStepping.initialize()
     VelocityTimeStepping.initialize()
 
-
     Initializaiton.initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState)
 
+    Rad.init_profiles()
     RayleighDamping.init_means()
-    Surf = SurfaceFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState, TimeSteppingController)
-
     PSolver.initialize() #Must be called after reference profile is integrated
 
     #Setup Stats-IO
     StatsIO = Stats(namelist, ModelGrid, Ref, TimeSteppingController)
 
+    IOTower= TowersIO.Towers(namelist, ModelGrid, TimeSteppingController)
+
+    IOTower.add_state_container(VelocityState)
+    IOTower.add_state_container(ScalarState)
+    IOTower.add_state_container(DiagnosticState)
+    IOTower.initialize()
 
     DiagClouds = DiagnosticsClouds.DiagnosticsClouds(ModelGrid, Ref, Thermo, Micro, VelocityState, ScalarState, DiagnosticState)
     DiagTurbulence = DiagnosticsTurbulence.DiagnosticsTurbulence(ModelGrid, Ref, Thermo, Micro, VelocityState, ScalarState, DiagnosticState)
@@ -158,12 +170,14 @@ def main(namelist):
             if n == 0:
                 StatsIO.update()
                 MPI.COMM_WORLD.barrier()
+                IOTower.update()
 
             #Update the surface
             Surf.update()
 
             #Update the forcing
             Force.update()
+            Rad.update(n)
 
             #Update Kinematics
             Kine.update()
@@ -192,7 +206,7 @@ def main(namelist):
             #Call pressure solver
             PSolver.update()
 
-            if n== 1: 
+            if n== 1:
                 Thermo.update(apply_buoyancy=False)
                 #We call the microphysics update at the end of the RK steps.
                 Micro.update()
@@ -205,15 +219,14 @@ def main(namelist):
         t1 = time.time()
         MPI.COMM_WORLD.barrier()
         if MPI.COMM_WORLD.Get_rank() == 0:
-
-            print(t1 -t0)
-        s_slice = DiagnosticState.get_field_slice_z('T', indx=5)
+            print(colored('\t Walltime: ', 'green'), colored(t1 -t0, 'green'), colored('\tModeltime/Walltime: ', 'green'), colored(TimeSteppingController._dt/(t1 - t0), 'green'))
+        #s_slice = DiagnosticState.get_field_slice_z('T', indx=5)
         #s_slice = VelocityState.get_field_slice_z('w', indx=5)
         # b = DiagnosticState.get_field('T')
         # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
         xl = ModelGrid.x_local
         zl = ModelGrid.z_local
-        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%300.0,0.0):
+        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%600.0,0.0):
             FieldsIO.update()
             if MPI.COMM_WORLD.Get_rank() == 0:
                 pass 

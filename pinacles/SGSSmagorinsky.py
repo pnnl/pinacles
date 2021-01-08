@@ -52,9 +52,9 @@ class Smagorinsky(SGSBase):
             DiagnosticState)
 
         # Add diagnostic fields
-        self._DiagnosticState.add_variable('eddy_diffusivity')
-        self._DiagnosticState.add_variable('tke_sgs')
-        self._DiagnosticState.add_variable('eddy_viscosity')
+        self._DiagnosticState.add_variable('eddy_diffusivity', long_name='Eddy Diffusivity', units='m^2s^-1', latex_name = '\D_t')
+        self._DiagnosticState.add_variable('tke_sgs', long_name = 'Subgrid-scale turbulence kinetic energy', units='m^2s^-2', latex_name = r'e_{sgs}')
+        self._DiagnosticState.add_variable('eddy_viscosity', long_name='Eddy Viscosity', units='m^2s^-1', latex_name = '\nu_t')
 
         # Read values in from namelist if not there set defaults
         try:
@@ -90,7 +90,7 @@ class Smagorinsky(SGSBase):
             self._cs,
             self._prt,
             eddy_viscosity,
-            eddy_diffusivity, 
+            eddy_diffusivity,
             tke_sgs)
 
         return

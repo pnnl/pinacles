@@ -45,7 +45,7 @@ def stable_bubble():
     #Set the number of grid points in the domain
     input_dict[key]['n'] = [512 ,4, 64]
     #Set the number of halo points in each direct
-    input_dict[key]['n_halo'] = [3, 3, 3]
+    input_dict[key]['n_halo'] = [4, 4, 4]
     #Set the domain length, dx will be determined from n and L
     input_dict[key]['l'] = [51200.0, 51200.0, 6400.0]
 
@@ -57,9 +57,11 @@ def stable_bubble():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'weno'
-    input_dict[key][input_dict[key]['type']] = {}
-    input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
+    input_dict[key]['type'] = 'weno5'
+
+    key = 'momentum_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'weno5'
 
     key = 'sgs'
     input_dict[key] = {}
@@ -82,6 +84,10 @@ def stable_bubble():
     key='Thermodynamics'
     input_dict[key] = {}
     input_dict[key]['type'] = 'dry'
+
+    key = 'towers'
+    input_dict[key] = {}
+    input_dict[key]['location'] = []
 
     return input_dict
 
@@ -108,6 +114,18 @@ def colliding_blocks():
     input_dict[key]['cfl'] = 0.6
     input_dict[key]['time_max'] = 600.0
 
+    key = 'towers'
+    input_dict[key] = {}
+    input_dict[key]['location'] = []
+
+    key = 'scalar_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'weno5'
+
+    key = 'momentum_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'weno5'
+
     return input_dict
 
 
@@ -125,7 +143,7 @@ def sullivan_and_patton():
     #Set the number of grid points in the domain
     input_dict[key]['n'] = [32, 32, 32]
     #Set the number of halo points in each direct
-    input_dict[key]['n_halo'] = [3, 3, 3]
+    input_dict[key]['n_halo'] = [4, 4, 4]
     #Set the domain length, dx will be determined from n and L
     input_dict[key]['l'] = [5120.0, 5120.0, 2048.0]
 
@@ -137,9 +155,11 @@ def sullivan_and_patton():
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'weno'
-    input_dict[key][input_dict[key]['type']] = {}
-    input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
+    input_dict[key]['type'] = 'weno5'
+
+    key = 'momentum_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'weno5'
 
     key = 'sgs'
     input_dict[key] = {}
@@ -160,12 +180,15 @@ def sullivan_and_patton():
     input_dict[key] = {}
     input_dict[key]['cfl'] = 0.6
     input_dict[key]['time_max'] = 3600.0 * 3.0
- 
+
     key = 'stats'
     input_dict[key] = {}
     input_dict[key]['frequency'] = 60.0
     input_dict[key]['modules'] = []
 
+    key = 'towers'
+    input_dict[key] = {}
+    input_dict[key]['location'] = []
 
     return input_dict
 
@@ -183,15 +206,17 @@ def bomex():
     #Set the number of grid points in the domain
     input_dict[key]['n'] = [64, 64, 100]
     #Set the number of halo points in each direct
-    input_dict[key]['n_halo'] = [3, 3, 3]
+    input_dict[key]['n_halo'] = [4, 4, 4]
     #Set the domain length, dx will be determined from n and L
     input_dict[key]['l'] = [6400.0, 6400.0, 4000.0]
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'weno'
-    input_dict[key][input_dict[key]['type']] = {}
-    input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
+    input_dict[key]['type'] = 'weno5'
+
+    key = 'momentum_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'weno5'
 
     key = 'sgs'
     input_dict[key] = {}
@@ -219,6 +244,10 @@ def bomex():
     input_dict[key] = {}
     input_dict[key]['frequency'] = 60.0
     input_dict[key]['modules'] = []
+
+    key = 'towers'
+    input_dict[key] = {}
+    input_dict[key]['location'] = []
 
     return input_dict
 
@@ -236,15 +265,17 @@ def atex():
     #Set the number of grid points in the domain
     input_dict[key]['n'] = [64, 64, 100]
     #Set the number of halo points in each direct
-    input_dict[key]['n_halo'] = [3, 3, 3]
+    input_dict[key]['n_halo'] = [4, 4, 4]
     #Set the domain length, dx will be determined from n and L
     input_dict[key]['l'] = [6400.0, 6400.0, 4000.0]
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'weno'
-    input_dict[key][input_dict[key]['type']] = {}
-    input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
+    input_dict[key]['type'] = 'weno5'
+
+    key = 'momentum_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'weno5'
 
     key = 'sgs'
     input_dict[key] = {}
@@ -252,7 +283,6 @@ def atex():
     input_dict[key][input_dict[key]['model']] = {}
     input_dict[key][input_dict[key]['model']]['cs'] = 0.17
     input_dict[key][input_dict[key]['model']]['prt'] = 1.0/3.0
-
 
     key = 'microphysics'
     input_dict[key] = {} 
@@ -274,6 +304,10 @@ def atex():
     input_dict[key]['frequency'] = 60.0
     input_dict[key]['modules'] = []
 
+    key = 'towers'
+    input_dict[key] = {}
+    input_dict[key]['location'] = []
+
     return input_dict
 
 def rico():
@@ -290,16 +324,18 @@ def rico():
     #Set the number of grid points in the domain
     input_dict[key]['n'] = [128, 128, 100]
     #Set the number of halo points in each direct
-    input_dict[key]['n_halo'] = [3, 3, 3]
+    input_dict[key]['n_halo'] = [4, 4, 4]
     #Set the domain length, dx will be determined from n and L
     input_dict[key]['l'] = [6400.0, 6400.0, 4000.0]
 
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'weno'
-    input_dict[key][input_dict[key]['type']] = {}
-    input_dict[key][input_dict[key]['type']]['gamma'] = 0.5
+    input_dict[key]['type'] = 'weno5'
+
+    key = 'momentum_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'weno5'
 
     key = 'sgs'
     input_dict[key] = {}
@@ -307,7 +343,6 @@ def rico():
     input_dict[key][input_dict[key]['model']] = {}
     input_dict[key][input_dict[key]['model']]['cs'] = 0.17
     input_dict[key][input_dict[key]['model']]['prt'] = 1.0/3.0
-
 
     key = 'microphysics'
     input_dict[key] = {}
@@ -322,12 +357,16 @@ def rico():
     key = 'time'
     input_dict[key] = {}
     input_dict[key]['cfl'] = 0.6
-    input_dict[key]['time_max'] = 3600.0 * 6.0
+    input_dict[key]['time_max'] = 3600.0 * 24.0
 
     key = 'stats'
     input_dict[key] = {}
     input_dict[key]['frequency'] = 60.0
     input_dict[key]['modules'] = []
+
+    key = 'towers'
+    input_dict[key] = {}
+    input_dict[key]['location'] = []
 
     return input_dict
 
@@ -346,16 +385,19 @@ def testbed():
     #Set the number of grid points in the domain
     input_dict[key]['n'] = [144, 144, 200]
     #Set the number of halo points in each direct
-    input_dict[key]['n_halo'] = [3, 3, 3]
+    input_dict[key]['n_halo'] = [4, 4, 4]
     #Set the domain length, dx will be determined from n and L
     input_dict[key]['l'] = [14400.0, 14400.0, 5000.0]
 
 
     key = 'scalar_advection'
     input_dict[key] = {}
-    input_dict[key]['type'] = 'weno'
+    input_dict[key]['type'] = 'weno5'
     input_dict[key][input_dict[key]['type']] = {}
 
+    key = 'momentum_advection'
+    input_dict[key] = {}
+    input_dict[key]['type'] = 'weno5'
 
     key = 'sgs'
     input_dict[key] = {}
@@ -363,7 +405,6 @@ def testbed():
     input_dict[key][input_dict[key]['model']] = {}
     input_dict[key][input_dict[key]['model']]['cs'] = 0.17
     input_dict[key][input_dict[key]['model']]['prt'] = 1.0/3.0
-
 
     key = 'microphysics'
     input_dict[key] = {}
@@ -389,6 +430,11 @@ def testbed():
     input_dict[key] = {}
     input_dict[key]['input_filepath'] = 'sgp_inputs.nc'
     input_dict[key]['momentum_forcing']= 'geostrophic'
+
+    key = 'towers'
+    input_dict[key] = {}
+    input_dict[key]['location'] = []
+
     return input_dict
 
 

@@ -13,11 +13,7 @@ class Kinematics:
         self._VelocityState = VelocityState
         self._DiagnosticState = DiagnosticState
 
-
-        DiagnosticState.add_variable('strain_rate_mag')
-        DiagnosticState.add_variable('dudx')
-        DiagnosticState.add_variable('dvdy')
-        DiagnosticState.add_variable('dwdz')
+        DiagnosticState.add_variable('strain_rate_mag', long_name = 'Magnitude of strain rate tensor', latex_name = '|S_{i,j}|', units='s^{-1}')
 
         nl = self._Grid.ngrid_local
 
@@ -47,9 +43,6 @@ class Kinematics:
         w = self._VelocityState.get_field('w')
 
         strain_rate_mag = self._DiagnosticState.get_field('strain_rate_mag')
-        dudx = self._DiagnosticState.get_field('dudx')
-        dvdy = self._DiagnosticState.get_field('dvdy')
-        dwdz = self._DiagnosticState.get_field('dwdz')
         
         #Get grid spacing
         dxi = self._Grid.dxi
@@ -67,9 +60,6 @@ class Kinematics:
             self._dwdx, self._dwdy, self._dwdz,
             strain_rate_mag)
 
-        dudx[:,:,:] = self._dudx[:,:,:]
-        dvdy[:,:,:] = self._dvdy[:,:,:]
-        dwdz[:,:,:] = self._dwdz[:,:,:]
         #import pylab as plt
         #plt.contourf(self._dudy[:,4,:].T + self._dvdx[:,4,:].T)
         #plt.show()

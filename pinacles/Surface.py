@@ -20,6 +20,7 @@ class SurfaceBase:
         self._tauy_sfc = None
         self._windspeed_sfc = None
         self.gustiness = 0.1
+        self.T_surface = 300.
 
         self._z0 = None
 
