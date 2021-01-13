@@ -40,6 +40,12 @@ class MomentumAdvectionBase:
             self._fu = MomentumAdvection_impl.u_advection_weno7
             self._fv = MomentumAdvection_impl.v_advection_weno7
             self._fw = MomentumAdvection_impl.w_advection_weno7
+        elif scheme == 'SECOND':
+            UtilitiesParallel.print_root('\t \t Using ' + scheme + ' momentum advection')
+            assert(np.all(n_halo >= 3)) # Check that we have enough halo points
+            self._fu = MomentumAdvection_impl.u_advection_2nd
+            self._fv = MomentumAdvection_impl.v_advection_2nd
+            self._fw = MomentumAdvection_impl.w_advection_2nd
 
         # Make sure functions have for each velocity component
         assert(self._fu is not None)
@@ -66,7 +72,7 @@ class MomentumWENO(MomentumAdvectionBase):
         dxi = self._Grid.dxi
 
         #Retrieve velocities from container
-        u = np.copy(self._VelocityState.get_field('u')) + 10.0
+        u = np.copy(self._VelocityState.get_field('u'))
         v = self._VelocityState.get_field('v')
         w = self._VelocityState.get_field('w')
 

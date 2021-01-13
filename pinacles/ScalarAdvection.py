@@ -426,13 +426,8 @@ class ScalarWENO(ScalarAdvectionBase):
         # For now we assume that all scalars are advected with this scheme. This doesn't have to
         # remain true.
 
-<<<<<<< HEAD
-        #Ge the velocities (No copy done here)
-        u = np.copy(self._VelocityState.get_field('u')) + 10.0
-=======
         #Get the velocities (No copy done here)
         u = self._VelocityState.get_field('u')
->>>>>>> master
         v = self._VelocityState.get_field('v')
         w = self._VelocityState.get_field('w')
 
