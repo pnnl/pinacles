@@ -250,7 +250,7 @@ def atex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 def rico(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     #Integrate the reference profile.
-    Ref.set_surface(Tsfc=299.8, Psfc=1.0154e5, u0=10.0, v0=0)
+    Ref.set_surface(Tsfc=299.8, Psfc=1.0154e5, u0=-9.9, v0=0)
     Ref.integrate()
 
     u = VelocityState.get_field('u')
@@ -276,6 +276,24 @@ def rico(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     shape = s.shape
 
     perts = np.random.randn(shape[0],shape[1],shape[2]) 
+
+    
+    #Get wind profiles
+    infile = nc.Dataset('/Users/pres026/ColumbiaDev/PINACLES/rico/stats.nc', 'r')
+    
+    u_ls_profile = infile['VelocityState']['profiles']['u'][-1,:] - 9.9
+    v_ls_profile = infile['VelocityState']['profiles']['v'][-1,:] - 3.8
+        
+        
+    print(u_ls_profile)
+        
+    nh = ModelGrid.n_halo
+    nprof = len(u_ls_profile)
+    u_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
+    print(np.shape(u_adv), nprof, 2*nh[2])
+    u_adv[nh[2]:-nh[2]] = u_ls_profile
+    
+    
     for i in range(shape[0]):
         for j in range(shape[1]):
             for k in range(shape[2]):
@@ -301,8 +319,8 @@ def rico(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                     t += perts[i,1,k]
                 s[i,j,k] = DryThermo.s(z, t)
                 qv[i,j,k] = q
-                u[i,j,k] =  10.0 #0.0 #-9.9 + 2.0e-3 * z
-                v[i,j,k] =  0.0 #-3.8
+                u[i,j,k] =  u_adv[k]#5.0 #0.0 #-9.9 + 2.0e-3 * z
+                v[i,j,k] =  0.0 #0.0 #-3.8
     u -= Ref.u0
     v -= Ref.v0
 

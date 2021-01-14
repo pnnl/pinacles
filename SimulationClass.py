@@ -127,7 +127,11 @@ class Simulation:
         self.VelocityState.update_all_bcs()
         self.PSolver.update()
 
-    def update(self, timestop, ls_forcing):
+    def update(self, timestop, ls_forcing, u_adv):
+        self.Thermo.update()
+        s_low  = self.ScalarState.mean('s')[self.ModelGrid.n_halo[2]]
+        qv_low =self.ScalarState.mean('qv')[self.ModelGrid.n_halo[2]]
+
         while self.TimeSteppingController.time < timestop:
             for n in range(self.ScalarTimeStepping.n_rk_step):
                 self.TimeSteppingController.adjust_timestep(n)
@@ -144,10 +148,10 @@ class Simulation:
                 #self.Micro.update()
 
                 #Update the surface
-                self.Surf.update()
+                self.Surf.update(s_low, qv_low, u_adv)
 
                 #Update the forcing
-                self.Force.update()
+                self.Force.update(u_adv)
 
                 #Update Kinematics
                 self.Kine.update()

@@ -112,7 +112,7 @@ class SurfaceRICO(Surface.SurfaceBase):
             timeseries_grp['lhf'][-1] = qvflx * parameters.LV*self._Ref.rho0_edge[n_halo[2]-1]
         return
 
-    def update(self):
+    def update(self, s_low, qv_low, u_adv):
 
         nh = self._Grid.n_halo
         dxi2 = self._Grid.dxi[2]
@@ -136,19 +136,21 @@ class SurfaceRICO(Surface.SurfaceBase):
         qvt = self._ScalarState.get_tend('qv')
 
         #Get surface slices
-        usfc = u[:,:,nh[2]]
-        vsfc = v[:,:,nh[2]]
-        Ssfc = s[:,:,nh[2]]
-        qvsfc = qv[:,:,nh[2]]
+        usfc = u[:,:,nh[2]] + u_adv[nh[2]]
+        vsfc = v[:,:,nh[2]] * 0.0
+        Ssfc = np.zeros_like(usfc) + s_low
+        qvsfc = np.zeros_like(usfc) + qv_low
 
         Surface_impl.compute_windspeed_sfc(usfc, vsfc, self._Ref.u0, self._Ref.v0, self.gustiness, self._windspeed_sfc)
         #Surface_impl.tau_given_ustar(self._ustar_sfc, usfc, vsfc, self._Ref.u0, self._Ref.v0, self._windspeed_sfc, self._taux_sfc, self._tauy_sfc)
+
+        self._windspeed_sfc = self._windspeed_sfc + 0.0
 
         #TODO Not not optimized code
         self._tflx = - self._ch * self._windspeed_sfc * (Ssfc - self._T0)
         self._qvflx = - self._cq * self._windspeed_sfc * (qvsfc - self._qs0)
         Surface_impl.momentum_bulk_aero(self._windspeed_sfc, self._cm, usfc, vsfc, self._Ref.u0, self._Ref.v0, self._taux_sfc, self._tauy_sfc)
-        self._taux_sfc = -self._cm * self._windspeed_sfc * (usfc + self._Ref.u0)
+        self._taux_sfc = -self._cm * self._windspeed_sfc * (usfc + self._Ref.u0) * 0.0
         self._tauy_sfc = -self._cm * self._windspeed_sfc * (vsfc + self._Ref.v0) * 0.0
 
 
@@ -195,7 +197,7 @@ class ForcingRICO(Forcing.ForcingBase):
 
         return
 
-    def update(self):
+    def update(self, u_adv):
 
         exner = self._Ref.exner
 
@@ -216,7 +218,7 @@ class ForcingRICO(Forcing.ForcingBase):
 
 
         u_mean = self._VelocityState.mean('u')
-        ut[:,:,:] += (0.0 - u_mean[np.newaxis,np.newaxis,:])/1800.0 
+        ut[:,:,:] += (u_adv - (u_mean[np.newaxis,np.newaxis,:] + self._Ref.u0))/3600.0 
 
         #Now ad large scale subsidence
         Forcing_impl.apply_subsidence(self._subsidence, self._Grid.dxi[2],s, st)

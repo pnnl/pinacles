@@ -10,12 +10,23 @@ import SimulationClass
 
 def main(namelist):
 
-    n = 4 
+    n = 4
     gcm_res = 50*1e3
     couple_dt = 600.0
     forced_fields = ['qv', 's']
     domains = []
-    uls = 10.0
+    uls = 5.0
+    
+    
+    #Get wind profiles
+    infile = nc.Dataset('/Users/pres026/ColumbiaDev/PINACLES/rico/stats.nc', 'r')
+    
+    u_ls_profile = infile['VelocityState']['profiles']['u'][-1,:] - 9.9
+    v_ls_profile = infile['VelocityState']['profiles']['v'][-1,:] - 3.8
+        
+        
+    infile.close()
+    
     for i in range(n):
         namelist["meta"]["output_directory"] = './couple_' + str(i)
         domains.append(SimulationClass.Simulation(namelist, i))
@@ -60,6 +71,7 @@ def main(namelist):
         ss_forcing.append({})
         ls_forcing.append({})
 
+        
 
 
     for couple_time in np.arange(couple_dt,10*86400+couple_dt, couple_dt):
@@ -70,7 +82,16 @@ def main(namelist):
                 else:
                     ls_forcing[i][v] = (ls_state[i][v] - domains[i].ScalarState.mean(v) 
                         - domains[i].ScalarState.mean('qc') - domains[i].ScalarState.mean('qr') )/couple_dt
-            domains[i].update(couple_time, ls_forcing[i])
+                    
+            nh = domains[i].ModelGrid.n_halo
+            nprof = len(u_ls_profile)
+            u_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
+            print(np.shape(u_adv), nprof, 2*nh[2])
+            u_adv[nh[2]:-nh[2]] = u_ls_profile
+                    
+            
+            domains[i].update(couple_time, ls_forcing[i], u_adv)
+            
             for v in forced_fields:
                 if not v == 'qv':
                     ss_forcing[i][v] = (domains[i].ScalarState.mean(v) - ls_state[i][v])/couple_dt
@@ -78,9 +99,25 @@ def main(namelist):
                     ss_forcing[i][v] = (domains[i].ScalarState.mean(v) + domains[i].ScalarState.mean('qc') + domains[i].ScalarState.mean('qr') 
                      - ls_state[i][v])/couple_dt
 
+
+                    
         for i in range(n):
+            
+            nh = domains[i].ModelGrid.n_halo
+            nprof = len(u_ls_profile)
+            u_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
+            print(np.shape(u_adv), nprof, 2*nh[2])
+            u_adv[nh[2]:-nh[2]] = u_ls_profile
+            
+            
+            
             for v in forced_fields:
-                adv = uls * (ls_state[(i-1)%n][v] - ls_state[i%n][v] )/gcm_res
+                adv = np.zeros_like(u_adv)
+                for k in range(u_adv.shape[0]):
+                    if u_adv[k] >= 0.0:
+                        adv[k] = u_adv[k] * (ls_state[(i-1)%n][v][k] - ls_state[i%n][v][k] )/gcm_res
+                    else:
+                        adv[k] = -u_adv[k] * (ls_state[(i+1)%n][v][k] - ls_state[i%n][v][k] )/gcm_res
                 ls_state[i][v] += adv * couple_dt + ss_forcing[i][v] * couple_dt
 
 
