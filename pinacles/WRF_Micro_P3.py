@@ -23,7 +23,7 @@ class MicroP3(MicrophysicsBase):
                 print('\tP3: Using the ' + str(self._rain_moment) + '-moment rain scheme')
 
             #Set the default droplet conencentration for 1-moment rain scheme.
-            self._nccnst =  200.e+6
+            self._nccnst = 200.e+6
             try:
                 self._nccnst = namelist['microphysics']['nccnst']
             except:

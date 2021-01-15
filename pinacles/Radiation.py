@@ -1,4 +1,5 @@
 from pinacles import parameters
+from pinacles import UtilitiesParallel
 import time
 import numba
 import numpy as np
@@ -13,7 +14,7 @@ ffi = FFI()
 
 class RRTMG:
     def __init__(self, namelist, Grid, Ref, ScalarState, DiagnosticState, Surf,TimeSteppingController):
-
+        self._name = 'RRTMG'
         self._Grid = Grid
         self._Ref = Ref
         self._ScalarState = ScalarState
@@ -40,7 +41,7 @@ class RRTMG:
         try:
             self._radiation_frequency = namelist['radiation']['update_frequency']
         except:
-            self._radiation_frequency = 60.0
+            self._radiation_frequency = 30.0
 
         #
 
@@ -86,6 +87,9 @@ class RRTMG:
         # self._DiagnosticState.add_variable('uflux_sw')
         # self._DiagnosticState.add_variable('dflux_sw')
 
+        nl = self._Grid.ngrid_local
+
+       
        
         self._radiation_file_path = namelist['radiation']['input_filepath']
         data = nc.Dataset(self._radiation_file_path, 'r')
@@ -148,7 +152,7 @@ class RRTMG:
         n_halo = self._Grid.n_halo[2]
        
         data = nc.Dataset(self._radiation_file_path, 'r')
-          try:
+        try:
             rad_data = data.groups['radiation_varanal']
             print('radiation profiles from analysis')
             # rad_data = data.groups['radiation_sonde']
@@ -198,6 +202,8 @@ class RRTMG:
         index_o3 = 7
 
         self._profile_o3 = interpolate_trace_gas(lw_pressure,lw_absorber[:,index_o3],plev_col)
+
+
         # plt.figure(1)
         # plt.plot(plev_col[:-1]-plev_col[1:],'o')
         # plt.plot(play_col[:-1]-play_col[1:],'s')
@@ -206,6 +212,16 @@ class RRTMG:
         # plt.plot(lw_pressure,lw_absorber[:,index_o3],'o')
         # plt.plot(play_col,self._profile_o3, 's')
         # plt.show()
+
+        self._surf_sw_dn = 0.0
+        self._surf_sw_up = 0.0
+        self._surf_lw_dn = 0.0
+        self._surf_lw_up = 0.0
+
+        self._toa_sw_dn = 0.0
+        self._toa_sw_up = 0.0
+        self._toa_lw_dn = 0.0
+        self._toa_lw_up = 0.0  
         return
 
     def update(self,  _rk_step):
@@ -255,7 +271,7 @@ class RRTMG:
             tlev = np.zeros((_ncol,_nlay + 1), dtype=np.double, order='F')
             tsfc = np.ones((_ncol),dtype=np.double,order='F') * self._Surf.T_surface
             h2ovmr = np.zeros((_ncol,_nlay),dtype=np.double,order='F')
-            o3vmr  = np.ones((_ncol,_nlay),dtype=np.double,order='F') * self._vmr_o3
+            o3vmr  = np.zeros((_ncol,_nlay),dtype=np.double,order='F') 
             co2vmr = np.ones((_ncol,_nlay),dtype=np.double,order='F') * self._vmr_co2
             ch4vmr = np.ones((_ncol,_nlay),dtype=np.double,order='F') * self._vmr_ch4
             n2ovmr = np.ones((_ncol,_nlay),dtype=np.double,order='F') * self._vmr_n2o
@@ -326,7 +342,8 @@ class RRTMG:
             # plt.figure()
             # plt.plot(play[0,:],tlay[0,:],'-o')
             # plt.plot(self.p_extension[:],self.t_extension[:],'--s')
-            # plt.show()
+            
+            # fig.show()
             
 
             # qv to rrtmg shape; convert to vmr
@@ -373,8 +390,17 @@ class RRTMG:
             as_pointer(uflx_sw), as_pointer(dflx_sw), as_pointer(hr_sw), as_pointer(uflxc_sw),\
             as_pointer(dflxc_sw) , as_pointer(hrc_sw))
 
-          
-        
+            # global number of non-ghost points 
+            npts = self._Grid.n[0] * self._Grid.n[1]
+            self._surf_sw_dn = np.sum(dflx_sw[:,0])/npts
+            self._surf_sw_up = np.sum(uflx_sw[:,0])/npts
+            self._surf_lw_dn = np.sum(dflx_lw[:,0])/npts
+            self._surf_lw_up = np.sum(uflx_lw[:,0])/npts
+
+            self._toa_sw_dn = np.sum(dflx_sw[:,-1])/npts
+            self._toa_sw_up = np.sum(uflx_sw[:,-1])/npts
+            self._toa_lw_dn = np.sum(dflx_lw[:,-1])/npts
+            self._toa_lw_up = np.sum(uflx_lw[:,-1])/npts           
 
             # ds_uflux_lw = self._DiagnosticState.get_field('uflux_lw')
             # ds_dflux_lw = self._DiagnosticState.get_field('dflux_lw')
@@ -405,10 +431,82 @@ class RRTMG:
           
 
         # FOR ALL RK STEPS
-        st[:,:,:] += ds_dTdt_rad
+        st[:,:,:] += ds_dTdt_rad[:,:,:]
 
 
         return
+    
+    def io_initialize(self, nc_grp):
+        timeseries_grp = nc_grp['timeseries']
+        profiles_grp = nc_grp['profiles']
+
+        v = timeseries_grp.createVariable('surface_sw_down', np.double, dimensions=('time',))
+        v.long_name = 'surface shortwave down'
+        v.standard_name = 'surface_sw_down'
+        v.units = 'W/m^2'
+
+        v = timeseries_grp.createVariable('surface_sw_up', np.double, dimensions=('time',))
+        v.long_name = 'surface shortwave up'
+        v.standard_name = 'surface_sw_up'
+        v.units = 'W/m^2'
+
+    
+        v = timeseries_grp.createVariable('surface_lw_down', np.double, dimensions=('time',))
+        v.long_name = 'surface longwave down'
+        v.standard_name = 'surface_lw_down'
+        v.units = 'W/m^2'
+
+
+        v = timeseries_grp.createVariable('surface_lw_up', np.double, dimensions=('time',))
+        v.long_name = 'surface longwave up'
+        v.standard_name = 'surface_lw_up'
+        v.units = 'W/m^2'
+
+        v = timeseries_grp.createVariable('toa_sw_down', np.double, dimensions=('time',))
+        v.long_name = 'TOA shortwave down'
+        v.standard_name = 'toa_sw_down'
+        v.units = 'W/m^2'
+
+        v = timeseries_grp.createVariable('toa_sw_up', np.double, dimensions=('time',))
+        v.long_name = 'TOA shortwave up'
+        v.standard_name = 'toa_sw_up'
+        v.units = 'W/m^2'
+
+    
+        v = timeseries_grp.createVariable('toa_lw_down', np.double, dimensions=('time',))
+        v.long_name = 'toa longwave down'
+        v.standard_name = 'surface_lw_down'
+        v.units = 'W/m^2'
+
+
+        v = timeseries_grp.createVariable('toa_lw_up', np.double, dimensions=('time',))
+        v.long_name = 'toa longwave up'
+        v.standard_name = 'toa_lw_up'
+        v.units = 'W/m^2'
+
+        return
+
+    def io_update(self, nc_grp):
+            my_rank = MPI.COMM_WORLD.Get_rank()
+            if my_rank == 0:
+                timeseries_grp = nc_grp['timeseries']
+                profiles_grp = nc_grp['profiles']
+
+                timeseries_grp['surface_sw_up'][-1] = UtilitiesParallel.ScalarAllReduce(self._surf_sw_up)
+                timeseries_grp['surface_sw_down'][-1] = UtilitiesParallel.ScalarAllReduce(self._surf_sw_dn)
+                timeseries_grp['surface_lw_up'][-1] = UtilitiesParallel.ScalarAllReduce(self._surf_lw_up)
+                timeseries_grp['surface_lw_down'][-1] = UtilitiesParallel.ScalarAllReduce(self._surf_lw_dn)
+
+                timeseries_grp['toa_sw_up'][-1] = UtilitiesParallel.ScalarAllReduce(self._toa_sw_up)
+                timeseries_grp['toa_sw_down'][-1] = UtilitiesParallel.ScalarAllReduce(self._toa_sw_dn)
+                timeseries_grp['toa_lw_up'][-1] = UtilitiesParallel.ScalarAllReduce(self._toa_lw_up)
+                timeseries_grp['toa_lw_down'][-1] = UtilitiesParallel.ScalarAllReduce(self._toa_lw_dn)
+            return
+
+    @property
+    def name(self):
+        return self._name           
+
 
 # Does this work for plev?
 @numba.njit

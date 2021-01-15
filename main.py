@@ -127,6 +127,7 @@ def main(namelist):
     StatsIO.add_class(Micro)
     StatsIO.add_class(DiagTurbulence)
     StatsIO.add_class(DiagClouds)
+    StatsIO.add_class(Rad)
 
 
 
@@ -249,7 +250,7 @@ def main(namelist):
         #         print('Scalar Integral ', np.sum(s_slice))
         #         print('S-min max', np.amin(w), np.amax(w))
 
-    print('Timing: ', np.min(times),)
+    # print('Timing: ', np.min(times),)
 
     TerminalIO.end_message()
 

@@ -1,5 +1,6 @@
 import numpy as np
 import pinacles.ThermodynamicsDry_impl as DryThermo
+import pinacles.ThermodynamicsMoist_impl as MoistThermo
 import netCDF4 as nc
 from scipy import interpolate
 
@@ -391,17 +392,32 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     w = VelocityState.get_field('w')
     s = ScalarState.get_field('s')
     qv = ScalarState.get_field('qv')
+    qc = ScalarState.get_field('qc')
+    try:
+        raw_clwc = init_data.variables['cloud_water_content'][:]
+        
+        init_qc = True
+    except:
+        init_qc = False
+        qc.fill(0.0)
     zl = ModelGrid.z_local
 
     init_z = init_data.variables['z'][:]
     
-    raw_qv = init_data.variables['vapor_mixing_ratio'][:]/1000.0
+    raw_qv = init_data.variables['vapor_mixing_ratio'][:] 
     raw_u = init_data.variables['u'][:]
     raw_v = init_data.variables['v'][:]
     
     init_var_from_sounding(raw_u, init_z, zl, u)
     init_var_from_sounding(raw_v, init_z, zl, v)
     init_var_from_sounding(raw_qv, init_z, zl, qv)
+    if init_qc:
+        init_var_from_sounding(raw_clwc, init_z, zl, qc)
+        shape = qc.shape
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                for k in range(shape[2]):
+                    qc[i,j,k] = qc[i,j,k] /Ref.rho0[k]
 
     u -= Ref.u0
     v -= Ref.v0
@@ -420,8 +436,8 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                     t = s[i,j,k] 
                     if zl[k] < pert_max_height:
                         t += perts[i,j,k]
-                    s[i,j,k] = DryThermo.s(zl[k], t)
-    except
+                    s[i,j,k] = MoistThermo.s(zl[k],t,qc[i,j,k],0.0)
+    except:
         raw_theta = init_data.variables['potential_temperature'][:]
         init_var_from_sounding(raw_theta, init_z, zl, s)
         # hardwire for now, could make inputs in namelist or data file
@@ -435,7 +451,7 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                     t = s[i,j,k] * Ref.exner[k]
                     if zl[k] < pert_max_height:
                         t += perts[i,j,k]
-                    s[i,j,k] = DryThermo.s(zl[k], t)
+                    s[i,j,k] = MoistThermo.s(zl[k],t,qc[i,j,k],0.0)
     
     return
        

@@ -28,7 +28,11 @@ class SurfaceTestbed(Surface.SurfaceBase):
         self._forcing_times = surface_data.variables['times'][:]
         self._forcing_shf = surface_data.variables['sensible_heat_flux'][:]
         self._forcing_lhf = surface_data.variables['latent_heat_flux'][:]
-        self._forcing_skintemp = surface_data.variables['skin_temperature'][:]
+        try:
+            self._forcing_skintemp = surface_data.variables['skin_temperature'][:]
+        except:
+            self._forcing_skintemp = surface_data.variables['surface_temperature'][:]
+            print('surface skin temp inferred from LW radiative fluxes')
         self._forcing_ustar = surface_data.variables['friction_velocity'][:]
         # Read off other variables needed for radiation..?
 
@@ -80,6 +84,7 @@ class SurfaceTestbed(Surface.SurfaceBase):
         shf_interp = interpolate.interp1d(self._forcing_times, self._forcing_shf,fill_value='extrapolate', assume_sorted=True )(current_time)
         lhf_interp = interpolate.interp1d(self._forcing_times, self._forcing_lhf,fill_value='extrapolate', assume_sorted=True )(current_time)
         ustar_interp = interpolate.interp1d(self._forcing_times, self._forcing_ustar,fill_value='extrapolate', assume_sorted=True )(current_time)
+        self.T_surface = interpolate.interp1d(self._forcing_times, self._forcing_skintemp, fill_value='extrapolate', assume_sorted=True )(current_time)
         # Get grid & reference profile info
         nh = self._Grid.n_halo
         dxi2 = self._Grid.dxi[2]
