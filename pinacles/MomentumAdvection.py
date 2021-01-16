@@ -40,6 +40,19 @@ class MomentumAdvectionBase:
             self._fu = MomentumAdvection_impl.u_advection_weno7
             self._fv = MomentumAdvection_impl.v_advection_weno7
             self._fw = MomentumAdvection_impl.w_advection_weno7
+        elif scheme == 'SECOND':
+            UtilitiesParallel.print_root('\t \t Using ' + scheme + ' momentum advection')
+            assert(np.all(n_halo >= 3)) # Check that we have enough halo points
+            self._fu = MomentumAdvection_impl.u_advection_2nd
+            self._fv = MomentumAdvection_impl.v_advection_2nd
+            self._fw = MomentumAdvection_impl.w_advection_2nd
+        elif scheme == 'FOURTH':
+            UtilitiesParallel.print_root('\t \t Using ' + scheme + ' momentum advection')
+            assert(np.all(n_halo >= 4)) # Check that we have enough halo points
+            self._fu = MomentumAdvection_impl.u_advection_4th
+            self._fv = MomentumAdvection_impl.v_advection_4th
+            self._fw = MomentumAdvection_impl.w_advection_4th
+
 
         # Make sure functions have for each velocity component
         assert(self._fu is not None)
