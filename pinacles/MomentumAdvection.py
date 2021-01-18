@@ -19,7 +19,6 @@ class MomentumAdvectionBase:
 
     def update(self):
 
-
         return
 
     def flux_function_factory(self, namelist):
