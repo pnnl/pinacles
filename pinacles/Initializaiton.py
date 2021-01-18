@@ -59,7 +59,8 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     v = VelocityState.get_field('v')
     w = VelocityState.get_field('w')
     s = ScalarState.get_field('s')
-
+    p1 = ScalarState.get_field('p1')
+    
     xl = ModelGrid.x_local
     yl = ModelGrid.y_local
     zl = ModelGrid.z_local
@@ -72,6 +73,7 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     u.fill(0.0)
     v.fill(0.0)
     w.fill(0.0)
+    p1.fill(0.0)
 
     u -= Ref.u0
     v -= Ref.v0
@@ -89,9 +91,11 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                 elif 974.0 <= zl[k] and zl[k] < 1074.0:
                     t = 300.0 + (zl[k] - 974.0) * 0.08
                     t *= exner[k]
+                    p1[i,j,k] = 1.0
                 else:
                     t = 308.0 + (zl[k] - 1074.0) * 0.0034
                     t *= exner[k]
+                    p1[i,j,k] = 1.0
                 if zl[k] < 200.0:
                     t += perts[i,j,k]
                 s[i,j,k] = DryThermo.s(zl[k], t)

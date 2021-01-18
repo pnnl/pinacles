@@ -214,6 +214,28 @@ class ModelState:
         return recv_buf
 
 
+    def get_field_slice_x(self, name, global_indx=0):
+
+        ls = self._Grid.local_start
+        nl = self._Grid.nl
+        nh = self._Grid.n_halo
+        n = self._Grid.n
+
+        #Get the local data
+        local_data = self.get_field(name)[global_indx,nh[1]:-nh[1],nh[2]:-nh[2]]
+        
+        #Fill an array 
+        local_copy_of_global = np.zeros((n[1], n[2]), dtype=np.double)
+
+        recv_buf = np.zeros_like(local_copy_of_global)
+        if ls[0] + nh[0] <= global_indx and global_indx < ls[0] + nh[0] + nl[0]:
+            local_copy_of_global[ls[1]:ls[1]+nl[1],
+                                 ls[2]:ls[2]+nl[2]] = local_data[:,:]
+
+        MPI.COMM_WORLD.Allreduce(local_copy_of_global, recv_buf, op=MPI.SUM)
+
+        return recv_buf
+
     def get_loc(self, var):
         return self._loc[var]
 

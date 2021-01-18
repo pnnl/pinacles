@@ -26,7 +26,7 @@ from mpi4py import MPI
 import numpy as np
 import time
 import pylab as plt
-
+import pickle as pkl
 import os 
 from termcolor import colored
 os.environ["HDF5_USE_FILE_LOCKING"]="FALSE"
@@ -60,6 +60,9 @@ def main(namelist):
     VelocityState.add_variable('u', long_name = 'u velocity component', units='m/s', latex_name = 'u')
     VelocityState.add_variable('v', long_name = 'v velocity component', units='m/s', latex_name = 'v')
     VelocityState.add_variable('w', long_name = 'w velocity component', units='m/s', latex_name = 'w', loc='z', bcs='value zero')
+
+
+    ScalarState.add_variable('p1', long_name = 'passive scalar', units='kg/kg', latex_name = 'p1')
 
     # Set up the thermodynamics class
     Kine = Kinematics.Kinematics(ModelGrid, Ref, VelocityState, DiagnosticState)
@@ -220,13 +223,42 @@ def main(namelist):
         MPI.COMM_WORLD.barrier()
         if MPI.COMM_WORLD.Get_rank() == 0:
             print(colored('\t Walltime: ', 'green'), colored(t1 -t0, 'green'), colored('\tModeltime/Walltime: ', 'green'), colored(TimeSteppingController._dt/(t1 - t0), 'green'))
-        #s_slice = DiagnosticState.get_field_slice_z('T', indx=5)
+
+        #if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%60.0,0.0):
+        tt1 = time.time() 
+        p1_slice = ScalarState.get_field_slice_x('p1', global_indx=5) 
+        w_slice = VelocityState.get_field_slice_x('w', global_indx=5) 
+        s_slice = VelocityState.get_field_slice_x('w', global_indx=5) 
+        Q_slice = DiagnosticState.get_field_slice_x('Q_criterion', global_indx=5) 
+        xl = ModelGrid.x_local
+        yl = ModelGrid.y_local
+        zl = ModelGrid.z_local
+        if MPI.COMM_WORLD.Get_rank() == 0:
+
+            d_slice = {}
+
+            d_slice['p1'] = p1_slice 
+            d_slice['w'] = w_slice
+            d_slice['s'] = s_slice
+            d_slice['Q'] = Q_slice
+            d_slice['xl'] = xl
+            d_slice['yl'] = yl
+            d_slice['zl'] = zl
+
+            with open('./figs/' + str(1000000 + i) + '.pkl', 'wb') as pkl_of:
+                pkl.dump(d_slice, pkl_of)
+
+            tt2 = time.time()
+            print(tt2 - tt1)
+            #levels=np.linspace(-6.0, 6.0, 100)
+            #plt.contourf(w_slice.T, levels, cmap=plt.cm.gist_ncar)
+            #plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=300)
+            #plt.close
         #s_slice = VelocityState.get_field_slice_z('w', indx=5)
         # b = DiagnosticState.get_field('T')
         # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
-        xl = ModelGrid.x_local
-        zl = ModelGrid.z_local
-        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%300.0,0.0):
+
+        if np.isclose((TimeSteppingController._time + TimeSteppingController._dt)%60.0,0.0):
             FieldsIO.update()
             if MPI.COMM_WORLD.Get_rank() == 0:
                 pass 
