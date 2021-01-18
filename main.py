@@ -248,13 +248,13 @@ def main(namelist):
             #with open('./figs/' + str(1000000 + i) + '.pkl', 'wb') as pkl_of:
             #    pkl.dump(d_slice, pkl_of)
 
-            tt2 = time.time()
-            print(tt2 - tt1)
-            levels=np.linspace(-6.0, 6.0, 100)
-            plt.figure(figsize=(5.0/2.0 * 5.0, 1.0 * 5.0))
-            plt.contourf(p1_slice.T, levels, cmap=plt.cm.gist_ncar)
-            plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=300)
-            plt.close
+            #tt2 = time.time()
+            #print(tt2 - tt1)
+            #levels=np.linspace(-0.05, 1.05, 100)
+            #plt.figure(figsize=(5.0/2.0 * 5.0, 1.0 * 5.0))
+            ##plt.contourf(p1_slice.T, levels, cmap=plt.cm.gist_ncar)
+            #plt.savefig('./figs/' + str(1000000 + i) + '.png', dpi=300)
+            #plt.close
         #s_slice = VelocityState.get_field_slice_z('w', indx=5)
         # b = DiagnosticState.get_field('T')
         # #theta = b / Ref.exner[np.newaxis, np.newaxis,:]
