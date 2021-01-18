@@ -437,6 +437,8 @@ class RRTMG:
         return
     
     def io_initialize(self, nc_grp):
+        if not self._compute_radiation:
+            return
         timeseries_grp = nc_grp['timeseries']
         profiles_grp = nc_grp['profiles']
 
@@ -487,21 +489,23 @@ class RRTMG:
         return
 
     def io_update(self, nc_grp):
-            my_rank = MPI.COMM_WORLD.Get_rank()
-            if my_rank == 0:
-                timeseries_grp = nc_grp['timeseries']
-                profiles_grp = nc_grp['profiles']
-
-                timeseries_grp['surface_sw_up'][-1] = UtilitiesParallel.ScalarAllReduce(self._surf_sw_up)
-                timeseries_grp['surface_sw_down'][-1] = UtilitiesParallel.ScalarAllReduce(self._surf_sw_dn)
-                timeseries_grp['surface_lw_up'][-1] = UtilitiesParallel.ScalarAllReduce(self._surf_lw_up)
-                timeseries_grp['surface_lw_down'][-1] = UtilitiesParallel.ScalarAllReduce(self._surf_lw_dn)
-
-                timeseries_grp['toa_sw_up'][-1] = UtilitiesParallel.ScalarAllReduce(self._toa_sw_up)
-                timeseries_grp['toa_sw_down'][-1] = UtilitiesParallel.ScalarAllReduce(self._toa_sw_dn)
-                timeseries_grp['toa_lw_up'][-1] = UtilitiesParallel.ScalarAllReduce(self._toa_lw_up)
-                timeseries_grp['toa_lw_down'][-1] = UtilitiesParallel.ScalarAllReduce(self._toa_lw_dn)
+        if not self._compute_radiation:
             return
+        my_rank = MPI.COMM_WORLD.Get_rank()
+        if my_rank == 0:
+            timeseries_grp = nc_grp['timeseries']
+            profiles_grp = nc_grp['profiles']
+
+            timeseries_grp['surface_sw_up'][-1] = UtilitiesParallel.ScalarAllReduce(self._surf_sw_up)
+            timeseries_grp['surface_sw_down'][-1] = UtilitiesParallel.ScalarAllReduce(self._surf_sw_dn)
+            timeseries_grp['surface_lw_up'][-1] = UtilitiesParallel.ScalarAllReduce(self._surf_lw_up)
+            timeseries_grp['surface_lw_down'][-1] = UtilitiesParallel.ScalarAllReduce(self._surf_lw_dn)
+
+            timeseries_grp['toa_sw_up'][-1] = UtilitiesParallel.ScalarAllReduce(self._toa_sw_up)
+            timeseries_grp['toa_sw_down'][-1] = UtilitiesParallel.ScalarAllReduce(self._toa_sw_dn)
+            timseries_grp['toa_lw_up'][-1] = UtilitiesParallel.ScalarAllReduce(self._toa_lw_up)
+            timeseries_grp['toa_lw_down'][-1] = UtilitiesParallel.ScalarAllReduce(self._toa_lw_dn)
+        return
 
     @property
     def name(self):
