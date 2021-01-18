@@ -5,7 +5,7 @@ import numba
 import numpy as np
 from mpi4py import MPI
 from scipy import interpolate
-import pylab as plt
+#import pylab as plt
 import netCDF4 as nc
 from cffi import FFI
 import ctypes
@@ -27,12 +27,10 @@ class RRTMG:
         except:
             if namelist['meta']['casename'] == 'testbed':
                 self._compute_radiation = True
-                if MPI.COMM_WORLD.Get_rank() == 0:
-                    print('Assuming RRTMG should be used for testbed case.')
+                UtilitiesParallel.print_root('\t \t Assuming RRTMG should be used for testbed case.')
             else:
                 self._compute_radiation = False
-                if MPI.COMM_WORLD.Get_rank() == 0:
-                    print('Assuming RRTMG should not be used for this case.')
+                UtilitiesParallel.print_root('\t \t Assuming RRTMG should not be used for this case.')
      
         if not self._compute_radiation:
             return
@@ -95,7 +93,7 @@ class RRTMG:
         data = nc.Dataset(self._radiation_file_path, 'r')
         try:
             rad_data = data.groups['radiation_varanal']
-            print('radiation profiles from analysis')
+            UtilitiesParallel.print_rootprint('\t \t radiation profiles from analysis')
             # rad_data = data.groups['radiation_sonde']
             # print('radiation profiles from sonde')
         except:
@@ -117,7 +115,7 @@ class RRTMG:
         
         self._adir =  albedo
         self._adif = albedo
-        print(self._emis, self._adir, self._adif)
+        # print(self._emis, self._adir, self._adif)
         data.close()
 
         # CL WRF values based on 2005 values from 2007 IPCC report

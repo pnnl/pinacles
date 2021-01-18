@@ -32,7 +32,7 @@ class SurfaceTestbed(Surface.SurfaceBase):
             self._forcing_skintemp = surface_data.variables['skin_temperature'][:]
         except:
             self._forcing_skintemp = surface_data.variables['surface_temperature'][:]
-            print('surface skin temp inferred from LW radiative fluxes')
+            UtilitiesParallel.print_root('\t \t surface skin temp inferred from LW radiative fluxes')
         self._forcing_ustar = surface_data.variables['friction_velocity'][:]
         # Read off other variables needed for radiation..?
 
