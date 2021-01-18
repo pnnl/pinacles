@@ -245,8 +245,8 @@ def main(namelist):
             d_slice['yl'] = yl
             d_slice['zl'] = zl
 
-            #with open('./figs/' + str(1000000 + i) + '.pkl', 'wb') as pkl_of:
-            #    pkl.dump(d_slice, pkl_of)
+            with open('./figs/' + str(1000000 + i) + '.pkl', 'wb') as pkl_of:
+                pkl.dump(d_slice, pkl_of)
 
             #tt2 = time.time()
             #print(tt2 - tt1)
