@@ -93,7 +93,7 @@ class RRTMG:
         data = nc.Dataset(self._radiation_file_path, 'r')
         try:
             rad_data = data.groups['radiation_varanal']
-            UtilitiesParallel.print_rootprint('\t \t radiation profiles from analysis')
+            UtilitiesParallel.print_root('\t \t radiation profiles from analysis')
             # rad_data = data.groups['radiation_sonde']
             # print('radiation profiles from sonde')
         except:
