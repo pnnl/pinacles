@@ -347,20 +347,31 @@ class RRTMG:
             # qv to rrtmg shape; convert to vmr
             to_rrtmg_shape(_nhalo,self._ScalarState.get_field('qv'),self.qv_extension,h2ovmr, self.p_buffer, self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
             h2ovmr *= parameters.RV/parameters.RD
+
+            print('check h2ovmr',_ncol, _nlay, np.shape(h2ovmr))
+            print('check cliqwp', np.shape(cliqwp))
+            print(np.shape(plev))
+
             # ql to rrtmg shape; need to convert to path in g/m^2
-            if 'ql' in self._ScalarState.names:
-                to_rrtmg_shape(_nhalo, self._ScalarState.get_field('ql'), self.ql_extension, cliqwp, self.p_buffer,self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
-                cliqwp *= 1.e3/parameters.G * (plev[np.newaxis,:-1]-plev[np.newaxis,1:])
+            if 'qc' in self._ScalarState.names:
+                to_rrtmg_shape(_nhalo, self._ScalarState.get_field('qc'), self.ql_extension, cliqwp, self.p_buffer,self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
+                cliqwp *= 1.e3/parameters.G * (plev[:,:-1]-plev[:,1:]) 
 
             #  qi to rrtmg shape; need to convert to path in g/m^2
             if 'qi' in self._ScalarState.names:
-                to_rrtmg_shape(_nhalo, self._ScalarState.get_field('ql'), self.qi_extension, cicewp, self.p_buffer,self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
+                to_rrtmg_shape(_nhalo, self._ScalarState.get_field('qi'), self.qi_extension, cicewp, self.p_buffer,self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
                 cicewp *= 1.e3/parameters.G * (plev[np.newaxis,:-1]-plev[np.newaxis,1:])
             
             play *= 0.01
             plev *= 0.01
 
             o3vmr = np.asfortranarray(np.repeat(self._profile_o3[np.newaxis,:],_ncol,axis=0))
+
+            print('check cliqwp',_ncol, _nlay, np.shape(cliqwp))
+            # import pylab as plt
+            # plt.figure()
+            # plt.contourf(cliqwp)
+            # plt.show()
 
 
     

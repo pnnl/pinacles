@@ -106,6 +106,7 @@ class MicroP3(MicrophysicsBase):
 
         reflectivity = self._DiagnosticState.get_field('reflectivity')
         diag_effc_3d = self._DiagnosticState.get_field('diag_effc_3d')
+        diag_effi_3d = self._DiagnosticState.get_field('diag_effi_3d')
 
         exner = self._Ref.exner
         p0 = self._Ref.p0
@@ -131,7 +132,7 @@ class MicroP3(MicrophysicsBase):
 
         reflectivity_wrf = np.empty_like(rho_wrf)
         diag_effc_3d_wrf= np.empty_like(rho_wrf)
-        diag_effi = np.empty_like(rho_wrf)
+        diag_effi_3d_wrf = np.empty_like(rho_wrf)
         diag_vmi = np.empty_like(rho_wrf)
         diag_di = np.empty_like(rho_wrf)
         diag_rhopo = np.empty_like(rho_wrf)
@@ -184,7 +185,7 @@ class MicroP3(MicrophysicsBase):
                     its, ite, jts, jte, kts, kte ,
                     T_wrf, qv_wrf, qc_wrf, qr_wrf,
                     qnr_wrf, reflectivity_wrf, diag_effc_3d_wrf,
-                    diag_effi, diag_vmi, diag_di,
+                    diag_effi_3d_wrf, diag_vmi, diag_di,
                     diag_rhopo, th_old, qv_old,
                     qi1_wrf, qni1_wrf, qir1_wrf, qib1_wrf,
                     nc_wrf, exner_wrf, p0_wrf, dz_wrf, w_wrf,
@@ -197,7 +198,7 @@ class MicroP3(MicrophysicsBase):
                     its, ite, jts, jte, kts, kte ,
                     T_wrf, qv_wrf, qc_wrf, qr_wrf,
                     qnr_wrf, reflectivity_wrf, diag_effc_3d_wrf,
-                    diag_effi, diag_vmi, diag_di,
+                    diag_effi_3d_wrf, diag_vmi, diag_di,
                     diag_rhopo, th_old, qv_old,
                     qi1_wrf, qni1_wrf, qir1_wrf, qib1_wrf,
                     exner_wrf, p0_wrf, dz_wrf, w_wrf,
@@ -223,6 +224,7 @@ class MicroP3(MicrophysicsBase):
 
 
         to_our_order(nhalo, diag_effc_3d_wrf, diag_effc_3d)
+        to_our_order(nhalo, diag_effi_3d_wrf, diag_effi_3d)
         to_our_order(nhalo, reflectivity_wrf, reflectivity)
 
         self._itimestep += 1

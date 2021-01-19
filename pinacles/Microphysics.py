@@ -65,3 +65,9 @@ class MicrophysicsBase:
     
     def get_qi(self):
         return np.zeros((self._Grid._ngrid_local), dtype=np.double)
+    
+    def get_reffc(self):
+        return np.zeros((self._Grid._ngrid_local), dtype=np.double)
+
+    def get_reffi(self):
+        return np.zeros((self._Grid._ngrid_local), dtype=np.double)
