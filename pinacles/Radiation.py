@@ -350,12 +350,12 @@ class RRTMG:
             # ql to rrtmg shape; need to convert to path in g/m^2
             if 'ql' in self._ScalarState.names:
                 to_rrtmg_shape(_nhalo, self._ScalarState.get_field('ql'), self.ql_extension, cliqwp, self.p_buffer,self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
-                cliqwp *= 1.e3/parameters.G * (plev[:-1]-plev[1:])
+                cliqwp *= 1.e3/parameters.G * (plev[np.newaxis,:-1]-plev[np.newaxis,1:])
 
             #  qi to rrtmg shape; need to convert to path in g/m^2
             if 'qi' in self._ScalarState.names:
                 to_rrtmg_shape(_nhalo, self._ScalarState.get_field('ql'), self.qi_extension, cicewp, self.p_buffer,self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
-                cicewp *= 1.e3/parameters.G * (plev[:-1]-plev[1:])
+                cicewp *= 1.e3/parameters.G * (plev[np.newaxis,:-1]-plev[np.newaxis,1:])
             
             play *= 0.01
             plev *= 0.01
@@ -490,19 +490,31 @@ class RRTMG:
         if not self._compute_radiation:
             return
         my_rank = MPI.COMM_WORLD.Get_rank()
+        
+        
+        surface_sw_up = UtilitiesParallel.ScalarAllReduce(self._surf_sw_up)
+        surface_sw_down = UtilitiesParallel.ScalarAllReduce(self._surf_sw_dn)
+        surface_lw_up = UtilitiesParallel.ScalarAllReduce(self._surf_lw_up)
+        surface_lw_down = UtilitiesParallel.ScalarAllReduce(self._surf_lw_dn)
+
+        toa_sw_up = UtilitiesParallel.ScalarAllReduce(self._toa_sw_up)
+        toa_sw_down = UtilitiesParallel.ScalarAllReduce(self._toa_sw_dn)
+        toa_lw_up = UtilitiesParallel.ScalarAllReduce(self._toa_lw_up)
+        toa_lw_down = UtilitiesParallel.ScalarAllReduce(self._toa_lw_dn)
+        
         if my_rank == 0:
             timeseries_grp = nc_grp['timeseries']
             profiles_grp = nc_grp['profiles']
+            
+            timeseries_grp['surface_sw_up'][-1] = surface_sw_up
+            timeseries_grp['surface_sw_down'][-1] = surface_sw_down 
+            timeseries_grp['surface_lw_up'][-1] = surface_lw_up
+            timeseries_grp['surface_lw_down'][-1] = surface_lw_down
 
-            timeseries_grp['surface_sw_up'][-1] = UtilitiesParallel.ScalarAllReduce(self._surf_sw_up)
-            timeseries_grp['surface_sw_down'][-1] = UtilitiesParallel.ScalarAllReduce(self._surf_sw_dn)
-            timeseries_grp['surface_lw_up'][-1] = UtilitiesParallel.ScalarAllReduce(self._surf_lw_up)
-            timeseries_grp['surface_lw_down'][-1] = UtilitiesParallel.ScalarAllReduce(self._surf_lw_dn)
-
-            timeseries_grp['toa_sw_up'][-1] = UtilitiesParallel.ScalarAllReduce(self._toa_sw_up)
-            timeseries_grp['toa_sw_down'][-1] = UtilitiesParallel.ScalarAllReduce(self._toa_sw_dn)
-            timseries_grp['toa_lw_up'][-1] = UtilitiesParallel.ScalarAllReduce(self._toa_lw_up)
-            timeseries_grp['toa_lw_down'][-1] = UtilitiesParallel.ScalarAllReduce(self._toa_lw_dn)
+            timeseries_grp['toa_sw_up'][-1] = toa_sw_up
+            timeseries_grp['toa_sw_down'][-1] = toa_sw_down 
+            timeseries_grp['toa_lw_up'][-1] = toa_lw_up 
+            timeseries_grp['toa_lw_down'][-1] = toa_lw_down
         return
 
     @property
@@ -543,7 +555,6 @@ def to_our_shape(nhalo, rrtmg_array, our_array):
     count = 0
     for i in range(nhalo[0],shape[0]-nhalo[0]):
         for j in range(nhalo[1],shape[1]-nhalo[1]):
-        
             for k in range(nhalo[2], shape[2]- nhalo[2]):
                 k_rrtmg = k - nhalo[2]
                 our_array[i,j,k] = rrtmg_array[count, k_rrtmg]
