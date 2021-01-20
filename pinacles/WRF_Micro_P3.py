@@ -228,9 +228,7 @@ class MicroP3(MicrophysicsBase):
         to_our_order(nhalo, diag_effi_3d_wrf, diag_effi_3d)
         to_our_order(nhalo, reflectivity_wrf, reflectivity)
 
-        print('Effective radii', np.amax(diag_effc_3d),np.amin(diag_effi_3d))
-        print()
-        print()
+     
 
         self._itimestep += 1
         return

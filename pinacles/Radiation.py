@@ -351,9 +351,7 @@ class RRTMG:
             to_rrtmg_shape(_nhalo,self._ScalarState.get_field('qv'),self.qv_extension,h2ovmr, self.p_buffer, self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
             h2ovmr *= parameters.RV/parameters.RD
 
-            print('check h2ovmr',_ncol, _nlay, np.shape(h2ovmr))
-            print('check cliqwp', np.shape(cliqwp))
-            print(np.shape(plev))
+         
 
             # ql to rrtmg shape; need to convert to path in g/m^2
             # if 'qc' in self._ScalarState.names:
