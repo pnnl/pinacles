@@ -69,6 +69,7 @@ class MicroP3(MicrophysicsBase):
 
             self._DiagnosticState.add_variable('reflectivity', long_name='radar reflectivity', units='dBz', latex_name = 'reflectivity')
             self._DiagnosticState.add_variable('diag_effc_3d',  long_name='cloud droplet effective radius', units='m', latex_name='r_e')
+            self._DiagnosticState.add_variable('diag_effi_3d',  long_name='cloud ice effective radius', units='m', latex_name='r_{e,i}')
 
             nhalo = self._Grid.n_halo
             self._our_dims = self._Grid.ngrid_local
@@ -227,6 +228,10 @@ class MicroP3(MicrophysicsBase):
         to_our_order(nhalo, diag_effi_3d_wrf, diag_effi_3d)
         to_our_order(nhalo, reflectivity_wrf, reflectivity)
 
+        print('Effective radii', np.amax(diag_effc_3d),np.amin(diag_effi_3d))
+        print()
+        print()
+
         self._itimestep += 1
         return
 
@@ -349,3 +354,11 @@ class MicroP3(MicrophysicsBase):
 
     def get_qi(self):
         return self._ScalarState.get_field('qi1')
+
+    def get_reffc(self):
+        return self._DiagnosticState.get_field('diag_effc_3d')
+    
+    def get_reffi(self):
+        return self._DiagnosticState.get_field('diag_effi_3d')
+    
+

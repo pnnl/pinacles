@@ -84,7 +84,7 @@ def main(namelist):
     # Allocate all of the big parallel arrays needed for the container classes
     Force = ForcingFactory.factory(namelist, ModelGrid, Ref, Micro, VelocityState, ScalarState, DiagnosticState, TimeSteppingController)
     Surf = SurfaceFactory.factory(namelist, ModelGrid, Ref, VelocityState, ScalarState, DiagnosticState, TimeSteppingController)
-    Rad = RadiationFactory.factory(namelist, ModelGrid, Ref, ScalarState, DiagnosticState, Surf, TimeSteppingController)
+    Rad = RadiationFactory.factory(namelist, ModelGrid, Ref, ScalarState, DiagnosticState, Surf, Micro, TimeSteppingController)
 
 
     ScalarState.allocate()
@@ -178,7 +178,7 @@ def main(namelist):
 
             #Update the forcing
             Force.update()
-            Rad.update(n)
+            
 
             #Update Kinematics
             Kine.update()
@@ -211,6 +211,7 @@ def main(namelist):
                 Thermo.update(apply_buoyancy=False)
                 #We call the microphysics update at the end of the RK steps.
                 Micro.update()
+                Rad.update(n)
                 ScalarState.boundary_exchange()
                 ScalarState.update_all_bcs()
 

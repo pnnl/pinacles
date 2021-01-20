@@ -244,3 +244,18 @@ class MicroKessler(MicrophysicsBase):
 
     def get_qc(self):
         return self._ScalarState.get_field('qc') + self._ScalarState.get_field('qr')
+
+    def get_reffc(self):
+        qc = self._ScalarState.get_field('qc')
+        reff = np.zeros_like(qc)
+        reff[qc>0.0] = 14 * 1.0e-6
+        return reff
+
+    def get_qi(self):
+        qc = self._ScalarState.get_field('qc')
+        return np.zeros_like(qc)
+
+    def get_reffi(self):
+        qc = self._ScalarState.get_field('qc')
+        return np.zeros_like(qc)
+

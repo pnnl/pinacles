@@ -13,13 +13,14 @@ ffi = FFI()
 
 
 class RRTMG:
-    def __init__(self, namelist, Grid, Ref, ScalarState, DiagnosticState, Surf,TimeSteppingController):
+    def __init__(self, namelist, Grid, Ref, ScalarState, DiagnosticState, Surf, Micro, TimeSteppingController):
         self._name = 'RRTMG'
         self._Grid = Grid
         self._Ref = Ref
         self._ScalarState = ScalarState
         self._DiagnosticState = DiagnosticState
         self._Surf = Surf
+        self._Micro = Micro
         self._TimeSteppingController = TimeSteppingController
 
         try:
@@ -229,13 +230,15 @@ class RRTMG:
 
         # get the pointers we need in any case  
         ds_dTdt_rad = self._DiagnosticState.get_field('dTdt_rad')
-        st = self._ScalarState.get_tend('s')
-        if _rk_step == 0:
-            self.time_elapsed += self._TimeSteppingController.dt
+        s = self._ScalarState.get_field('s')
+        # if _rk_step == 0:
+        dt = self._TimeSteppingController.dt
+        self.time_elapsed += dt
         
         
 
-        if _rk_step == 0 and self.time_elapsed > self._radiation_frequency:
+        # if _rk_step == 0 and self.time_elapsed > self._radiation_frequency:
+        if self.time_elapsed > self._radiation_frequency:
             self.time_elapsed = 0.0
             # THis should get tested
             self.hourz = self._hourz_init + self._TimeSteppingController.time/3600.0
@@ -353,28 +356,38 @@ class RRTMG:
             print(np.shape(plev))
 
             # ql to rrtmg shape; need to convert to path in g/m^2
-            if 'qc' in self._ScalarState.names:
-                to_rrtmg_shape(_nhalo, self._ScalarState.get_field('qc'), self.ql_extension, cliqwp, self.p_buffer,self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
-                cliqwp *= 1.e3/parameters.G * (plev[:,:-1]-plev[:,1:]) 
-
-            #  qi to rrtmg shape; need to convert to path in g/m^2
-            if 'qi' in self._ScalarState.names:
-                to_rrtmg_shape(_nhalo, self._ScalarState.get_field('qi'), self.qi_extension, cicewp, self.p_buffer,self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
-                cicewp *= 1.e3/parameters.G * (plev[np.newaxis,:-1]-plev[np.newaxis,1:])
+            # if 'qc' in self._ScalarState.names:
+            # to_rrtmg_shape(_nhalo, self._ScalarState.get_field('qc'), self.ql_extension, cliqwp, self.p_buffer,self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
+            to_rrtmg_shape(_nhalo, self._Micro.get_qc(), self.ql_extension, cliqwp, self.p_buffer,
+                            self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
             
+            cliqwp[:,:] = cliqwp[:,:] * 1.e3/parameters.G * (plev[:,:-1]-plev[:,1:])
+            cldfr[cliqwp > 0.0] = 1.0 
+            # reliq[cliqwp > 0.0] = 14.0
+            to_rrtmg_shape(_nhalo, self._Micro.get_reffc(), np.zeros_like(self.ql_extension),
+                            reliq, self.p_buffer,self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
+            
+                
+                
+            #  qi to rrtmg shape; need to convert to path in g/m^2
+            # if 'qi' in self._ScalarState.names:
+            # to_rrtmg_shape(_nhalo, self._ScalarState.get_field('qi'), self.qi_extension, cicewp, self.p_buffer,
+            #                 self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
+            to_rrtmg_shape(_nhalo, self._Micro.get_qi(), self.qi_extension, cicewp, self.p_buffer,
+                            self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
+            cicewp[:,:] = cicewp[:,:] * 1.e3/parameters.G * (plev[:,:-1]-plev[:,1:])
+            cldfr[cicewp > 0.0] = 1.0 
+            to_rrtmg_shape(_nhalo, self._Micro.get_reffi(), np.zeros_like(self.qi_extension), reice, self.p_buffer,
+                            self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
+            
+            reliq *= 1.0e6
+            reice *= 1.0e6
             play *= 0.01
             plev *= 0.01
 
             o3vmr = np.asfortranarray(np.repeat(self._profile_o3[np.newaxis,:],_ncol,axis=0))
 
-            print('check cliqwp',_ncol, _nlay, np.shape(cliqwp))
-            # import pylab as plt
-            # plt.figure()
-            # plt.contourf(cliqwp)
-            # plt.show()
-
-
-    
+   
             self._lib_lw.c_rrtmg_lw(_ncol, _nlay,  icld, idrv, 
             as_pointer(play), as_pointer(plev), as_pointer(tlay), as_pointer(tlev), 
             as_pointer(tsfc), as_pointer(h2ovmr), as_pointer(o3vmr), as_pointer(co2vmr), 
@@ -439,8 +452,8 @@ class RRTMG:
             ds_hr_sw[:,:,:] *= rho0[np.newaxis,np.newaxis,:] * parameters.CPD /86400.0
           
 
-        # FOR ALL RK STEPS
-        st[:,:,:] += ds_dTdt_rad[:,:,:]
+
+        s[:,:,:] += ds_dTdt_rad[:,:,:] * dt
 
 
         return
