@@ -360,7 +360,7 @@ class RRTMG:
                             self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
             
             cliqwp[:,:] = cliqwp[:,:] * 1.e3/parameters.G * (plev[:,:-1]-plev[:,1:])
-            cldfr[cliqwp > 0.0] = 1.0 
+            cldfr[cliqwp > 1e-10] = 1.0 
             # reliq[cliqwp > 0.0] = 14.0
             to_rrtmg_shape(_nhalo, self._Micro.get_reffc(), np.zeros_like(self.ql_extension),
                             reliq, self.p_buffer,self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
@@ -382,6 +382,11 @@ class RRTMG:
             reice *= 1.0e6
             play *= 0.01
             plev *= 0.01
+
+            for i in range(_ncol):
+                for j in range(_nlay):
+                    if cldfr[i,j] > 0.0:
+                        reliq[i,j] =np.minimum(60.0, np.maximum(reliq[i,j],2.5))
 
             o3vmr = np.asfortranarray(np.repeat(self._profile_o3[np.newaxis,:],_ncol,axis=0))
 
