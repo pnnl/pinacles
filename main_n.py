@@ -29,7 +29,8 @@ def main(namelist):
     
     
     out_root = namelist["meta"]["output_directory"]
-    
+    sim_name = namelist["meta"]['simname']
+    couple_out_path = os.path.join(namelist["meta"]["output_directory"], 'couple_out_' + sim_name + '.nc')
     
     for i in range(n):
         namelist["meta"]["output_directory"] = os.path.join(out_root, 'couple_' + str(i))
@@ -37,7 +38,7 @@ def main(namelist):
         domains[i].initialize()
 
     if MPI.COMM_WORLD.Get_rank() == 0:
-        rt_grp = nc.Dataset('couple_out.nc', 'w')
+        rt_grp = nc.Dataset(couple_out_path, 'w')
 
         for i in range(n):
             cpl_grp = rt_grp.createGroup('couple_' + str(i))
@@ -132,7 +133,7 @@ def main(namelist):
 
 
         if MPI.COMM_WORLD.Get_rank() == 0:
-            rt_grp = nc.Dataset('couple_out.nc', 'r+')
+            rt_grp = nc.Dataset(couple_out_path, 'r+')
             for i in range(n):
                 nh = domains[i].ModelGrid.n_halo
 
