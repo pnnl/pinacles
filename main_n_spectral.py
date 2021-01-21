@@ -25,6 +25,9 @@ def main(namelist):
     u_ls_profile = infile['VelocityState']['profiles']['u'][-1,:] - 9.9
     v_ls_profile = infile['VelocityState']['profiles']['v'][-1,:] - 3.8
 
+    
+    w_spd = np.sqrt(u_ls_profile**2.0 + v_ls_profile**2.0)
+    
     out_root = namelist["meta"]["output_directory"]
     sim_name = namelist["meta"]['simname']
     couple_out_path = os.path.join(namelist["meta"]["output_directory"], 'couple_out_' + sim_name + '.nc')
@@ -91,10 +94,11 @@ def main(namelist):
             nprof = len(u_ls_profile)
             u_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
             v_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
+            wind_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
             #print(np.shape(u_adv), nprof, 2*nh[2])
             u_adv[nh[2]:-nh[2]] = u_ls_profile
             v_adv[nh[2]:-nh[2]] = v_ls_profile      
-                    
+            wind_adv[nh[2]:-nh[2]] = w_spd         
             
             domains[i].update(couple_time, ls_forcing[i], u_adv, v_adv)
             

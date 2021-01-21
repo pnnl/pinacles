@@ -24,7 +24,14 @@ def main(namelist):
     u_ls_profile = infile['VelocityState']['profiles']['u'][-1,:] - 9.9
     v_ls_profile = infile['VelocityState']['profiles']['v'][-1,:] - 3.8
         
-        
+    
+    
+    w_spd = np.sqrt(u_ls_profile**2.0 + v_ls_profile**2.0)
+    
+    print(u_ls_profile)
+    print(v_ls_profile)
+    print(w_spd)
+    
     infile.close()
     
     
@@ -116,19 +123,20 @@ def main(namelist):
             nprof = len(u_ls_profile)
             u_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
             v_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
+            wind_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
             #print(np.shape(u_adv), nprof, 2*nh[2])
             u_adv[nh[2]:-nh[2]] = u_ls_profile
             v_adv[nh[2]:-nh[2]] = v_ls_profile        
-            
+            wind_adv[nh[2]:-nh[2]] = w_spd  
             
             
             for v in forced_fields:
                 adv = np.zeros_like(u_adv)
                 for k in range(u_adv.shape[0]):
-                    if u_adv[k] >= 0.0:
-                        adv[k] = -u_adv[k] * (ls_state[(i)%n][v][k] - ls_state[(i-1)%n][v][k] )/gcm_res
+                    if wind_adv[k] >= 0.0:
+                        adv[k] = -wind_adv[k] * (ls_state[(i)%n][v][k] - ls_state[(i-1)%n][v][k] )/gcm_res
                     else:
-                        adv[k] = -u_adv[k] * (ls_state[(i+1)%n][v][k] - ls_state[i%n][v][k] )/gcm_res
+                        adv[k] = -wind_adv[k] * (ls_state[(i+1)%n][v][k] - ls_state[i%n][v][k] )/gcm_res
                 ls_state[i][v] += adv * couple_dt + ss_forcing[i][v] * couple_dt
 
 
