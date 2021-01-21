@@ -4,7 +4,7 @@ import json
 import numpy as np
 import pylab as plt
 import netCDF4 as nc 
-
+import os 
 import SimulationClass
 
 
@@ -27,8 +27,12 @@ def main(namelist):
         
     infile.close()
     
+    
+    out_root = namelist["meta"]["output_directory"]
+    
+    
     for i in range(n):
-        namelist["meta"]["output_directory"] = './couple_' + str(i)
+        namelist["meta"]["output_directory"] = os.path.join(out_root, 'couple_' + str(i))
         domains.append(SimulationClass.Simulation(namelist, i))
         domains[i].initialize()
 
@@ -85,13 +89,14 @@ def main(namelist):
             nh = domains[i].ModelGrid.n_halo
             nprof = len(u_ls_profile)
             u_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
+            v_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
             #print(np.shape(u_adv), nprof, 2*nh[2])
             u_adv[nh[2]:-nh[2]] = u_ls_profile
-                    
+            v_adv[nh[2]:-nh[2]] = v_ls_profile        
             
             #print('qv', (domains[i].ScalarState.mean('qv') - ls_state[i]['qv'])/couple_dt)
             
-            domains[i].update(couple_time, ls_forcing[i], u_adv)
+            domains[i].update(couple_time, ls_forcing[i], u_adv, v_adv)
             
             #print('qv', (domains[i].ScalarState.mean('qv') - ls_state[i]['qv'])/couple_dt)
             
@@ -109,7 +114,10 @@ def main(namelist):
             nh = domains[i].ModelGrid.n_halo
             nprof = len(u_ls_profile)
             u_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
+            v_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
+            #print(np.shape(u_adv), nprof, 2*nh[2])
             u_adv[nh[2]:-nh[2]] = u_ls_profile
+            v_adv[nh[2]:-nh[2]] = v_ls_profile        
             
             
             

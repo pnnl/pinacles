@@ -127,7 +127,7 @@ class Simulation:
         self.VelocityState.update_all_bcs()
         self.PSolver.update()
 
-    def update(self, timestop, ls_forcing, u_adv):
+    def update(self, timestop, ls_forcing, u_adv, v_adv):
         self.Thermo.update()
         s_low  = self.ScalarState.mean('s')[self.ModelGrid.n_halo[2]]
         qv_low =self.ScalarState.mean('qv')[self.ModelGrid.n_halo[2]]
@@ -148,7 +148,7 @@ class Simulation:
                 #self.Micro.update()
 
                 #Update the surface
-                self.Surf.update(s_low, qv_low, u_adv)
+                self.Surf.update(s_low, qv_low, u_adv, v_adv)
 
                 #Update the forcing
                 self.Force.update(u_adv)

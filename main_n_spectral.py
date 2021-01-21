@@ -3,6 +3,7 @@ import argparse
 import json
 import numpy as np
 import pylab as plt
+import os
 import netCDF4 as nc 
 
 import SimulationClass
@@ -86,11 +87,13 @@ def main(namelist):
             nh = domains[i].ModelGrid.n_halo
             nprof = len(u_ls_profile)
             u_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
-            print(np.shape(u_adv), nprof, 2*nh[2])
+            v_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
+            #print(np.shape(u_adv), nprof, 2*nh[2])
             u_adv[nh[2]:-nh[2]] = u_ls_profile
+            v_adv[nh[2]:-nh[2]] = v_ls_profile      
                     
             
-            domains[i].update(couple_time, ls_forcing[i], u_adv)
+            domains[i].update(couple_time, ls_forcing[i], u_adv, v_adv)
             
             for v in forced_fields:
                 if not v == 'qv':

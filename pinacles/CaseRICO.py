@@ -112,7 +112,7 @@ class SurfaceRICO(Surface.SurfaceBase):
             timeseries_grp['lhf'][-1] = qvflx * parameters.LV*self._Ref.rho0_edge[n_halo[2]-1]
         return
 
-    def update(self, s_low, qv_low, u_adv):
+    def update(self, s_low, qv_low, u_adv, v_adv):
 
         nh = self._Grid.n_halo
         dxi2 = self._Grid.dxi[2]
@@ -136,8 +136,8 @@ class SurfaceRICO(Surface.SurfaceBase):
         qvt = self._ScalarState.get_tend('qv')
 
         #Get surface slices
-        usfc = u[:,:,nh[2]]*0.0 + u_adv[nh[2]]
-        vsfc = v[:,:,nh[2]] * 0.0
+        usfc = u[:,:,nh[2]] * 0.0 + u_adv[nh[2]]
+        vsfc = v[:,:,nh[2]] * 0.0 + v_adv[nh[2]]
         Ssfc = np.zeros_like(usfc) + s_low
         qvsfc = np.zeros_like(usfc) + qv_low
 
