@@ -136,16 +136,18 @@ class SurfaceRICO(Surface.SurfaceBase):
         qvt = self._ScalarState.get_tend('qv')
 
         #Get surface slices
-        usfc = u[:,:,nh[2]] + u_adv[nh[2]]
+        usfc = u[:,:,nh[2]]*0.0 + u_adv[nh[2]]
         vsfc = v[:,:,nh[2]] * 0.0
         Ssfc = np.zeros_like(usfc) + s_low
         qvsfc = np.zeros_like(usfc) + qv_low
 
-        Surface_impl.compute_windspeed_sfc(usfc, vsfc, self._Ref.u0, self._Ref.v0, self.gustiness, self._windspeed_sfc)
+        Surface_impl.compute_windspeed_sfc(usfc, vsfc, 0.0, 0.0, self.gustiness, self._windspeed_sfc)
         #Surface_impl.tau_given_ustar(self._ustar_sfc, usfc, vsfc, self._Ref.u0, self._Ref.v0, self._windspeed_sfc, self._taux_sfc, self._tauy_sfc)
 
         self._windspeed_sfc = self._windspeed_sfc + 0.0
 
+        #print(self._windspeed_sfc)
+        
         #TODO Not not optimized code
         self._tflx = - self._ch * self._windspeed_sfc * (Ssfc - self._T0)
         self._qvflx = - self._cq * self._windspeed_sfc * (qvsfc - self._qs0)
@@ -195,6 +197,9 @@ class ForcingRICO(Forcing.ForcingBase):
         self._heating_rate = np.zeros_like(self._Grid.z_global) -2.5/86400.0
 
 
+        self.call = 0
+        
+        
         return
 
     def update(self, u_adv):
@@ -211,16 +216,33 @@ class ForcingRICO(Forcing.ForcingBase):
         st = self._ScalarState.get_tend('s')
         qvt = self._ScalarState.get_tend('qv')
 
-        st += (self._heating_rate* exner)[np.newaxis, np.newaxis, :]
+        nh = self._Grid.n_halo
+        
+            
+        if self.call == 0:
+            zl = self._Grid.z_local
+            
+            st_ref = np.zeros_like(s)
+            qv_ref = np.zeros_like(qv)
+            
+            Forcing_impl.apply_subsidence(self._subsidence, self._Grid.dxi[2],s, st_ref)
+            Forcing_impl.apply_subsidence(self._subsidence, self._Grid.dxi[2],qv, qv_ref)
+        
+            
+            #self._heating_rate[zl ] = np.mean(np.mean(st_ref[nh[0]:-nh[0], nh[1]:-nh[1],:], axis=0), axis=0)
+            self._ls_mositure[zl > 2980.0] = -np.mean(np.mean(qv_ref[nh[0]:-nh[0], nh[1]:-nh[1],:],axis=0), axis=0)[zl > 2980.0]
+        
+        Forcing_impl.apply_subsidence(self._subsidence, self._Grid.dxi[2],s, st)
+        Forcing_impl.apply_subsidence(self._subsidence, self._Grid.dxi[2],qv, qvt)
+            
+        st += (self._heating_rate)[np.newaxis, np.newaxis, :]
         qvt += self._ls_mositure[np.newaxis, np.newaxis, :]
 
         #Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f ,u, v, self._Ref.u0, self._Ref.v0, ut, vt)
 
-
         u_mean = self._VelocityState.mean('u')
         ut[:,:,:] += (u_adv - (u_mean[np.newaxis,np.newaxis,:] + self._Ref.u0))/3600.0 
-
-        #Now ad large scale subsidence
-        Forcing_impl.apply_subsidence(self._subsidence, self._Grid.dxi[2],s, st)
-        Forcing_impl.apply_subsidence(self._subsidence, self._Grid.dxi[2],qv, qvt)
+        
+        self.call += 1
+        
         return 

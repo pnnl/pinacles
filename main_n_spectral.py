@@ -6,7 +6,7 @@ import pylab as plt
 import netCDF4 as nc 
 
 import SimulationClass
-
+from derivative import dxdt
 
 def main(namelist):
 
@@ -37,6 +37,7 @@ def main(namelist):
 
         for i in range(n):
             cpl_grp = rt_grp.createGroup('couple_' + str(i))
+            print(domains[i].ModelGrid.n[2])
             cpl_grp.createDimension('z', size=domains[i].ModelGrid.n[2])
             z = cpl_grp.createVariable('z', np.double,  dimensions=('z',))
 
@@ -85,15 +86,11 @@ def main(namelist):
             nh = domains[i].ModelGrid.n_halo
             nprof = len(u_ls_profile)
             u_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
-            #print(np.shape(u_adv), nprof, 2*nh[2])
+            print(np.shape(u_adv), nprof, 2*nh[2])
             u_adv[nh[2]:-nh[2]] = u_ls_profile
                     
             
-            #print('qv', (domains[i].ScalarState.mean('qv') - ls_state[i]['qv'])/couple_dt)
-            
             domains[i].update(couple_time, ls_forcing[i], u_adv)
-            
-            #print('qv', (domains[i].ScalarState.mean('qv') - ls_state[i]['qv'])/couple_dt)
             
             for v in forced_fields:
                 if not v == 'qv':
@@ -104,23 +101,45 @@ def main(namelist):
 
 
                     
-        for i in range(n):
-            
-            nh = domains[i].ModelGrid.n_halo
-            nprof = len(u_ls_profile)
-            u_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
-            u_adv[nh[2]:-nh[2]] = u_ls_profile
-            
-            
-            
-            for v in forced_fields:
-                adv = np.zeros_like(u_adv)
+        for v in forced_fields:
+                nh = domains[0].ModelGrid.n_halo
+                nprof = len(u_ls_profile)
+                u_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
+                print(np.shape(u_adv), nprof, 2*nh[2])
+                u_adv[nh[2]:-nh[2]] = u_ls_profile
+                    
+             
                 for k in range(u_adv.shape[0]):
-                    if u_adv[k] >= 0.0:
-                        adv[k] = -u_adv[k] * (ls_state[(i)%n][v][k] - ls_state[(i-1)%n][v][k] )/gcm_res
-                    else:
-                        adv[k] = -u_adv[k] * (ls_state[(i+1)%n][v][k] - ls_state[i%n][v][k] )/gcm_res
-                ls_state[i][v] += adv * couple_dt + ss_forcing[i][v] * couple_dt
+                    f = np.zeros(n, dtype=np.double)
+                    adv = np.zeros_like(f)
+                    for i in range(n):
+                        f[i] = ls_state[i][v][k] 
+            
+                    adv = -u_adv[k]*dxdt(f, np.arange(n) * np.double(gcm_res), kind="spectral")
+        
+                    for i in range(n):
+                        ls_state[i][v][k] += adv[i] * couple_dt + ss_forcing[i][v][k] * couple_dt
+                    
+                
+                    
+#        for i in range(n):
+#            
+#            nh = domains[i].ModelGrid.n_halo
+#            nprof = len(u_ls_profile)
+#            u_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
+#            print(np.shape(u_adv), nprof, 2*nh[2])
+#            u_adv[nh[2]:-nh[2]] = u_ls_profile
+            
+            
+            
+#            for v in forced_fields:
+#                adv = np.zeros_like(u_adv)
+#                for k in range(u_adv.shape[0]):
+#                    if u_adv[k] >= 0.0:
+#                        adv[k] = -u_adv[k] * (ls_state[(i)%n][v][k] - ls_state[(i-1)%n][v][k] )/gcm_res
+#                    else:
+#                        adv[k] = -u_adv[k] * (ls_state[(i+1)%n][v][k] - ls_state[i%n][v][k] )/gcm_res
+#                ls_state[i][v] += adv * couple_dt + ss_forcing[i][v] * couple_dt
 
 
         if MPI.COMM_WORLD.Get_rank() == 0:
@@ -137,6 +156,8 @@ def main(namelist):
                     this_grp[v + '_ls_forcing'][-1,:] = ls_forcing[i][v][nh[2]:-nh[2]]
                     this_grp[v + '_ls_state'][-1,:] = ls_state[i][v][nh[2]:-nh[2]]
             rt_grp.close()
+
+
 
     return
 

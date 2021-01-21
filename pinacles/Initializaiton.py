@@ -275,24 +275,29 @@ def rico(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     shape = s.shape
 
-    perts = np.random.randn(shape[0],shape[1],shape[2]) 
+    perts = np.random.randn(shape[0],shape[1],shape[2])  * 0.01
 
     
     #Get wind profiles
-    infile = nc.Dataset('/Users/pres026/ColumbiaDev/PINACLES/rico/stats.nc', 'r')
+    infile = nc.Dataset('./stats.nc', 'r')
     
     u_ls_profile = infile['VelocityState']['profiles']['u'][-1,:] - 9.9
     v_ls_profile = infile['VelocityState']['profiles']['v'][-1,:] - 3.8
-        
-        
-    print(u_ls_profile)
+    qv_ls_profile = infile['ScalarState']['profiles']['qv'][-1,:]
+    theta_ls_profile = infile['DiagnosticState']['profiles']['T'][-1,:]
+     
+    #print(u_ls_profile)
         
     nh = ModelGrid.n_halo
     nprof = len(u_ls_profile)
     u_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
+    theta_in = np.zeros(nprof + 2*nh[2], dtype=np.double)
+    qv_in = np.zeros(nprof + 2*nh[2], dtype=np.double)
     print(np.shape(u_adv), nprof, 2*nh[2])
-    u_adv[nh[2]:-nh[2]] = u_ls_profile
     
+    u_adv[nh[2]:-nh[2]] = u_ls_profile
+    qv_in[nh[2]:-nh[2]] = qv_ls_profile
+    theta_in[nh[2]:-nh[2]] = theta_ls_profile
     
     for i in range(shape[0]):
         for j in range(shape[1]):
@@ -314,11 +319,11 @@ def rico(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
                 q/=1000.0
 
-                t *= exner[k]
-                if zl[k] < 200.0:
+                t = theta_in[k] #* exner[k]
+                if zl[k] < 500.0:
                     t += perts[i,1,k]
                 s[i,j,k] = DryThermo.s(z, t)
-                qv[i,j,k] = q
+                qv[i,j,k] = qv_in[k]
                 u[i,j,k] =  u_adv[k]#5.0 #0.0 #-9.9 + 2.0e-3 * z
                 v[i,j,k] =  0.0 #0.0 #-3.8
     u -= Ref.u0
