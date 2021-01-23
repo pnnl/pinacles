@@ -209,6 +209,11 @@ class ForcingTestbed(Forcing.ForcingBase):
             
             self._vtend_qt = interpolate.interp1d(forcing_z, raw_vtend_qt, 
                                                             axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
+        
+        z_top = self._Grid.l[2]
+        _depth = namelist['damping']['depth']
+        znudge = z_top -_depth
+        self._compute_relaxation_coefficient(znudge,3600.0)
 
         
 
@@ -257,7 +262,7 @@ class ForcingTestbed(Forcing.ForcingBase):
         if self._momentum_forcing_method == 'geostrophic':
             Forcing_impl.large_scale_pgf(current_ug, current_vg, self._f ,u, v, self._Ref.u0, self._Ref.v0, ut, vt)
         if self._momentum_forcing_method == 'relaxation':
-            Forcing_impl.relax_velocities(current_ur, current_vr,  u, v, self._Ref.u0, self._Ref.v0, ut, vt, 3600.0)
+            Forcing_impl.relax_velocities(current_ur, current_vr,  u, v, self._Ref.u0, self._Ref.v0, ut, vt, self._relaxation_coefficient)
         
         if self._use_vertical_tendency:
              st += (current_vtend_temperature + current_subsidence * parameters.G * parameters.ICPD)[np.newaxis, np.newaxis, :]
@@ -265,5 +270,21 @@ class ForcingTestbed(Forcing.ForcingBase):
         else:
             Forcing_impl.apply_subsidence(current_subsidence, self._Grid.dxi[2],s, st)
             Forcing_impl.apply_subsidence(current_subsidence, self._Grid.dxi[2],qv, qvt)
+
+        return
+
+
+    def _compute_relaxation_coefficient(self,znudge,timescale):
+
+        self._relaxation_coefficient = np.zeros(self._Grid.ngrid[2], dtype=np.double)
+       
+        z = self._Grid.z_global
+        
+       
+        for k in range(self._Grid.ngrid[2]):
+            self._relaxation_coefficient[k] = (1.0/timescale)
+            if z[k] < znudge:
+                self._relaxation_coefficient[k] *=  np.sin((np.pi / 2.0) * (1.0 - (znudge - z[k]) / znudge))**2.0
+               
 
         return
