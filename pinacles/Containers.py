@@ -173,9 +173,12 @@ class ModelState:
         self._state_array.remove_mean(dof)
         return
 
-    def mean(self, name, pow=1.0):
+    def mean(self, name, pow=1.0, tend=False):
         dof = self._dofs[name]
-        return self._state_array.mean(dof, pow=pow)
+        if tend:
+            return self._tend_array.mean(dof, pow=pow)
+        else:
+            return self._state_array.mean(dof, pow=pow)
 
     def max_prof(self, name):
         dof = self._dofs[name]
