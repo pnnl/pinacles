@@ -6,7 +6,7 @@ import pylab as plt
 import netCDF4 as nc 
 import os 
 import SimulationClass
-
+from derivative import dxdt
 
 def main(namelist):
 
@@ -117,8 +117,8 @@ def main(namelist):
 
 
                     
-        for i in range(n):
-            
+        #for i in range(n):
+        for v in forced_fields:            
             nh = domains[i].ModelGrid.n_halo
             nprof = len(u_ls_profile)
             u_adv = np.zeros(nprof + 2*nh[2], dtype=np.double)
@@ -129,15 +129,24 @@ def main(namelist):
             v_adv[nh[2]:-nh[2]] = v_ls_profile        
             wind_adv[nh[2]:-nh[2]] = w_spd  
             
-            
-            for v in forced_fields:
-                adv = np.zeros_like(u_adv)
-                for k in range(u_adv.shape[0]):
-                    if wind_adv[k] >= 0.0:
-                        adv[k] = -wind_adv[k] * (ls_state[(i)%n][v][k] - ls_state[(i-1)%n][v][k] )/gcm_res
-                    else:
-                        adv[k] = -wind_adv[k] * (ls_state[(i+1)%n][v][k] - ls_state[i%n][v][k] )/gcm_res
-                ls_state[i][v] += adv * couple_dt + ss_forcing[i][v] * couple_dt
+            for k in range(u_adv.shape[0]):
+                f = np.zeros(n, dtype=np.double)
+                adv = np.zeros_like(f)
+                for i in range(n):
+                    f[i] = ls_state[i][v][k] 
+
+                adv = -wind_adv[k]*dxdt(f, np.arange(n) * np.double(gcm_res), kind="spectral")
+
+                for i in range(n):
+                    ls_state[i][v][k] += adv[i] * couple_dt + ss_forcing[i][v][k] * couple_dt
+            #for v in forced_fields:
+            #    adv = np.zeros_like(u_adv)
+            #    for k in range(u_adv.shape[0]):
+            #        if wind_adv[k] >= 0.0:
+            #            adv[k] = -wind_adv[k] * (ls_state[(i)%n][v][k] - ls_state[(i-1)%n][v][k] )/gcm_res
+            #        else:
+            #            adv[k] = -wind_adv[k] * (ls_state[(i+1)%n][v][k] - ls_state[i%n][v][k] )/gcm_res
+            #    ls_state[i][v] += adv * couple_dt + ss_forcing[i][v] * couple_dt
 
 
         if MPI.COMM_WORLD.Get_rank() == 0:

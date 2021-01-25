@@ -13,7 +13,7 @@ def main(namelist):
     n = 4
     gcm_res = 50*1e3
     couple_dt = 600.0
-    forced_fields = ['qv', 'qc', 's']
+    forced_fields = ['qv', 's']
     domains = []
     uls = 5.0
     
@@ -88,11 +88,11 @@ def main(namelist):
     for couple_time in np.arange(couple_dt,40*86400+couple_dt, couple_dt):
         for i in range(n):
             for v in forced_fields:
-                #if not v == 'qv':
-                ls_forcing[i][v] = (ls_state[i][v] - domains[i].ScalarState.mean(v) )/couple_dt
-                #else:
-                #    ls_forcing[i][v] = (ls_state[i][v] - domains[i].ScalarState.mean(v) 
-                #        - domains[i].ScalarState.mean('qc'))/couple_dt
+                if not v == 'qv':
+                    ls_forcing[i][v] = (ls_state[i][v] - domains[i].ScalarState.mean(v) )/couple_dt * 0.0
+                else:
+                    ls_forcing[i][v] = (ls_state[i][v] - domains[i].ScalarState.mean(v) 
+                        - domains[i].ScalarState.mean('qc') - domains[i].ScalarState.mean('qr') )/couple_dt * 0.0
                     
             nh = domains[i].ModelGrid.n_halo
             nprof = len(u_ls_profile)
@@ -109,11 +109,11 @@ def main(namelist):
             #print('qv', (domains[i].ScalarState.mean('qv') - ls_state[i]['qv'])/couple_dt)
             
             for v in forced_fields:
-                #if not v == 'qv':
-                ss_forcing[i][v] = (domains[i].ScalarState.mean(v) - ls_state[i][v])/couple_dt
-                #else:
-                #    ss_forcing[i][v] = (domains[i].ScalarState.mean(v) + domains[i].ScalarState.mean('qc')
-                #     - ls_state[i][v])/couple_dt
+                if not v == 'qv':
+                    ss_forcing[i][v] = (domains[i].ScalarState.mean(v) - ls_state[i][v])/couple_dt * 0.0
+                else:
+                    ss_forcing[i][v] = (domains[i].ScalarState.mean(v) + domains[i].ScalarState.mean('qc') + domains[i].ScalarState.mean('qr') 
+                     - ls_state[i][v])/couple_dt *0.0
 
 
                     
@@ -134,10 +134,10 @@ def main(namelist):
                 adv = np.zeros_like(u_adv)
                 for k in range(u_adv.shape[0]):
                     if wind_adv[k] >= 0.0:
-                        adv[k] = -wind_adv[k] * (ls_state[(i)%n][v][k] - ls_state[(i-1)%n][v][k] )/gcm_res
+                        adv[k] = -wind_adv[k] * (ls_state[(i)%n][v][k] - ls_state[(i-1)%n][v][k] )/gcm_res 
                     else:
                         adv[k] = -wind_adv[k] * (ls_state[(i+1)%n][v][k] - ls_state[i%n][v][k] )/gcm_res
-                ls_state[i][v] += adv * couple_dt + ss_forcing[i][v] * couple_dt
+                ls_state[i][v] += adv * couple_dt * 0.0 + ss_forcing[i][v] * couple_dt * 0.0 
 
 
         if MPI.COMM_WORLD.Get_rank() == 0:

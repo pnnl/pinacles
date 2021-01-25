@@ -2,7 +2,7 @@ import numba
 import json
 import argparse
 from pinacles import Initializaiton
-from pinacles import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
+from pinacles import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics, parameters
 from pinacles import ScalarAdvectionFactory
 from pinacles import ScalarAdvection, TimeStepping, ReferenceState
 from pinacles import ScalarDiffusion, MomentumDiffusion
@@ -169,7 +169,11 @@ class Simulation:
 
                 #Apply large scale forcing
                 for v in ls_forcing:
-                    self.ScalarState.get_tend(v)[:,:,:] += ls_forcing[v][np.newaxis,np.newaxis,:] 
+                    
+                    if v == 'qv': 
+                        self.ScalarState.get_tend(v)[:,:,:] += ls_forcing[v][np.newaxis,np.newaxis,:] + ls_forcing['qc'][np.newaxis,np.newaxis,:]
+                    elif v == 's':
+                        self.ScalarState.get_tend(v)[:,:,:] += ls_forcing[v][np.newaxis,np.newaxis,:] - parameters.LV*parameters.ICPD * ls_forcing['qc'][np.newaxis,np.newaxis,:]
 
                 #Do time stepping
                 self.ScalarTimeStepping.update()
