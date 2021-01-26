@@ -1,0 +1,61 @@
+{
+    "damping": {
+        "depth": 300.0,
+        "timescale": 240.0,
+        "vars": [
+            "u",
+            "v",
+            "w",
+            "s"
+        ]
+    },
+    "grid": {
+        "l": [
+            64000.0,
+            3000.0,
+            5000.0
+        ],
+        "n": [
+            64,
+            3,
+            100
+        ],
+        "n_halo": [
+            3,
+            3,
+            3
+        ]
+    },
+    "meta": {
+        "casename": "rico",
+        "output_directory": "./",
+        "simname": "rico"
+    },
+    "microphysics": {
+        "scheme": "p3"
+    },
+    "momentum_advection": {
+        "type": "weno5"
+    },
+    "scalar_advection": {
+        "type": "weno5"
+    },
+    "sgs": {
+        "model": "smagorinsky",
+        "smagorinsky": {
+            "cs": 0.17,
+            "prt": 0.3333333333333333
+        }
+    },
+    "stats": {
+        "frequency": 600.0,
+        "modules": []
+    },
+    "time": {
+        "cfl": 0.8,
+        "time_max": 86400.0
+    },
+    "towers": {
+        "location": []
+    }
+}
