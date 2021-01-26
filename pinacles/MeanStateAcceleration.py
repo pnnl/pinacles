@@ -8,7 +8,7 @@ class MeanStateAcceleration:
         self._ScalarState = ScalarState
 
         # TODO Make this a runtime option
-        self._acceleration_factor = 4.0
+        self._acceleration_factor = 1.0
 
         return
 

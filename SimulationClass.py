@@ -16,6 +16,8 @@ from pinacles import DumpFields
 from pinacles import MicrophysicsFactory
 from pinacles import Kinematics
 from pinacles import SGSFactory
+from pinacles import MeanStateAcceleration
+from pinacles import DiagnosticsTurbulence
 from mpi4py import MPI
 import numpy as np
 import time
@@ -54,7 +56,10 @@ class Simulation:
         self.RayleighDamping = Damping.RayleighInitial(namelist, self.ModelGrid)
         self.RayleighDamping.add_state(self.VelocityState)
         self.RayleighDamping.add_state(self.ScalarState)
-
+        
+        
+        self.MSA = MeanStateAcceleration.MeanStateAcceleration(namelist, self.ModelGrid, self.ScalarState, self.VelocityState)
+        
         self.TimeSteppingController.add_timestepper(self.ScalarTimeStepping)
         self.TimeSteppingController.add_timestepper(self.VelocityTimeStepping)
 
@@ -100,12 +105,15 @@ class Simulation:
         self.Force = ForcingFactory.factory(namelist, self.ModelGrid, self.Ref, self.Micro, self.VelocityState, self.ScalarState, self.DiagnosticState, self.TimeSteppingController)
         self.PSolver.initialize() #Must be called after reference profile is integrated
 
+        self.DiagTurbulence = DiagnosticsTurbulence.DiagnosticsTurbulence(self.ModelGrid, self.Ref, self.Thermo, self.Micro, self.VelocityState,
+                                                                          self.ScalarState, self.DiagnosticState)
+        
         #Setup Stats-IO
         self.StatsIO = Stats(namelist, self.ModelGrid, self.Ref, self.TimeSteppingController)
 
         self.ScalarDiff.initialize_io_arrays()
         self.ScalarAdv.initialize_io_arrays()
-
+        self.StatsIO.add_class(self.Surf)
         self.StatsIO.add_class(self.VelocityState)
         self.StatsIO.add_class(self.ScalarState)
         self.StatsIO.add_class(self.DiagnosticState)
@@ -116,7 +124,7 @@ class Simulation:
         self.FieldsIO.add_class(self.ScalarState)
         self.FieldsIO.add_class(self.VelocityState)
         self.FieldsIO.add_class(self.DiagnosticState)
-
+        self.StatsIO.add_class(self.DiagTurbulence)
 
         self.StatsIO.initialize()
 
@@ -164,6 +172,9 @@ class Simulation:
                 self.ScalarDiff.update()
                 self.MomDiff.update()
 
+                # Mean state acceleration
+                #self.MSA.update()
+            
                 #Do Damping
                 self.RayleighDamping.update()
 

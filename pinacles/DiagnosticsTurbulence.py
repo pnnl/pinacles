@@ -19,7 +19,7 @@ class DiagnosticsTurbulence:
         return
 
     def io_initialize(self, this_grp):
-
+f 
         #Get aliases to the timeseries and profiles groups
         timeseries_grp = this_grp['timeseries']
         profiles_grp = this_grp['profiles']

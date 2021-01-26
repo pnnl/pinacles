@@ -11,11 +11,12 @@ import SimulationClass
 def main(namelist):
 
     n = 4
+    accel = 1
     gcm_res = 50*1e3
-    couple_dt = 600.0
+    couple_dt = 600.
     forced_fields = ['qv', 'qc', 's']
     domains = []
-    uls = 5.0
+    uls = 2.0
     
     
     #Get wind profiles
@@ -89,7 +90,7 @@ def main(namelist):
         for i in range(n):
             for v in forced_fields:
                 #if not v == 'qv':
-                ls_forcing[i][v] = (ls_state[i][v] - domains[i].ScalarState.mean(v) )/couple_dt
+                ls_forcing[i][v] = (ls_state[i][v] - domains[i].ScalarState.mean(v) )/(couple_dt * accel)
                 #else:
                 #    ls_forcing[i][v] = (ls_state[i][v] - domains[i].ScalarState.mean(v) 
                 #        - domains[i].ScalarState.mean('qc'))/couple_dt
@@ -110,7 +111,7 @@ def main(namelist):
             
             for v in forced_fields:
                 #if not v == 'qv':
-                ss_forcing[i][v] = (domains[i].ScalarState.mean(v) - ls_state[i][v])/couple_dt
+                ss_forcing[i][v] = (domains[i].ScalarState.mean(v) - ls_state[i][v])/(couple_dt * accel)
                 #else:
                 #    ss_forcing[i][v] = (domains[i].ScalarState.mean(v) + domains[i].ScalarState.mean('qc')
                 #     - ls_state[i][v])/couple_dt
@@ -137,7 +138,7 @@ def main(namelist):
                         adv[k] = -wind_adv[k] * (ls_state[(i)%n][v][k] - ls_state[(i-1)%n][v][k] )/gcm_res
                     else:
                         adv[k] = -wind_adv[k] * (ls_state[(i+1)%n][v][k] - ls_state[i%n][v][k] )/gcm_res
-                ls_state[i][v] += adv * couple_dt + ss_forcing[i][v] * couple_dt
+                ls_state[i][v] += adv * (couple_dt * accel)+ ss_forcing[i][v] * (couple_dt * accel)
 
 
         if MPI.COMM_WORLD.Get_rank() == 0:
