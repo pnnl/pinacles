@@ -33,7 +33,7 @@ class SurfaceTestbed(Surface.SurfaceBase):
         except:
             self._forcing_skintemp = surface_data.variables['surface_temperature'][:]
             UtilitiesParallel.print_root('\t \t surface skin temp inferred from LW radiative fluxes')
-        self._forcing_ustar = surface_data.variables['friction_velocity'][:]
+        self._forcing_ustar = surface_data.variables['friction_velocity'][:] * 0.4
         # Read off other variables needed for radiation..?
 
         data.close()
@@ -43,11 +43,15 @@ class SurfaceTestbed(Surface.SurfaceBase):
         self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
         self._taux_sfc = np.zeros_like(self._windspeed_sfc)
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
+        self._bflx_sfc = np.zeros_like(self._windspeed_sfc) 
+        self._ustar_sfc = np.zeros_like(self._windspeed_sfc)
 
         # Use these to store the fluxes for output
         self._shf = self._forcing_shf[0]
         self._lhf = self._forcing_lhf[0]
         self._ustar = self._forcing_ustar[0]
+
+        self._z0 = 0.0
         return
 
     def io_initialize(self, rt_grp):
@@ -58,6 +62,7 @@ class SurfaceTestbed(Surface.SurfaceBase):
         timeseries_grp.createVariable('shf', np.double, dimensions=('time',))
         timeseries_grp.createVariable('lhf', np.double, dimensions=('time',))
         timeseries_grp.createVariable('ustar', np.double, dimensions=('time',))
+        timeseries_grp.createVariable('z0',np.double,dimensions=('time',))
         return
 
     def io_update(self, rt_grp):
@@ -74,6 +79,7 @@ class SurfaceTestbed(Surface.SurfaceBase):
             timeseries_grp['lhf'][-1] = self._lhf
 
             timeseries_grp['ustar'][-1] = self._ustar
+            timeseries_grp['z0'][-1] = self._z0
 
         return
 
@@ -107,9 +113,27 @@ class SurfaceTestbed(Surface.SurfaceBase):
         vsfc = v[:,:,nh[2]]
 
         # Compute the surface stress & apply it
-        ustar_sfc = np.zeros_like(self._windspeed_sfc) + ustar_interp
         Surface_impl.compute_windspeed_sfc(usfc, vsfc, self._Ref.u0, self._Ref.v0, self.gustiness, self._windspeed_sfc)
-        Surface_impl.tau_given_ustar(ustar_sfc, usfc, vsfc, self._Ref.u0, self._Ref.v0, self._windspeed_sfc, self._taux_sfc, self._tauy_sfc)
+        #OPTION 1-- u* from the input file
+        #-----------------------------------------------------------
+        self._ustar_sfc[:,:] = ustar_interp
+        self._ustar = ustar_interp
+       
+        #--------------------------------------------------------
+        #OPTION 2-- z0 from windspeed (this is rough, should be improved), then get u*
+        # Using the mean windspeed rather than pointwise, should also be interpolated to 10m
+        # Expression from ARPS based on anderson 1993, we also used this in pycles
+        # wspd_local = np.sum(self._windspeed_sfc[nh[0]:-nh[0], nh[1]:-nh[1]])/(self._Grid.n[0] * self._Grid.n[1])
+        # wspd_mean = UtilitiesParallel.ScalarAllReduce(wspd_local)
+        # self._z0 =self._compute_z0(self._Grid.dx[2]/2.0,wspd_mean)
+        # self._bflx_sfc[:,:] = (parameters.G * self._Ref.alpha0[nh[2]] * parameters.ICPD/self.T_surface 
+        #                         * (shf_interp + (parameters.EPSVI -1.0) * parameters.CPD * self.T_surface * lhf_interp / parameters.LV))
+        # Surface_impl.compute_ustar_sfc(self._windspeed_sfc, self._bflx_sfc, self._z0, self._Grid.dx[2]/2.0, self._ustar_sfc)
+        # ustar_local = np.sum(self._ustar_sfc[nh[0]:-nh[0], nh[1]:-nh[1]])/(self._Grid.n[0] * self._Grid.n[1])
+        # self._ustar = UtilitiesParallel.ScalarAllReduce(ustar_local)
+
+        
+        Surface_impl.tau_given_ustar(self._ustar_sfc, usfc, vsfc, self._Ref.u0, self._Ref.v0, self._windspeed_sfc, self._taux_sfc, self._tauy_sfc)
         Surface_impl.surface_flux_application(dxi2, nh, alpha0, alpha0_edge, self._taux_sfc, ut)
         Surface_impl.surface_flux_application(dxi2, nh, alpha0, alpha0_edge, self._tauy_sfc, vt)
 
@@ -122,9 +146,14 @@ class SurfaceTestbed(Surface.SurfaceBase):
         # Store the surface fluxes for output
         self._shf = shf_interp
         self._lhf = lhf_interp
-        self._ustar = ustar_interp
+        
 
         return
+
+    def _compute_z0(self, z1,wspd):
+        kappa = 0.4
+        c1 =  (0.4 + 0.079*wspd)/1000.0
+        return z1*np.exp(-kappa/np.sqrt(c1))
 
 
 
@@ -145,6 +174,10 @@ class ForcingTestbed(Forcing.ForcingBase):
         file = namelist['testbed']['input_filepath']
         self._momentum_forcing_method = namelist['testbed']['momentum_forcing']
         # Options: relaxation, geostrophic, none
+        self._subsidence_forcing_method = namelist['testbed']['subsidence_forcing']
+        # Options: vertical tendency, subsidence, fixed_subsidence
+        if self._subsidence_forcing_method == 'fixed_subsidence':
+            _ls_divergence = namelist['testbed']['largescale_divergence']
 
 
         data = nc.Dataset(file, 'r')
@@ -156,6 +189,7 @@ class ForcingTestbed(Forcing.ForcingBase):
         # Read in the data, we want to
         forcing_z = forcing_data.variables['z'][:]
         self._forcing_times =forcing_data.variables['times'][:]
+        ntimes = np.shape(self._forcing_times)[0]
         if self._momentum_forcing_method == 'geostrophic':
             raw_ug = forcing_data.variables['u_geostrophic'][:,:]
             raw_vg = forcing_data.variables['v_geostrophic'][:,:]
@@ -175,16 +209,16 @@ class ForcingTestbed(Forcing.ForcingBase):
         
         # take given vertical advection tendencies over subsidence if we have both
         # But we still need to get the subsidence 
-        raw_subsidence = forcing_data.variables['subsidence'][:,:]
-        try:
+        if self._subsidence_forcing_method == 'fixed_subsidence':
+            raw_subsidence = np.ones_like(raw_adv_qt)* np.tile(forcing_z[np.newaxis,:],(ntimes,1)) * _ls_divergence
+        else:
+            raw_subsidence = forcing_data.variables['subsidence'][:,:]
+        if self._subsidence_forcing_method == 'vertical_tendency':
             raw_vtend_qt = forcing_data.variables['qt_vertical_tendency'][:,:]
             # I am omitting the logic here to get vertical advection of theta
             raw_vtend_temperature =  forcing_data.variables['temperature_vertical_tendency'][:,:]
-            self._use_vertical_tendency = True
-        
-        except:
             
-            self._use_vertical_tendency = False
+
 
         data.close()
 
@@ -203,7 +237,7 @@ class ForcingTestbed(Forcing.ForcingBase):
         else:
             self._adv_theta = interpolate.interp1d(forcing_z, raw_adv_theta, 
                                                     axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
-        if self._use_vertical_tendency:
+        if self._subsidence_forcing_method == 'vertical_tendency':
             self._vtend_temperature = interpolate.interp1d(forcing_z, raw_vtend_temperature, 
                                                             axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
             
@@ -236,7 +270,7 @@ class ForcingTestbed(Forcing.ForcingBase):
             current_adv_temperature = interpolate.interp1d(self._forcing_times,self._adv_temperature, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
         else:
             current_adv_theta = interpolate.interp1d(self._forcing_times,self._adv_theta, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
-        if self._use_vertical_tendency:
+        if self._subsidence_forcing_method == 'vertical_tendency':
             current_vtend_temperature = interpolate.interp1d(self._forcing_times,self._vtend_temperature, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
             current_vtend_qt = interpolate.interp1d(self._forcing_times,self._vtend_qt, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
 
@@ -264,7 +298,7 @@ class ForcingTestbed(Forcing.ForcingBase):
         if self._momentum_forcing_method == 'relaxation':
             Forcing_impl.relax_velocities(current_ur, current_vr,  u, v, self._Ref.u0, self._Ref.v0, ut, vt, self._relaxation_coefficient)
         
-        if self._use_vertical_tendency:
+        if self._subsidence_forcing_method == 'vertical_tendency':
              st += (current_vtend_temperature + current_subsidence * parameters.G * parameters.ICPD)[np.newaxis, np.newaxis, :]
              qvt += (current_vtend_qt)[np.newaxis, np.newaxis, :]
         else:
