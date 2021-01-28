@@ -8,7 +8,13 @@ class Restart:
         # Remember the namelist
         self._namelist = namelist
 
+        self._fequency = self._namelist['restart']['frequency']
+
         self._restart_simulation = self._namelist['restart']['restart_simulation']
+
+        self._infile = None
+        if self._restart_simulation:
+            self._infile = self._namelist['restart']['infile']
 
         #Set-up reastart output path
         self._path = os.path.join(os.path.join(
@@ -51,11 +57,28 @@ class Restart:
 
     def read(self):
 
+        rank = MPI.COMM_WORLD.Get_rank()
+
+        with open(os.path.join(self._infile, str(rank) + '.pkl'), 'rb') as f:
+            self.data_dict = pickle.load(f)
+        
         return
+
+    def purge_data_dict(self):
+        self.data_dict = {}
+        return
+
+    @property
+    def frequency(self):
+        return self._fequency
 
     @property
     def path(self):
         return self._path
+
+    @property
+    def infile(self):
+        return self._infile
 
     @property
     def restart_simulation(self):

@@ -83,7 +83,7 @@ class TimeSteppingController:
         self._times_to_match.append(delta_time)
         return
 
-    def adjust_timestep(self, n_rk_step):
+    def adjust_timestep(self, n_rk_step, end_time):
         if n_rk_step == 0:
             #Get the current model time
             self._time += self._dt
@@ -108,9 +108,14 @@ class TimeSteppingController:
             MPI.COMM_WORLD.Allreduce(np.array([cfl_max_local], dtype=np.double), recv_buffer, op=MPI.MAX)
             cfl_max = recv_buffer[0]
             self._cfl_current = self._dt * cfl_max
-            self._dt = min(self._cfl_target / cfl_max, self._dt_max)
-            self.match_time()
+            self._dt = self._cfl_target / max(cfl_max, 0.001)
 
+            self._dt = min(self._dt, self._dt_max)
+            if self._time + self._dt > end_time:
+                self._dt = end_time - self._time
+
+            #self.match_time()
+            
             for Stepper in self._TimeStepper:
                 Stepper._dt = self._dt
 
