@@ -9,7 +9,7 @@ contains
     
     subroutine c_rrtmg_lw_init(cpdair) bind(c)
         real(c_double), intent(in), value :: cpdair
-        write(*,*) cpdair
+        ! write(*,*) cpdair
         call rrtmg_lw_ini(cpdair)
     end subroutine c_rrtmg_lw_init
     
