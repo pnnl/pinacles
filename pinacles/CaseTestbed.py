@@ -193,7 +193,7 @@ class ForcingTestbed(Forcing.ForcingBase):
         if self._momentum_forcing_method == 'geostrophic':
             raw_ug = forcing_data.variables['u_geostrophic'][:,:]
             raw_vg = forcing_data.variables['v_geostrophic'][:,:]
-        if self._momentum_forcing_method == 'relaxation':
+        if self._momentum_forcing_method == 'relaxation' or self._momentum_forcing_method == 'mean_relaxation':
             raw_ur = forcing_data.variables['u_relaxation'][:,:]
             raw_vr = forcing_data.variables['v_relaxation'][:,:]
 
@@ -225,7 +225,7 @@ class ForcingTestbed(Forcing.ForcingBase):
         if self._momentum_forcing_method == 'geostrophic':
             self._ug = interpolate.interp1d(forcing_z, raw_ug, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
             self._vg = interpolate.interp1d(forcing_z, raw_vg, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
-        if self._momentum_forcing_method == 'relaxation':
+        if self._momentum_forcing_method == 'relaxation' or self._momentum_forcing_method == 'mean_relaxation':
             self._ur = interpolate.interp1d(forcing_z, raw_ur, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
             self._vr = interpolate.interp1d(forcing_z, raw_vr, axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
 
@@ -249,9 +249,6 @@ class ForcingTestbed(Forcing.ForcingBase):
         znudge = z_top -_depth
         self._compute_relaxation_coefficient(znudge,3600.0)
 
-        
-
-
         return
 
     def update(self):
@@ -261,7 +258,7 @@ class ForcingTestbed(Forcing.ForcingBase):
         if self._momentum_forcing_method == 'geostrophic':
             current_ug = interpolate.interp1d(self._forcing_times,self._ug, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
             current_vg = interpolate.interp1d(self._forcing_times,self._vg, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
-        if self._momentum_forcing_method == 'relaxation':
+        if self._momentum_forcing_method == 'relaxation' or self._momentum_forcing_method == 'mean_relaxation':
             current_ur = interpolate.interp1d(self._forcing_times,self._ur, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
             current_vr = interpolate.interp1d(self._forcing_times,self._vr, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
         current_subsidence = interpolate.interp1d(self._forcing_times,self._subsidence, axis=0,fill_value='extrapolate',assume_sorted=True)(current_time)
@@ -297,7 +294,12 @@ class ForcingTestbed(Forcing.ForcingBase):
             Forcing_impl.large_scale_pgf(current_ug, current_vg, self._f ,u, v, self._Ref.u0, self._Ref.v0, ut, vt)
         if self._momentum_forcing_method == 'relaxation':
             Forcing_impl.relax_velocities(current_ur, current_vr,  u, v, self._Ref.u0, self._Ref.v0, ut, vt, self._relaxation_coefficient)
-        
+        if self._momentum_forcing_method == 'mean_relaxation':
+            umean = self._VelocityState.mean('u')
+            vmean = self._VelocityState.mean('v')
+            Forcing_impl.relax_mean_velocities(current_ur, current_vr,  umean, vmean, self._Ref.u0, self._Ref.v0, ut, vt, self._relaxation_coefficient)
+         
+
         if self._subsidence_forcing_method == 'vertical_tendency':
              st += (current_vtend_temperature + current_subsidence * parameters.G * parameters.ICPD)[np.newaxis, np.newaxis, :]
              qvt += (current_vtend_qt)[np.newaxis, np.newaxis, :]

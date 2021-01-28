@@ -34,3 +34,15 @@ def relax_velocities(ur, vr,  u, v, u0, v0, ut, vt, gamma):
                 ut[i,j,k] +=  (ur[k] - u_full) * gamma[k]
                 vt[i,j,k] +=  (vr[k] - v_full) * gamma[k]
     return
+
+@numba.njit
+def relax_mean_velocities(ur, vr,  umean, vmean, u0, v0, ut, vt, gamma):
+    shape = ut.shape
+    for i in range(1, shape[0]-1):
+        for j in range(1, shape[1]-1):
+            for k in range(1,shape[2]-1):
+                u_full = umean[k] + u0
+                v_full = vmean[k] + v0
+                ut[i,j,k] +=  (ur[k] - u_full) * gamma[k]
+                vt[i,j,k] +=  (vr[k] - v_full) * gamma[k]
+    return
