@@ -256,7 +256,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             t1 = time.perf_counter()
             MPI.COMM_WORLD.Barrier()
         if MPI.COMM_WORLD.Get_rank() == 0:
-            print(colored('\t Walltime: ', 'green'), colored(t1 -t0, 'green'), colored('\tModeltime/Walltime: ', 'green'), colored(TimeSteppingController._dt/(t1 - t0), 'green'))
+            print(colored('\t Walltime: ', 'green'), colored(t1 -t0, 'green'), 
+                colored('\tModeltime/Walltime: ', 'green'), 
+                colored(self.TimeSteppingController._dt/(t1 - t0), 'green'))
 
 
 
