@@ -32,6 +32,10 @@ class Stats:
 
         return
 
+    @property
+    def frequency(self):
+        return self._frequency
+
     def add_class(self, aclass):
         assert(aclass not in self._classes)
         self._classes[aclass.name] = aclass

@@ -178,6 +178,10 @@ class SimulationStandard(SimulationBase.SimulationBase):
         for prog_state in [self.ScalarState, self.VelocityState]:
             prog_state.boundary_exchange()
             prog_state.update_all_bcs()
+
+        # Update thermo this is mostly for IO at time 0
+        self.Thermo.update(apply_buoyancy=False)
+        
         self.PSolver.update()
 
         return
@@ -252,15 +256,15 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     self.ScalarState.update_all_bcs()
 
 
+            self.TimeSteppingController._time += self.TimeSteppingController._dt
+
             # End wall time for this timestep
             t1 = time.perf_counter()
             MPI.COMM_WORLD.Barrier()
-        if MPI.COMM_WORLD.Get_rank() == 0:
-            print(colored('\t Walltime: ', 'green'), colored(t1 -t0, 'green'), 
-                colored('\tModeltime/Walltime: ', 'green'), 
-                colored(self.TimeSteppingController._dt/(t1 - t0), 'green'))
 
-
-
+            if MPI.COMM_WORLD.Get_rank() == 0:
+                print(colored('\t Walltime: ', 'green'), colored(t1 -t0, 'green'), 
+                    colored('\tModeltime/Walltime: ', 'green'), 
+                    colored(self.TimeSteppingController._dt/(t1 - t0), 'green'))
     
         return

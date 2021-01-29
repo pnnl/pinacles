@@ -8,7 +8,7 @@ class RungeKuttaBase:
     def __init__(self, namelist, Grid, PrognosticState):
         self._Grid = Grid
         self._PrognosticState = PrognosticState
-        self._t = 0
+        #self._t = 0
         self.n_rk_step = 0
         self._rk_step = 0
         self.cfl_target = namelist['time']['cfl']
@@ -51,7 +51,7 @@ class RungeKutta2ndSSP(RungeKuttaBase):
             TS_impl.rk2ssp_s1(self._Tn, present_state,
                 present_tend, self._dt)
             self._rk_step = 0
-            self._t += self._dt
+            #self._t += self._dt
 
         return
 
@@ -86,7 +86,7 @@ class TimeSteppingController:
     def adjust_timestep(self, n_rk_step, end_time):
         if n_rk_step == 0:
             #Get the current model time
-            self._time += self._dt
+            #self._time += self._dt
 
             nhalo = self._Grid.n_halo
             dxi = self._Grid.dxi
