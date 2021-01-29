@@ -12,17 +12,18 @@ def main(namelist):
     # Instantiate and Initialize the Simulation
     Sim = SimulationStandard.SimulationStandard(namelist)
 
-
-    #Do IO before first model step
+    # Put all of the output classes into a list (these are just references)
     io_classes = [Sim.StatsIO,
                  Sim.FieldsIO,
                  Sim.IOTower]
 
+    # Determine all of the output frequencies
     io_frequencies = []
     for ic in io_classes:
         io_frequencies.append(ic.frequency)
     io_frequencies = np.array(io_frequencies)
 
+    # Iterate through io classes and do first IO
     for ioc in io_classes:
         ioc.update()
 
@@ -33,6 +34,7 @@ def main(namelist):
     # This is the outerloop over time
     while Sim.TimeSteppingController.time < Sim.TimeSteppingController.time_max:
 
+        # Integrate model forward by integrate_by_dt seconds
         Sim.update(integrate_by_dt=integrate_by_dt)
 
         #Adjust the integration to to make sure output is at the correct time
@@ -43,6 +45,7 @@ def main(namelist):
                 # We did output here so lets update last io-time
                 last_io_time[idx] = time
         
+        # Coupute how long t
         integrate_by_dt = np.amin(last_io_time + io_frequencies - time)
 
 
