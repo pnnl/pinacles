@@ -103,6 +103,7 @@ def main(namelist):
 
     #Setup Stats-IO
     StatsIO = Stats(namelist, ModelGrid, Ref, TimeSteppingController)
+    MPI.COMM_WORLD.barrier()
 
     IOTower= TowersIO.Towers(namelist, ModelGrid, TimeSteppingController)
 
