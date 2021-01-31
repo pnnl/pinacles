@@ -135,7 +135,49 @@ def test_read(mock_sims):
 
     return
 
-def test_functionality(mock_sims):
+
+@pytest.fixture()
+def mock_full_dump(tmpdir):
+    # This test fixture is used to setup a simulation that dumps a restart file. 
+
+    namelist = {}
+    namelist['meta'] = {}
+    namelist['meta']['output_directory'] = tmpdir
+    namelist['meta']['simname'] = 'mock_sim_restart_full_functionality' 
+
+    namelist['restart'] = {}
+    namelist['restart']['restart_simulation'] = False
+    namelist['restart']['frequency'] = 100.0
+
+    return MockSim(namelist)
+
+@pytest.fixture()
+def mock_full_restart(tmpdir, mock_full_dump):
+    # This test fixutre is used to setup a restart simulation, based on the simulation 
+    # this is mocked in mock_full_dump.
+
+    namelist = {}
+    namelist['meta'] = {}
+    namelist['meta']['output_directory'] = tmpdir
+    namelist['meta']['simname'] = 'mock_sim_restart_full_functionality_restart' 
+
+    namelist['restart'] = {}
+    namelist['restart']['restart_simulation'] = True
+    namelist['restart']['frequency'] = 100.0
+
+    # We use the mock_full_dump test fixture above to create the restart_infiles
+    # this means that mock_full_dump must be called before mock_full retstart. Note
+    # this hasn't caused problems on systems we have tested on thus far, but may 
+    # in the future, depending on the order in which pytest executes the fixtures. 
+    # Worst case scenario this causes tests to fail. 
+    restart_infiles = os.path.join(mock_full_dump.Restart._path, '10.0')
+    namelist['restart']['infile'] = restart_infiles
+    print('Restart Infiles', namelist['restart']['infile'] )
+
+    return MockSim(namelist)
+
+
+def test_full_functionality(mock_full_dump, mock_full_restart):
 
     class fake_class:
 
@@ -152,7 +194,6 @@ def test_functionality(mock_sims):
         def restart(self, restart_data_dict):
 
             
-
             return
 
         def dump_restart(self, restart_data_dict):
@@ -164,19 +205,24 @@ def test_functionality(mock_sims):
             
             return
 
-    for sim in mock_sims:
-        fake_instance = fake_class()
-        sim.Restart.add_class_to_restart(fake_instance)
+  
+    fake_instance = fake_class()
+    mock_full_dump.Restart.add_class_to_restart(fake_instance)
 
-        # There should now be 1 class 
-        assert sim.Restart.n_classes == 1
-        assert type(sim.Restart._classes_to_restart) is type([])
+    # There should now be 1 class 
+    assert mock_full_dump.Restart.n_classes == 1
+    assert type(mock_full_dump.Restart._classes_to_restart) is type([])
 
-        #Makes sure we can call dump restart
-        sim.Restart.dump_restart(str(10.0))
-        assert os.path.exists(sim.Restart.path)
-        assert os.path.exists(os.path.join(os.path.join(sim.Restart.path, str(10.0)), '0.pkl'))
+    #Makes sure we can call dump restart
+    mock_full_dump.Restart.dump_restart(str(10.0))
+    assert os.path.exists(mock_full_dump.Restart.path)
+    time_path = os.path.join(mock_full_dump.Restart._path, '10.0')
+    assert os.path.exists(time_path)
+    rank_path = os.path.join(time_path, '0.pkl')
+    assert os.path.exists(time_path)
 
+    # Now try to read from the restart path
+    mock_full_restart.Restart.restart()
 
 
     return

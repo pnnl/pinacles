@@ -1,6 +1,7 @@
 import pickle
 import os
 from mpi4py import MPI
+import time
 
 class Restart:
     def __init__(self, namelist):
@@ -30,7 +31,6 @@ class Restart:
         # This is the list of classes we want to restart
         self._classes_to_restart = []
 
-
         return
 
     def create_path(self):
@@ -46,14 +46,24 @@ class Restart:
 
         return
 
-    def dump(self, time):
+    def dump(self, out_time):
         """ This function creates a restart file on each rank, and the writes data dict to it.
         Args:
-            time {float}: the model time. This is used to for the output directory name. 
+            out_time {float}: the model time. This is used to for the output directory name. 
         """
-        time_path = os.path.join(self._path, str(time))
+        t0 = time.perf_counter()
+
+        # Create the path for this output time
+        time_path = os.path.join(self._path, str(out_time))
         rank = MPI.COMM_WORLD.Get_rank()
+        
+        # We only need to create the directory on the file system once, so 
+        # do it on rank 0
         if rank == 0:
+            # Announce that a restart file is being written
+            print('\t Writing restart files @ ' + str(out_time) + 's.')
+            
+            # Create needed directory
             os.mkdir(time_path)
         MPI.COMM_WORLD.Barrier()
         
@@ -63,6 +73,13 @@ class Restart:
             pickle.dump(self.data_dict, f)
         
         self.data_dict = {}
+        MPI.COMM_WORLD.Barrier()
+        t1 = time.perf_counter()
+        
+        #Print
+        if rank == 0:
+            print('\t Finished writing restart file in ' + str(t1 - t0) + 's.')
+
 
         return
 
