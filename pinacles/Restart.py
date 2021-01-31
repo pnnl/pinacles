@@ -27,19 +27,30 @@ class Restart:
         # This dictionary will store the data that is required for output
         self.data_dict = {}
 
+        # This is the list of classes we want to restart
+        self._classes_to_restart = []
+
+
         return
 
     def create_path(self):
+        """ Function that check to see if the restart path exists, if it does not, 
+        create it. 
+        """
         
         if MPI.COMM_WORLD.Get_rank() == 0:
-            os.makedirs(self._path)
+            if not os.path.exists(self._path):
+                os.makedirs(self._path)
 
         MPI.COMM_WORLD.Barrier()
 
         return
 
     def dump(self, time):
-
+        """ This function creates a restart file on each rank, and the writes data dict to it.
+        Args:
+            time {float}: the model time. This is used to for the output directory name. 
+        """
         time_path = os.path.join(self._path, str(time))
         rank = MPI.COMM_WORLD.Get_rank()
         if rank == 0:
@@ -64,22 +75,106 @@ class Restart:
         
         return
 
+    def add_class_to_restart(self, class_to_add):
+        """ This function adds a class to the list of classes that will either 
+        contribute to restart files or read from redstart files. These classes must contain
+        the class methods restart and dump_restart.
+
+        Args:
+            class_to_add {class}: a class to dump restarts or restart must have correct methods
+        """
+
+        #Check to make sure that the class has a restart attribute
+        assert hasattr(class_to_add, 'restart')
+        assert hasattr(class_to_add, 'dump_restart')
+
+        # Add this class
+        self._classes_to_restart.append(class_to_add)
+
+        return
+
+    def restart(self):
+        """[summary]
+        """
+
+        self.read()
+
+        for item in self._classes_to_restart:
+            item.restart()
+
+        return
+
+    def dump_restart(self, time):
+        """ This is the top level method that actually writes the restart files. 
+        
+        1) It iterates through all of the classes that will be restarted calling dump_restart which adds data
+        to data_dict for each of the classes
+
+        2) It calls the dump method of this class which actually writes the data_dict to disk.
+
+        3) It calls purge_data_dict which frees up memory.
+
+        Args:
+            time (float): the model time associated for this restart dump
+        """
+
+        for item in self._classes_to_restart:
+            item.dump_restart(self.data_dict)
+
+        self.dump(time)
+        self.purge_data_dict()
+
+        return
+
     def purge_data_dict(self):
+        """ This method frees memory associated with the dictionary (dict_data) used to store data that is
+        then writte to the restart files. 
+        """
         self.data_dict = {}
         return
 
     @property
     def frequency(self):
+        """ Returns the frequency with which restart files are to be output. 
+
+        Returns:
+            float: frequency in seconds
+        """
         return self._fequency
 
     @property
     def path(self):
+        """ Returns the top-level path where restart files will be written.
+
+        Returns:
+            str: restart path
+        """
         return self._path
 
     @property
     def infile(self):
+        """ Returns the input file path for a restarted simulation. If the simulation 
+        is not to be restarted then the default value of None is returned.  
+
+        Returns:
+            str: path to the restart file
+        """
         return self._infile
 
     @property
     def restart_simulation(self):
+        """ Returns a bool indicating if this simulation is or was to be restarted. 
+
+        Returns:
+            bool: True if simulation is to restarted
+        """
         return self._restart_simulation
+
+    @property
+    def n_classes(self):
+        """ Returns the number of classes that are to be restated. 
+
+        Returns:
+            integer: number of classes to be restarted
+        """
+        return len(self._classes_to_restart)

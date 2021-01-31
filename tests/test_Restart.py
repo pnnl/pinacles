@@ -2,8 +2,8 @@ import pytest
 import pickle
 import os
 import copy
+import numpy as np
 from pinacles import Restart
-
 
 class MockSim:
     def __init__(self, namelist):
@@ -39,8 +39,9 @@ def mock_sims(tmpdir):
     namelist['restart']['restart_simulation'] = True
     namelist['restart']['infile'] = mock_in_files
 
+    np.random.seed(0)
     with open(os.path.join(mock_in_files, '0.pkl'), 'wb') as f:
-        pickle.dump({'a':1}, f)
+        pickle.dump({'a':1, 'b': 2.0, 'c':np.random.randn(30)}, f)
     
     list_of_sims.append(MockSim(copy.deepcopy(namelist)))
 
@@ -62,7 +63,10 @@ def test_restart_attributes(tmpdir, mock_sims):
     assert all(hasattr(sim.Restart, 'data_dict') for sim in mock_sims)
     assert all(hasattr(sim.Restart, 'purge_data_dict') for sim in mock_sims)
     assert all(hasattr(sim.Restart, '_namelist') for sim in mock_sims)
-
+    assert all(hasattr(sim.Restart, 'restart') for sim in mock_sims)
+    assert all(hasattr(sim.Restart, 'dump_restart') for sim in mock_sims)
+    assert all(hasattr(sim.Restart, 'add_class_to_restart') for sim in mock_sims)
+    
     # Test that the path property returns the correct value
     assert all(sim.Restart.path == sim.Restart._path for sim in mock_sims)
 
@@ -119,11 +123,60 @@ def test_read(mock_sims):
             
             # Read in mock restart file and make sure it is correct
             sim.Restart.read()
-            assert sim.Restart.data_dict == {'a':1}
-
+            # Reset the random seed so we get the same array as before
+            np.random.seed(0)
+            test_dict = {'a':1, 'b': 2.0, 'c':np.random.randn(30)}
+            assert sim.Restart.data_dict['a'] == test_dict['a']
+            assert sim.Restart.data_dict['b'] == test_dict['b']
+            assert np.array_equal(sim.Restart.data_dict['c'], test_dict['c'])
             # Make sure that the data dict is purged
             sim.Restart.purge_data_dict()
             assert sim.Restart.data_dict == {}
 
     return
 
+def test_functionality(mock_sims):
+
+    class fake_class:
+
+        def __init__(self):
+            self.a = 20.0 
+            self.b = 'a'
+            self.c = np.random.randn(50)
+            
+            self.a_restart = None
+            self.b_restart = None
+            self.c_restart = None
+            return
+
+        def restart(self, restart_data_dict):
+
+            
+
+            return
+
+        def dump_restart(self, restart_data_dict):
+            
+            restart_data_dict['fake_class'] = {}
+            restart_data_dict['fake_class']['a'] = self.a
+            restart_data_dict['fake_class']['b'] = self.b
+            restart_data_dict['fake_class']['c'] = self.c
+            
+            return
+
+    for sim in mock_sims:
+        fake_instance = fake_class()
+        sim.Restart.add_class_to_restart(fake_instance)
+
+        # There should now be 1 class 
+        assert sim.Restart.n_classes == 1
+        assert type(sim.Restart._classes_to_restart) is type([])
+
+        #Makes sure we can call dump restart
+        sim.Restart.dump_restart(str(10.0))
+        assert os.path.exists(sim.Restart.path)
+        assert os.path.exists(os.path.join(os.path.join(sim.Restart.path, str(10.0)), '0.pkl'))
+
+
+
+    return
