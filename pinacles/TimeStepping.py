@@ -87,8 +87,6 @@ class TimeSteppingController:
 
     def adjust_timestep(self, n_rk_step, end_time):
         if n_rk_step == 0:
-            #Get the current model time
-            #self._time += self._dt
 
             nhalo = self._Grid.n_halo
             dxi = self._Grid.dxi
@@ -116,7 +114,6 @@ class TimeSteppingController:
             if self._time + self._dt > end_time:
                 self._dt = end_time - self._time
 
-            #self.match_time()
             
             for Stepper in self._TimeStepper:
                 Stepper._dt = self._dt

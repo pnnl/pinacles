@@ -2,6 +2,7 @@ import pickle
 import os
 from mpi4py import MPI
 import time
+from datetime import datetime as dt
 
 class Restart:
     def __init__(self, namelist):
@@ -16,6 +17,22 @@ class Restart:
         self._infile = None
         if self._restart_simulation:
             self._infile = self._namelist['restart']['infile']
+
+        sim_path = os.path.join(
+            namelist['meta']['output_directory'], 
+            namelist['meta']['simname'])
+        
+        # If the case already exits create a new directory and time and date it
+        if os.path.exists(sim_path):
+
+            sim_path = os.path.join(
+            namelist['meta']['output_directory'], 
+            namelist['meta']['simname'])
+    
+            # If the simulation path exists, create another
+            sim_path = sim_path.split('_started_')            
+            namelist['meta']['simname'] =  sim_path[0] + '_started_' + dt.now().strftime("%Y_%m_%d-%I_%M_%S_%p")     
+
 
         #Set-up reastart output path
         self._path = os.path.join(os.path.join(
