@@ -39,7 +39,10 @@ os.environ["HDF5_USE_FILE_LOCKING"]="FALSE"
 class SimulationStandard(SimulationBase.SimulationBase):
 
     def __init__(self, namelist):
-        
+
+        # This is used to keep track of how long the model has been running.
+        self.t_init = time.perf_counter()
+
         self._namelist = namelist
 
         #Set-up the restart
@@ -109,6 +112,13 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Instantiate radiation
         self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.TimeSteppingController)       
+
+        # Add classes to restart
+        self.Restart.add_class_to_restart(self.ModelGrid)
+        self.Restart.add_class_to_restart(self.ScalarState)
+        self.Restart.add_class_to_restart(self.VelocityState)
+        self.Restart.add_class_to_restart(self.DiagnosticState)
+        self.Restart.add_class_to_restart(self.TimeSteppingController)
 
         # Allocate memory for storage arrays in container classes. This should come after most classes are instantiated becuase the 
         # containter must know how much memory to allocate
@@ -187,6 +197,18 @@ class SimulationStandard(SimulationBase.SimulationBase):
         return
 
     def initialize_from_restart(self):
+
+        # Announce that this is a restart simulation
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            print("This is a restared simulation!")
+            print("Simulation is being restarted from: ", self.Restart.path)
+
+
+        # Instantiate required classes, this setsup the classes that will be need by the simulations. 
+        # Much of the data in many of these classes will be overwritten by the restart.
+
+        # Instantiate the model grid
+        self.ModelGrid = Grid.RegularCartesian(self._namelist)
 
 
         return

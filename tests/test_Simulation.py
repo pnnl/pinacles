@@ -41,7 +41,7 @@ def standard_mocks(tmpdir):
     namelist['meta']['wall_time'] = '12:00:00'
 
     namelist['restart'] = {}
-    namelist['restart']['frequency'] = 600.0
+    namelist['restart']['frequency'] = 10.0
     namelist['restart']['restart_simulation'] = False
 
     namelist['grid'] = {}

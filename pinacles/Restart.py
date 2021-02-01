@@ -114,10 +114,24 @@ class Restart:
         """[summary]
         """
 
+        t0 = time.perf_counter()
+        rank = MPI.COMM_WORLD.Get_rank()
+
+        if rank == 0:
+            print('\t Restarting simulation from ' + self._infile + '.')
+        # First read the restart files from  disk
         self.read()
 
+        # Now loop over the calles and call the restart method
         for item in self._classes_to_restart:
-            item.restart()
+            item.restart(self.data_dict)
+
+        MPI.COMM_WORLD.Barrier()
+        t1 = time.perf_counter()
+
+        if rank == 0:
+            print('\t Finished restarting simulation in ' + str(t1 - t0) + 's.')
+
 
         return
 

@@ -180,6 +180,9 @@ def mock_full_restart(tmpdir, mock_full_dump):
 def test_full_functionality(mock_full_dump, mock_full_restart):
 
     class fake_class:
+        ''' This is just a helper class used to make testing easier. The important point is that it has the methods
+        restart and dump_restart that are required by any class that is to be restarted.
+        '''
 
         def __init__(self):
             self.a = 20.0 
@@ -193,7 +196,10 @@ def test_full_functionality(mock_full_dump, mock_full_restart):
 
         def restart(self, restart_data_dict):
 
-            
+            self.a_restart = restart_data_dict['fake_class']['a']
+            self.b_restart = restart_data_dict['fake_class']['b']
+            self.c_restart = restart_data_dict['fake_class']['c']
+
             return
 
         def dump_restart(self, restart_data_dict):
@@ -221,8 +227,14 @@ def test_full_functionality(mock_full_dump, mock_full_restart):
     rank_path = os.path.join(time_path, '0.pkl')
     assert os.path.exists(time_path)
 
+
+    mock_full_restart.Restart.add_class_to_restart(fake_instance)
     # Now try to read from the restart path
     mock_full_restart.Restart.restart()
 
+    #Now test to make sure that the read was successful and returned values were correct
+    assert fake_instance.a_restart == fake_instance.a    
+    assert fake_instance.b_restart == fake_instance.b
+    assert np.array_equal(fake_instance.c_restart, fake_instance.c)
 
     return
