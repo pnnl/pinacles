@@ -72,13 +72,16 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.VelocityTimeStepping = TimeStepping.factory(self._namelist, self.ModelGrid, self.VelocityState)
         self.TimeSteppingController = TimeStepping.TimeSteppingController(self._namelist, self.ModelGrid, self.VelocityState)
         
+        # Instantiate Raleigh Damping
         self.RayleighDamping = Damping.RayleighInitial(self._namelist, self.ModelGrid)
         self.RayleighDamping.add_state(self.VelocityState)
         self.RayleighDamping.add_state(self.ScalarState)
             
+        # Instantiate Time-stepping controller 
         self.TimeSteppingController.add_timestepper(self.ScalarTimeStepping)
         self.TimeSteppingController.add_timestepper(self.VelocityTimeStepping)
 
+        # Instantaite the reference state
         self.Ref = ReferenceState.factory(self._namelist, self.ModelGrid)
 
         # Add three dimensional velocity compoonents
