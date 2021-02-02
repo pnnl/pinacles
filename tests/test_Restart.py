@@ -4,7 +4,7 @@ import os
 import copy
 import numpy as np
 from pinacles import Restart
-
+from pinacles import SimulationStandard
 class MockSim:
     def __init__(self, namelist):
         self.namelist = namelist
@@ -236,5 +236,116 @@ def test_full_functionality(mock_full_dump, mock_full_restart):
     assert fake_instance.a_restart == fake_instance.a    
     assert fake_instance.b_restart == fake_instance.b
     assert np.array_equal(fake_instance.c_restart, fake_instance.c)
+
+    return
+
+
+@pytest.fixture()
+def mock_namelist(tmpdir):
+    list_of_mock_namelists = []
+
+    namelist = {}
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'test_exact_restart' 
+    namelist['meta']['casename'] = 'sullivan_and_patton'
+    namelist['meta']['output_directory'] = os.path.join(tmpdir, namelist['meta']['casename'])
+    namelist['meta']['unique_id'] = 'not_unique'
+    namelist['meta']['wall_time'] = '12:00:00'
+
+    namelist['restart'] = {}
+    namelist['restart']['frequency'] = 10.0
+    namelist['restart']['restart_simulation'] = False
+
+    namelist['grid'] = {}
+    namelist['grid']['n'] = [6, 6, 6] 
+    namelist['grid']['n_halo'] = [3, 3, 3]
+    namelist['grid']['l'] = [2000.0, 2000.0, 2000.0]
+
+    namelist['time'] = {}
+    namelist['time']['cfl'] = 0.6
+    namelist['time']['time_max'] = 1800.0
+
+    namelist['damping'] = {}
+    namelist['damping']['vars'] = ['s', 'w']
+    namelist['damping']['depth'] = 100.0
+    namelist['damping']['timescale'] = 600.0
+
+    namelist['momentum_advection'] = {}
+    namelist['momentum_advection']['type'] = 'weno5'
+
+    namelist['scalar_advection'] = {}
+    namelist['scalar_advection']['type'] = 'weno5'
+
+    namelist['stats'] = {}
+    namelist['stats']['frequency'] = 60.0
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'base'
+
+    namelist['Thermodynamics'] = {}
+    namelist['Thermodynamics']['type'] = 'dry'
+
+    namelist['sgs'] = {}
+    namelist['sgs']['model'] = 'smagorinsky'
+
+    # Generate simulations for dry cases
+    list_of_mock_namelists.append(copy.deepcopy(namelist))
+
+    # Generate simulations for moist cases
+    for casename in ['bomex', 'rico']:
+
+        namelist['Thermodynamics'] = {}
+        namelist['Thermodynamics']['type'] = 'moist'
+
+        namelist['meta']['casename'] = casename
+        namelist['meta']['output_directory'] = os.path.join(tmpdir, namelist['meta']['casename'])
+        
+        for micro in ['kessler', 'p3']:
+            namelist['microphysics']['scheme'] = micro
+
+        list_of_mock_namelists.append(copy.deepcopy(namelist))
+
+
+    return list_of_mock_namelists
+
+
+def test_exact_restart(mock_namelist):
+
+    for nml in mock_namelist:
+        FreshSim = SimulationStandard.SimulationStandard(nml)
+        
+        # Run the simulation forward for 30s and dump restart
+        FreshSim.update(30.0)
+        FreshSim.Restart.dump_restart(30.0)
+        print(FreshSim.Restart.path)
+
+        # Now make a new copy of the namelist that should be restarted
+        nml_restart = copy.deepcopy(nml)
+        nml_restart['restart']['restart_simulation'] = True
+        
+        # Setup input file
+        infile = os.path.join(nml['meta']['output_directory'], 'test_exact_restart')
+        infile = os.path.join(infile, 'restart')
+        infile = os.path.join(infile, '30.0')
+        nml_restart['restart']['infile'] = infile   
+    
+
+        #print(os.listdir(os.path.join(nml['meta']['output_directory'], 'restart')))
+        #print('Infile: ', infile)
+
+        RestartSim = SimulationStandard.SimulationStandard(nml_restart)
+
+        #Make sure the Fresh and Restarted Simulations have Identical States
+        assert np.array_equal(FreshSim.ScalarState._state_array.array, RestartSim.ScalarState._state_array.array)
+        assert np.array_equal(FreshSim.VelocityState._state_array.array, RestartSim.VelocityState._state_array.array)
+        assert np.array_equal(FreshSim.DiagnosticState._state_array.array, RestartSim.DiagnosticState._state_array.array)
+
+        # Integrate both models forward in time and check that they remain identical
+        FreshSim.update(60.0)
+        RestartSim.update(60.0)
+
+        assert np.array_equal(FreshSim.ScalarState._state_array.array, RestartSim.ScalarState._state_array.array)
+        assert np.array_equal(FreshSim.VelocityState._state_array.array, RestartSim.VelocityState._state_array.array)
+        assert np.array_equal(FreshSim.DiagnosticState._state_array.array, RestartSim.DiagnosticState._state_array.array)
 
     return

@@ -151,5 +151,3 @@ def test_simulation_standard_update(standard_mocks):
 
 
     return
-
-
