@@ -25,10 +25,13 @@ class Stats:
         self._rt_grp = None
 
         self.setup_directories()
+        MPI.COMM_WORLD.Barrier()
         self._TimeSteppingController.add_timematch(self._frequency)
         self._last_io_time = 0
 
         self._namelist = namelist
+        
+
 
         return
 
