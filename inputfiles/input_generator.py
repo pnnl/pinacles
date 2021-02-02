@@ -80,7 +80,6 @@ def stable_bubble():
     input_dict[key]['frequency'] = 60.0
     input_dict[key]['modules'] = []
 
-
     key='Thermodynamics'
     input_dict[key] = {}
     input_dict[key]['type'] = 'dry'
@@ -88,6 +87,7 @@ def stable_bubble():
     key = 'towers'
     input_dict[key] = {}
     input_dict[key]['location'] = []
+    input_dict[key]['frequency'] = 600.0
 
     return input_dict
 
@@ -113,6 +113,7 @@ def colliding_blocks():
     input_dict[key] = {}
     input_dict[key]['cfl'] = 0.6
     input_dict[key]['time_max'] = 600.0
+    input_dict[key]['frequency'] = 600.0
 
     key = 'towers'
     input_dict[key] = {}
@@ -199,6 +200,7 @@ def sullivan_and_patton():
     key = 'towers'
     input_dict[key] = {}
     input_dict[key]['location'] = []
+    input_dict[key]['frequency'] = 600.0
 
     return input_dict
 
@@ -258,6 +260,7 @@ def bomex():
     key = 'towers'
     input_dict[key] = {}
     input_dict[key]['location'] = []
+    input_dict[key]['frequency'] = 600.0
 
     key = 'restart'
     input_dict[key] = {}
@@ -327,6 +330,7 @@ def atex():
     key = 'towers'
     input_dict[key] = {}
     input_dict[key]['location'] = []
+    input_dict[key]['frequency'] = 600.0
 
     key = 'restart'
     input_dict[key] = {}
@@ -397,6 +401,7 @@ def rico():
     key = 'towers'
     input_dict[key] = {}
     input_dict[key]['location'] = []
+    input_dict[key]['frequency'] = 600.0
 
     key = 'restart'
     input_dict[key] = {}
@@ -484,6 +489,7 @@ def testbed():
     key = 'towers'
     input_dict[key] = {}
     input_dict[key]['location'] = []
+    input_dict[key]['frequency'] = 600.0
 
     return input_dict
 
