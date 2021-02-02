@@ -186,6 +186,16 @@ def sullivan_and_patton():
     input_dict[key]['frequency'] = 60.0
     input_dict[key]['modules'] = []
 
+    key = 'restart'
+    input_dict[key] = {}
+    input_dict[key]['frequency'] = 600.0
+    input_dict[key]['restart_simulation'] = False
+    input_dict[key]['infile'] = ""
+
+    key = 'fields'
+    input_dict[key] = {}
+    input_dict[key]['frequency'] = 600.0
+
     key = 'towers'
     input_dict[key] = {}
     input_dict[key]['location'] = []
@@ -249,6 +259,16 @@ def bomex():
     input_dict[key] = {}
     input_dict[key]['location'] = []
 
+    key = 'restart'
+    input_dict[key] = {}
+    input_dict[key]['frequency'] = 600.0
+    input_dict[key]['restart_simulation'] = False
+    input_dict[key]['infile'] = ""
+
+    key = 'fields'
+    input_dict[key] = {}
+    input_dict[key]['frequency'] = 600.0
+
     return input_dict
 
 def atex():
@@ -307,6 +327,16 @@ def atex():
     key = 'towers'
     input_dict[key] = {}
     input_dict[key]['location'] = []
+
+    key = 'restart'
+    input_dict[key] = {}
+    input_dict[key]['frequency'] = 600.0
+    input_dict[key]['restart_simulation'] = False
+    input_dict[key]['infile'] = ""
+
+    key = 'fields'
+    input_dict[key] = {}
+    input_dict[key]['frequency'] = 600.0
 
     return input_dict
 
@@ -368,6 +398,16 @@ def rico():
     input_dict[key] = {}
     input_dict[key]['location'] = []
 
+    key = 'restart'
+    input_dict[key] = {}
+    input_dict[key]['frequency'] = 600.0
+    input_dict[key]['restart_simulation'] = False
+    input_dict[key]['infile'] = ""
+
+    key = 'fields'
+    input_dict[key] = {}
+    input_dict[key]['frequency'] = 600.0
+
     return input_dict
 
 
@@ -425,6 +465,16 @@ def testbed():
     input_dict[key] = {}
     input_dict[key]['frequency'] = 60.0
     input_dict[key]['modules'] = []
+
+    key = 'restart'
+    input_dict[key] = {}
+    input_dict[key]['frequency'] = 600.0
+    input_dict[key]['restart_simulation'] = False
+    input_dict[key]['infile'] = ""
+
+    key = 'fields'
+    input_dict[key] = {}
+    input_dict[key]['frequency'] = 600.0
 
     key = 'testbed'
     input_dict[key] = {}
