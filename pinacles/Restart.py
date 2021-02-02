@@ -23,15 +23,19 @@ class Restart:
             namelist['meta']['simname'])
         
         # If the case already exits create a new directory and time and date it
-        if os.path.exists(sim_path):
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            if os.path.exists(sim_path):
 
-            sim_path = os.path.join(
-            namelist['meta']['output_directory'], 
-            namelist['meta']['simname'])
-    
-            # If the simulation path exists, create another
-            sim_path = sim_path.split('_started_')            
-            namelist['meta']['simname'] =  sim_path[0] + '_started_' + dt.now().strftime("%Y_%m_%d-%I_%M_%S_%p")     
+                sim_path = os.path.join(
+                namelist['meta']['output_directory'], 
+                namelist['meta']['simname'])
+        
+                # If the simulation path exists, create another
+                sim_path = sim_path.split('_started_')            
+                namelist['meta']['simname'] =  sim_path[0] + '_started_' + dt.now().strftime("%Y_%m_%d-%I_%M_%S_%p")     
+
+        #Broadcast the directory name that was just created on rank0
+        namelist['meta']['simname'] =  MPI.COMM_WORLD.bcast(namelist['meta']['simname'])
 
 
         #Set-up reastart output path

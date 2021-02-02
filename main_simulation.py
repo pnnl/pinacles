@@ -15,7 +15,8 @@ def main(namelist):
     # Put all of the output classes into a list (these are just references)
     io_classes = [Sim.StatsIO,
                  Sim.FieldsIO,
-                 Sim.IOTower]
+                 Sim.IOTower, 
+                 Sim.Restart]
 
     # Determine all of the output frequencies
     io_frequencies = []
@@ -24,8 +25,11 @@ def main(namelist):
     io_frequencies = np.array(io_frequencies)
 
     # Iterate through io classes and do first IO
-    for ioc in io_classes:
-        ioc.update()
+    for item in io_classes:
+        try:
+            item.update()
+        except:
+            item.dump_restart(Sim.TimeSteppingController.time)
 
     # Compute how long the first integration step should be
     last_io_time = np.zeros_like(io_frequencies) + Sim.TimeSteppingController.time
@@ -41,7 +45,10 @@ def main(namelist):
         time = Sim.TimeSteppingController.time
         for idx, item in enumerate(io_classes):
             if np.isclose(time%io_frequencies[idx], 0.0):
-                item.update()
+                try:
+                    item.update()
+                except:
+                    item.dump_restart(time)
                 # We did output here so lets update last io-time
                 last_io_time[idx] = time
         
