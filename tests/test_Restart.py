@@ -5,6 +5,7 @@ import copy
 import numpy as np
 from pinacles import Restart
 from pinacles import SimulationStandard
+from pinacles import parameters
 class MockSim:
     def __init__(self, namelist):
         self.namelist = namelist
@@ -66,7 +67,8 @@ def test_restart_attributes(tmpdir, mock_sims):
     assert all(hasattr(sim.Restart, 'restart') for sim in mock_sims)
     assert all(hasattr(sim.Restart, 'dump_restart') for sim in mock_sims)
     assert all(hasattr(sim.Restart, 'add_class_to_restart') for sim in mock_sims)
-    
+    assert all(hasattr(sim.Restart, 'walltime_restart') for sim in mock_sims)
+
     # Test that the path property returns the correct value
     assert all(sim.Restart.path == sim.Restart._path for sim in mock_sims)
 
@@ -78,6 +80,9 @@ def test_restart_attributes(tmpdir, mock_sims):
 
     #Test that is restart is set correctly
     assert all(sim.namelist['restart']['restart_simulation'] == sim.Restart.restart_simulation for sim in mock_sims)
+
+    
+    assert all(sim.Restart.walltime_restart == parameters.LARGE for sim in mock_sims)
 
     for sim in mock_sims:
         test_nml = sim.namelist

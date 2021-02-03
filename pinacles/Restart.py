@@ -3,16 +3,24 @@ import os
 from mpi4py import MPI
 import time
 from datetime import datetime as dt
-
+from pinacles import parameters 
 class Restart:
     def __init__(self, namelist):
 
         # Remember the namelist
         self._namelist = namelist
 
-        self._fequency = self._namelist['restart']['frequency']
+        self._fequency = parameters.LARGE
+        if 'frequency' in self._namelist['restart']:
+            self._fequency = self._namelist['restart']['frequency']
 
-        self._restart_simulation = self._namelist['restart']['restart_simulation']
+        self._restart_simulation = False
+        if 'restart_simulation' in self._namelist['restart']:
+            self._restart_simulation = self._namelist['restart']['restart_simulation']
+
+        self._wall_time_restart = parameters.LARGE
+        if 'walltime_restart' in self._namelist['restart']:
+            self._wall_time_restart = self._namelist['restart']['walltime_restart']
 
         self._infile = None
         if self._restart_simulation:
@@ -230,3 +238,7 @@ class Restart:
             integer: number of classes to be restarted
         """
         return len(self._classes_to_restart)
+
+    @property
+    def walltime_restart(self):
+        return self._wall_time_restart
