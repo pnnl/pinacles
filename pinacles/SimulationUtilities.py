@@ -55,8 +55,9 @@ class HorizontalSlice:
 
         time = self._Sim.TimeSteppingController.time
         fname = os.path.join(self._out_path, str(100000000 + np.round(time, 1)) + '.pkl')
-        with open(fname, 'wb') as f:
-            pickle.dump(out, f)
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            with open(fname, 'wb') as f:
+                pickle.dump(out, f)
 
         return
 
