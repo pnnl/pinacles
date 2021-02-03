@@ -133,6 +133,10 @@ class GridBase:
         return self._local_start 
 
     @property
+    def local_end(self):
+        return self._local_end
+
+    @property
     def dx(self):
         return self._dx
 
