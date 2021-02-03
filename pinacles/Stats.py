@@ -31,8 +31,6 @@ class Stats:
 
         self._namelist = namelist
         
-
-
         return
 
     @property

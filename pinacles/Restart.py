@@ -18,9 +18,11 @@ class Restart:
         if 'restart_simulation' in self._namelist['restart']:
             self._restart_simulation = self._namelist['restart']['restart_simulation']
 
-        self._wall_time_restart = parameters.LARGE
+        self._walltime_restart = parameters.LARGE
+        self._do_walltime_restart = False
         if 'walltime_restart' in self._namelist['restart']:
-            self._wall_time_restart = self._namelist['restart']['walltime_restart']
+            self._walltime_restart = self._namelist['restart']['walltime_restart']
+            self._do_walltime_restart = True
 
         self._infile = None
         if self._restart_simulation:
@@ -241,4 +243,8 @@ class Restart:
 
     @property
     def walltime_restart(self):
-        return self._wall_time_restart
+        return self._walltime_restart
+
+    @property
+    def do_walltime_restart(self):
+        return self._do_walltime_restart

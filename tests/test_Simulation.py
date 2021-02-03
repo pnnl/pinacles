@@ -102,7 +102,8 @@ def test_simulation_standard_attributes(standard_mocks):
     assert all(hasattr(base, 'initialize') for base in standard_mocks)
     assert all(hasattr(base, 'initialize_from_restart') for base in standard_mocks)
     assert all(hasattr(base, 'update') for base in standard_mocks)
-    
+    assert all(hasattr(base, 'walltime_restart') for base in standard_mocks)
+
     return
 
 def test_simulation_standard_files_created(standard_mocks):

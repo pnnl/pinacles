@@ -68,6 +68,7 @@ def test_restart_attributes(tmpdir, mock_sims):
     assert all(hasattr(sim.Restart, 'dump_restart') for sim in mock_sims)
     assert all(hasattr(sim.Restart, 'add_class_to_restart') for sim in mock_sims)
     assert all(hasattr(sim.Restart, 'walltime_restart') for sim in mock_sims)
+    assert all(hasattr(sim.Restart, 'do_walltime_restart') for sim in mock_sims)
 
     # Test that the path property returns the correct value
     assert all(sim.Restart.path == sim.Restart._path for sim in mock_sims)

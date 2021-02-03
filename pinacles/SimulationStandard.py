@@ -1,4 +1,5 @@
-
+import time
+global_start_time = time.perf_counter()
 import numba
 import json
 import argparse
@@ -25,10 +26,10 @@ from pinacles import SGSFactory
 from pinacles import DiagnosticsTurbulence
 from pinacles import DiagnosticsClouds
 from pinacles import TowersIO
-from pinacles import Restart   
+from pinacles import Restart
+from pinacles import UtilitiesParallel   
 from mpi4py import MPI
 import numpy as np
-import time
 import pylab as plt
 
 import os 
@@ -36,12 +37,16 @@ from termcolor import colored
 os.environ["HDF5_USE_FILE_LOCKING"]="FALSE"
 
 
+#Broadcast the global start time
 class SimulationStandard(SimulationBase.SimulationBase):
 
     def __init__(self, namelist):
 
         # This is used to keep track of how long the model has been running.
         self.t_init = time.perf_counter()
+        self.t_init = MPI.COMM_WORLD.bcast(self.t_init )
+        self._walltime_restart_dumped = False
+
 
         self._namelist = namelist
 
@@ -420,9 +425,13 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
             self.TimeSteppingController._time += self.TimeSteppingController._dt
 
-            # End wall time for this timestep
-            t1 = time.perf_counter()
+            # End wall time for
+            #  this timestep
             MPI.COMM_WORLD.Barrier()
+            t1 = time.perf_counter()
+            # Here we dump a restart file if we are getting close to a walltime limit
+            if self.Restart.do_walltime_restart and not self._walltime_restart_dumped:
+                self.walltime_restart()
 
             if MPI.COMM_WORLD.Get_rank() == 0:
                 print(colored('\t Walltime: ', 'green'), colored(t1 -t0, 'green'), 
@@ -430,3 +439,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     colored(self.TimeSteppingController._dt/(t1 - t0), 'green'))
     
         return
+
+    def walltime_restart(self):
+        t1 = time.perf_counter()
+        time_from_start = np.array([t1 - self.t_init], dtype=np.double)
+        MPI.COMM_WORLD.Bcast(time_from_start)
+
+        if time_from_start[0] >= self.Restart.walltime_restart and not self._walltime_restart_dumped:
+            UtilitiesParallel.print_root('\t \t Doing a walltime based restart!')
+            self.Restart.dump_restart(self.TimeSteppingController.time)
+            self._walltime_restart_dumped = True
+
+        return
+
+            
