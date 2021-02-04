@@ -35,9 +35,6 @@ import pylab as plt
 import os 
 from termcolor import colored
 os.environ["HDF5_USE_FILE_LOCKING"]="FALSE"
-
-
-#Broadcast the global start time
 class SimulationStandard(SimulationBase.SimulationBase):
 
     def __init__(self, namelist):
@@ -57,7 +54,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
         if not self.Restart.restart_simulation:
             self.initialize()
         else:
-            print('Calling init')
             self.initialize_from_restart()
 
         return
