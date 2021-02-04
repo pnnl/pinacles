@@ -12,3 +12,9 @@ class ForcingBase:
 
     def update(self):
         return
+
+    def restart(self, data_dict):
+        return
+
+    def dump_restart(self, data_dict):
+        return

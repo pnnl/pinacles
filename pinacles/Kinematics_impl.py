@@ -108,9 +108,9 @@ def strain_rate_max(dudx, dudy, dudz,
         for j in range(1,shape[1]):
             for k in range(1, shape[2]):
 
-                s11 = (0.5 * dudx[i,j,k])**2.0
-                s22 = (0.5 * dvdy[i,j,k])**2.0
-                s33 = (0.5 * dwdz[i,j,k])**2.0
+                s11 = (dudx[i,j,k])**2.0
+                s22 = (dvdy[i,j,k])**2.0
+                s33 = (dwdz[i,j,k])**2.0
 
                 s12 = (0.5*(dvdx[i,j,k] + dudy[i,j,k]))**2.0
                 s21 = s12
@@ -120,5 +120,37 @@ def strain_rate_max(dudx, dudy, dudz,
                 s32 = s23
 
                 strain_rate_mag[i,j,k] =  np.sqrt(2.0 * (s11 + s22 + s33 + s12 + s21 + s13 + s31 + s23 + s32))
+
+    return
+
+
+@numba.njit(fastmath=True)
+def q_criterion(dudx, dudy, dudz,
+                    dvdx, dvdy, dvdz,
+                    dwdx, dwdy, dwdz, qcrit):
+    shape = qcrit.shape
+    for i in range(1,shape[0]):
+        for j in range(1,shape[1]):
+            for k in range(1, shape[2]):
+                q12 =  (0.5 * (dudy[i,j,k] - dvdx[i,j,k])) ** 2.0
+                q13 =  (0.5 * (dudz[i,j,k] - dwdx[i,j,k])) ** 2.0
+                q21 =  (0.5 * (dvdx[i,j,k] - dudy[i,j,k])) ** 2.0
+                q23 =  (0.5 * (dvdz[i,j,k] - dwdy[i,j,k])) ** 2.0
+                q31 =  (0.5 * (dwdx[i,j,k] - dudz[i,j,k])) ** 2.0
+                q32 =  (0.5 * (dwdy[i,j,k] - dvdz[i,j,k])) ** 2.0
+                
+                s11 = (dudx[i,j,k])**2.0
+                s22 = (dvdy[i,j,k])**2.0
+                s33 = (dwdz[i,j,k])**2.0
+
+                s12 = (0.5*(dvdx[i,j,k] + dudy[i,j,k]))**2.0
+                s21 = s12
+                s13 = (0.5*(dudz[i,j,k] + dwdx[i,j,k]))**2.0
+                s31 = s13
+                s23 = (0.5 * (dvdz[i,j,k] + dwdy[i,j,k]))**2.0
+                s32 = s23
+
+
+                qcrit[i,j,k] = 0.5 * (np.sqrt(q12 + q13 + q21 + q23 + q31 + q32) - np.sqrt(s11 + s22 + s33 + s12 + s21 + s13 + s31 + s23 + s32))
 
     return
