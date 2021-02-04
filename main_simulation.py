@@ -31,9 +31,10 @@ def main(namelist):
 
     # Iterate through io classes and do first IO
     for item in io_classes:
-        try:
+
+        if hasattr(item, 'update'):
             item.update()
-        except:
+        elif hasattr(item, 'dump_restart'):
             item.dump_restart(Sim.TimeSteppingController.time)
 
     # Compute how long the first integration step should be
@@ -50,10 +51,10 @@ def main(namelist):
         time = Sim.TimeSteppingController.time
         for idx, item in enumerate(io_classes):
             if np.isclose(time%io_frequencies[idx], 0.0):
-                try:
+                if hasattr(item, 'update'):
                     item.update()
-                except:
-                    item.dump_restart(time)
+                elif hasattr(item, 'dump_restart'):
+                    item.dump_restart(Sim.TimeSteppingController.time)
                 # We did output here so lets update last io-time
                 last_io_time[idx] = time
         
