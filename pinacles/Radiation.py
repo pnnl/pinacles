@@ -142,7 +142,21 @@ class RRTMG:
         self.hourz = 0
 
 
-        self.time_elapsed = 10000.0      
+        self.time_elapsed = parameters.LARGE   
+        self._profile_o3 = None
+        
+        self.p_buffer = None
+        self.p_extension = None
+        self.t_extension = None
+        self.qv_extension = None
+        self.ql_extension = None
+        self.qi_extension = None
+
+
+        self._restart_attributes = ['time_elapsed', '_profile_o3', 'p_buffer', 'p_extension', 't_extension', 
+            'qv_extension', 'ql_extension', 'qi_extension']
+
+  
         return
 
     def init_profiles(self):
@@ -212,15 +226,7 @@ class RRTMG:
         # plt.plot(play_col,self._profile_o3, 's')
         # plt.show()
 
-        self._surf_sw_dn = 0.0
-        self._surf_sw_up = 0.0
-        self._surf_lw_dn = 0.0
-        self._surf_lw_up = 0.0
 
-        self._toa_sw_dn = 0.0
-        self._toa_sw_up = 0.0
-        self._toa_lw_dn = 0.0
-        self._toa_lw_up = 0.0  
         return
 
     def update(self,  _rk_step):

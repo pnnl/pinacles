@@ -16,6 +16,11 @@ class DumpFields:
         self._output_path = self._output_path = os.path.join(self._output_root, self._casename)
         self._output_path = os.path.join(self._output_path, 'fields')
 
+        try:
+            self._frequency = namelist['fields']['frequency']
+        except:
+            self._frequency = 1e9
+            
         if self._this_rank == 0:
             if not os.path.exists(self._output_path):
                 os.makedirs(self._output_path)
@@ -26,6 +31,11 @@ class DumpFields:
         return
 
 
+    @property
+    def frequency(self):
+        return self._frequency
+
+
     def add_class(self, aclass):
         assert(aclass not in self._classes)
         self._classes[aclass.name] = aclass
@@ -33,7 +43,7 @@ class DumpFields:
 
     def update(self):
 
-        output_here = os.path.join(self._output_path, str(np.round(self._TimeSteppingController.time + self._TimeSteppingController._dt)))
+        output_here = os.path.join(self._output_path, str(np.round(self._TimeSteppingController.time )))
         MPI.COMM_WORLD.barrier()
         if self._this_rank == 0:
             if not os.path.exists(output_here):

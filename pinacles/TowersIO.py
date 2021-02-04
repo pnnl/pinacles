@@ -19,7 +19,12 @@ class Tower():
         self._i_indx = int((loc[0] - xbnds[0])//dx[0]) + self._Grid.n_halo[0]
         self._j_indx = int((loc[1] - ybnds[0])//dx[1]) + self._Grid.n_halo[1]
 
-        self._frequency = namelist['stats']['frequency']
+        try:
+            self._frequency = namelist['stats']['frequency']
+        except:
+            self._frequency = 1e9
+
+
         self._tower_on_this_rank = False
         if  loc[0] > xbnds[0] and loc[0]  <=  xbnds[1] and loc[1] > ybnds[0] and loc[1] <=  ybnds[1]:
             self._tower_on_this_rank = True
@@ -112,6 +117,7 @@ class Towers:
             return
 
         tower_locations = namelist['towers']['location']
+        self._frequency = namelist['towers']['frequency']
 
         for loc in tower_locations:
             self._list_of_towers.append(Tower(namelist, Grid, TimeSteppingController, loc=tuple(loc)))
@@ -138,3 +144,7 @@ class Towers:
             tower.update()
 
         return
+
+    @property
+    def frequency(self):
+        return self._frequency

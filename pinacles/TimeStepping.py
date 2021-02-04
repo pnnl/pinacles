@@ -8,12 +8,10 @@ class RungeKuttaBase:
     def __init__(self, namelist, Grid, PrognosticState):
         self._Grid = Grid
         self._PrognosticState = PrognosticState
-        self._t = 0
         self.n_rk_step = 0
         self._rk_step = 0
         self.cfl_target = namelist['time']['cfl']
         self._dt = 0.0
-
 
         return
 
@@ -51,7 +49,6 @@ class RungeKutta2ndSSP(RungeKuttaBase):
             TS_impl.rk2ssp_s1(self._Tn, present_state,
                 present_tend, self._dt)
             self._rk_step = 0
-            self._t += self._dt
 
         return
 
@@ -64,15 +61,20 @@ def factory(namelist, Grid, PrognosticState):
 
 class TimeSteppingController:
     def __init__(self, namelist, Grid, VelocityState):
+
+        self._restart_atts = []
+
         self._Grid = Grid
         self._VelocityState = VelocityState
         self._TimeStepper = []
         self._times_to_match = []
         self._dt = 0.0
+        self._restart_atts.append('_dt')
         self._dt_max = 10.0
         self._cfl_target = namelist['time']['cfl']
         self._time_max = namelist['time']['time_max']
         self._time = 0.0
+        self._restart_atts.append('_time')
         return
 
     def add_timestepper(self, TimeStepper):
@@ -83,10 +85,8 @@ class TimeSteppingController:
         self._times_to_match.append(delta_time)
         return
 
-    def adjust_timestep(self, n_rk_step):
+    def adjust_timestep(self, n_rk_step, end_time):
         if n_rk_step == 0:
-            #Get the current model time
-            self._time += self._dt
 
             nhalo = self._Grid.n_halo
             dxi = self._Grid.dxi
@@ -108,9 +108,13 @@ class TimeSteppingController:
             MPI.COMM_WORLD.Allreduce(np.array([cfl_max_local], dtype=np.double), recv_buffer, op=MPI.MAX)
             cfl_max = recv_buffer[0]
             self._cfl_current = self._dt * cfl_max
-            self._dt = min(self._cfl_target / cfl_max, self._dt_max)
-            self.match_time()
+            self._dt = self._cfl_target / max(cfl_max, 0.001)
 
+            self._dt = min(self._dt, self._dt_max)
+            if self._time + self._dt > end_time:
+                self._dt = end_time - self._time
+
+            
             for Stepper in self._TimeStepper:
                 Stepper._dt = self._dt
 
@@ -140,3 +144,22 @@ class TimeSteppingController:
     @property
     def time_max(self):
         return self._time_max
+
+    def restart(self, data_dict):
+
+        key = 'TimeStepManager'
+
+        for atts in self._restart_atts:
+            self.__dict__[atts] = data_dict[key][atts]
+
+        return
+
+    def dump_restart(self, data_dict):
+
+        key = 'TimeStepManager'
+        data_dict[key] = {}
+
+        for atts in self._restart_atts:
+            data_dict[key][atts] = self.__dict__[atts]
+
+        return
