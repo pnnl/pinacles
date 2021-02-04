@@ -6,8 +6,9 @@ class ModelState:
     def __init__(self, Grid, container_name, prognostic=False, identical_bcs=False):
 
         self._Grid = Grid          #The grid to use for this ModelState container
-        self._prognostic = prognostic  #Is prognostic, if True we will allocate a tendency array
 
+
+        self._prognostic = prognostic  #Is prognostic, if True we will allocate a tendency array
         self._state_array = None   #This will store present values of the model state
         self._tend_array = None    #If prognostic this will store the values of the tend array
         self._dofs = {}            #This maps variable name to the GhostArray dof where it stored
@@ -19,8 +20,10 @@ class ModelState:
         self._loc = {}
         self._identical_bcs = identical_bcs
 
-
         self.name = container_name
+
+        self._restart_attributes = ['_prognostic', '_dofs', '_long_names', '_latex_names', '_units', 
+            '_nvars', '_bcs', '_loc', '_identical_bcs', 'name']
 
         return
 
@@ -340,5 +343,44 @@ class ModelState:
                     timeseries_grp = nc_grp['timeseries']
                     timeseries_grp[var + '_max'][-1] = var_max
                     timeseries_grp[var + '_min'][-1] = var_min
+
+        return
+
+    def restart(self, data_dict):
+
+        #Do consistency checks
+        key = self.name
+        
+        for att in self._restart_attributes:
+            assert self.__dict__[att] == data_dict[key][att]
+
+        # Update the internal arrays
+        self._state_array.array[:,:,:,:] = data_dict[key]['_state_array'][:,:,:,:]
+        if data_dict[key]['_tend_array'] is not None:
+            self._tend_array.array[:,:,:,:] = data_dict[key]['_tend_array'][:,:,:,:]
+
+
+        return
+    
+    def dump_restart(self, data_dict):
+
+
+        # Get the name of this particualr container and create a dictionary for it in the 
+        # restart data dict. 
+    
+        key = self.name
+        data_dict[key] = {}
+
+        # Loop over the restart_attributes and add it to the data_dict
+        for att in self._restart_attributes:
+            data_dict[key][att] = self.__dict__[att]
+
+        # Add the state and tendency arrays to the restart data_dict
+        data_dict[key]['_state_array'] = self._state_array.array
+        if self._tend_array is not None:
+            data_dict[key]['_tend_array'] = self._tend_array.array
+        else:
+            data_dict[key]['_tend_array'] = None
+
 
         return

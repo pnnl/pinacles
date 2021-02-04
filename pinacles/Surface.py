@@ -49,3 +49,9 @@ class SurfaceBase:
 
     def io_update(self, rt_grp):
         return
+
+    def restart(self, data_dict):
+        return
+
+    def dump_restart(self, data_dict):
+        return
