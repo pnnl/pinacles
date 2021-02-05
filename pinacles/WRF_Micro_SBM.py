@@ -10,7 +10,7 @@ from pinacles.WRFUtil import to_wrf_order_halo, to_wrf_order_4d_halo, to_our_ord
 module_mp_fast_sbm = module_mp_fast_sbm_warm
 class MicroSBM(MicrophysicsBase):
 
-    def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController):
+    def __init__(self,namelist, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController):
         MicrophysicsBase.__init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
 
 
@@ -135,12 +135,22 @@ class MicroSBM(MicrophysicsBase):
         ccncon3 = 0.0
         radius_mean3 = 0.31000e-04
         sig3 = 2.70000
+        
+        ccn_size_bin_dat = np.zeros((33,3),dtype=np.double,order='F')
+        
+        aerosol_file = namelist['microphysics']['aerosol_file']
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            ccn_size_bin_dat = np.asfortranarray(np.loadtxt(aerosol_file))
+            print(np.shape(ccn_size_bin_dat))
+        
+        ccn_size_bin_dat =  MPI.COMM_WORLD.bcast(ccn_size_bin_dat)
 
 
         module_mp_fast_sbm.module_mp_warm_sbm.warm_hucminit(5.0,
         ccncon1, radius_mean1, sig1,
         ccncon2, radius_mean2, sig2,
-        ccncon3, radius_mean3, sig3)
+        ccncon3, radius_mean3, sig3,
+        ccn_size_bin_dat)
 
         return
 

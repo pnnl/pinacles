@@ -116,7 +116,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Surf= SurfaceFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.VelocityState, self.ScalarState, self.DiagnosticState, self.TimeSteppingController)
 
         # Instantiate radiation
-        self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.TimeSteppingController)       
+        self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.Micro, self.TimeSteppingController)       
 
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
@@ -267,7 +267,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Surf= SurfaceFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.VelocityState, self.ScalarState, self.DiagnosticState, self.TimeSteppingController)
 
         # Instantiate radiation
-        self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.TimeSteppingController)       
+        self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.Micro, self.TimeSteppingController)       
 
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
@@ -381,7 +381,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 
                 #Update the forcing
                 self.Force.update()
-                self.Rad.update(n)
+                
 
                 #Update Kinematics and SGS model
                 self.Kine.update()
@@ -415,6 +415,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     self.Thermo.update(apply_buoyancy=False)
                     #We call the microphysics update at the end of the RK steps.
                     self.Micro.update()
+                    self.Rad.update()
                     self.ScalarState.boundary_exchange()
                     self.ScalarState.update_all_bcs()
 

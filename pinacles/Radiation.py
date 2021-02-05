@@ -229,7 +229,7 @@ class RRTMG:
 
         return
 
-    def update(self,  _rk_step):
+    def update(self):
 
         if not self._compute_radiation:
             return
@@ -237,13 +237,10 @@ class RRTMG:
         # get the pointers we need in any case  
         ds_dTdt_rad = self._DiagnosticState.get_field('dTdt_rad')
         s = self._ScalarState.get_field('s')
-        # if _rk_step == 0:
+  
         dt = self._TimeSteppingController.dt
         self.time_elapsed += dt
         
-        
-
-        # if _rk_step == 0 and self.time_elapsed > self._radiation_frequency:
         if self.time_elapsed > self._radiation_frequency:
             self.time_elapsed = 0.0
             # THis should get tested
@@ -552,7 +549,32 @@ class RRTMG:
 
     @property
     def name(self):
-        return self._name           
+        return self._name 
+
+    
+    def restart(self, data_dict):
+        """ 
+        Here we just do checks for domain decomposition consistency with the namelist file
+        # currently, we require that a restarted simulation have exactly the same domain 
+        # as the simulation from which it is being restarted.
+        """
+
+        key = 'Radiation'
+        for item in self._restart_attributes:
+            self.__dict__[item] = data_dict[key][item]
+
+
+        return
+
+    def dump_restart(self, data_dict):
+
+        # Loop through all attributes storing them
+        key = 'Radiation'
+        data_dict[key] = {}
+        for item in self._restart_attributes:
+            data_dict[key][item] = self.__dict__[item]
+
+        return       
 
 
 # Does this work for plev?

@@ -250,9 +250,9 @@ INTEGER,PARAMETER :: ISIGN_KO_1 = 0, ISIGN_KO_2 = 0,  ISIGN_3POINT = 1,  &
 
 ! ----Aerosol setup (Jiwen Fan)
 ! Aerosol size distribution (SD)
- INTEGER,PARAMETER :: ILogNormal_modes_Aerosol = 1 !Follow lognormal
+!  INTEGER,PARAMETER :: ILogNormal_modes_Aerosol = 1 !Follow lognormal
 ! distribution
-! integer,parameter :: ILogNormal_modes_Aerosol = 0 ! read in a SD file from observation. Currently the file name for the observed SD is "CCN_size_33bin.dat", whcih is from the July 18 2017 ENA case.  
+integer,parameter :: ILogNormal_modes_Aerosol = 0 ! read in a SD file from observation. Currently the file name for the observed SD is "CCN_size_33bin.dat", whcih is from the July 18 2017 ENA case.  
  integer,parameter :: do_Aero_BC = 0
  integer,parameter :: ICCN_reg = 1
  ! Aerosol composition
@@ -1216,7 +1216,7 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
  ! +----------------------------------+
    SUBROUTINE WARM_HUCMINIT(DT, ccncon1,radius_mean1,sig1, &
     ccncon2,radius_mean2,sig2, &
-    ccncon3,radius_mean3,sig3)
+    ccncon3,radius_mean3,sig3, CCN_size_bin_dat )
  !	  USE module_domain
  !	  USE module_dm
 
@@ -1226,6 +1226,7 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
     double precision,intent(in) :: ccncon1,radius_mean1,sig1
     double precision,intent(in) :: ccncon2,radius_mean2,sig2
     double precision,intent(in) :: ccncon3,radius_mean3,sig3
+    double precision, intent(in) :: CCN_size_bin_dat(:,:)
 
     LOGICAL , EXTERNAL      :: wrf_dm_on_monitor
     LOGICAL :: opened
@@ -1722,11 +1723,18 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
     !CALL wrf_debug(000, errmess)
     !---YZ2020Mar:read aerosol size distribution from observation----@
   ELSE ! read an observed SD with a format of aerosol size (cm), dN (#cm-3) and dNdlogD for 33bins (Jinwe Fan)
-    OPEN(UNIT=hujisbm_unit1,FILE="CCN_size_33bin.dat",FORM="FORMATTED",STATUS="OLD",ERR=2070)
+    ! OPEN(UNIT=hujisbm_unit1,FILE="CCN_size_33bin.dat",FORM="FORMATTED",STATUS="OLD",ERR=2070)
+    ! do KR=1,NKR
+    !    READ(hujisbm_unit1,*) RCCN(KR),CCNR(KR),FCCNR_OBS(KR) !---aerosol size (cm), dN (# cm-3) and dNdlogD for 33bins
+    ! end do
+    ! CLOSE(hujisbm_unit1)
+
     do KR=1,NKR
-       READ(hujisbm_unit1,*) RCCN(KR),CCNR(KR),FCCNR_OBS(KR) !---aerosol size (cm), dN (# cm-3) and dNdlogD for 33bins
+      RCCN(KR) = CCN_size_bin_dat(KR,1)
+      CCNR(KR) = CCN_size_bin_dat(KR,2)
+      FCCNR_OBS(KR) = CCN_size_bin_dat(KR,3)
+      print *, RCCN(KR),CCNR(KR),FCCNR_OBS(KR) !---aerosol size (cm), dN (# cm-3) and dNdlogD for 33bins
     end do
-    CLOSE(hujisbm_unit1)
     !call wrf_message("FAST_SBM_INIT: succesfull reading aerosol SD from observation")
   ENDIF
  ! +-------------------------------------------------------------+

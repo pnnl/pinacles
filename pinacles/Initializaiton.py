@@ -3,6 +3,7 @@ import pinacles.ThermodynamicsDry_impl as DryThermo
 import pinacles.ThermodynamicsMoist_impl as MoistThermo
 import netCDF4 as nc
 from scipy import interpolate
+from pinacles import UtilitiesParallel
 
 CASENAMES = ['colliding_blocks',
             'sullivan_and_patton',
@@ -374,7 +375,7 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     data = nc.Dataset(file, 'r')
     try:
         init_data = data.groups['initialization_sonde']
-        print('Initializing from the sonde profile')
+        UtilitiesParallel.print_root('\t \t Initializing from the sonde profile.')
         # init_data = data.groups['initialization_varanal]
         # print('Initializing from the analysis profile')
     except:
@@ -392,7 +393,11 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     w = VelocityState.get_field('w')
     s = ScalarState.get_field('s')
     qv = ScalarState.get_field('qv')
-    qc = ScalarState.get_field('qc')
+    try:
+        qc = ScalarState.get_field('ff1i1')
+        UtilitiesParallel.print_root('\t \t Initializing cloud liquid to smallest size bin.')
+    except:
+        qc = ScalarState.get_field('qc')
     try:
         raw_clwc = init_data.variables['cloud_water_content'][:]
         

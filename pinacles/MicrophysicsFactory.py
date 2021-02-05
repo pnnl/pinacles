@@ -17,7 +17,7 @@ def factory(namelist, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Ti
     elif scheme == 'p3':
         return WRF_Micro_P3.MicroP3(namelist,Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
     elif scheme == 'sbm':
-        return  WRF_Micro_SBM.MicroSBM(Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
+        return  WRF_Micro_SBM.MicroSBM(namelist,Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
 
 
     return
