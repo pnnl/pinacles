@@ -50,7 +50,7 @@ def main(namelist):
         #Adjust the integration to to make sure output is at the correct time
         time = Sim.TimeSteppingController.time
         for idx, item in enumerate(io_classes):
-            if np.isclose(time%io_frequencies[idx], 0.0):
+            if time - io_frequencies[idx] == last_io_time[idx]:
                 if hasattr(item, 'update'):
                     item.update()
                 elif hasattr(item, 'dump_restart'):
