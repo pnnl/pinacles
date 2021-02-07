@@ -42,7 +42,6 @@ class PressureSolver:
         div_hat2 = div_hat.redistribute(2)
 
         self._wavenumber_n = div_hat2.shape
-        print(self._wavenumber_n)
         self._wavenumber_substarts = div_hat2.substart
 
         return

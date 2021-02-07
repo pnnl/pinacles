@@ -339,8 +339,6 @@ def stable_bubble(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     w.fill(0.0)
 
     shape = s.shape
-
-    print(zl)
     
     dista = np.zeros_like(u)
 
@@ -360,12 +358,6 @@ def stable_bubble(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                 #t = (300.0 ) - 15.0*( np.cos(np.pi * dist) + 1.0) /2.0
                 #dista[i,j,k] = dist
 
-    print(np.amax(s), np.amin(s))
-    #import pylab as plt
-    #plt.contourf(dista[:,4,:].T)
-    #plt.show()
-
-    #import sys; sys.exit()
     return
 
 def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
