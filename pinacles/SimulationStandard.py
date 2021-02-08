@@ -117,7 +117,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Surf= SurfaceFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.VelocityState, self.ScalarState, self.DiagnosticState, self.TimeSteppingController)
 
         # Instatiate plumes if there are any
-        self.Plumes = Plumes.Plumes(self._namelist, self.ModelGrid, self.ScalarState, self.TimeSteppingController)
+        self.Plumes = Plumes.Plumes(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.TimeSteppingController)
 
         # Instantiate radiation
         self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.TimeSteppingController)       

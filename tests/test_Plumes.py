@@ -1,6 +1,7 @@
 import pytest
 import os
 import copy
+import numpy as np
 from pinacles import Plumes
 from pinacles import SimulationStandard
 
@@ -60,6 +61,14 @@ def standard_plume_mocks(tmpdir):
                                         [1000.0, 1000.0, 500.0]]
     namelist['plumes']['starttimes'] = [0.0,
                                         20.0]
+    namelist['plumes']['plume_flux'] = [1.0, 
+                                  2.0]
+    namelist['plumes']['qv_flux'] = [1e-05, 
+                                     1e-5]
+    namelist['plumes']['ql_flux'] = [0.0, 
+                                     0.0]
+    namelist['plumes']['heat_flux'] = [100.0, 
+        100.0]
 
 
     # Generate simulations for dry cases
@@ -78,10 +87,44 @@ def standard_plume_mocks(tmpdir):
             namelist['microphysics']['scheme'] = micro
 
         base_mocks.append(SimulationStandard.SimulationStandard(copy.deepcopy(namelist)))
-
     return base_mocks
 
-def test_plume_has_attributes(standard_plume_mocks):
+def test_plume_attributes(standard_plume_mocks):
 
+    for sims in standard_plume_mocks:
+        list_of_plumes = sims.Plumes._list_of_plumes
+
+        for count, plume in enumerate(list_of_plumes):
+            assert sims._namelist['plumes']['ql_flux'][count] == plume.plume_ql_flux
+            assert sims._namelist['plumes']['qv_flux'][count] == plume.plume_qv_flux
+            assert sims._namelist['plumes']['heat_flux'][count] == plume.plume_heat_flux
+            assert sims._namelist['plumes']['plume_flux'][count] == plume.plume_flux
+            assert count == plume.plume_number
+            assert 'plume_' + str(count) == plume.scalar_name
+    
+    return
+
+def test_added_scalar(standard_plume_mocks):
+
+    for sims in standard_plume_mocks:
+        list_of_plumes = sims.Plumes._list_of_plumes
+        for count, plume in enumerate(list_of_plumes):
+
+            scalar = sims.ScalarState.get_field(plume.scalar_name)
+            assert np.all(scalar == 0.0)
+            scalar = sims.ScalarState.get_tend(plume.scalar_name)
+            assert np.all(scalar == 0.0)
+
+    return
+
+
+def test_update(standard_plume_mocks):
+
+    dt = 10.0
+    
+    for sims in standard_plume_mocks:
+        # Integrate forwared by dt
+        sims.update(dt)
+    
 
     return

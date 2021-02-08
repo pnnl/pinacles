@@ -377,3 +377,26 @@ class RegularCartesian(GridBase):
             data_dict[key][item] = self.__dict__[item]
 
         return
+
+    def point_on_rank(self, x, y, z):
+         
+        x_range = self.x_range_local
+        y_range = self.y_range_local
+
+        on_rank = False
+
+        if  x_range[0] < x and x_range[1] > x:
+            if  y_range[0] < y and y_range[1] > y:
+                on_rank = True
+
+        return on_rank
+
+
+    def point_indicies(self, x, y, z):
+
+        # Get the indicies of the x, y, and z points
+        x_index = np.argmin(np.abs(self.x_local - x))
+        y_index = np.argmin(np.abs(self.y_local - y))
+        z_index = np.argmin(np.abs(self.z_local - z))
+
+        return (x_index, y_index, z_index)
