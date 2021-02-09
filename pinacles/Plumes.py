@@ -160,7 +160,7 @@ class Plumes:
         count = 0
         for loc, start in zip(self._locations, self._startimes):
 
-            UtilitiesParallel.print_root('\t Plume added at: ' + str(loc) + 'starting @ ' + str(start) + ' seconds.')
+            UtilitiesParallel.print_root('\t Plume added at: ' + str(loc) + ' starting @ ' + str(start) + ' seconds.')
             
             # Add plume classes to the list of plumes
             self._list_of_plumes.append(Plume(loc, start, count,
