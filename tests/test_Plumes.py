@@ -120,11 +120,29 @@ def test_added_scalar(standard_plume_mocks):
 
 def test_update(standard_plume_mocks):
 
+    # Time step over which to update
     dt = 10.0
     
-    for sims in standard_plume_mocks:
-        # Integrate forwared by dt
-        sims.update(dt)
+    # Number of timesteps to take
+    nt = 3
+
+    # Integrate the model forwared nt steps
+    for ti in range(nt):
+        for sims in standard_plume_mocks:
+            # Integrate forwared by dt
+            sims.update(dt)
     
+            # Now loop over plumes and check details about the time integration
+            for count, plume in enumerate(sims.Plumes._list_of_plumes):
+                start_time = sims._namelist['plumes']['starttimes'][count]
+                sim_time = sims.TimeSteppingController.time
+                
+                scalar = sims.ScalarState.get_field(plume.scalar_name)
+                if sim_time <= start_time:
+                    # Before the start time the added scalars should all be zero
+                    assert np.all(scalar == 0.0)
+                else:
+                    # After the start time the added scalar should somewhere be > 0
+                    assert np.any(scalar > 0.0)
 
     return

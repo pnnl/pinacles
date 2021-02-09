@@ -1,4 +1,5 @@
 from pinacles import UtilitiesParallel
+from pinacles import parameters
 class Plume:
 
     def __init__(self, location, start_time, n, 
@@ -23,8 +24,6 @@ class Plume:
         self._plume_ql_flux = 0.0
 
 
-
-
         # Determine if plume is emitted on this rank
         self._plume_on_rank = self._Grid.point_on_rank(self._location[0], self._location[1], self._location[2])
         self._indicies = None
@@ -39,20 +38,32 @@ class Plume:
         
     def update(self):
 
+        # If it is not time to start the plume just return w/o doing anything
+        if  self._TimeSteppingController.time  < self._start_time :
+            return
+
         dxs = self._Grid.dx
 
         grid_cell_volume = dxs[0] * dxs[1] * dxs[2]
         grid_cell_mass = grid_cell_volume * self._Ref.rho0[self._indicies[0]] 
 
-        #Add the plume scalar flux
+        # Add the plume scalar flux
         plume_tend = self._ScalarState.get_tend(self._scalar_name)
         plume_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = self._plume_flux/grid_cell_mass
 
         # Add the plume heat flux
         s_tend = self._ScalarState.get_tend('s')
-        s_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = self._plume_heat_flux/grid_cell_mass
+        s_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = self._plume_heat_flux/grid_cell_mass*parameters.ICPD
 
+        # Add the plume liquid flux
+        if 'qv' in self._ScalarState._dofs:
+            qv_tend = self._ScalarState.get_tend('qv')
+            qv_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = self._plume_qv_flux/grid_cell_mass
 
+        # Add the plume liquid flux
+        if 'ql' in self._ScalarState._dofs:
+            ql_tend = self._ScalarState.get_tend('ql')
+            ql_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = self._plume_ql_flux/grid_cell_mass
 
         return
     
@@ -149,7 +160,7 @@ class Plumes:
         count = 0
         for loc, start in zip(self._locations, self._startimes):
 
-            UtilitiesParallel.print_root('\t Plume added at: ' + str(loc) + 'starting @' + str(start) + ' seconds.')
+            UtilitiesParallel.print_root('\t Plume added at: ' + str(loc) + 'starting @ ' + str(start) + ' seconds.')
             
             # Add plume classes to the list of plumes
             self._list_of_plumes.append(Plume(loc, start, count,
@@ -181,3 +192,7 @@ class Plumes:
             plume_i.update()
 
         return
+
+    @property
+    def n(self):
+        return self._n
