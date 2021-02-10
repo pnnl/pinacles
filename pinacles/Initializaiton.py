@@ -372,6 +372,15 @@ def stable_bubble(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
 def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     file = namelist['testbed']['input_filepath']
+    try:
+        micro_scheme = namelist['microphysics']['scheme']
+    except:
+        micro_scheme = 'base'
+    try:
+        sbm_init_type = namelist['testbed']['sbm_init_type']
+    except:
+        sbm_init_type = 'spread_evenly'
+
     data = nc.Dataset(file, 'r')
     try:
         init_data = data.groups['initialization_sonde']
@@ -393,33 +402,7 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     w = VelocityState.get_field('w')
     s = ScalarState.get_field('s')
     qv = ScalarState.get_field('qv')
-
-    try:
-        raw_clwc = init_data.variables['cloud_water_content'][:]
-        
-        init_qc = True
-    except:
-        init_qc = False
-        qc.fill(0.0)
-    UtilitiesParallel.print_root('\t \t Initialization of qc: ', init_qc)
-
-    try:
-        ff1i1= ScalarState.get_field('ff1i1')
-        ff1i2= ScalarState.get_field('ff1i2')
-        ff1i3= ScalarState.get_field('ff1i3')
-        ff1i4= ScalarState.get_field('ff1i4')
-        ff1i5= ScalarState.get_field('ff1i5')
-        ff1i6= ScalarState.get_field('ff1i6')
-        ff1i7= ScalarState.get_field('ff1i7')
-        ff1i8= ScalarState.get_field('ff1i8')
-        ff1i9= ScalarState.get_field('ff1i9')
-        ff1i10= ScalarState.get_field('ff1i10')
-
-        UtilitiesParallel.print_root('\t \t Initializing cloud liquid to smallest size bin.')
-        init_qc_sbm = True
-    except:
-        qc = ScalarState.get_field('qc')
-        init_qc_sbm = False
+    qc = ScalarState.get_field('qc')
 
     zl = ModelGrid.z_local
 
@@ -432,33 +415,76 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     init_var_from_sounding(raw_u, init_z, zl, u)
     init_var_from_sounding(raw_v, init_z, zl, v)
     init_var_from_sounding(raw_qv, init_z, zl, qv)
+  
+            
+    u -= Ref.u0
+    v -= Ref.v0
+
+
+    try:
+        raw_clwc = init_data.variables['cloud_water_content'][:]
+        init_qc = True
+        UtilitiesParallel.print_root('\t \t Initialization of qc is true')
+    except:
+        init_qc = False
+        qc.fill(0.0)
+        UtilitiesParallel.print_root('\t \t Initialization of qc is false')
+
     if init_qc:
-        if init_qc_sbm:
-            init_var_from_sounding(raw_clwc, init_z, zl, ff1i1)
-            shape = ff1i1.shape
+        init_var_from_sounding(raw_clwc, init_z, zl, qc)
+        shape = qc.shape
+        if micro_scheme == 'sbm' and sbm_init_type == 'spread_evenly':
+            UtilitiesParallel.print_root('\t \t Initializing cloud liquid to bins below KRDROP')
+            nbins = 15.0
+            ff1i1= ScalarState.get_field('ff1i1')
+            ff1i2= ScalarState.get_field('ff1i2')
+            ff1i3= ScalarState.get_field('ff1i3')
+            ff1i4= ScalarState.get_field('ff1i4')
+            ff1i5= ScalarState.get_field('ff1i5')
+            ff1i6= ScalarState.get_field('ff1i6')
+            ff1i7= ScalarState.get_field('ff1i7')
+            ff1i8= ScalarState.get_field('ff1i8')
+            ff1i9= ScalarState.get_field('ff1i9')
+            ff1i10= ScalarState.get_field('ff1i10')
+            ff1i11= ScalarState.get_field('ff1i11')
+            ff1i12= ScalarState.get_field('ff1i12')
+            ff1i13= ScalarState.get_field('ff1i13')
+            ff1i14= ScalarState.get_field('ff1i14')
+            ff1i15= ScalarState.get_field('ff1i15')
             for i in range(shape[0]):
                 for j in range(shape[1]):
                     for k in range(shape[2]):
-                        ff1i10[i,j,k] = ff1i1[i,j,k] /Ref.rho0[k]/10.0
-                        ff1i9[i,j,k] = ff1i1[i,j,k] /Ref.rho0[k]/10.0
-                        ff1i8[i,j,k] = ff1i1[i,j,k] /Ref.rho0[k]/10.0
-                        ff1i7[i,j,k] = ff1i1[i,j,k] /Ref.rho0[k]/10.0
-                        ff1i6[i,j,k] = ff1i1[i,j,k] /Ref.rho0[k]/10.0
-                        ff1i5[i,j,k] = ff1i1[i,j,k] /Ref.rho0[k]/10.0
-                        ff1i4[i,j,k] = ff1i1[i,j,k] /Ref.rho0[k]/10.0
-                        ff1i3[i,j,k] = ff1i1[i,j,k] /Ref.rho0[k]/10.0
-                        ff1i2[i,j,k] = ff1i1[i,j,k] /Ref.rho0[k]/10.0
-                        ff1i1[i,j,k] = ff1i1[i,j,k] /Ref.rho0[k]/10.0
+                        qc[i,j,k] = qc[i,j,k]/Ref.rho0[k]
+                        ff1i15[i,j,k] = qc[i,j,k]/nbins
+                        ff1i14[i,j,k] = qc[i,j,k]/nbins
+                        ff1i13[i,j,k] = qc[i,j,k]/nbins
+                        ff1i12[i,j,k] = qc[i,j,k]/nbins
+                        ff1i11[i,j,k] = qc[i,j,k]/nbins
+                        ff1i10[i,j,k] = qc[i,j,k]/nbins
+                        ff1i9[i,j,k] = qc[i,j,k] /nbins
+                        ff1i8[i,j,k] = qc[i,j,k] /nbins
+                        ff1i7[i,j,k] = qc[i,j,k] /nbins
+                        ff1i6[i,j,k] = qc[i,j,k] /nbins
+                        ff1i5[i,j,k] = qc[i,j,k] /nbins
+                        ff1i4[i,j,k] = qc[i,j,k] /nbins
+                        ff1i3[i,j,k] = qc[i,j,k] /nbins
+                        ff1i2[i,j,k] = qc[i,j,k] /nbins
+                        ff1i1[i,j,k] = qc[i,j,k] /nbins
 
+            
+               
+        elif micro_scheme == 'sbm' and sbm_init_type == 'mean_drop_bin':
+            UtilitiesParallel.print_root('\t \t mean_drop_bin initialization is not fully enabled.')
         else:
-            init_var_from_sounding(raw_clwc, init_z, zl, qc)
-            shape = qc.shape
             for i in range(shape[0]):
                 for j in range(shape[1]):
                     for k in range(shape[2]):
                         qc[i,j,k] = qc[i,j,k] /Ref.rho0[k]
-    u -= Ref.u0
-    v -= Ref.v0
+
+
+                
+
+
 
     try:
         raw_temperature = init_data.variables['temperature'][:]
