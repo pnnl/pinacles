@@ -41,7 +41,7 @@ class Plume:
     def update(self):
 
         # If it is not time to start the plume just return w/o doing anything
-        if  self._TimeSteppingController.time  < self._start_time :
+        if  self._TimeSteppingController.time  < self._start_time or not self._plume_on_rank :
             return
 
         dxs = self._Grid.dx
