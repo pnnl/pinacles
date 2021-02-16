@@ -35,7 +35,7 @@ class MicroSBM(MicrophysicsBase):
 
 
         for var in self._list_of_ScalarStatevars:
-            self._ScalarState.add_variable(var, units='kg kg^-1', latex_name=var, long_name=long_names[var])
+            self._ScalarState.add_variable(var, units='kg kg^-1', latex_name=var, long_name=long_names[var], limit=True)
 
         #Add new diag fields
         self._io_fields = ['MA', 'LH_rate', 'CE_rate', 'CldNucl_rate', 'difful_tend', 'diffur_tend',
@@ -92,16 +92,16 @@ class MicroSBM(MicrophysicsBase):
         self._qc_start = self._ScalarState.nvars 
         for i in range(1,34):
             name = "ff1i" + str(i)
-            self._ScalarState.add_variable(name, units='kg kg^{-1}', long_name='liquid bin mass ' + str(i) )
+            self._ScalarState.add_variable(name, units='kg kg^{-1}', long_name='liquid bin mass ' + str(i), limit=True )
         self._qc_end = self._ScalarState.nvars
         #Add aersol bins
         for i in range(1,34):
             name = 'ff8i' + str(i)
-            self._ScalarState.add_variable(name, units='kg kg^{-1}', long_name='aerosol bin mass ' + str(i))
+            self._ScalarState.add_variable(name, units='kg kg^{-1}', long_name='aerosol bin mass ' + str(i), limit=True)
 
         for i in range(1,34):
             name = 'ff8in' + str(i)
-            self._ScalarState.add_variable(name,units='kg kg^{-1}', long_name='(regeneration) aerosol bin mass ' + str(i))
+            self._ScalarState.add_variable(name,units='kg kg^{-1}', long_name='(regeneration) aerosol bin mass ' + str(i), limit=True)
         self._bin_end = self._ScalarState.nvars
 
         # Call add output container diagnostics to the container

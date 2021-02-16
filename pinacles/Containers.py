@@ -1,5 +1,6 @@
 from pinacles import ParallelArrays
 import numpy as np
+import numba
 from mpi4py import MPI
 
 class ModelState:
@@ -18,6 +19,7 @@ class ModelState:
         self._nvars = 0            #The number of 3D field stored in this model state
         self._bcs = {}
         self._loc = {}
+        self._limit = {}
         self._identical_bcs = identical_bcs
 
         self.name = container_name
@@ -55,7 +57,7 @@ class ModelState:
     def identical_bcs(self):
         return self._identical_bcs
 
-    def add_variable(self, name, long_name='None', latex_name='None', units='None', bcs='gradient zero', loc='c'):
+    def add_variable(self, name, long_name='None', latex_name='None', units='None', bcs='gradient zero', loc='c', limit=False):
 
         #Do some correctness checks and warn for some behavior
         assert(bcs in  ['gradient zero', 'value zero'])
@@ -68,6 +70,7 @@ class ModelState:
         self._units[name] = units
         self._bcs[name] = bcs
         self._loc[name] = loc
+        self._limit[name] = limit
 
         #Increment the bumber of variables
         self._nvars += 1
@@ -236,6 +239,27 @@ class ModelState:
     def stats_io_init(self):
 
         return
+
+
+    @staticmethod
+    @numba.njit()
+    def limiter(array):
+        shape = array.shape
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                for k in range(shape[2]):
+                    array[i,j,k] = max(0.0, array[i,j,k])
+
+        return
+
+    def apply_limiter(self):
+
+        for key, value in self._limit.items():
+            field = self.get_field(key)
+            self.limiter(field)
+
+        return
+
 
     def io_initialize(self, nc_grp):
 
