@@ -60,15 +60,15 @@ class MicroP3(MicrophysicsBase):
 
 
             #Allocate microphysical/thermodyamic variables
-            self._ScalarState.add_variable('qv', long_name = 'water vapor mixing ratio', units='kg kg^{-1}', latex_name = 'q_v')
-            self._ScalarState.add_variable('qc', long_name = 'cloud water mixing ratio', units='kg kg^{-1}', latex_name = 'q_c')
-            self._ScalarState.add_variable('qnc', long_name= 'cloud number concentration', units='# kg^{-1}', latex_name = 'q_{nc}')
-            self._ScalarState.add_variable('qr', long_name = 'rain water mixing ratio', units='kg kg^{-1}', latex_name = 'q_{r}')
-            self._ScalarState.add_variable('qnr', long_name = 'rain number concentration', units='# kg^{-1}', latex_name = 'q_{nr}')
-            self._ScalarState.add_variable('qi1', long_name=  'total ice mixing ratio', units='kg kg^{-1}', latex_name = 'q_{i}')
-            self._ScalarState.add_variable('qni1', long_name = 'ice number concentration', units='# kg^{-1}', latex_name = 'q_{ni}')
-            self._ScalarState.add_variable('qir1', long_name = 'rime ice mixing ratio', units='kg kg^{-1}', latex_name = 'q_{ir}')
-            self._ScalarState.add_variable('qib1', long_name = 'ice rime volume mixing ratio', units='m^{-3} kg^{-1}', latex_name = 'q_{ib}')
+            self._ScalarState.add_variable('qv', long_name = 'water vapor mixing ratio', units='kg kg^{-1}', latex_name = 'q_v', limit=True)
+            self._ScalarState.add_variable('qc', long_name = 'cloud water mixing ratio', units='kg kg^{-1}', latex_name = 'q_c', limit=True)
+            self._ScalarState.add_variable('qnc', long_name= 'cloud number concentration', units='# kg^{-1}', latex_name = 'q_{nc}', limit=True)
+            self._ScalarState.add_variable('qr', long_name = 'rain water mixing ratio', units='kg kg^{-1}', latex_name = 'q_{r}', limit=True)
+            self._ScalarState.add_variable('qnr', long_name = 'rain number concentration', units='# kg^{-1}', latex_name = 'q_{nr}', limit=True)
+            self._ScalarState.add_variable('qi1', long_name=  'total ice mixing ratio', units='kg kg^{-1}', latex_name = 'q_{i}', limit=True)
+            self._ScalarState.add_variable('qni1', long_name = 'ice number concentration', units='# kg^{-1}', latex_name = 'q_{ni}', limit=True)
+            self._ScalarState.add_variable('qir1', long_name = 'rime ice mixing ratio', units='kg kg^{-1}', latex_name = 'q_{ir}', limit=True)
+            self._ScalarState.add_variable('qib1', long_name = 'ice rime volume mixing ratio', units='m^{-3} kg^{-1}', latex_name = 'q_{ib}', limit=True)
 
             self._DiagnosticState.add_variable('reflectivity', long_name='radar reflectivity', units='dBz', latex_name = 'reflectivity')
             self._DiagnosticState.add_variable('diag_effc_3d',  long_name='cloud droplet effective radius', units='m', latex_name='r_e')

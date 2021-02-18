@@ -26,6 +26,7 @@ from pinacles import SGSFactory
 from pinacles import DiagnosticsTurbulence
 from pinacles import DiagnosticsClouds
 from pinacles import TowersIO
+from pinacles import Plumes
 from pinacles import Restart
 from pinacles import UtilitiesParallel   
 from mpi4py import MPI
@@ -114,6 +115,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Instantiate surface
         self.Surf= SurfaceFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.VelocityState, self.ScalarState, self.DiagnosticState, self.TimeSteppingController)
+
+        # Instatiate plumes if there are any
+        self.Plumes = Plumes.Plumes(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.TimeSteppingController)
 
         # Instantiate radiation
         self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.TimeSteppingController)       
@@ -266,6 +270,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instantiate surface
         self.Surf= SurfaceFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.VelocityState, self.ScalarState, self.DiagnosticState, self.TimeSteppingController)
 
+        # Instatiate plumes if there are any
+        self.Plumes = Plumes.Plumes(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.TimeSteppingController)
+
         # Instantiate radiation
         self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.TimeSteppingController)       
 
@@ -379,6 +386,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 #Update the surface
                 self.Surf.update()
                 
+                #Update plumes if any
+                self.Plumes.update()
+
                 #Update the forcing
                 self.Force.update()
                 self.Rad.update(n)
@@ -401,6 +411,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 #Do time stepping
                 self.ScalarTimeStepping.update()
                 self.VelocityTimeStepping.update()
+
+                self.ScalarState.apply_limiter()
 
                 #Update boundary conditions
                 self.ScalarState.boundary_exchange()

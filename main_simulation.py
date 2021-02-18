@@ -12,16 +12,14 @@ def main(namelist):
     # Instantiate and Initialize the Simulation
     Sim = SimulationStandard.SimulationStandard(namelist)
 
-    S_slice = SimulationUtilities.HorizontalSlice('qv_20m', height=20, frequency=10, var='s', state='ScalarState', Sim=Sim)
-    Albedo = SimulationUtilities.Albedo(20.0, Sim)
+    #S_slice = SimulationUtilities.HorizontalSlice('qv_20m', height=20, frequency=10, var='s', state='ScalarState', Sim=Sim)
+    #Albedo = SimulationUtilities.Albedo(20.0, Sim)
 
     # Put all of the output classes into a list (these are just references)
     io_classes = [Sim.StatsIO,
                  Sim.FieldsIO,
                  Sim.IOTower, 
-                 Sim.Restart, 
-                 S_slice, 
-                 Albedo]
+                 Sim.Restart]
 
     # Determine all of the output frequencies
     io_frequencies = []
@@ -50,7 +48,7 @@ def main(namelist):
         #Adjust the integration to to make sure output is at the correct time
         time = Sim.TimeSteppingController.time
         for idx, item in enumerate(io_classes):
-            if np.isclose(time%io_frequencies[idx], 0.0):
+            if time - io_frequencies[idx] == last_io_time[idx]:
                 if hasattr(item, 'update'):
                     item.update()
                 elif hasattr(item, 'dump_restart'):
