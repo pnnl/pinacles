@@ -58,17 +58,19 @@ def standard_plume_mocks(tmpdir):
     # 
     namelist['plumes'] = {}
     namelist['plumes']['locations'] = [[500.0, 500.0, 100.0],
-                                        [1000.0, 1000.0, 500.0]]
+        [1000.0, 1000.0, 500.0]]
     namelist['plumes']['starttimes'] = [0.0,
-                                        20.0]
+        20.0]
     namelist['plumes']['plume_flux'] = [1.0, 
-                                  2.0]
+        2.0]
     namelist['plumes']['qv_flux'] = [1e-05, 
-                                     1e-5]
+        1e-5]
     namelist['plumes']['ql_flux'] = [0.0, 
-                                     0.0]
+        0.0]
     namelist['plumes']['heat_flux'] = [100.0, 
         100.0]
+    namelist['plumes']['boundary_outflow'] = [True, 
+        False]
 
 
     # Generate simulations for dry cases
@@ -101,6 +103,7 @@ def test_plume_attributes(standard_plume_mocks):
             assert sims._namelist['plumes']['plume_flux'][count] == plume.plume_flux
             assert count == plume.plume_number
             assert 'plume_' + str(count) == plume.scalar_name
+            assert sims._namelist['plumes']['boundary_outflow'][count] == plume.boundary_outflow
     
     return
 
@@ -144,5 +147,30 @@ def test_update(standard_plume_mocks):
                 else:
                     # After the start time the added scalar should somewhere be > 0
                     assert np.any(scalar > 0.0)
+
+    return
+
+def test_boundary_outlfow(standard_plume_mocks):
+
+    # Loop over all sims
+    for sims in standard_plume_mocks:
+        #Get the plume scalar
+        n_halo = sims.ModelGrid.n_halo
+        for count, plume in enumerate(sims.Plumes._list_of_plumes):
+            scalar_name = plume.scalar_name
+            scalar = sims.ScalarState.get_field(scalar_name)      
+
+            scalar[:,:,:] = 1.0 
+    
+            plume.update()
+
+            if plume.boundary_outflow:
+                #Test that the boundaries are set to zero
+                assert(np.all(scalar[:n_halo[0],:,:])== 0.0)
+                assert(np.all(scalar[-n_halo[0]:,:,:])== 0.0)
+                assert(np.all(scalar[:,:n_halo[1],:])== 0.0)
+                assert(np.all(scalar[:,-n_halo[1]:,:])== 0.0)
+            else:
+                assert np.all(scalar == 1.0)
 
     return
