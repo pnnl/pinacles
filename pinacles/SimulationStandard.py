@@ -6,6 +6,9 @@ import argparse
 import uuid
 import datetime
 from pinacles import SimulationBase
+from pinacles import BoundaryBrinkman
+
+
 
 from pinacles import Initializaiton
 from pinacles import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
@@ -115,6 +118,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Instantiate surface
         self.Surf= SurfaceFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.VelocityState, self.ScalarState, self.DiagnosticState, self.TimeSteppingController)
+        self.BoundaryBrinkman = BoundaryBrinkman.BoundaryBrinkman(self.ModelGrid, self.DiagnosticState, self.VelocityState, self.TimeSteppingController)
 
         # Instatiate plumes if there are any
         self.Plumes = Plumes.Plumes(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.TimeSteppingController)
@@ -407,12 +411,14 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 #Do Damping
                 self.RayleighDamping.update()
-
+            
                 #Do time stepping
                 self.ScalarTimeStepping.update()
                 self.VelocityTimeStepping.update()
 
                 #Update boundary conditions
+                self.BoundaryBrinkman.update()
+
                 self.ScalarState.boundary_exchange()
                 self.VelocityState.boundary_exchange()
                 self.ScalarState.update_all_bcs()
@@ -420,6 +426,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 #Call pressure solver
                 self.PSolver.update()
+                #self.BoundaryBrinkman.update()
+
 
                 if n== 1:
                     self.Thermo.update(apply_buoyancy=False)

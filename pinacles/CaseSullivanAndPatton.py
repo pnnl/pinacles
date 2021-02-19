@@ -67,9 +67,9 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
         #Compute the surface temperature flux
         self._tflx[:,:] =  self._theta_flux * exner_edge[nh[2]-1]
 
-        Surface_impl.iles_surface_flux_application(1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._taux_sfc, ut)
-        Surface_impl.iles_surface_flux_application(1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tauy_sfc, vt)
-        Surface_impl.iles_surface_flux_application(1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tflx, st)
+        #Surface_impl.iles_surface_flux_application(1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._taux_sfc, ut)
+        #Surface_impl.iles_surface_flux_application(1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tauy_sfc, vt)
+        #Surface_impl.iles_surface_flux_application(1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tflx, st)
 
 
         return
@@ -169,5 +169,5 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
         u0 = self._Ref.u0
         v0 = self._Ref.v0
 
-        Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, u0, v0, vt, ut)
+        #Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, u0, v0, vt, ut)
         return

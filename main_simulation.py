@@ -15,11 +15,19 @@ def main(namelist):
     #S_slice = SimulationUtilities.HorizontalSlice('qv_20m', height=20, frequency=10, var='s', state='ScalarState', Sim=Sim)
     #Albedo = SimulationUtilities.Albedo(20.0, Sim)
 
+    u_slice = SimulationUtilities.HorizontalSlice('u_80m', height=80, frequency=5.0, var='u', state='VelocityState', Sim=Sim)
+    v_slice = SimulationUtilities.HorizontalSlice('v_80m', height=80, frequency=5.0, var='v', state='VelocityState', Sim=Sim)
+    eddy_viscosity = SimulationUtilities.HorizontalSlice('vt_80m', height=80, frequency=5.0, var='eddy_diffusivity', state='DiagnosticState', Sim=Sim)
+
+
     # Put all of the output classes into a list (these are just references)
     io_classes = [Sim.StatsIO,
                  Sim.FieldsIO,
                  Sim.IOTower, 
-                 Sim.Restart]
+                 Sim.Restart, 
+                 u_slice, 
+                 v_slice, 
+                 eddy_viscosity]
 
     # Determine all of the output frequencies
     io_frequencies = []
