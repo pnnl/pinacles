@@ -378,6 +378,9 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         micro_scheme = 'base'
     try:
         sbm_init_type = namelist['testbed']['sbm_init_type']
+        # options are 'spread_evenly', 'all_vapor', 
+        if sbm_init_type not in ['spread_evenly', 'all_vapor']:
+            UtilitiesParallel.print_root(' Warning: sbm_init_type is unknown. Defaulting to spread_evenly')
     except:
         sbm_init_type = 'spread_evenly'
 
@@ -476,8 +479,13 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
             
                
-        elif micro_scheme == 'sbm' and sbm_init_type == 'mean_drop_bin':
-            UtilitiesParallel.print_root('\t \t mean_drop_bin initialization is not fully enabled.')
+        elif micro_scheme == 'sbm' and sbm_init_type == 'all_vapor':
+            UtilitiesParallel.print_root('\t \t SBM initialization with cloud water dumped into vapor.')
+            for i in range(shape[0]):
+                for j in range(shape[1]):
+                    for k in range(shape[2]):
+                        qv[i,j,k] += qc[i,j,k] /Ref.rho0[k]
+                        qc[i,j,k] = 0.0
         else:
             for i in range(shape[0]):
                 for j in range(shape[1]):
