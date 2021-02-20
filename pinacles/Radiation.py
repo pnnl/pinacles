@@ -5,7 +5,7 @@ import numba
 import numpy as np
 from mpi4py import MPI
 from scipy import interpolate
-#import pylab as plt
+import pylab as plt
 import netCDF4 as nc
 from cffi import FFI
 import ctypes
@@ -151,6 +151,17 @@ class RRTMG:
         self.qv_extension = None
         self.ql_extension = None
         self.qi_extension = None
+
+            
+        self._surf_sw_up = 0.0
+        self._surf_sw_dn = 0.0
+        self._surf_lw_up = 0.0
+        self._surf_lw_dn = 0.0
+
+        self._toa_sw_up = 0.0
+        self._toa_sw_dn = 0.0
+        self._toa_lw_up = 0.0
+        self._toa_lw_dn = 0.0
 
 
         self._restart_attributes = ['time_elapsed', '_profile_o3', 'p_buffer', 'p_extension', 't_extension', 
@@ -347,7 +358,7 @@ class RRTMG:
             # plt.plot(play[0,:],tlay[0,:],'-o')
             # plt.plot(self.p_extension[:],self.t_extension[:],'--s')
             
-            # fig.show()
+            # plt.show()
             
 
             # qv to rrtmg shape; convert to vmr
@@ -514,6 +525,12 @@ class RRTMG:
         v.standard_name = 'toa_lw_up'
         v.units = 'W/m^2'
 
+        #Now add profile of effective radius
+        v = profiles_grp.createVariable('r_eff_cloud', np.double, dimensions=('time', 'z',))
+        v.long_name = 'Effective droplet radius'
+        v.standard_name = 'r_eff_cloud'
+        v.units = 'm'
+
         return
 
     def io_update(self, nc_grp):
@@ -532,6 +549,12 @@ class RRTMG:
         toa_lw_up = UtilitiesParallel.ScalarAllReduce(self._toa_lw_up)
         toa_lw_down = UtilitiesParallel.ScalarAllReduce(self._toa_lw_dn)
         
+        n_halo = self._Grid.n_halo
+        npts = self._Grid.n[0] * self._Grid.n[1]
+
+        re = self._Micro.get_reffc()
+        re_prof = np.sum(re[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1],n_halo[2]:-n_halo[2]],axis=(0,1))/npts
+        re_prof = UtilitiesParallel.ScalarAllReduce(re_prof)
         if my_rank == 0:
             timeseries_grp = nc_grp['timeseries']
             profiles_grp = nc_grp['profiles']
@@ -545,6 +568,8 @@ class RRTMG:
             timeseries_grp['toa_sw_down'][-1] = toa_sw_down 
             timeseries_grp['toa_lw_up'][-1] = toa_lw_up 
             timeseries_grp['toa_lw_down'][-1] = toa_lw_down
+
+            profiles_grp['r_eff_cloud'][-1,:] = re_prof[:]
         return
 
     @property

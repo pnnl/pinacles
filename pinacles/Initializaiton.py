@@ -389,7 +389,10 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         # print('Initializing from the analysis profile')
     except:
         init_data = data.groups['initialization']
-    psfc = init_data.variables['surface_pressure'][0] * 100.0 # Convert from hPa to Pa
+    
+    psfc = init_data.variables['surface_pressure'][0]
+    if psfc < 1.0e4: 
+        psfc *= 100.0 # Convert from hPa to Pa
     tsfc = init_data.variables['surface_temperature'][0]
     u0 = init_data.variables['reference_u0'][0]
     v0 = init_data.variables['reference_v0'][0]

@@ -39,7 +39,7 @@ class MicroP3(MicrophysicsBase):
                     aero_in = namelist['microphysics']['aero']
                     inv_rm1 = aero_in['inv_rm1']
                     sig1 = aero_in['sig1']
-                    nanew1 = aero_in['nanew1 ']
+                    nanew1 = aero_in['nanew1']
 
                     inv_rm2 = aero_in['inv_rm2']
                     sig2 = aero_in['sig2']
