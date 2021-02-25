@@ -56,6 +56,10 @@ class PressureSolver:
         w = self._VelocityState.get_field('w')
 
         dynp = self._DiagnosticState.get_field('dynamic pressure')
+        cc_mask = self._DiagnosticState.get_field('cc_mask')
+        x_edge_mask = self._DiagnosticState.get_field('x_edge_mask')
+        y_edge_mask = self._DiagnosticState.get_field('y_edge_mask')
+        z_edge_mask = self._DiagnosticState.get_field('z_edge_mask')
 
         rho0  = self._Ref.rho0
         rho0_edge = self._Ref.rho0_edge
@@ -66,7 +70,7 @@ class PressureSolver:
         div = fft.DistArray(self._Grid.n, self._Grid.subcomms, dtype=np.complex)
 
         #First compute divergence of wind field
-        divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, div)
+        divergence(n_halo,dxs, rho0, rho0_edge, u, v, w, cc_mask, div)
 
         div_0 = div.redistribute(0)
 
@@ -99,7 +103,7 @@ class PressureSolver:
         self._DiagnosticState.boundary_exchange()
         self._DiagnosticState._gradient_zero_bc('dynamic pressure')
 
-        apply_pressure(dxs, dynp, u, v, w)
+        apply_pressure(dxs, dynp, x_edge_mask, y_edge_mask, z_edge_mask, u, v, w)
 
         self._VelocityState.boundary_exchange()
         self._VelocityState.update_all_bcs()

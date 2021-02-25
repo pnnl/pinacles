@@ -1,6 +1,93 @@
 import numba
 from pinacles import interpolation_impl
 
+@numba.njit
+def u_advection_1st(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz):
+    shape = u.shape
+    for i in range(2,shape[0]-3):
+        for j in range(2,shape[1]-3):
+            for k in range(2,shape[2]-3):
+
+               up = interpolation_impl.centered_second(u[i,j,k], u[i+1,j,k])
+               vp = interpolation_impl.centered_second(v[i,j,k], v[i+1,j,k])
+               wp = interpolation_impl.centered_second(w[i,j,k], w[i+1,j,k])
+
+               if up > 0:
+                   fluxx[i,j,k] = up * u[i, j, k] * rho0[k]
+               else:
+                   fluxx[i,j,k] = up * u[i+1, j, k] * rho0[k]
+               
+               if vp > 0:
+                   fluxy[i,j,k] = vp * u[i, j, k] * rho0[k]
+               
+               else:
+                   fluxy[i,j,k] = vp * u[i,j+1,k] * rho0[k]
+               
+               if wp > 0:
+                   fluxz[i,j,k] = wp * u[i,j,k] * rho_edge0[k]
+               else:
+                   fluxz[i,j,k] = wp * u[i,j,k+1] * rho_edge0[k]
+
+    return
+
+
+@numba.njit
+def v_advection_1st(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz):
+    shape = u.shape
+    for i in range(2,shape[0]-3):
+        for j in range(2,shape[1]-3):
+            for k in range(2,shape[2]-3):
+
+               up = interpolation_impl.centered_second(u[i,j,k], u[i,j+1,k])
+               vp = interpolation_impl.centered_second(v[i,j,k], v[i,j+1,k])
+               wp = interpolation_impl.centered_second(w[i,j,k], w[i,j+1,k])
+
+               if up > 0:
+                   fluxx[i,j,k] = up * v[i, j, k] * rho0[k]
+               else:
+                   fluxx[i,j,k] = up * v[i+1, j, k] * rho0[k]
+               
+               if vp > 0:
+                   fluxy[i,j,k] = vp * v[i, j, k] * rho0[k]
+               
+               else:
+                   fluxy[i,j,k] = vp * v[i,j+1,k] * rho0[k]
+               
+               if wp > 0:
+                   fluxz[i,j,k] = wp * v[i,j,k] * rho_edge0[k]
+               else:
+                   fluxz[i,j,k] = wp * v[i,j,k+1] * rho_edge0[k]
+
+    return
+
+@numba.njit
+def w_advection_1st(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz):
+    shape = u.shape
+    for i in range(2,shape[0]-3):
+        for j in range(2,shape[1]-3):
+            for k in range(2,shape[2]-3):
+
+               up = interpolation_impl.centered_second(u[i,j,k], u[i,j,k+1])
+               vp = interpolation_impl.centered_second(v[i,j,k], v[i,j,k+1])
+               wp = interpolation_impl.centered_second(w[i,j,k], w[i,j,k+1])
+
+               if up > 0:
+                   fluxx[i,j,k] = up * w[i, j, k] * rho_edge0[k] 
+               else:
+                   fluxx[i,j,k] = up * w[i+1, j, k] * rho_edge0[k] 
+               
+               if vp > 0:
+                   fluxy[i,j,k] = vp * w[i, j, k] * rho_edge0[k] 
+               
+               else:
+                   fluxy[i,j,k] = vp * w[i,j+1,k] * rho_edge0[k] 
+               
+               if wp > 0:
+                   fluxz[i,j,k] = wp * w[i,j,k] * rho0[k+1]
+               else:
+                   fluxz[i,j,k] = wp * w[i,j,k+1] * rho0[k+1]
+
+
 
 
 @numba.njit
@@ -133,6 +220,169 @@ def w_advection_2nd(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
 
 
 @numba.njit(fastmath=True)
+def u_advection_weno3(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz):
+    shape = u.shape
+    for i in range(2,shape[0]-3):
+        for j in range(2,shape[1]-3):
+            for k in range(2,shape[2]-3):
+               #Compute advection of u by u-wind
+               up = interpolation_impl.centered_second(u[i,j,k], u[i+1,j,k])
+               vp = interpolation_impl.centered_second(v[i,j,k], v[i+1,j,k])
+               wp = interpolation_impl.centered_second(w[i,j,k], w[i+1,j,k])
+
+               #up = interpolation_impl.centered_second(u[i,j,k], u[i+1,j,k])
+               #vp = interpolation_impl.centered_second(v[i,j,k], v[i+1,j,k])
+               #wp = interpolation_impl.centered_second(w[i,j,k], w[i+1,j,k])
+
+               if up >= 0.0:
+                   fluxx[i,j,k] = up  * interpolation_impl.interp_weno3(
+                                                     u[i-1,j,k],
+                                                     u[i,j,k],
+                                                     u[i+1,j,k]) * rho0[k]
+               else:
+                   fluxx[i,j,k] = up * interpolation_impl.interp_weno3(
+                                                     u[i+2, j, k],
+                                                     u[i+1, j, k],
+                                                     u[i,j,k]) * rho0[k]
+
+
+               #Copute advection of u by v-wind
+
+               if vp >= 0.0:
+                   fluxy[i,j,k] = vp  * interpolation_impl.interp_weno3(
+                                                     u[i,j-1,k],
+                                                     u[i,j,k],
+                                                     u[i,j+1,k]) * rho0[k]
+               else:
+                   fluxy[i,j,k] = vp * interpolation_impl.interp_weno3(
+                                                     u[i, j+2, k],
+                                                     u[i, j+1, k],
+                                                     u[i,j,k]) * rho0[k]
+
+
+               #Compute advection of u by w-wind
+               if wp >= 0.0:
+                   fluxz[i,j,k] = wp  * interpolation_impl.interp_weno3(
+                                                     u[i,j,k-1],
+                                                     u[i,j,k],
+                                                     u[i,j,k+1]) * rho_edge0[k]
+               else:
+                   fluxz[i,j,k] = wp * interpolation_impl.interp_weno3(
+                                                     u[i, j, k+2],
+                                                     u[i, j, k+1],
+                                                     u[i,j,k]) * rho_edge0[k]
+
+
+    return
+
+
+@numba.njit(fastmath=True)
+def v_advection_weno3(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
+    shape = v.shape
+    for i in range(2,shape[0]-3):
+        for j in range(2,shape[1]-3):
+            for k in range(2,shape[2]-3):
+                #Compute v advection by the u wind
+                up = interpolation_impl.centered_second(u[i,j,k], u[i,j+1,k])
+                vp = interpolation_impl.centered_second(v[i,j,k], v[i,j+1,k])
+                wp = interpolation_impl.centered_second(w[i,j,k], w[i,j+1,k])
+                #up = interpolation_impl.centered_second(u[i,j,k], u[i,j+1,k])
+                #vp = interpolation_impl.centered_second(v[i,j,k], v[i,j+1,k])
+                #wp = interpolation_impl.centered_second(w[i,j,k], w[i,j+1,k])
+
+                if up >= 0.0:
+                    fluxx[i,j,k] = up  * interpolation_impl.interp_weno3(
+                                                     v[i-1,j,k],
+                                                     v[i,j,k],
+                                                     v[i+1,j,k] ) * rho0[k]
+                else:
+                    fluxx[i,j,k] = up * interpolation_impl.interp_weno3(
+                                                     v[i+2, j, k],
+                                                     v[i+1, j, k],
+                                                     v[i,j,k]) * rho0[k]
+
+
+                #Compute v advection by the v wind
+                if vp >= 0.0:
+                    fluxy[i,j,k] = vp * interpolation_impl.interp_weno3(
+                                                     v[i,j-1,k],
+                                                     v[i,j,k],
+                                                     v[i,j+1,k]) * rho0[k]
+                else:
+                    fluxy[i,j,k] = vp * interpolation_impl.interp_weno3(
+                                                     v[i, j+2, k],
+                                                     v[i, j+1, k],
+                                                     v[i,j,k]) * rho0[k]
+
+                #Compute v advection by the w wind
+                if wp >= 0.0:
+                    fluxz[i,j,k] = wp * interpolation_impl.interp_weno3(
+                                                     v[i,j,k-1],
+                                                     v[i,j,k],
+                                                     v[i,j,k+1]) * rho0_edge[k]
+                else:
+                    fluxz[i,j,k] = wp * interpolation_impl.interp_weno3(
+                                                     v[i, j, k+2],
+                                                     v[i, j, k+1],
+                                                     v[i,j,k]) * rho0_edge[k]
+    return
+
+
+
+@numba.njit(fastmath=True)
+def w_advection_weno3(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
+    shape = w.shape
+    for i in range(2,shape[0]-3):
+        for j in range(2,shape[1]-3):
+            for k in range(2,shape[2]-3):
+                #Compute w advection by the u wind
+                up = interpolation_impl.centered_second(u[i,j,k], u[i,j,k+1])
+                vp = interpolation_impl.centered_second(v[i,j,k], v[i,j,k+1])
+                wp = interpolation_impl.centered_second(w[i,j,k], w[i,j,k+1])
+                #up = interpolation_impl.centered_second(u[i,j,k], u[i,j,k+1])
+                #vp = interpolation_impl.centered_second(v[i,j,k], v[i,j,k+1])
+                #wp = interpolation_impl.centered_second(w[i,j,k], w[i,j,k+1])
+                if up >= 0.0:
+                    fluxx[i,j,k] = up  * interpolation_impl.interp_weno3(
+                                                     w[i-1,j,k],
+                                                     w[i,j,k],
+                                                     w[i+1,j,k]) * rho0_edge[k]
+                else:
+                    fluxx[i,j,k] = up  * interpolation_impl.interp_weno3(
+                                                     w[i+2,j,k],
+                                                     w[i+1,j,k],
+                                                     w[i,j,k]) * rho0_edge[k]
+
+                #Compute w advection by the v wind
+
+                if vp >= 0.0:
+                    fluxy[i,j,k] = vp * interpolation_impl.interp_weno3(
+                                                     w[i,j-1,k],
+                                                     w[i,j,k],
+                                                     w[i,j+1,k]) * rho0_edge[k]
+                else:
+                    fluxy[i,j,k] = vp * interpolation_impl.interp_weno3(
+                                                     w[i, j+2, k],
+                                                     w[i, j+1, k],
+                                                     w[i,j,k]) * rho0_edge[k]
+
+
+                #Compute w advection by the w wind
+                if wp >= 0.0:
+                    fluxz[i,j,k] = wp * interpolation_impl.interp_weno3(
+                                                     w[i,j,k-1],
+                                                     w[i,j,k],
+                                                     w[i,j,k+1]) * rho0[k+1]
+                else:
+                     fluxz[i,j,k] = wp * interpolation_impl.interp_weno3(
+                                                     w[i, j, k+2],
+                                                     w[i, j, k+1],
+                                                     w[i,j,k]) * rho0[k+1]
+
+    return
+
+
+@numba.njit(fastmath=True)
 def u_advection_weno5(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz):
     shape = u.shape
     for i in range(2,shape[0]-3):
@@ -161,6 +411,7 @@ def u_advection_weno5(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz):
                                                      u[i+1, j, k],
                                                      u[i,j,k],
                                                      u[i-1,j,k]) * rho0[k]
+
 
                #Copute advection of u by v-wind
 
@@ -562,8 +813,8 @@ def uv_flux_div(idx, idy, idz, alpha0, fluxx, fluxy, fluxz, uvt):
     for i in range(1,shape[0]-1):
         for j in range(1,shape[1]-1):
             for k in range(1,shape[2]-1):
-                uvt[i,j,k] -= ((fluxx[i,j,k] - fluxx[i-1,j,k])*idx
-                              + (fluxy[i,j,k] - fluxy[i,j-1,k])*idy
+                uvt[i,j,k] -= ((fluxx[i,j,k]  - fluxx[i-1,j,k] )*idx
+                              + (fluxy[i,j,k] - fluxy[i,j-1,k] )*idy
                               + (fluxz[i,j,k] - fluxz[i,j,k-1])*idz) * alpha0[k]
 
     return
@@ -578,6 +829,87 @@ def w_flux_div(idx, idy, idz, alpha0_edge, fluxx, fluxy, fluxz, wt):
                 wt[i,j,k] -=  ((fluxx[i,j,k] - fluxx[i-1,j,k])*idx
                               + (fluxy[i,j,k] - fluxy[i,j-1,k])*idy
                               + (fluxz[i,j,k] - fluxz[i,j,k-1])*idz) * alpha0_edge[k]
+
+
+    return
+
+
+@numba.njit()
+def correct_divergence_u(nhalo, dxi, rho0, rho0_edge, u, v, w, ut):
+
+    shape = ut.shape
+    for i in range(1,shape[0]-1):
+        for j in range(1,shape[1]-1):
+            for k in range(1,shape[2]-1):
+
+                up = interpolation_impl.centered_second(u[i,j,k], u[i+1,j,k])
+                vp = interpolation_impl.centered_second(v[i,j,k], v[i+1,j,k])
+                wp = interpolation_impl.centered_second(w[i,j,k], w[i+1,j,k])
+
+
+                um = interpolation_impl.centered_second(u[i,j,k], u[i-1,j,k])
+                vm = interpolation_impl.centered_second(v[i,j-1,k], v[i+1,j-1,k])
+                wm = interpolation_impl.centered_second(w[i,j,k-1], w[i+1,j,k-1])
+
+
+                divergence = (rho0[k] * (up - um)*dxi[0] 
+                              + rho0[k] * (vp - vm)*dxi[1]
+                              + (wp * rho0_edge[k] - wm* rho0_edge[k-1])*dxi[2] )
+
+
+                ut[i,j,k] += u[i,j,k]*divergence / rho0[k]
+
+
+    return
+
+@numba.njit()
+def correct_divergence_v(nhalo, dxi, rho0, rho0_edge, u, v, w, vt):
+
+    shape = vt.shape
+    for i in range(1,shape[0]-1):
+        for j in range(1,shape[1]-1):
+            for k in range(1,shape[2]-1):
+
+                up = interpolation_impl.centered_second(u[i,j,k], u[i,j+1,k])
+                vp = interpolation_impl.centered_second(v[i,j,k], v[i,j+1,k])
+                wp = interpolation_impl.centered_second(w[i,j,k], w[i,j+1,k])
+
+                um = interpolation_impl.centered_second(u[i-1,j,k], u[i-1,j+1,k])
+                vm = interpolation_impl.centered_second(v[i,j,k], v[i,j-1,k])
+                wm = interpolation_impl.centered_second(w[i,j,k-1], w[i,j+1,k-1])
+
+                divergence = (rho0[k] * (up - um)*dxi[0] 
+                              + rho0[k] * (vp - vm)*dxi[1]
+                              + (wp* rho0_edge[k] - wm* rho0_edge[k-1])*dxi[2] )
+
+
+                vt[i,j,k] += v[i,j,k]*divergence / rho0[k]
+
+
+    return
+
+@numba.njit()
+def correct_divergence_w(nhalo, dxi, rho0, rho0_edge, u, v, w, wt):
+
+    shape = wt.shape
+    for i in range(1,shape[0]-1):
+        for j in range(1,shape[1]-1):
+            for k in range(1,shape[2]-1):
+
+                up = interpolation_impl.centered_second(u[i,j,k], u[i,j,k+1])
+                vp = interpolation_impl.centered_second(v[i,j,k], v[i,j,k+1])
+                wp = interpolation_impl.centered_second(w[i,j,k], w[i,j,k+1])
+
+                um = interpolation_impl.centered_second(u[i-1,j,k], u[i-1,j,k+1])
+                vm = interpolation_impl.centered_second(v[i,j-1,k], v[i,j-1,k+1])
+                wm = interpolation_impl.centered_second(w[i,j,k], w[i,j,k-1])
+
+                divergence = (rho0_edge[k] * (up - um)*dxi[0] 
+                              + rho0_edge[k] * (vp - vm)*dxi[1]
+                              + (wp* rho0[k+1] - wm* rho0[k])*dxi[2] )
+
+
+                wt[i,j,k] += w[i,j,k]*divergence /rho0_edge[k]
 
 
     return

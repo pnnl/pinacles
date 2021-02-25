@@ -14,6 +14,28 @@ def centered_sixth(phim2, phim1, phi, phip1, phip2, phip3):
     return (75.0/128.0)*(phi + phip1 ) -(25.0/256.0)*(phim1 + phip2) + (3.0/256.0)*(phim2 + phip3)
 
 @numba.njit(fastmath=True)
+def interp_weno3(phim1, phi, phip1):
+
+    p0 = (-1.0/2.0) * phim1 + (3.0/2.0) * phi
+    p1 = (1.0/2.0) * phi + (1.0/2.0) * phip1
+
+    beta1 = (phip1 - phi) * (phip1 - phi)
+    beta0 = (phi - phim1) * (phi - phim1)
+
+    alpha0 = (1.0/3.0) /((beta0 + 1e-10) * (beta0 + 1.0e-10))
+    alpha1 = (2.0/3.0)/((beta1 + 1e-10) * (beta1 + 1.0e-10))
+
+    alpha_sum_inv = 1.0/(alpha0 + alpha1)
+
+    w0 = alpha0 * alpha_sum_inv
+    w1 = alpha1 * alpha_sum_inv
+
+
+    return w0 * p0 + w1 * p1
+
+    return
+
+@numba.njit(fastmath=True)
 def interp_weno5(phim2, phim1,  phi, phip1, phip2):
 
     # Interpolations

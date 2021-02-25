@@ -103,8 +103,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Thermo = Thermodynamics.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.DiagnosticState, self.Micro)
         
         # Instantiate scalar advection
-        self.ScalarAdv = ScalarAdvectionFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.ScalarTimeStepping)
-        self.MomAdv = MomentumAdvection.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState)
+        self.ScalarAdv = ScalarAdvectionFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.DiagnosticState, self.ScalarTimeStepping)
+        self.MomAdv = MomentumAdvection.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.DiagnosticState)
         
         # Instantiate scalar diffusion 
         self.ScalarDiff = ScalarDiffusion.ScalarDiffusion(self._namelist, self.ModelGrid, self.Ref, self.DiagnosticState, self.ScalarState)
@@ -175,6 +175,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Initalize memory for outputting Advective and Diffusive Fluxes
         self.ScalarDiff.initialize_io_arrays()
         self.ScalarAdv.initialize_io_arrays()
+
+        # Initalize topography
+        self.BoundaryBrinkman.initialize()
 
         # Add all statistical io classes
         self.StatsIO.add_class(self.Surf)
@@ -259,7 +262,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         
         # Instantiate scalar advection
         self.ScalarAdv = ScalarAdvectionFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.ScalarTimeStepping)
-        self.MomAdv = MomentumAdvection.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState)
+        self.MomAdv = MomentumAdvection.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.DiagnosticState)
         
         # Instantiate scalar diffusion 
         self.ScalarDiff = ScalarDiffusion.ScalarDiffusion(self._namelist, self.ModelGrid, self.Ref, self.DiagnosticState, self.ScalarState)
@@ -297,7 +300,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.ScalarTimeStepping.initialize()
         self.VelocityTimeStepping.initialize()
 
-            # Do case sepcific initalizations the initial profiles are integrated here
+
+
+        # Do case sepcific initalizations the initial profiles are integrated here
         Initializaiton.initialize(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState)
         
         # Now that the initial profiles have been integrated, the pressure solver and be initialzied
@@ -327,6 +332,10 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Initalize memory for outputting Advective and Diffusive Fluxes
         self.ScalarDiff.initialize_io_arrays()
         self.ScalarAdv.initialize_io_arrays()
+
+
+        # Initalize topography
+        self.BoundaryBrinkman.initialize()
 
         # Add all statistical io classes
         self.StatsIO.add_class(self.Surf)
@@ -413,11 +422,14 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.RayleighDamping.update()
             
                 #Do time stepping
+                
+                #Update boundary conditions
+                self.BoundaryBrinkman.update()
+
                 self.ScalarTimeStepping.update()
                 self.VelocityTimeStepping.update()
 
                 #Update boundary conditions
-                self.BoundaryBrinkman.update()
 
                 self.ScalarState.boundary_exchange()
                 self.VelocityState.boundary_exchange()
@@ -426,9 +438,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 #Call pressure solver
                 self.PSolver.update()
-                #self.BoundaryBrinkman.update()
-
-
+                self.BoundaryBrinkman.update()
+                
                 if n== 1:
                     self.Thermo.update(apply_buoyancy=False)
                     #We call the microphysics update at the end of the RK steps.

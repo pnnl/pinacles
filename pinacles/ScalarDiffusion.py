@@ -5,7 +5,7 @@ from pinacles import UtilitiesParallel, parameters
 
 
 @numba.njit(fastmath=True)
-def compute_fluxes(n_halo, dx, dxi, rho0, rho0_edge, phi, eddy_diffusivity, fluxx, fluxy, fluxz, io_flux, phi_t):
+def compute_fluxes(n_halo, dx, dxi, rho0, rho0_edge, phi, eddy_diffusivity, fluxx, fluxy, fluxz, io_flux, phi_t, x_edge_mask, y_edge_mask, z_edge_mask):
 
     shape = phi.shape
     #kz_fact = dx[2]*dx[2]/((dx[0] * dx[1]))
@@ -13,9 +13,9 @@ def compute_fluxes(n_halo, dx, dxi, rho0, rho0_edge, phi, eddy_diffusivity, flux
         for j in range(shape[1]-1):
             for k in range(shape[2]-1):
 
-                fluxx[i,j,k] = -0.5*(eddy_diffusivity[i,j,k] + eddy_diffusivity[i+1,j,k])*(phi[i+1,j,k] - phi[i,j,k])*dxi[0] * rho0[k]
-                fluxy[i,j,k] = -0.5*(eddy_diffusivity[i,j,k] + eddy_diffusivity[i,j+1,k])*(phi[i,j+1,k] - phi[i,j,k])*dxi[1] * rho0[k] 
-                fluxz[i,j,k] = -0.5*(eddy_diffusivity[i,j,k] + eddy_diffusivity[i,j,k+1])*(phi[i,j,k+1] - phi[i,j,k])*dxi[2] * rho0_edge[k] #* kz_fact
+                fluxx[i,j,k] = -0.5*(eddy_diffusivity[i,j,k] + eddy_diffusivity[i+1,j,k])*(phi[i+1,j,k] - phi[i,j,k])*dxi[0] * rho0[k] * x_edge_mask[i,j,k]
+                fluxy[i,j,k] = -0.5*(eddy_diffusivity[i,j,k] + eddy_diffusivity[i,j+1,k])*(phi[i,j+1,k] - phi[i,j,k])*dxi[1] * rho0[k] * y_edge_mask[i,j,k]
+                fluxz[i,j,k] = -0.5*(eddy_diffusivity[i,j,k] + eddy_diffusivity[i,j,k+1])*(phi[i,j,k+1] - phi[i,j,k])*dxi[2] * rho0_edge[k] * z_edge_mask[i,j,k]#* kz_fact
 
     for i in range(n_halo[0],shape[0]-n_halo[0]):
         for j in range(n_halo[1],shape[1]-n_halo[1]):
@@ -123,6 +123,9 @@ class ScalarDiffusion:
         rho0_edge = self._Ref.rho0_edge
 
         eddy_diffusivity = self._DiagnosticState.get_field('eddy_diffusivity')
+        x_edge_mask = self._DiagnosticState.get_field('x_edge_mask')
+        y_edge_mask = self._DiagnosticState.get_field('y_edge_mask')
+        z_edge_mask = self._DiagnosticState.get_field('z_edge_mask')
 
         fluxx = np.zeros_like(eddy_diffusivity)
         fluxy = np.zeros_like(eddy_diffusivity)
@@ -134,7 +137,7 @@ class ScalarDiffusion:
             io_flux = self._flux_profiles[var]
             io_flux.fill(0.0)
             compute_fluxes(n_halo, dx, dxi, rho0, rho0_edge, phi,
-                eddy_diffusivity, fluxx, fluxy, fluxz, io_flux, phi_t)
+                eddy_diffusivity, fluxx, fluxy, fluxz, io_flux, phi_t, x_edge_mask, y_edge_mask, z_edge_mask)
 
 
         return
