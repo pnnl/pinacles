@@ -429,6 +429,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.ScalarTimeStepping.update()
                 self.VelocityTimeStepping.update()
 
+                self.ScalarState.apply_limiter()
+
                 #Update boundary conditions
 
                 self.ScalarState.boundary_exchange()

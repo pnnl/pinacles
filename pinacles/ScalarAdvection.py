@@ -555,7 +555,7 @@ class ScalarWENO(ScalarAdvectionBase):
             io_flux = self._flux_profiles[var]
             io_flux.fill(0)
             #Now compute the WENO fluxes
-            if 'ff' in var or var in ['qc', 'qr']:
+            if 'ff' in var or 'plume' in var or var in ['qc', 'qr']:
                 if np.amax(np.abs(phi)) > 0.0: #If fields are zero everywhere no need to do any advection so skip-it! 
                     #TODO This could probably be made faster
                     phi_range = max(np.max(np.abs(phi)), 1.0)
