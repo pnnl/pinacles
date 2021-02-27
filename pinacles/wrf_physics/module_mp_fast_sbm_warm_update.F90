@@ -1674,9 +1674,10 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
 
  ! calculation of the mass(in mg) for categories boundaries :
    ax=2.d0**(1.0)
-
+   print*, "CATEGORY BOUNDARIES"
    do i=1,nkr
-   	 xl_mg(i) = xl(i)*1.e3
+   	  xl_mg(i) = xl(i)*1.e3
+      print*, i, xl_mg(i)
       xs_mg(i) = xs(i)*1.e3
       xg_mg(i) = xg(i)*1.e3
       xh_mg(i) = xh(i)*1.e3
