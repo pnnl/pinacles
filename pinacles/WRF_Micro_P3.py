@@ -57,8 +57,6 @@ class MicroP3(MicrophysicsBase):
                     if MPI.COMM_WORLD.Get_rank() == 0:
                         print('\tP3: Initialized with default aerosol distn')
 
-
-
             #Allocate microphysical/thermodyamic variables
             self._ScalarState.add_variable('qv', long_name = 'water vapor mixing ratio', units='kg kg^{-1}', latex_name = 'q_v', limit=True)
             self._ScalarState.add_variable('qc', long_name = 'cloud water mixing ratio', units='kg kg^{-1}', latex_name = 'q_c', limit=True)
@@ -70,6 +68,11 @@ class MicroP3(MicrophysicsBase):
             self._ScalarState.add_variable('qir1', long_name = 'rime ice mixing ratio', units='kg kg^{-1}', latex_name = 'q_{ir}', limit=True)
             self._ScalarState.add_variable('qib1', long_name = 'ice rime volume mixing ratio', units='m^{-3} kg^{-1}', latex_name = 'q_{ib}', limit=True)
 
+
+            self._DiagnosticState.add_variable('liq_sed')
+            self._DiagnosticState.add_variable('s_tend_liq_sed', long_name ='s tend liquid water sedimentation', units='')
+            self._DiagnosticState.add_variable('s_tend_ice_sed', long_name ='s tend ice water sedimentation', units='')   
+            self._DiagnosticState.add_variable('ice_sed')
             self._DiagnosticState.add_variable('reflectivity', long_name='radar reflectivity', units='dBz', latex_name = 'reflectivity')
             self._DiagnosticState.add_variable('diag_effc_3d',  long_name='cloud droplet effective radius', units='m', latex_name='r_e')
             self._DiagnosticState.add_variable('diag_effi_3d',  long_name='cloud ice effective radius', units='m', latex_name='r_{e,i}')
@@ -112,6 +115,11 @@ class MicroP3(MicrophysicsBase):
         diag_effc_3d = self._DiagnosticState.get_field('diag_effc_3d')
         diag_effi_3d = self._DiagnosticState.get_field('diag_effi_3d')
 
+        liq_sed = self._DiagnosticState.get_field('liq_sed')
+        ice_sed = self._DiagnosticState.get_field('ice_sed')
+        s_tend_liq_sed = self._DiagnosticState.get_field('s_tend_liq_sed')
+        s_tend_ice_sed = self._DiagnosticState.get_field('s_tend_ice_sed')
+
         exner = self._Ref.exner
         p0 = self._Ref.p0
         nhalo = self._Grid.n_halo
@@ -132,6 +140,9 @@ class MicroP3(MicrophysicsBase):
         w_wrf = np.empty_like(rho_wrf)
         th_old = np.empty_like(rho_wrf)
         qv_old = np.empty_like(rho_wrf)
+
+        ice_sed_wrf = np.empty_like(rho_wrf)
+        liq_sed_wrf = np.empty_like(rho_wrf)
 
 
         reflectivity_wrf = np.empty_like(rho_wrf)
@@ -192,6 +203,7 @@ class MicroP3(MicrophysicsBase):
                     diag_effi_3d_wrf, diag_vmi, diag_di,
                     diag_rhopo, th_old, qv_old,
                     qi1_wrf, qni1_wrf, qir1_wrf, qib1_wrf,
+                    liq_sed_wrf, ice_sed_wrf,
                     nc_wrf, exner_wrf, p0_wrf, dz_wrf, w_wrf,
                     self._RAINNC,self._RAINNCV,self._SR,self._SNOWNC,self._SNOWNCV,
                     dt, self._itimestep, n_iceCat
@@ -205,6 +217,7 @@ class MicroP3(MicrophysicsBase):
                     diag_effi_3d_wrf, diag_vmi, diag_di,
                     diag_rhopo, th_old, qv_old,
                     qi1_wrf, qni1_wrf, qir1_wrf, qib1_wrf,
+                    liq_sed_wrf, ice_sed_wrf,
                     exner_wrf, p0_wrf, dz_wrf, w_wrf,
                     self._RAINNC,self._RAINNCV,self._SR,self._SNOWNC,self._SNOWNCV,
                     dt, self._itimestep, n_iceCat
@@ -220,12 +233,26 @@ class MicroP3(MicrophysicsBase):
         to_our_order(nhalo, qi1_wrf, qi1)
         to_our_order(nhalo, qni1_wrf, qni1)
 
+        #The accumulated liquid and ice sedimentation
+        to_our_order(nhalo, liq_sed_wrf, liq_sed)
+        to_our_order(nhalo, ice_sed_wrf, ice_sed)
 
         #Update the energys (TODO Move this to numba)
         T_wrf *= self._Ref.exner[np.newaxis,nhalo[2]:-nhalo[2],np.newaxis]
         s_wrf = T_wrf + (parameters.G*z- parameters.LV*(qc_wrf + qr_wrf) - parameters.LS*(qi1_wrf))*parameters.ICPD
         to_our_order(nhalo, s_wrf, s)
 
+        # Compute and apply sedimentation sources of static energy
+        np.multiply(liq_sed, parameters.LV/parameters.CPD, out=s_tend_liq_sed)
+        np.multiply(ice_sed, parameters.LS/parameters.CPD, out=s_tend_ice_sed)
+        np.subtract(s, s_tend_liq_sed, out=s)
+        np.subtract(s, s_tend_ice_sed, out=s)
+
+        # Convert sedimentation sources to units of tendency
+        np.multiply(liq_sed, 1.0/self._TimeSteppingController.dt, out=liq_sed)
+        np.multiply(ice_sed, 1.0/self._TimeSteppingController.dt, out=ice_sed)
+        np.multiply(s_tend_liq_sed, -1.0/self._TimeSteppingController.dt, out=s_tend_liq_sed)
+        np.multiply(s_tend_ice_sed, -1.0/self._TimeSteppingController.dt, out=s_tend_ice_sed)
 
         to_our_order(nhalo, diag_effc_3d_wrf, diag_effc_3d)
         to_our_order(nhalo, diag_effi_3d_wrf, diag_effi_3d)

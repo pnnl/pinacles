@@ -41,7 +41,8 @@ subroutine c_p3_main(ids, ide, jds, jde, kds, kde, &
     qnr_3d,diag_zdbz_3d,diag_effc_3d,diag_effi_3d,diag_vmi_3d,diag_di_3d,  &
     diag_rhopo_3d,th_old_3d,qv_old_3d, &
     qi1_3d,qni1_3d,qir1_3d, qib1_3d, &
-    nc_3d, pii, p, dz, w, &
+    LIQUID_SEDIMENTATION, ICE_SEDIMENTATION, nc_3d, &
+    pii, p, dz, w, &
     RAINNC,RAINNCV,SR,SNOWNC,SNOWNCV, &
     dt, itimestep, n_iceCat) bind(c)
 
@@ -58,6 +59,8 @@ real(c_double), dimension(ims:ime, kms:kme, jms:jme), intent(inout):: th_3d,qv_3
 
 real(c_double), dimension(ims:ime, kms:kme, jms:jme), intent(inout):: qi1_3d,qni1_3d,qir1_3d,    &
 qib1_3d
+
+real(c_double), dimension(ims:ime, kms:kme, jms:jme), intent(inout):: LIQUID_SEDIMENTATION, ICE_SEDIMENTATION  
 
 real(c_double), dimension(ims:ime, kms:kme, jms:jme), intent(inout):: nc_3d
 
@@ -77,7 +80,7 @@ call mp_p3_wrapper_wrf(th_3d,qv_3d,qc_3d,qr_3d,qnr_3d,                          
                               its, ite, jts, jte, kts, kte ,                             &
                               diag_zdbz_3d,diag_effc_3d,diag_effi_3d,                    &
                               diag_vmi_3d,diag_di_3d,diag_rhopo_3d,                      &
-                              qi1_3d,qni1_3d,qir1_3d,qib1_3d,nc_3d)
+                              qi1_3d,qni1_3d,qir1_3d,qib1_3d,LIQUID_SEDIMENTATION, ICE_SEDIMENTATION, nc_3d)
 
 end subroutine
 
@@ -89,6 +92,7 @@ subroutine c_p3_main_1mom(ids, ide, jds, jde, kds, kde, &
     qnr_3d,diag_zdbz_3d,diag_effc_3d,diag_effi_3d,diag_vmi_3d,diag_di_3d,  &
     diag_rhopo_3d,th_old_3d,qv_old_3d, &
     qi1_3d,qni1_3d,qir1_3d, qib1_3d, &
+    LIQUID_SEDIMENTATION, ICE_SEDIMENTATION, &
     pii, p, dz, w, &
     RAINNC,RAINNCV,SR,SNOWNC,SNOWNCV, &
     dt, itimestep, n_iceCat) bind(c)
@@ -107,6 +111,8 @@ real(c_double), dimension(ims:ime, kms:kme, jms:jme), intent(inout):: th_3d,qv_3
 real(c_double), dimension(ims:ime, kms:kme, jms:jme), intent(inout):: qi1_3d,qni1_3d,qir1_3d,    &
 qib1_3d
 
+real(c_double), dimension(ims:ime, kms:kme, jms:jme), intent(inout):: LIQUID_SEDIMENTATION, ICE_SEDIMENTATION  
+
 real(c_double), dimension(ims:ime, kms:kme, jms:jme), intent(in) :: pii, p, dz, w
 
 real(c_double), dimension(ims:ime, jms:jme), intent(inout) :: RAINNC,RAINNCV,SR,SNOWNC,SNOWNCV
@@ -123,7 +129,8 @@ call mp_p3_wrapper_wrf(th_3d,qv_3d,qc_3d,qr_3d,qnr_3d,                          
                               its, ite, jts, jte, kts, kte ,                             &
                               diag_zdbz_3d,diag_effc_3d,diag_effi_3d,                    &
                               diag_vmi_3d,diag_di_3d,diag_rhopo_3d,                      &
-                              qi1_3d,qni1_3d,qir1_3d,qib1_3d)
+                              qi1_3d,qni1_3d,qir1_3d,qib1_3d,                            &
+                              LIQUID_SEDIMENTATION, ICE_SEDIMENTATION)
 
 end subroutine
 
