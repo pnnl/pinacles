@@ -1212,7 +1212,7 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
          DO K=kts,kte
           ! [KS] VFALL(K) = VR1(K,KR)*SQRT(1.E6/PCGS(K))
  		       VFALL(K) = VR1(K,KR) ! ... [KS] : The pressure effect is taken into account at the beggining of the calculations
-           TFALL=AMIN1(TFALL,ZCGS(K)/(VFALL(K)+1.E-20))
+           TFALL=AMIN1(TFALL,(ZCGS(2) - ZCGS(1))/(VFALL(K)+1.E-20))
          END DO
          IF(TFALL.GE.1.E10)STOP
          NSUB=(INT(2.0*DT/TFALL)+1)
