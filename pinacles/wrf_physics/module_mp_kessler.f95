@@ -9,7 +9,7 @@ CONTAINS
                       ,dt_in, z, xlv, cp                        &
                       ,EP2,SVP1,SVP2,SVP3,SVPT0,rhowater        &
                       ,dz8w                                     &
-                      ,RAINNC, RAINNCV                          &
+                      ,RAINNC, RAINNCV, LIQUID_SEDIMENTATION    &
                       ,ids,ide, jds,jde, kds,kde                & ! domain dims
                       ,ims,ime, jms,jme, kms,kme                & ! memory dims
                       ,its,ite, jts,jte, kts,kte                & ! tile   dims
@@ -55,6 +55,10 @@ CONTAINS
    DOUBLE PRECISION, DIMENSION( ims:ime , jms:jme ),                        &
          INTENT(INOUT) ::                               RAINNC, &
                                                        RAINNCV
+
+
+    ! Variable used to output the sedimentation
+    DOUBLE PRECISION, DIMENSION( ims:ime, kms:kme, jms:jme),  INTENT(INOUT)   :: LIQUID_SEDIMENTATION
 
 
 
@@ -208,6 +212,7 @@ CONTAINS
        rcgs = 0.001*rho(i,k,j)
 
        qc(i,k,j) = amax1(qc(i,k,j) - qrprod,0.)
+       LIQUID_SEDIMENTATION(i,k,j) = prod(i,k,j) - qr(i,k,j)
        qr(i,k,j) = (qr(i,k,j) + prod(i,k,j)-qr(i,k,j))
        qr(i,k,j) = amax1(qr(i,k,j) + qrprod,0.)
 
