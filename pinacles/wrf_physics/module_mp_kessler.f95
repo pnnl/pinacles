@@ -198,8 +198,6 @@ CONTAINS
 
    ENDDO sedimentation_outer_i_loop
 
-   !Calculate the liquid sedimenation rate
-   !LIQUID_SEDIMENTATION(:,:,j) = prod(:,:,j) - qr(:,:,j)
 !------------------------------------------------------------------------------
 ! Production of rain and deletion of qc
 ! Production of qc from supersaturation

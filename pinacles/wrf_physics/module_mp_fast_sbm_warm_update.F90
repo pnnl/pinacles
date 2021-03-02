@@ -295,13 +295,14 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
   &                      its,ite, jts,jte, kts,kte,                   &
   &                      diagflag,KRDROP,      	                      &
   &                      sbmradar,num_sbmradar,                       &
+  &                      LIQUID_SEDIMENTATION,                        &
   &                      RAINNC,RAINNCV,SR,                           &
   &                      MA,LH_rate,CE_rate,CldNucl_rate,             &
   &                      n_reg_ccn,                                   &
   &                      num_sbm_output_container,sbm_output_container, &  
   &                      difful_tend,   &  !liquid mass change rate due to droplet diffusional growth (kg/kg/s)
   &                      diffur_tend,   &  !rain mass change rate due to droplet diffusional growth (kg/kg/s)
-  &                      tempdiffl      &  !latent heat rate due to droplet diffusional growth (K/s)                         
+  &                      tempdiffl      &  !latent heat rate due to droplet diffusional growth (K/s)                        
                                         )
 
   IMPLICIT NONE
@@ -345,9 +346,13 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
       &                      dz8w,p_phy,pi_phy,rho_phy
        double precision, INTENT(INOUT),  DIMENSION(ims:ime, kms:kme, jms:jme)::      &
       &                      th_phy
+      double precision, INTENT(INOUT),  DIMENSION(ims:ime, kms:kme, jms:jme)::      &
+      &                      LIQUID_SEDIMENTATION
        double precision, INTENT(INOUT),  DIMENSION(ims:ime,jms:jme), OPTIONAL ::     &
       &      RAINNC,RAINNCV,SR
-!-----YZ2020:Define arrays for diagnostics------------------------@
+       
+
+      !-----YZ2020:Define arrays for diagnostics------------------------@
 #ifdef SBM_DIAG
       double precision, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(INOUT)::  &
       difful_tend,diffur_tend,tempdiffl
@@ -361,6 +366,9 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
        double precision,  DIMENSION(its-1:ite+1, kts:kte, jts-1:jte+1)::  &
                                                   t_new,t_old,zcgs,rhocgs,pcgs
 
+       ! For computing the mass sedimentation
+       double precision    ,DIMENSION(kms:kme) :: tot_liq_bf, tot_liq_af
+       
        INTEGER :: I,J,K,KFLIP
        INTEGER :: KRFREEZ
 
@@ -1008,12 +1016,20 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
     end do
   end do
 
+
+  
 ! +-----------------------------+
 ! Hydrometeor Sedimentation
 ! +-----------------------------+ 
+
+  
+
     do j = jts,jte
       do i = its,ite
 ! ... Drops ...
+        tot_liq_bf = 0.0
+        tot_liq_af = 0.0
+        
         do k = kts,kte
           rhocgs_z(k)=rhocgs(i,k,j)
           pcgs_z(k)=pcgs(i,k,j)
@@ -1023,18 +1039,26 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
           do kr=p_ff1i01,p_ff1i33
             krr=krr+1
             ffx_z(k,krr)=chem_new(i,k,j,kr)/rhocgs(i,k,j)
+            tot_liq_bf(k) = 3.0*col*sum(ffx_z(k, 1:kr) * xl(1:kr) * xl(1:kr))
           end do
         end do
+        
         call FALFLUXHUCM_Z(ffx_z,VRX,RHOCGS_z,PCGS_z,ZCGS_z,DT,kts,kte,nkr)
+        
+        
         do k = kts,kte
           krr = 0
           do kr=p_ff1i01,p_ff1i33
             krr=krr+1
             chem_new(i,k,j,kr)=ffx_z(k,krr)*rhocgs(i,k,j)
+            tot_liq_af(k) = 3.0*col*sum(ffx_z(k, 1:kr) * xl(1:kr) * xl(1:kr))
           end do
         end do
+        LIQUID_SEDIMENTATION(i,:,j) = tot_liq_af - tot_liq_bf
       end do
     end do
+    
+    
 
   ! ... Output block
     DO j = jts,jte
