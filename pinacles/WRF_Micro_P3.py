@@ -249,8 +249,8 @@ class MicroP3(MicrophysicsBase):
         # Convert sedimentation sources to units of tendency
         np.multiply(liq_sed, 1.0/self._TimeSteppingController.dt, out=liq_sed)
         np.multiply(ice_sed, 1.0/self._TimeSteppingController.dt, out=ice_sed)
-        np.multiply(s_tend_liq_sed, 1.0/self._TimeSteppingController.dt, out=s_tend_liq_sed)
-        np.multiply(s_tend_ice_sed, 1.0/self._TimeSteppingController.dt, out=s_tend_ice_sed)
+        np.multiply(s_tend_liq_sed, -1.0/self._TimeSteppingController.dt, out=s_tend_liq_sed)
+        np.multiply(s_tend_ice_sed, -1.0/self._TimeSteppingController.dt, out=s_tend_ice_sed)
 
         to_our_order(nhalo, diag_effc_3d_wrf, diag_effc_3d)
         to_our_order(nhalo, reflectivity_wrf, reflectivity)

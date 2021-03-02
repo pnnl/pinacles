@@ -412,7 +412,7 @@ class MicroSBM(MicrophysicsBase):
 
         # Convert sedimentation sources to units of tendency
         np.multiply(liq_sed, 1.0/self._TimeSteppingController.dt, out=liq_sed)
-        np.multiply(s_tend_liq_sed, 1.0/self._TimeSteppingController.dt, out=s_tend_liq_sed)
+        np.multiply(s_tend_liq_sed, -1.0/self._TimeSteppingController.dt, out=s_tend_liq_sed)
 
         self._call_count += 1
         self._itimestep  += 1

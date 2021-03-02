@@ -33,8 +33,8 @@ class MicroKessler(MicrophysicsBase):
         self._ScalarState.add_variable('qc', long_name = 'cloud water mixing ratio', units='kg kg^{-1}', latex_name = 'q_c', limit=True)
         self._ScalarState.add_variable('qr', long_name = 'rain water mixing ratio', units='kg kg^{-1}', latex_name = 'q_{r}', limit=True)
 
-        self._DiagnosticState.add_variable('LIQUID_SEDIMENTATION', long_name ='liquid water sedimentation', units='kg kg^{-1} s^{-1}')
-        self._DiagnosticState.add_variable('s_tend_LIQUID_SEDIMENTATION', long_name ='s tend liquid water sedimentation', units='')
+        self._DiagnosticState.add_variable('liq_sed', long_name ='liquid water sedimentation', units='kg kg^{-1} s^{-1}')
+        self._DiagnosticState.add_variable('s_tend_liq_sed', long_name ='s tend liquid water sedimentation', units='')
 
 
         nhalo = self._Grid.n_halo
@@ -54,8 +54,8 @@ class MicroKessler(MicrophysicsBase):
 
         #Get variables from the model state
         T = self._DiagnosticState.get_field('T')
-        liq_sed = self._DiagnosticState.get_field('LIQUID_SEDIMENTATION')
-        s_liq_sed = self._DiagnosticState.get_field('s_tend_LIQUID_SEDIMENTATION')
+        liq_sed = self._DiagnosticState.get_field('liq_sed')
+        s_liq_sed = self._DiagnosticState.get_field('s_tend_liq_sed')
         s = self._ScalarState.get_field('s')
         qv = self._ScalarState.get_field('qv')
         qc = self._ScalarState.get_field('qc')
@@ -143,6 +143,9 @@ class MicroKessler(MicrophysicsBase):
         # Sedimentation source term
         np.subtract(s, s_liq_sed, out=s)
 
+        # Convert sedimentation sources to units of tendency
+        np.multiply(liq_sed, 1.0/self._TimeSteppingController.dt, out=liq_sed)
+        np.multiply(s_liq_sed, -1.0/self._TimeSteppingController.dt, out=s_liq_sed)
         return
 
     def io_initialize(self, nc_grp):
