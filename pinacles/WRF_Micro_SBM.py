@@ -106,8 +106,8 @@ class MicroSBM(MicrophysicsBase):
         self._bin_end = self._ScalarState.nvars
 
 
-        self._DiagnosticState.add_variable('LIQUID_SEDIMENTATION', long_name ='liquid water sedimentation', units='kg kg^{-1} s^{-1}')
-        self._DiagnosticState.add_variable('s_tend_LIQUID_SEDIMENTATION', long_name ='s tend liquid water sedimentation', units='')
+        self._DiagnosticState.add_variable('liq_sed', long_name ='liquid water sedimentation', units='kg kg^{-1} s^{-1}')
+        self._DiagnosticState.add_variable('s_tend_liq_sed', long_name ='s tend liquid water sedimentation', units='')
 
 
         # Call add output container diagnostics to the container
@@ -211,8 +211,8 @@ class MicroSBM(MicrophysicsBase):
         qv = self._ScalarState.get_field('qv')
 
 
-        liq_sed = self._DiagnosticState.get_field('LIQUID_SEDIMENTATION')
-        s_tend_liq_sed = self._DiagnosticState.get_field('s_tend_LIQUID_SEDIMENTATION')
+        liq_sed = self._DiagnosticState.get_field('liq_sed')
+        s_tend_liq_sed = self._DiagnosticState.get_field('s_tend_liq_sed')
 
         wrf_vars['qv'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         to_wrf_order(nhalo, qv, wrf_vars['qv'])

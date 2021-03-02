@@ -57,8 +57,6 @@ class MicroP3(MicrophysicsBase):
                     if MPI.COMM_WORLD.Get_rank() == 0:
                         print('\tP3: Initialized with default aerosol distn')
 
-
-
             #Allocate microphysical/thermodyamic variables
             self._ScalarState.add_variable('qv', long_name = 'water vapor mixing ratio', units='kg kg^{-1}', latex_name = 'q_v', limit=True)
             self._ScalarState.add_variable('qc', long_name = 'cloud water mixing ratio', units='kg kg^{-1}', latex_name = 'q_c', limit=True)
