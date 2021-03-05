@@ -33,6 +33,10 @@ class MicroKessler(MicrophysicsBase):
         self._ScalarState.add_variable('qc', long_name = 'cloud water mixing ratio', units='kg kg^{-1}', latex_name = 'q_c', limit=True)
         self._ScalarState.add_variable('qr', long_name = 'rain water mixing ratio', units='kg kg^{-1}', latex_name = 'q_{r}', limit=True)
 
+        self._DiagnosticState.add_variable('liq_sed', long_name ='liquid water sedimentation', units='kg kg^{-1} s^{-1}')
+        self._DiagnosticState.add_variable('s_tend_liq_sed', long_name ='s tend liquid water sedimentation', units='')
+
+
         nhalo = self._Grid.n_halo
         self._our_dims = self._Grid.ngrid_local
         nhalo = self._Grid.n_halo
@@ -43,16 +47,21 @@ class MicroKessler(MicrophysicsBase):
         self._RAINNCV =  np.zeros_like(self._RAINNC)
 
         self._rain_rate = 0.0
+
         return
 
     def update(self):
 
         #Get variables from the model state
         T = self._DiagnosticState.get_field('T')
+        liq_sed = self._DiagnosticState.get_field('liq_sed')
+        s_liq_sed = self._DiagnosticState.get_field('s_tend_liq_sed')
         s = self._ScalarState.get_field('s')
         qv = self._ScalarState.get_field('qv')
         qc = self._ScalarState.get_field('qc')
         qr = self._ScalarState.get_field('qr')
+
+        
 
         exner = self._Ref.exner
 
@@ -64,6 +73,7 @@ class MicroKessler(MicrophysicsBase):
         rho_wrf = np.empty(self._wrf_dims, dtype=np.double, order='F')
         exner_wrf = np.empty_like(rho_wrf)
         T_wrf = np.empty_like(rho_wrf)
+        liq_sed_wrf = np.empty_like(rho_wrf)
         qv_wrf = np.empty_like(rho_wrf)
         qc_wrf = np.empty_like(rho_wrf)
         qr_wrf = np.empty_like(rho_wrf)
@@ -106,7 +116,8 @@ class MicroKessler(MicrophysicsBase):
             dt, z, xlv, cp,
             ep2, svp1, svp2, svp3, svpT0, rhow,
             dz_wrf,
-            self._RAINNC, self._RAINNCV,
+            self._RAINNC, self._RAINNCV, 
+            liq_sed_wrf,
             ids,iide, jds,jde, kds,kde,
             ims,ime, jms,jme, kms,kme,
             its,ite, jts,jte, kts,kte)
@@ -114,14 +125,27 @@ class MicroKessler(MicrophysicsBase):
         to_our_order(nhalo, qv_wrf, qv)
         to_our_order(nhalo, qc_wrf, qc)
         to_our_order(nhalo, qr_wrf, qr)
+        to_our_order(nhalo, liq_sed_wrf, liq_sed)
 
-        #Update the energy (TODO Move this to numba)
+
+        # Update the energy (TODO Move this to numba)
         T_wrf *= self._Ref.exner[np.newaxis,nhalo[2]:-nhalo[2],np.newaxis]
         s_wrf = T_wrf + (parameters.G*z- parameters.LV*(qc_wrf + qr_wrf))*parameters.ICPD
         to_our_order(nhalo, s_wrf, s)
 
         self._rain_rate = (np.sum(self._RAINNC) - rain_accum_old)/dt
 
+        
+        # Compute the static energy sedimentation source term
+        # Todo preallocate
+        np.multiply(liq_sed, parameters.LV/parameters.CPD, out=s_liq_sed)
+
+        # Sedimentation source term
+        np.subtract(s, s_liq_sed, out=s)
+
+        # Convert sedimentation sources to units of tendency
+        np.multiply(liq_sed, 1.0/self._TimeSteppingController.dt, out=liq_sed)
+        np.multiply(s_liq_sed, -1.0/self._TimeSteppingController.dt, out=s_liq_sed)
         return
 
     def io_initialize(self, nc_grp):
