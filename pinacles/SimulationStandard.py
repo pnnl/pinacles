@@ -29,6 +29,7 @@ from pinacles import TowersIO
 from pinacles import Plumes
 from pinacles import Restart
 from pinacles import UtilitiesParallel   
+from pinacles import Nest
 from mpi4py import MPI
 import numpy as np
 import pylab as plt
@@ -121,6 +122,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Instantiate radiation
         self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.TimeSteppingController)       
+
+        #Instantiate nest
+        self.Nest = Nest.Nest(self.ModelGrid, self.ScalarState, self.VelocityState)
 
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
@@ -361,7 +365,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         return
     
-    def update(self, integrate_by_dt = 0.0):
+    def update(self, ParentNest=None, integrate_by_dt = 0.0):
 
         """ This function integrates the model forward by integrate_by_dt seconds. """
 
@@ -407,6 +411,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 #Do Damping
                 self.RayleighDamping.update()
+
+                if ParentNest is not None:
+                    self.Nest.update(ParentNest)
 
                 #Do time stepping
                 self.ScalarTimeStepping.update()
@@ -460,4 +467,4 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         return
 
-            
+         
