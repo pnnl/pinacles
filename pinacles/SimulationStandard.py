@@ -124,7 +124,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.TimeSteppingController)       
 
         #Instantiate nest
-        self.Nest = Nest.Nest(self.ModelGrid, self.ScalarState, self.VelocityState)
+        self.Nest = Nest.Nest(self.TimeSteppingController, self.ModelGrid, self.ScalarState, self.VelocityState)
 
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
@@ -438,6 +438,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     self.ScalarState.update_all_bcs()
 
 
+
             self.TimeSteppingController._time += self.TimeSteppingController._dt
 
             # End wall time for
@@ -452,7 +453,10 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 print(colored('\t Walltime: ', 'green'), colored(t1 -t0, 'green'), 
                     colored('\tModeltime/Walltime: ', 'green'), 
                     colored(self.TimeSteppingController._dt/(t1 - t0), 'green'))
-    
+
+        #if ParentNest is not None:
+        #    self.Nest.update_parent(ParentNest)
+        
         return
 
     def walltime_restart(self):

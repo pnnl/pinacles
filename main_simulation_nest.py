@@ -12,11 +12,11 @@ def main(namelist):
 
     # Instantiate and Initialize the Simulation
     
-    factor = 4
-    partent_pts = 24
+    factor = 3
+    partent_pts = 32
 
 
-    root_point = (64, 64, 64)
+    root_point = (32, 32, 32)
 
     
     Sim = SimulationStandard.SimulationStandard(namelist)
@@ -31,10 +31,6 @@ def main(namelist):
     Nest1 = SimulationStandard.SimulationStandard(nest_namelist)
 
     ListOfSims = [Sim, Nest1]
-
-
-
-
 
 
     #S_slice = SimulationUtilities.HorizontalSlice('qv_20m', height=20, frequency=10, var='s', state='ScalarState', Sim=Sim)
