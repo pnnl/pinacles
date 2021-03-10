@@ -64,7 +64,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         for i in range(shape[0]):
             for j in range(shape[1]):
                 for k in range(shape[2]):
-                    thetali[i,j,k] = T[i,j,k]/exner[k] - parameters.LV * qc[i,j,k] / (parameters.CPD * T[i,j,k])
+                    thetali[i,j,k] = T[i,j,k]/exner[k] * (1.0 - parameters.LV * qc[i,j,k] / (parameters.CPD * T[i,j,k]))
         return
 
     def get_thetali(self):
