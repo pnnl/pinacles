@@ -85,6 +85,7 @@ class MicroSBM(MicrophysicsBase):
                       'qna_sbm_in': 'kg/kg',
                       'qna_nucl_sbm_in': 'kg/kg'}
 
+
         for var in self._sbm_in_iofield :
             self._DiagnosticState.add_variable(var, latex_name=var, long_name=long_names[var])
 
@@ -103,6 +104,11 @@ class MicroSBM(MicrophysicsBase):
             name = 'ff8in' + str(i)
             self._ScalarState.add_variable(name,units='kg kg^{-1}', long_name='(regeneration) aerosol bin mass ' + str(i), limit=True)
         self._bin_end = self._ScalarState.nvars
+
+
+        self._DiagnosticState.add_variable('liq_sed', long_name ='liquid water sedimentation', units='kg kg^{-1} s^{-1}')
+        self._DiagnosticState.add_variable('s_tend_liq_sed', long_name ='s tend liquid water sedimentation', units='')
+
 
         # Call add output container diagnostics to the container
         self.add_output_container_diags()
@@ -203,6 +209,11 @@ class MicroSBM(MicrophysicsBase):
 
         s = self._ScalarState.get_field('s')
         qv = self._ScalarState.get_field('qv')
+
+
+        liq_sed = self._DiagnosticState.get_field('liq_sed')
+        s_tend_liq_sed = self._DiagnosticState.get_field('s_tend_liq_sed')
+
         wrf_vars['qv'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         to_wrf_order(nhalo, qv, wrf_vars['qv'])
 
@@ -278,6 +289,9 @@ class MicroSBM(MicrophysicsBase):
         wrf_vars['nprc_tend'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         wrf_vars['saturation'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
 
+
+        wrf_vars['LIQUID_SEDIMENTATION'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
+
         #Get grid dimensions
         ids = 1; jds = 1; kds = 1
         ide = self._wrf_dims[0]; jde = self._wrf_dims[2]; kde = self._wrf_dims[1]
@@ -342,6 +356,7 @@ class MicroSBM(MicrophysicsBase):
                                                       its,ite, jts,jte, kts,kte,
                                                       KRDROP,
                                                       wrf_vars['sbmradar'],
+                                                      wrf_vars['LIQUID_SEDIMENTATION'],
                                                       wrf_vars['MA'],
                                                       wrf_vars['LH_rate'],
                                                       wrf_vars['CE_rate'],
@@ -388,6 +403,16 @@ class MicroSBM(MicrophysicsBase):
         to_our_order(nhalo, s_wrf, s)
 
         to_our_order(nhalo, wrf_vars['qv'], qv)
+        
+        to_our_order(nhalo, wrf_vars['LIQUID_SEDIMENTATION'], liq_sed)
+        np.multiply(liq_sed, parameters.LV/parameters.CPD, out=s_tend_liq_sed)
+        
+        # Sedimentation source term
+        np.subtract(s, s_tend_liq_sed, out=s)
+
+        # Convert sedimentation sources to units of tendency
+        np.multiply(liq_sed, 1.0/self._TimeSteppingController.dt, out=liq_sed)
+        np.multiply(s_tend_liq_sed, -1.0/self._TimeSteppingController.dt, out=s_tend_liq_sed)
 
         self._call_count += 1
         self._itimestep  += 1

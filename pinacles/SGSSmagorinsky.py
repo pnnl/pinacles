@@ -15,7 +15,7 @@ def compute_visc(dx, z, strain_rate_mag, bvf, cs, pr,
     for i in range(shape[0]):
         for j in range(shape[1]):
             for k in range(shape[2]):
-                filt_scale  = np.sqrt(1.0/(1.0/((dx[0] * dx[1] * dx[2] )**(1.0/3.0))**2.0 + 1.0/(0.4 * z[k])**2.0))
+                #filt_scale  = np.sqrt(1.0/(1.0/((dx[0] * dx[1] * dx[2] )**(1.0/3.0))**2.0 + 1.0/(0.4 * z[k])**2.0))
                 # Compute the stratification correction
                 fb = 1
                 if bvf[i, j, k] > 0 and strain_rate_mag[i, j, k] > 0.0:
