@@ -367,11 +367,36 @@ class SimulationStandard(SimulationBase.SimulationBase):
     
     def update(self, ParentNest=None, integrate_by_dt = 0.0):
 
+
+        #for i in range(10):
+        #    tt1 = time.perf_counter()
+        #    self.ScalarState.get_slab_y('s', (1,12))
+        #    tt2 = time.perf_counter()
+        #    print(tt2 - tt1)
+
+        #import sys; sys.exit()
+
+
         """ This function integrates the model forward by integrate_by_dt seconds. """
 
         #Compute the startime and endtime for this integration 
         start_time = self.TimeSteppingController.time
         end_time = start_time + integrate_by_dt
+
+
+
+        #s = self.ScalarState.get_field('s')
+        #s[:,:,:] = np.arange(s.shape[0], dtype=np.double)[:, np.newaxis, np.newaxis]
+        #if ParentNest is not None:
+        #    s[:,:,:] = 0.0
+
+        # Update boundaries
+        tt1 = time.perf_counter()
+        if ParentNest is not None:
+            self.Nest.update_boundaries(ParentNest)
+        tt2 = time.perf_counter()
+        print(tt2 - tt1)
+
 
         while self.TimeSteppingController.time < end_time:
             
@@ -432,7 +457,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 if n== 1:
                     self.Thermo.update(apply_buoyancy=False)
-                    #We call the microphysics update at the end of the RK steps.
+                    # We call the microphysics update at the end of the RK steps.
                     self.Micro.update()
                     self.ScalarState.boundary_exchange()
                     self.ScalarState.update_all_bcs()

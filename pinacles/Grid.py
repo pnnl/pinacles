@@ -75,6 +75,9 @@ class GridBase:
 
         return
 
+
+    
+
     @property
     def n(self):
         return self._n
