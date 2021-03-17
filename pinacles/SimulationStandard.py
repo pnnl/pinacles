@@ -39,7 +39,9 @@ from termcolor import colored
 os.environ["HDF5_USE_FILE_LOCKING"]="FALSE"
 class SimulationStandard(SimulationBase.SimulationBase):
 
-    def __init__(self, namelist):
+    def __init__(self, namelist, llx=0.0, lly=0.0, llz=0.0):
+
+        self._ll_corner = (llx, lly, llz)
 
         # This is used to keep track of how long the model has been running.
         self.t_init = time.perf_counter()
@@ -63,7 +65,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
     def initialize(self):
 
         # Instantiate the model grid
-        self.ModelGrid = Grid.RegularCartesian(self._namelist)
+        self.ModelGrid = Grid.RegularCartesian(self._namelist, 
+            llx=self._ll_corner[0], lly=self._ll_corner[1], llz=self._ll_corner[2])
 
         # Instantiate variables for storing containers
         self.ScalarState = Containers.ModelState(self.ModelGrid, container_name='ScalarState', prognostic=True)
@@ -386,7 +389,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
 
         #s = self.ScalarState.get_field('s')
-        #s[:,:,:] = np.arange(s.shape[0], dtype=np.double)[:, np.newaxis, np.newaxis]
+        #s[:,:,:] = np.arange(s.shape[0], dtype=np.double)[np.newaxis, :, np.newaxis]
         #if ParentNest is not None:
         #    s[:,:,:] = 0.0
 

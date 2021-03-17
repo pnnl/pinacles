@@ -28,7 +28,13 @@ def main(namelist):
     
     nest_namelist['meta']['simname'] = namelist['meta']['simname'] + '_nest'
     print(nest_namelist)
-    Nest1 = SimulationStandard.SimulationStandard(nest_namelist)
+
+
+    llx = Sim.ModelGrid.x_edge_global[Sim.ModelGrid.n_halo[0]-1 + root_point[0]]
+    lly = Sim.ModelGrid.y_edge_global[Sim.ModelGrid.n_halo[1]-1 + root_point[1]]
+    llz = 0.0
+
+    Nest1 = SimulationStandard.SimulationStandard(nest_namelist, llx, lly, llz)
 
     ListOfSims = [Sim, Nest1]
 
@@ -80,6 +86,8 @@ def main(namelist):
                 parent = None
 
             Nest_i.update(ParentNest=parent, integrate_by_dt=integrate_by_dt)
+
+
 
             #Adjust the integration to to make sure output is at the correct time
             time = Nest_i.TimeSteppingController.time
