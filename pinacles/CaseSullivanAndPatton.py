@@ -153,7 +153,7 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
 
         self._f = 1.0e-4
 
-        self._ug = np.zeros_like(self._Grid.z_global) + 1.0
+        self._ug = np.zeros_like(self._Grid.z_global) + 5.0
         self._vg = np.zeros_like(self._ug)
 
         return
@@ -169,5 +169,5 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
         u0 = self._Ref.u0
         v0 = self._Ref.v0
 
-        #Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, u0, v0, vt, ut)
+        Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, u0, v0, vt, ut)
         return

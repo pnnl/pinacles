@@ -13,7 +13,7 @@ def main(namelist):
     # Instantiate and Initialize the Simulation
     
     factor = 3
-    partent_pts = 32
+    partent_pts = 64
 
 
     root_point = (32, 32, 32)

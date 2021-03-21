@@ -17,7 +17,7 @@ class Nest:
 
 
         self.factor = 3
-        self.partent_pts = 32
+        self.partent_pts = 64
 
         self.root_point = (32, 32, 32)
 
@@ -110,7 +110,6 @@ class Nest:
 
 
         return 
-
 
 
     @staticmethod
@@ -232,11 +231,9 @@ class Nest:
         # First set the boundarines on y
         for i in range(n_halo[0]+factor, our_shape[0]-n_halo[0]-factor):
             iparent = root_point[0] +  parent_halo[0] +  i // factor
-            for j in range(n_halo[1], n_halo[1]+2*factor):
-                #j = j -1 
+            for j in range(n_halo[1], n_halo[1]+2*factor): 
                 jparent = root_point[1] + parent_halo[1] +  j  // factor
                 
-                #print()
                 for k in range(parent_shape[2]):
                     scalars_tend[i,j,k] += 1.0/10.0 * (parent_scalar[iparent, jparent, k] - scalar[i,j,k])
 
@@ -280,29 +277,23 @@ class Nest:
 
         for v in self._ScalarState._dofs:
             
-
             #This is the location of the lower corenr of the nest in the parent's index
             center_point_x = parent_nhalo[0] + self.root_point[0] 
             center_point_y = parent_nhalo[1] + self.root_point[1] 
 
-        
             #First we get the low-x boundary
             slab_range = (center_point_y, center_point_y+1)
 
             #Now get the indicies of the subset on this rank
             local_part_of_parent =  ((local_start[0])//self.factor + self.root_point[0],
                 (local_end[0] )//self.factor + self.root_point[0])
-
-            #print(local_start[0], local_end[0]); import sys; sys.exit()
            
             self.x_left_bdys[v] = ParentNest.ScalarState.get_slab_y(v,
                                                                 slab_range 
                                                                 )[local_part_of_parent[0]:local_part_of_parent[1],:,:]
           
-
             slab_range = (center_point_y + self.partent_pts-1, center_point_y+self.partent_pts)
-
-            
+   
             self.x_right_bdys[v] = ParentNest.ScalarState.get_slab_y(v,
                                                                  slab_range
                                                                  )[local_part_of_parent[0]:local_part_of_parent[1],:,:]
@@ -311,20 +302,17 @@ class Nest:
             local_part_of_parent =  ((local_start[1])//self.factor + self.root_point[1], 
                 (local_end[1] )//self.factor + self.root_point[1])
 
-            #print(local_part_of_parent,local_start[1]//self.factor,local_end[1]//self.factor); return
             slab_range = (center_point_x, center_point_x+1)
             
-
-            #print(slab_range)
             self.y_left_bdys[v] = ParentNest.ScalarState.get_slab_x(v,
                                                                 slab_range
                                                                 )[:,local_part_of_parent[0]:local_part_of_parent[1],:]
 
-            #print(slab_range); import sys; sys.exit()
             slab_range = (center_point_x + self.partent_pts-1 , center_point_x+self.partent_pts )
             self.y_right_bdys[v] = ParentNest.ScalarState.get_slab_x(v, 
                                                                     slab_range
                                                                     )[:,local_part_of_parent[0]:local_part_of_parent[1],:]
+        
         v = 'w'
         #This is the location of the lower corenr of the nest in the parent's index
         center_point_x = parent_nhalo[0] + self.root_point[0] 
@@ -358,6 +346,78 @@ class Nest:
         self.y_right_bdys[v] = ParentNest.VelocityState.get_slab_x(v, 
                                                                    slab_range
                                                                    )[:,local_part_of_parent[0]:local_part_of_parent[1],:]
+
+        v = 'u'
+        #This is the location of the lower corenr of the nest in the parent's index
+        center_point_x = parent_nhalo[0] + self.root_point[0] - 1    # Shift to account for stagger
+        center_point_y = parent_nhalo[1] + self.root_point[1]
+
+    
+        #First we get the low-x boundary
+        slab_range = (center_point_y, center_point_y+1)
+
+        #Now get the indicies of the subset on this rank
+        local_part_of_parent =  ((local_start[0])//self.factor + self.root_point[0],(local_end[0] )//self.factor + self.root_point[0])
+        self.x_left_bdys[v] = ParentNest.VelocityState.get_slab_y(v,
+                                                            slab_range
+                                                            )[local_part_of_parent[0]:local_part_of_parent[1],:,:]
+        slab_range = (center_point_y + self.partent_pts-1, center_point_y+self.partent_pts)
+
+        self.x_right_bdys[v] = ParentNest.VelocityState.get_slab_y(v,
+                                                            slab_range
+                                                                )[local_part_of_parent[0]:local_part_of_parent[1],:,:]
+
+        #Now get the indicies of the subset on this rank
+
+        local_part_of_parent =  ((local_start[1])//self.factor + self.root_point[1],(local_end[1] )//self.factor + self.root_point[1])
+
+        slab_range = (center_point_x, center_point_x+1)
+        self.y_left_bdys[v] = ParentNest.VelocityState.get_slab_x(v, 
+                                                            slab_range
+                                                            )[:,local_part_of_parent[0]:local_part_of_parent[1],:]
+        
+        slab_range = (center_point_x + self.partent_pts-1, center_point_x+self.partent_pts)       
+        self.y_right_bdys[v] = ParentNest.VelocityState.get_slab_x(v, 
+                                                                   slab_range
+                                                                   )[:,local_part_of_parent[0]:local_part_of_parent[1],:]
+
+        v = 'v'
+        #This is the location of the lower corenr of the nest in the parent's index
+        center_point_x = parent_nhalo[0] + self.root_point[0]    # Shift to account for stagger
+        center_point_y = parent_nhalo[1] + self.root_point[1] - 1
+
+    
+        #First we get the low-x boundary
+        slab_range = (center_point_y, center_point_y+1)
+
+        #Now get the indicies of the subset on this rank
+        local_part_of_parent =  ((local_start[0])//self.factor + self.root_point[0],(local_end[0] )//self.factor + self.root_point[0])
+        self.x_left_bdys[v] = ParentNest.VelocityState.get_slab_y(v,
+                                                            slab_range
+                                                            )[local_part_of_parent[0]:local_part_of_parent[1],:,:]
+        slab_range = (center_point_y + self.partent_pts-1, center_point_y+self.partent_pts)
+
+        self.x_right_bdys[v] = ParentNest.VelocityState.get_slab_y(v,
+                                                            slab_range
+                                                                )[local_part_of_parent[0]:local_part_of_parent[1],:,:]
+
+        #Now get the indicies of the subset on this rank
+
+        local_part_of_parent =  ((local_start[1])//self.factor + self.root_point[1],(local_end[1] )//self.factor + self.root_point[1])
+
+        slab_range = (center_point_x, center_point_x+1)
+        self.y_left_bdys[v] = ParentNest.VelocityState.get_slab_x(v, 
+                                                            slab_range
+                                                            )[:,local_part_of_parent[0]:local_part_of_parent[1],:]
+        
+        slab_range = (center_point_x + self.partent_pts-1, center_point_x+self.partent_pts)       
+        self.y_right_bdys[v] = ParentNest.VelocityState.get_slab_x(v, 
+                                                                   slab_range
+                                                                   )[:,local_part_of_parent[0]:local_part_of_parent[1],:]
+
+
+
+
 
         return
 
@@ -455,6 +515,39 @@ class Nest:
             self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
 
         return
+        v = 'u'
+        var = self._VelocityState.get_field(v)
+        var_tend = self._VelocityState.get_tend(v)
+        # 
+        indx_range = (n_halo[1], n_halo[1]+1)
+        self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_left_bdys[v], var, var_tend)
+        
+        indx_range = (var.shape[1] - 2 * n_halo[1],var.shape[1] - 2 * n_halo[1]+1)
+        self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_right_bdys[v], var, var_tend)
+
+        indx_range = (n_halo[0], n_halo[0]+1)
+        self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_left_bdys[v], var, var_tend)  
+        
+        indx_range = (var.shape[0] - 2 * n_halo[0],var.shape[0] - 2 * n_halo[0]+1)
+        self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
+
+        v = 'v'
+        var = self._VelocityState.get_field(v)
+        var_tend = self._VelocityState.get_tend(v)
+        # 
+        indx_range = (n_halo[1], n_halo[1]+1)
+        self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_left_bdys[v], var, var_tend)
+        
+        indx_range = (var.shape[1] - 2 * n_halo[1],var.shape[1] - 2 * n_halo[1]+1)
+        self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_right_bdys[v], var, var_tend)
+
+        indx_range = (n_halo[0], n_halo[0]+1)
+        self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_left_bdys[v], var, var_tend)  
+        
+        indx_range = (var.shape[0] - 2 * n_halo[0],var.shape[0] - 2 * n_halo[0]+1)
+        self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
+
+
         v = 'w'
         var = self._VelocityState.get_field(v)
         var_tend = self._VelocityState.get_tend(v)
@@ -470,6 +563,7 @@ class Nest:
         
         indx_range = (var.shape[0] - 2 * n_halo[0],var.shape[0] - 2 * n_halo[0]+1)
         self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
+
 
         return
 
