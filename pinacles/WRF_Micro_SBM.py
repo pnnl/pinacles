@@ -142,6 +142,9 @@ class MicroSBM(MicrophysicsBase):
         radius_mean3 = 0.31000e-04
         sig3 = 2.70000
 
+        self._restart_attributes = ['_th_old', '_qv_old', '_RAINNC']
+
+
 
         module_mp_fast_sbm.module_mp_warm_sbm.warm_hucminit(5.0,
         ccncon1, radius_mean1, sig1,
@@ -540,3 +543,27 @@ class MicroSBM(MicrophysicsBase):
             profiles_grp['RF'][-1,:] = rf_prof[n_halo[2]:-n_halo[2]]
 
             
+    def restart(self, data_dict):
+        key = 'SBM'
+        
+        for att in self._restart_attributes:
+            assert self.__dict__[att] == data_dict[key][att]
+
+        return
+
+    
+    def dump_restart(self, data_dict):
+
+
+        # Get the name of this particualr container and create a dictionary for it in the 
+        # restart data dict. 
+    
+        key ='SBM'
+        data_dict[key] = {}
+
+        # Loop over the restart_attributes and add it to the data_dict
+        for att in self._restart_attributes:
+            data_dict[key][att] = self.__dict__[att]
+
+
+        return
