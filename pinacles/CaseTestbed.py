@@ -157,16 +157,12 @@ class SurfaceTestbed(Surface.SurfaceBase):
         # Store the surface fluxes for output
         self._shf = shf_interp
         self._lhf = lhf_interp
-        
-
         return
 
     def _compute_z0(self, z1,wspd):
         kappa = 0.4
         c1 =  (0.4 + 0.079*wspd)/1000.0
         return z1*np.exp(-kappa/np.sqrt(c1))
-
-
 
 '''
 Note regarding set-up of original LASSO cases (e.g. HISCALE tested case)

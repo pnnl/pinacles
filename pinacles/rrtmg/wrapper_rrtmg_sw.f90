@@ -11,7 +11,6 @@ contains
 
 subroutine c_rrtmg_sw_init(cpdair) bind(c)
     real(c_double), intent(in), value :: cpdair
-    ! write(*,*) cpdair
     call rrtmg_sw_ini(cpdair)
 end subroutine c_rrtmg_sw_init
 
