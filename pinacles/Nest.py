@@ -265,7 +265,6 @@ class Nest:
             indx_range = (var.shape[0] - 2 * n_halo[0],var.shape[0] - 2 * n_halo[0]+1)
             self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
 
-        return
         v = 'u'
         var = self._VelocityState.get_field(v)
         var_tend = self._VelocityState.get_tend(v)
@@ -299,20 +298,20 @@ class Nest:
         self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
 
 
-        #v = 'w'
-        #var = self._VelocityState.get_field(v)
-        #var_tend = self._VelocityState.get_tend(v)
+        v = 'w'
+        var = self._VelocityState.get_field(v)
+        var_tend = self._VelocityState.get_tend(v)
         # 
-        #indx_range = (n_halo[1], n_halo[1]+1)
-        #self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_left_bdys[v], var, var_tend)
+        indx_range = (n_halo[1], n_halo[1]+1)
+        self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_left_bdys[v], var, var_tend)
         
-        #indx_range = (var.shape[1] - 2 * n_halo[1],var.shape[1] - 2 * n_halo[1]+1)
-        #self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_right_bdys[v], var, var_tend)
+        indx_range = (var.shape[1] - 2 * n_halo[1],var.shape[1] - 2 * n_halo[1]+1)
+        self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_right_bdys[v], var, var_tend)
 
-        #indx_range = (n_halo[0], n_halo[0]+1)
-        #self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_left_bdys[v], var, var_tend)  
+        indx_range = (n_halo[0], n_halo[0]+1)
+        self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_left_bdys[v], var, var_tend)  
         
-        #indx_range = (var.shape[0] - 2 * n_halo[0],var.shape[0] - 2 * n_halo[0]+1)
-        #self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
+        indx_range = (var.shape[0] - 2 * n_halo[0],var.shape[0] - 2 * n_halo[0]+1)
+        self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
 
         return
