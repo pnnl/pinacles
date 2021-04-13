@@ -67,10 +67,12 @@ class MicrophysicsBase:
         return np.zeros((self._Grid._ngrid_local), dtype=np.double)
     
     def get_reffc(self):
-        return np.zeros((self._Grid._ngrid_local), dtype=np.double)
+        # make consistent with default effective radius values used by P3
+        return np.ones((self._Grid._ngrid_local), dtype=np.double) * 10.0e-6
 
     def get_reffi(self):
-        return np.zeros((self._Grid._ngrid_local), dtype=np.double)
+        # make consistent with default effective radius values used by P3
+        return np.zeros((self._Grid._ngrid_local), dtype=np.double) * 25.0e-6
         
     def restart(self, data_dict):
         return
