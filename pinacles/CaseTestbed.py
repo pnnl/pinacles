@@ -28,12 +28,16 @@ class SurfaceTestbed(Surface.SurfaceBase):
         self._forcing_times = surface_data.variables['times'][:]
         self._forcing_shf = surface_data.variables['sensible_heat_flux'][:]
         self._forcing_lhf = surface_data.variables['latent_heat_flux'][:]
+
+        '''different testbed cases have different availability of surface temperature information. Here trying to
+        distinguish when a skin temperature value is directly available, in contrast to backing a temperature out from
+        surface LW flux data (as done for the ENA varanal forcing). This would be an area for future clean up'''
         try:
             self._forcing_skintemp = surface_data.variables['skin_temperature'][:]
         except:
             self._forcing_skintemp = surface_data.variables['surface_temperature'][:]
             UtilitiesParallel.print_root('\t \t surface skin temp inferred from LW radiative fluxes')
-        
+        '''allow for multiplicative increase/decrease of friction velocity values without having to recreate the input file.'''
         try:
             ustar_factor = namelist['testbed']['ustar_factor']
         except:
@@ -167,8 +171,8 @@ class SurfaceTestbed(Surface.SurfaceBase):
 '''
 Note regarding set-up of original LASSO cases (e.g. HISCALE tested case)
 These simulations use the initial sounding of horizontal winds as the geostrophic winds.
-Here, I require the proper specification of geostrophic winds to be made in the input file 
-so that the source code remains tidy.
+Here, I require the specification of geostrophic winds to be made explicitly in the 
+large-scale forcing group of input file 
 '''
 
 class ForcingTestbed(Forcing.ForcingBase):
@@ -180,9 +184,12 @@ class ForcingTestbed(Forcing.ForcingBase):
 
         file = namelist['testbed']['input_filepath']
         self._momentum_forcing_method = namelist['testbed']['momentum_forcing']
-        # Options: relaxation, geostrophic, none
+        # Options: relaxation, mean_relaxation, geostrophic, none
         self._subsidence_forcing_method = namelist['testbed']['subsidence_forcing']
         # Options: vertical tendency, subsidence, fixed_subsidence
+        # Vertical tendency: provide time-height profiles for qv and temperature (not theta)
+        # Subsidence: provide time-height profile of subsidence velocity and tendencies are computed
+        # Fixed_subsidence: provide a large scale divergence D and get subsidence velocity as -D * z (constant in time)
         if self._subsidence_forcing_method == 'fixed_subsidence':
             _ls_divergence = namelist['testbed']['largescale_divergence']
 
@@ -206,7 +213,8 @@ class ForcingTestbed(Forcing.ForcingBase):
 
         
         raw_adv_qt = forcing_data.variables['qt_advection'][:,:]
-        # take temperature over theta if we have both
+        # If both theta and temperature advection are provided, take temperature
+        # Otherwise, take theta
         try:
             raw_adv_temperature= forcing_data.variables['temperature_advection'][:,:]
             self._use_temperature_advection = True
@@ -214,15 +222,16 @@ class ForcingTestbed(Forcing.ForcingBase):
             raw_adv_theta = forcing_data.variables['theta_advection'][:,:]
             self._use_temperature_advection = False
         
-        # take given vertical advection tendencies over subsidence if we have both
-        # But we still need to get the subsidence 
+        # Get the subsidence/vertical advection tendency ifnromation
+        # Assuming that vertical advection tendencies are provided for temperature, not theta 
+        # as this is what varanal provides
         if self._subsidence_forcing_method == 'fixed_subsidence':
             raw_subsidence = np.ones_like(raw_adv_qt)* np.tile(forcing_z[np.newaxis,:],(ntimes,1)) * _ls_divergence
         else:
             raw_subsidence = forcing_data.variables['subsidence'][:,:]
         if self._subsidence_forcing_method == 'vertical_tendency':
             raw_vtend_qt = forcing_data.variables['qt_vertical_tendency'][:,:]
-            # I am omitting the logic here to get vertical advection of theta
+            # temperature, not theta
             raw_vtend_temperature =  forcing_data.variables['temperature_vertical_tendency'][:,:]
             
 
@@ -252,8 +261,10 @@ class ForcingTestbed(Forcing.ForcingBase):
                                                             axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
         
         z_top = self._Grid.l[2]
+        # Performing relaxation nudging over the same depth as damping, this is an assumption to revisit
         _depth = namelist['damping']['depth']
         znudge = z_top -_depth
+        # Assume nudging timescale of 1 hour, again this is an assumption that could be revisited
         self._compute_relaxation_coefficient(znudge,3600.0)
 
         return
