@@ -370,7 +370,7 @@ class RRTMG:
             # ql to rrtmg shape; need to convert to path in g/m^2
             # if 'qc' in self._ScalarState.names:
             # to_rrtmg_shape(_nhalo, self._ScalarState.get_field('qc'), self.ql_extension, cliqwp, self.p_buffer,self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
-            to_rrtmg_shape(_nhalo, self._Micro.get_qc(), self.ql_extension, cliqwp, self.p_buffer,
+            to_rrtmg_shape(_nhalo, self._Micro.get_qcloud(), self.ql_extension, cliqwp, self.p_buffer,
                             self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
             
             cliqwp[:,:] = cliqwp[:,:] * 1.e3/parameters.G * (plev[:,:-1]-plev[:,1:])

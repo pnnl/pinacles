@@ -480,6 +480,9 @@ class MicroSBM(MicrophysicsBase):
     def get_qc(self):
         return self._ScalarState.get_field('qc') +  self._ScalarState.get_field('qr')  #np.sum(self._ScalarState._state_array.array[self._qc_start:self._qc_end,:,:,:], axis=0)
 
+    def get_qcloud(self):
+        return self._ScalarState.get_field('qc')
+
     def io_initialize(self, nc_grp):
 
         timeseries_grp = nc_grp['timeseries']

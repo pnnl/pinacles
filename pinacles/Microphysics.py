@@ -63,6 +63,10 @@ class MicrophysicsBase:
     def get_qc(self):
         return np.zeros((self._Grid._ngrid_local), dtype=np.double)
     
+
+    def get_qcloud(self):
+        return np.zeros((self._Grid._ngrid_local), dtype=np.double)
+    
     def get_qi(self):
         return np.zeros((self._Grid._ngrid_local), dtype=np.double)
     
