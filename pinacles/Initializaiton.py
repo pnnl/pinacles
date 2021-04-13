@@ -372,9 +372,9 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         sbm_init_type = namelist['testbed']['sbm_init_type']
         # options are 'spread_evenly', 'all_vapor', 
         if sbm_init_type not in ['spread_evenly', 'all_vapor']:
-            UtilitiesParallel.print_root(' Warning: sbm_init_type is unknown. Defaulting to spread_evenly')
+            UtilitiesParallel.print_root(' Warning: sbm_init_type is unknown. Defaulting to all_vapor')
     except:
-        sbm_init_type = 'spread_evenly'
+        sbm_init_type = 'all_vapor'
 
     data = nc.Dataset(file, 'r')
     try:
@@ -433,7 +433,7 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         shape = qc.shape
         if micro_scheme == 'sbm' and sbm_init_type == 'spread_evenly':
             UtilitiesParallel.print_root('\t \t Initializing cloud liquid to bins below KRDROP')
-            nbins = 15.0
+            nbins = 14.0
             ff1i1= ScalarState.get_field('ff1i1')
             ff1i2= ScalarState.get_field('ff1i2')
             ff1i3= ScalarState.get_field('ff1i3')
@@ -448,12 +448,12 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
             ff1i12= ScalarState.get_field('ff1i12')
             ff1i13= ScalarState.get_field('ff1i13')
             ff1i14= ScalarState.get_field('ff1i14')
-            ff1i15= ScalarState.get_field('ff1i15')
+            # ff1i15= ScalarState.get_field('ff1i15')
             for i in range(shape[0]):
                 for j in range(shape[1]):
                     for k in range(shape[2]):
                         qc[i,j,k] = qc[i,j,k]/Ref.rho0[k]
-                        ff1i15[i,j,k] = qc[i,j,k]/nbins
+                        # ff1i15[i,j,k] = qc[i,j,k]/nbins
                         ff1i14[i,j,k] = qc[i,j,k]/nbins
                         ff1i13[i,j,k] = qc[i,j,k]/nbins
                         ff1i12[i,j,k] = qc[i,j,k]/nbins
