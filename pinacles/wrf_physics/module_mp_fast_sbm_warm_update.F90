@@ -1767,12 +1767,12 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
     !    READ(hujisbm_unit1,*) RCCN(KR),CCNR(KR),FCCNR_OBS(KR) !---aerosol size (cm), dN (# cm-3) and dNdlogD for 33bins
     ! end do
     ! CLOSE(hujisbm_unit1)
-
+    ! Check the size bin data that was input (via data file read on the python side)
     do KR=1,NKR
       RCCN(KR) = CCN_size_bin_dat(KR,1)
       CCNR(KR) = CCN_size_bin_dat(KR,2)
       FCCNR_OBS(KR) = CCN_size_bin_dat(KR,3)
-      print *, RCCN(KR),CCNR(KR),FCCNR_OBS(KR) !---aerosol size (cm), dN (# cm-3) and dNdlogD for 33bins
+      ! print *, RCCN(KR),CCNR(KR),FCCNR_OBS(KR) !---aerosol size (cm), dN (# cm-3) and dNdlogD for 33bins
     end do
     !call wrf_message("FAST_SBM_INIT: succesfull reading aerosol SD from observation")
   ENDIF
