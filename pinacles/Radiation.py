@@ -1,4 +1,5 @@
 from pinacles import parameters
+from pinacles import UtilitiesParallel
 import time
 import numba
 import numpy as np
@@ -12,13 +13,14 @@ ffi = FFI()
 
 
 class RRTMG:
-    def __init__(self, namelist, Grid, Ref, ScalarState, DiagnosticState, Surf,TimeSteppingController):
-
+    def __init__(self, namelist, Grid, Ref, ScalarState, DiagnosticState, Surf, Micro, TimeSteppingController):
+        self._name = 'RRTMG'
         self._Grid = Grid
         self._Ref = Ref
         self._ScalarState = ScalarState
         self._DiagnosticState = DiagnosticState
         self._Surf = Surf
+        self._Micro = Micro
         self._TimeSteppingController = TimeSteppingController
 
         try:
@@ -26,12 +28,10 @@ class RRTMG:
         except:
             if namelist['meta']['casename'] == 'testbed':
                 self._compute_radiation = True
-                if MPI.COMM_WORLD.Get_rank() == 0:
-                    print('Assuming RRTMG should be used for testbed case.')
+                UtilitiesParallel.print_root('\t \t Assuming RRTMG should be used for testbed case.')
             else:
                 self._compute_radiation = False
-                if MPI.COMM_WORLD.Get_rank() == 0:
-                    print('Assuming RRTMG should not be used for this case.')
+                UtilitiesParallel.print_root('\t \t Assuming RRTMG should not be used for this case.')
      
         if not self._compute_radiation:
             return
@@ -40,7 +40,7 @@ class RRTMG:
         try:
             self._radiation_frequency = namelist['radiation']['update_frequency']
         except:
-            self._radiation_frequency = 60.0
+            self._radiation_frequency = 30.0
 
         #
 
@@ -85,21 +85,38 @@ class RRTMG:
         # self._DiagnosticState.add_variable('dflux_lw')
         # self._DiagnosticState.add_variable('uflux_sw')
         # self._DiagnosticState.add_variable('dflux_sw')
+
+        nl = self._Grid.ngrid_local
+
+       
+       
         self._radiation_file_path = namelist['radiation']['input_filepath']
         data = nc.Dataset(self._radiation_file_path, 'r')
-        rad_data = data.groups['radiation']
+        try:
+            rad_data = data.groups['radiation_varanal']
+            UtilitiesParallel.print_root('\t \t radiation profiles from analysis')
+            # rad_data = data.groups['radiation_sonde']
+            # print('radiation profiles from sonde')
+        except:
+            rad_data = data.groups['radiation']
         self._latitude = rad_data.variables['latitude'][0]
         self._longitude = rad_data.variables['longitude'][0]
         day  = rad_data.variables['day_of_year'][0]
         self._hourz_init = rad_data.variables['hour_utc'][0]
         
         self._dyofyr_init = np.floor(day) + self._hourz_init/24.0
-
-        self._emis =  rad_data.variables['emissivity'][0]
+        try:
+            self._emis =  rad_data.variables['emissivity'][0]
+        except:
+            self._emis = 0.98
+        try:
+            albedo = rad_data.variables['albedo'][0]
+        except:
+            albedo = 0.06
         
-        self._adir =  rad_data.variables['albedo'][0]
-        self._adif = rad_data.variables['albedo'][0]
-        print(self._emis, self._adir, self._adif)
+        self._adir =  albedo
+        self._adif = albedo
+      
         data.close()
 
         # CL WRF values based on 2005 values from 2007 IPCC report
@@ -111,19 +128,43 @@ class RRTMG:
         self._vmr_cfc12 = 0.538e-9
         self._vmr_cfc22 = 0.169e-9
         self._vmr_ccl4  = 0.093e-9
-        self._vmr_o3 = 70.0e-9
-        
-        self._emis = 1.0
-        
-        self._adir = 0.2
-        self._adif = 0.2
+
+        # Ozone will be set based on the data file provided with RRTMG
+
+  
         self._scon = 1365.0
         self._adjes = 1.0
         self.dyofyr = 0
         self.hourz = 0
 
 
-        self.time_elapsed = 10000.0      
+        self.time_elapsed = parameters.LARGE   
+        self._profile_o3 = None
+        
+        # these are for setting up the extension of profiles above LES domain top
+        self.p_buffer = None
+        self.p_extension = None
+        self.t_extension = None
+        self.qv_extension = None
+        self.ql_extension = None
+        self.qi_extension = None
+
+        # Attributes to store surface and toa flux information for output    
+        self._surf_sw_up = 0.0
+        self._surf_sw_dn = 0.0
+        self._surf_lw_up = 0.0
+        self._surf_lw_dn = 0.0
+
+        self._toa_sw_up = 0.0
+        self._toa_sw_dn = 0.0
+        self._toa_lw_up = 0.0
+        self._toa_lw_dn = 0.0
+
+
+        self._restart_attributes = ['time_elapsed', '_profile_o3', 'p_buffer', 'p_extension', 't_extension', 
+            'qv_extension', 'ql_extension', 'qi_extension']
+
+  
         return
 
     def init_profiles(self):
@@ -132,7 +173,13 @@ class RRTMG:
         n_halo = self._Grid.n_halo[2]
        
         data = nc.Dataset(self._radiation_file_path, 'r')
-        rad_data = data.groups['radiation']
+        try:
+            rad_data = data.groups['radiation_varanal']
+            UtilitiesParallel.print_root('\t \t radiation profiles from analysis')
+            # rad_data = data.groups['radiation_sonde']
+            # print('radiation profiles from sonde')
+        except:
+            rad_data = data.groups['radiation']
         p_data = rad_data.variables['pressure'][:]
         t_data = rad_data.variables['temperature'][:]
         qv_data = rad_data.variables['vapor_mixing_ratio'][:]
@@ -160,7 +207,7 @@ class RRTMG:
         self.ql_extension = ql_data[p_data<p_buffer[-1]]
         self.qi_extension = qi_data[p_data<p_buffer[-1]]
 
-       
+ 
 
         # Set plev
         _nhalo = self._Grid.n_halo
@@ -176,6 +223,11 @@ class RRTMG:
         index_o3 = 7
 
         self._profile_o3 = interpolate_trace_gas(lw_pressure,lw_absorber[:,index_o3],plev_col)
+
+        # Highly recommended to plot some checks on the extension profiles 
+        # when setting up a new testbeds case 
+        # or changing the vertical grid used for a testbeds case
+
         # plt.figure(1)
         # plt.plot(plev_col[:-1]-plev_col[1:],'o')
         # plt.plot(play_col[:-1]-play_col[1:],'s')
@@ -184,24 +236,25 @@ class RRTMG:
         # plt.plot(lw_pressure,lw_absorber[:,index_o3],'o')
         # plt.plot(play_col,self._profile_o3, 's')
         # plt.show()
+
+
         return
 
-    def update(self,  _rk_step):
+    def update(self):
 
         if not self._compute_radiation:
             return
 
-        # get the pointers we need in any case  
+        # get the pointers we need to update tendencies, whether or not it is time to update the fluxes
         ds_dTdt_rad = self._DiagnosticState.get_field('dTdt_rad')
-        st = self._ScalarState.get_tend('s')
-        if _rk_step == 0:
-            self.time_elapsed += self._TimeSteppingController.dt
+        s = self._ScalarState.get_field('s')
+  
+        dt = self._TimeSteppingController.dt
+        self.time_elapsed += dt
         
-        
-
-        if _rk_step == 0 and self.time_elapsed > self._radiation_frequency:
+        if self.time_elapsed > self._radiation_frequency:
             self.time_elapsed = 0.0
-            # THis should get tested
+            # TODO: testing of this code
             self.hourz = self._hourz_init + self._TimeSteppingController.time/3600.0
             self.dyofyr = self._dyofyr_init + np.floor_divide(self._TimeSteppingController.time,86400.0)
             if self.hourz > 24.0:
@@ -233,7 +286,7 @@ class RRTMG:
             tlev = np.zeros((_ncol,_nlay + 1), dtype=np.double, order='F')
             tsfc = np.ones((_ncol),dtype=np.double,order='F') * self._Surf.T_surface
             h2ovmr = np.zeros((_ncol,_nlay),dtype=np.double,order='F')
-            o3vmr  = np.ones((_ncol,_nlay),dtype=np.double,order='F') * self._vmr_o3
+            o3vmr  = np.zeros((_ncol,_nlay),dtype=np.double,order='F') 
             co2vmr = np.ones((_ncol,_nlay),dtype=np.double,order='F') * self._vmr_co2
             ch4vmr = np.ones((_ncol,_nlay),dtype=np.double,order='F') * self._vmr_ch4
             n2ovmr = np.ones((_ncol,_nlay),dtype=np.double,order='F') * self._vmr_n2o
@@ -304,29 +357,54 @@ class RRTMG:
             # plt.figure()
             # plt.plot(play[0,:],tlay[0,:],'-o')
             # plt.plot(self.p_extension[:],self.t_extension[:],'--s')
+            
             # plt.show()
             
 
             # qv to rrtmg shape; convert to vmr
             to_rrtmg_shape(_nhalo,self._ScalarState.get_field('qv'),self.qv_extension,h2ovmr, self.p_buffer, self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
             h2ovmr *= parameters.RV/parameters.RD
-            # ql to rrtmg shape; need to convert to path in g/m^2
-            if 'ql' in self._ScalarState.names:
-                to_rrtmg_shape(_nhalo, self._ScalarState.get_field('ql'), self.ql_extension, cliqwp, self.p_buffer,self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
-                cliqwp *= 1.e3/parameters.G * (plev[:-1]-plev[1:])
 
-            #  qi to rrtmg shape; need to convert to path in g/m^2
-            if 'qi' in self._ScalarState.names:
-                to_rrtmg_shape(_nhalo, self._ScalarState.get_field('ql'), self.qi_extension, cicewp, self.p_buffer,self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
-                cicewp *= 1.e3/parameters.G * (plev[:-1]-plev[1:])
+         
+
+            # ql to rrtmg shape; need to convert to path in g/m^2
+            # if 'qc' in self._ScalarState.names:
+            # to_rrtmg_shape(_nhalo, self._ScalarState.get_field('qc'), self.ql_extension, cliqwp, self.p_buffer,self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
+            to_rrtmg_shape(_nhalo, self._Micro.get_qcloud(), self.ql_extension, cliqwp, self.p_buffer,
+                            self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
             
+            cliqwp[:,:] = cliqwp[:,:] * 1.e3/parameters.G * (plev[:,:-1]-plev[:,1:])
+            cldfr[cliqwp > 1e-10] = 1.0 
+            # reliq[cliqwp > 0.0] = 14.0
+            to_rrtmg_shape(_nhalo, self._Micro.get_reffc(), np.zeros_like(self.ql_extension),
+                            reliq, self.p_buffer,self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
+            
+                
+                
+            #  qi to rrtmg shape; need to convert to path in g/m^2
+            # if 'qi' in self._ScalarState.names:
+            # to_rrtmg_shape(_nhalo, self._ScalarState.get_field('qi'), self.qi_extension, cicewp, self.p_buffer,
+            #                 self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
+            to_rrtmg_shape(_nhalo, self._Micro.get_qi(), self.qi_extension, cicewp, self.p_buffer,
+                            self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
+            cicewp[:,:] = cicewp[:,:] * 1.e3/parameters.G * (plev[:,:-1]-plev[:,1:])
+            cldfr[cicewp > 0.0] = 1.0 
+            to_rrtmg_shape(_nhalo, self._Micro.get_reffi(), np.zeros_like(self.qi_extension), reice, self.p_buffer,
+                            self._Ref._P0[-_nhalo[2]], self.p_extension[0] )
+            
+            reliq *= 1.0e6
+            reice *= 1.0e6
             play *= 0.01
             plev *= 0.01
 
+            for i in range(_ncol):
+                for j in range(_nlay):
+                    if cldfr[i,j] > 0.0:
+                        reliq[i,j] =np.minimum(60.0, np.maximum(reliq[i,j],2.5))
+
             o3vmr = np.asfortranarray(np.repeat(self._profile_o3[np.newaxis,:],_ncol,axis=0))
 
-
-    
+   
             self._lib_lw.c_rrtmg_lw(_ncol, _nlay,  icld, idrv, 
             as_pointer(play), as_pointer(plev), as_pointer(tlay), as_pointer(tlev), 
             as_pointer(tsfc), as_pointer(h2ovmr), as_pointer(o3vmr), as_pointer(co2vmr), 
@@ -351,8 +429,17 @@ class RRTMG:
             as_pointer(uflx_sw), as_pointer(dflx_sw), as_pointer(hr_sw), as_pointer(uflxc_sw),\
             as_pointer(dflxc_sw) , as_pointer(hrc_sw))
 
-          
-        
+            # global number of non-ghost points 
+            npts = self._Grid.n[0] * self._Grid.n[1]
+            self._surf_sw_dn = np.sum(dflx_sw[:,0])/npts
+            self._surf_sw_up = np.sum(uflx_sw[:,0])/npts
+            self._surf_lw_dn = np.sum(dflx_lw[:,0])/npts
+            self._surf_lw_up = np.sum(uflx_lw[:,0])/npts
+
+            self._toa_sw_dn = np.sum(dflx_sw[:,-1])/npts
+            self._toa_sw_up = np.sum(uflx_sw[:,-1])/npts
+            self._toa_lw_dn = np.sum(dflx_lw[:,-1])/npts
+            self._toa_lw_up = np.sum(uflx_lw[:,-1])/npts           
 
             # ds_uflux_lw = self._DiagnosticState.get_field('uflux_lw')
             # ds_dflux_lw = self._DiagnosticState.get_field('dflux_lw')
@@ -382,11 +469,138 @@ class RRTMG:
             ds_hr_sw[:,:,:] *= rho0[np.newaxis,np.newaxis,:] * parameters.CPD /86400.0
           
 
-        # FOR ALL RK STEPS
-        st[:,:,:] += ds_dTdt_rad
+
+        s[:,:,:] += ds_dTdt_rad[:,:,:] * dt
 
 
         return
+    
+    def io_initialize(self, nc_grp):
+        if not self._compute_radiation:
+            return
+        timeseries_grp = nc_grp['timeseries']
+        profiles_grp = nc_grp['profiles']
+
+        v = timeseries_grp.createVariable('surface_sw_down', np.double, dimensions=('time',))
+        v.long_name = 'surface shortwave down'
+        v.standard_name = 'surface_sw_down'
+        v.units = 'W/m^2'
+
+        v = timeseries_grp.createVariable('surface_sw_up', np.double, dimensions=('time',))
+        v.long_name = 'surface shortwave up'
+        v.standard_name = 'surface_sw_up'
+        v.units = 'W/m^2'
+
+    
+        v = timeseries_grp.createVariable('surface_lw_down', np.double, dimensions=('time',))
+        v.long_name = 'surface longwave down'
+        v.standard_name = 'surface_lw_down'
+        v.units = 'W/m^2'
+
+
+        v = timeseries_grp.createVariable('surface_lw_up', np.double, dimensions=('time',))
+        v.long_name = 'surface longwave up'
+        v.standard_name = 'surface_lw_up'
+        v.units = 'W/m^2'
+
+        v = timeseries_grp.createVariable('toa_sw_down', np.double, dimensions=('time',))
+        v.long_name = 'TOA shortwave down'
+        v.standard_name = 'toa_sw_down'
+        v.units = 'W/m^2'
+
+        v = timeseries_grp.createVariable('toa_sw_up', np.double, dimensions=('time',))
+        v.long_name = 'TOA shortwave up'
+        v.standard_name = 'toa_sw_up'
+        v.units = 'W/m^2'
+
+    
+        v = timeseries_grp.createVariable('toa_lw_down', np.double, dimensions=('time',))
+        v.long_name = 'toa longwave down'
+        v.standard_name = 'surface_lw_down'
+        v.units = 'W/m^2'
+
+
+        v = timeseries_grp.createVariable('toa_lw_up', np.double, dimensions=('time',))
+        v.long_name = 'toa longwave up'
+        v.standard_name = 'toa_lw_up'
+        v.units = 'W/m^2'
+
+        #Now add profile of effective radius
+        v = profiles_grp.createVariable('r_eff_cloud', np.double, dimensions=('time', 'z',))
+        v.long_name = 'Effective droplet radius'
+        v.standard_name = 'r_eff_cloud'
+        v.units = 'm'
+
+        return
+
+    def io_update(self, nc_grp):
+        if not self._compute_radiation:
+            return
+        my_rank = MPI.COMM_WORLD.Get_rank()
+        
+        
+        surface_sw_up = UtilitiesParallel.ScalarAllReduce(self._surf_sw_up)
+        surface_sw_down = UtilitiesParallel.ScalarAllReduce(self._surf_sw_dn)
+        surface_lw_up = UtilitiesParallel.ScalarAllReduce(self._surf_lw_up)
+        surface_lw_down = UtilitiesParallel.ScalarAllReduce(self._surf_lw_dn)
+
+        toa_sw_up = UtilitiesParallel.ScalarAllReduce(self._toa_sw_up)
+        toa_sw_down = UtilitiesParallel.ScalarAllReduce(self._toa_sw_dn)
+        toa_lw_up = UtilitiesParallel.ScalarAllReduce(self._toa_lw_up)
+        toa_lw_down = UtilitiesParallel.ScalarAllReduce(self._toa_lw_dn)
+        
+        n_halo = self._Grid.n_halo
+        npts = self._Grid.n[0] * self._Grid.n[1]
+
+        re = self._Micro.get_reffc()
+        re_prof = np.sum(re[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1],n_halo[2]:-n_halo[2]],axis=(0,1))/npts
+        re_prof = UtilitiesParallel.ScalarAllReduce(re_prof)
+        if my_rank == 0:
+            timeseries_grp = nc_grp['timeseries']
+            profiles_grp = nc_grp['profiles']
+            
+            timeseries_grp['surface_sw_up'][-1] = surface_sw_up
+            timeseries_grp['surface_sw_down'][-1] = surface_sw_down 
+            timeseries_grp['surface_lw_up'][-1] = surface_lw_up
+            timeseries_grp['surface_lw_down'][-1] = surface_lw_down
+
+            timeseries_grp['toa_sw_up'][-1] = toa_sw_up
+            timeseries_grp['toa_sw_down'][-1] = toa_sw_down 
+            timeseries_grp['toa_lw_up'][-1] = toa_lw_up 
+            timeseries_grp['toa_lw_down'][-1] = toa_lw_down
+
+            profiles_grp['r_eff_cloud'][-1,:] = re_prof[:]
+        return
+
+    @property
+    def name(self):
+        return self._name 
+
+    
+    def restart(self, data_dict):
+        """ 
+        Here we just do checks for domain decomposition consistency with the namelist file
+        # currently, we require that a restarted simulation have exactly the same domain 
+        # as the simulation from which it is being restarted.
+        """
+
+        key = 'Radiation'
+        for item in self._restart_attributes:
+            self.__dict__[item] = data_dict[key][item]
+
+
+        return
+
+    def dump_restart(self, data_dict):
+
+        # Loop through all attributes storing them
+        key = 'Radiation'
+        data_dict[key] = {}
+        for item in self._restart_attributes:
+            data_dict[key][item] = self.__dict__[item]
+
+        return       
+
 
 # Does this work for plev?
 @numba.njit
@@ -421,7 +635,6 @@ def to_our_shape(nhalo, rrtmg_array, our_array):
     count = 0
     for i in range(nhalo[0],shape[0]-nhalo[0]):
         for j in range(nhalo[1],shape[1]-nhalo[1]):
-        
             for k in range(nhalo[2], shape[2]- nhalo[2]):
                 k_rrtmg = k - nhalo[2]
                 our_array[i,j,k] = rrtmg_array[count, k_rrtmg]

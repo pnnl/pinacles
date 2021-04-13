@@ -250,17 +250,17 @@ INTEGER,PARAMETER :: ISIGN_KO_1 = 0, ISIGN_KO_2 = 0,  ISIGN_3POINT = 1,  &
 
 ! ----Aerosol setup (Jiwen Fan)
 ! Aerosol size distribution (SD)
- INTEGER,PARAMETER :: ILogNormal_modes_Aerosol = 1 !Follow lognormal
+!  INTEGER,PARAMETER :: ILogNormal_modes_Aerosol = 1 !Follow lognormal
 ! distribution
-! integer,parameter :: ILogNormal_modes_Aerosol = 0 ! read in a SD file from observation. Currently the file name for the observed SD is "CCN_size_33bin.dat", whcih is from the July 18 2017 ENA case.  
+integer :: ILogNormal_modes_Aerosol  ! 0 = read in a SD file from observation. Currently the file name for the observed SD is "CCN_size_33bin.dat", whcih is from the July 18 2017 ENA case.  
  integer,parameter :: do_Aero_BC = 0
  integer,parameter :: ICCN_reg = 1
  ! Aerosol composition
- double precision, parameter :: mwaero = 22.9 + 35.5 ! sea salt
+ double precision :: mwaero != 22.9 + 35.5 ! sea salt
  !double precision,parameter :: mwaero = 115.0
- integer,parameter :: ions = 2        	! sea salt
+ integer  :: ions != 2        	! sea salt
  !integer,parameter  :: ions = 3         ! ammonium-sulfate
- double precision,parameter :: RO_SOLUTE = 2.16   	! sea salt
+ double precision :: RO_SOLUTE != 2.16   	! sea salt
  !double precision,parameter ::  RO_SOLUTE = 1.79  	! ammonium-sulfate
 ! for diagnostic CCN for places where sources exist (Added by Jiwen Fan on April
 ! 25, 2020)
@@ -1240,7 +1240,9 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
  ! +----------------------------------+
    SUBROUTINE WARM_HUCMINIT(DT, ccncon1,radius_mean1,sig1, &
     ccncon2,radius_mean2,sig2, &
-    ccncon3,radius_mean3,sig3)
+    ccncon3,radius_mean3,sig3, &
+    CCN_size_bin_dat,&
+    mwaero_in, ions_in, ro_solute_in )
  !	  USE module_domain
  !	  USE module_dm
 
@@ -1250,6 +1252,9 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
     double precision,intent(in) :: ccncon1,radius_mean1,sig1
     double precision,intent(in) :: ccncon2,radius_mean2,sig2
     double precision,intent(in) :: ccncon3,radius_mean3,sig3
+    double precision, intent(in) :: CCN_size_bin_dat(:,:)
+    double precision, intent(in) :: mwaero_in, ro_solute_in
+    integer, intent(in) :: ions_in
 
     LOGICAL , EXTERNAL      :: wrf_dm_on_monitor
     LOGICAL :: opened
@@ -1260,8 +1265,18 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
  	  character(len=256),parameter :: dir_43 = "SBM_input_43", dir_33 = "SBM_input_33"
  	  character(len=256) :: input_dir,Fname
 
- 	 if(nkr == 33) input_dir = trim(dir_33)
- 	 if(nkr == 43) input_dir = trim(dir_43)
+  ! Colleen: reset iLognormal_modes_Aerosol depending on contents of CCN_size_bin_dat
+  if (MAXVAL(CCN_size_bin_dat) .LT. 0.0) then
+    ILogNormal_modes_Aerosol = 1
+  else
+    ILogNormal_modes_Aerosol = 0
+  end if
+  mwaero = mwaero_in
+  ions = ions_in
+  RO_SOLUTE = ro_solute_in
+
+ 	if(nkr == 33) input_dir = trim(dir_33)
+ 	if(nkr == 43) input_dir = trim(dir_43)
 
      !call wrf_message(" FAST SBM: INITIALIZING WRF_HUJISBM ")
     ! call wrf_message(" FAST SBM: ****** WRF_HUJISBM ******* ")
@@ -1683,9 +1698,10 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
 
  ! calculation of the mass(in mg) for categories boundaries :
    ax=2.d0**(1.0)
-
+  !  print*, "CATEGORY BOUNDARIES"
    do i=1,nkr
-   	 xl_mg(i) = xl(i)*1.e3
+   	  xl_mg(i) = xl(i)*1.e3
+      ! print*, i, xl_mg(i)
       xs_mg(i) = xs(i)*1.e3
       xg_mg(i) = xg(i)*1.e3
       xh_mg(i) = xh(i)*1.e3
@@ -1746,11 +1762,18 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
     !CALL wrf_debug(000, errmess)
     !---YZ2020Mar:read aerosol size distribution from observation----@
   ELSE ! read an observed SD with a format of aerosol size (cm), dN (#cm-3) and dNdlogD for 33bins (Jinwe Fan)
-    OPEN(UNIT=hujisbm_unit1,FILE="CCN_size_33bin.dat",FORM="FORMATTED",STATUS="OLD",ERR=2070)
+    ! OPEN(UNIT=hujisbm_unit1,FILE="CCN_size_33bin.dat",FORM="FORMATTED",STATUS="OLD",ERR=2070)
+    ! do KR=1,NKR
+    !    READ(hujisbm_unit1,*) RCCN(KR),CCNR(KR),FCCNR_OBS(KR) !---aerosol size (cm), dN (# cm-3) and dNdlogD for 33bins
+    ! end do
+    ! CLOSE(hujisbm_unit1)
+    ! Check the size bin data that was input (via data file read on the python side)
     do KR=1,NKR
-       READ(hujisbm_unit1,*) RCCN(KR),CCNR(KR),FCCNR_OBS(KR) !---aerosol size (cm), dN (# cm-3) and dNdlogD for 33bins
+      RCCN(KR) = CCN_size_bin_dat(KR,1)
+      CCNR(KR) = CCN_size_bin_dat(KR,2)
+      FCCNR_OBS(KR) = CCN_size_bin_dat(KR,3)
+      ! print *, RCCN(KR),CCNR(KR),FCCNR_OBS(KR) !---aerosol size (cm), dN (# cm-3) and dNdlogD for 33bins
     end do
-    CLOSE(hujisbm_unit1)
     !call wrf_message("FAST_SBM_INIT: succesfull reading aerosol SD from observation")
   ENDIF
  ! +-------------------------------------------------------------+

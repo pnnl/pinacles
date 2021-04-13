@@ -120,7 +120,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Plumes = Plumes.Plumes(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.TimeSteppingController)
 
         # Instantiate radiation
-        self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.TimeSteppingController)       
+        self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.Micro, self.TimeSteppingController)       
 
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
@@ -183,6 +183,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.StatsIO.add_class(self.Micro)
         self.StatsIO.add_class(self.DiagTurbulence)
         self.StatsIO.add_class(self.DiagClouds)
+        self.StatsIO.add_class(self.Rad)
 
         # Now iniitalzie the IO field
         self.StatsIO.initialize()
@@ -275,7 +276,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Plumes = Plumes.Plumes(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.TimeSteppingController)
 
         # Instantiate radiation
-        self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.TimeSteppingController)       
+        self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.Micro, self.TimeSteppingController)       
 
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
@@ -393,7 +394,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 #Update the forcing
                 self.Force.update()
-                self.Rad.update(n)
+                
 
                 #Update Kinematics and SGS model
                 self.Kine.update()
@@ -429,6 +430,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     self.Thermo.update(apply_buoyancy=False)
                     #We call the microphysics update at the end of the RK steps.
                     self.Micro.update()
+                    self.Rad.update()
                     self.ScalarState.boundary_exchange()
                     self.ScalarState.update_all_bcs()
 

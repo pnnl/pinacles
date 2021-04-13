@@ -10,7 +10,7 @@ from pinacles.WRFUtil import to_wrf_order_halo, to_wrf_order_4d_halo, to_our_ord
 module_mp_fast_sbm = module_mp_fast_sbm_warm
 class MicroSBM(MicrophysicsBase):
 
-    def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController):
+    def __init__(self,namelist, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController):
         MicrophysicsBase.__init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
 
 
@@ -130,6 +130,8 @@ class MicroSBM(MicrophysicsBase):
         self._itimestep = 1
         self._call_count = 0
 
+        # Unless we find a valid aerosol data file, assume we want to use lognormal distributions
+       
         ccncon1 = 90.0
         radius_mean1 = 0.03e-4
         sig1 = 1.28
@@ -141,13 +143,69 @@ class MicroSBM(MicrophysicsBase):
         ccncon3 = 0.0
         radius_mean3 = 0.31000e-04
         sig3 = 2.70000
+        
+        # Determine if an analytical aerosol size distribution is to be used, or a data file
+        try:
+            aero_in = namelist['microphysics']['aero_sbm']
+            ccncon1 = aero_in['ccncon'][0]
+            sig1 = aero_in['sig'][0]
+            radius_mean1 = aero_in['rm'][0]
+
+            ccncon2 = aero_in['ccncon'][1]
+            sig2 = aero_in['sig'][1]
+            radius_mean2 = aero_in['rm'][1]
+
+            ccncon3 = aero_in['ccncon'][2]
+            sig3 = aero_in['sig'][2]
+            radius_mean3 = aero_in['rm'][2]
+        except:
+            UtilitiesParallel.print_root(' Analytical aerosol distribution parameters are not defined in namelist')
+            UtilitiesParallel.print_root(' Default values will be used unless an aerosol file has been defined')
+
+        try:
+            aerosol_species = namelist['microphysics']['aerosol_species']
+            #options are sea_salt, ammonium_bisulfate
+            if not aerosol_species in ['sea_salt', 'ammonium_bisulfate']:
+                aerosol_species = 'sea_salt'
+                UtilitiesParallel.print_root('Warning: Unknown aerosol species, defaulting to sea_salt')
+        except:
+            aerosol_species = 'sea_salt'
+            UtilitiesParallel.print_root(' No aerosol species specified, defaulting to sea_salt.')
+        
+        if aerosol_species == 'sea_salt':
+            mwaero_in = 22.9 + 35.5
+            ions_in = 2
+            ro_solute_in = 2.16
+        elif aerosol_species == 'ammonium_bisulfate':
+            mwaero_in = 115.0
+            ions_in = 2
+            ro_solute_in = 1.79
+             
+
+        # Read in the aerosol file here which previously was read in the fortran code
+        # and assumed to be named 'CCN_size_33bin.dat'
+        ccn_size_bin_dat = np.ones((33,3),dtype=np.double,order='F') * -9999
+        try:
+            aerosol_file = namelist['microphysics']['aerosol_file']
+            UtilitiesParallel.print_root('Trying to read a specified aerosol file')
+
+            if MPI.COMM_WORLD.Get_rank() == 0:
+                ccn_size_bin_dat = np.asfortranarray(np.loadtxt(aerosol_file))
+                print(np.shape(ccn_size_bin_dat))
+        
+            ccn_size_bin_dat =  MPI.COMM_WORLD.bcast(ccn_size_bin_dat)
+            
+        except:
+            UtilitiesParallel.print_root(' Did not read in aerosol data, will use lognormal distributions')
 
         self._restart_attributes = ['_th_old', '_qv_old', '_RAINNC']
 
         module_mp_fast_sbm.module_mp_warm_sbm.warm_hucminit(5.0,
         ccncon1, radius_mean1, sig1,
         ccncon2, radius_mean2, sig2,
-        ccncon3, radius_mean3, sig3)
+        ccncon3, radius_mean3, sig3,
+        ccn_size_bin_dat,
+        mwaero_in, ions_in, ro_solute_in)
 
         return
 
@@ -421,6 +479,9 @@ class MicroSBM(MicrophysicsBase):
         return
     def get_qc(self):
         return self._ScalarState.get_field('qc') +  self._ScalarState.get_field('qr')  #np.sum(self._ScalarState._state_array.array[self._qc_start:self._qc_end,:,:,:], axis=0)
+
+    def get_qcloud(self):
+        return self._ScalarState.get_field('qc')
 
     def io_initialize(self, nc_grp):
 
