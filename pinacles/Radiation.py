@@ -116,7 +116,7 @@ class RRTMG:
         
         self._adir =  albedo
         self._adif = albedo
-        # print(self._emis, self._adir, self._adif)
+      
         data.close()
 
         # CL WRF values based on 2005 values from 2007 IPCC report
@@ -129,13 +129,9 @@ class RRTMG:
         self._vmr_cfc22 = 0.169e-9
         self._vmr_ccl4  = 0.093e-9
 
-        # These needs to be improved
-        self._vmr_o3 = 70.0e-9
-        
-        # self._emis = 1.0
-        
-        # self._adir = 0.2
-        # self._adif = 0.2
+        # Ozone will be set based on the data file provided with RRTMG
+
+  
         self._scon = 1365.0
         self._adjes = 1.0
         self.dyofyr = 0
@@ -145,6 +141,7 @@ class RRTMG:
         self.time_elapsed = parameters.LARGE   
         self._profile_o3 = None
         
+        # these are for setting up the extension of profiles above LES domain top
         self.p_buffer = None
         self.p_extension = None
         self.t_extension = None
@@ -152,7 +149,7 @@ class RRTMG:
         self.ql_extension = None
         self.qi_extension = None
 
-            
+        # Attributes to store surface and toa flux information for output    
         self._surf_sw_up = 0.0
         self._surf_sw_dn = 0.0
         self._surf_lw_up = 0.0
@@ -210,7 +207,7 @@ class RRTMG:
         self.ql_extension = ql_data[p_data<p_buffer[-1]]
         self.qi_extension = qi_data[p_data<p_buffer[-1]]
 
-       
+ 
 
         # Set plev
         _nhalo = self._Grid.n_halo
@@ -227,6 +224,9 @@ class RRTMG:
 
         self._profile_o3 = interpolate_trace_gas(lw_pressure,lw_absorber[:,index_o3],plev_col)
 
+        # Highly recommended to plot some checks on the extension profiles 
+        # when setting up a new testbeds case 
+        # or changing the vertical grid used for a testbeds case
 
         # plt.figure(1)
         # plt.plot(plev_col[:-1]-plev_col[1:],'o')
@@ -245,7 +245,7 @@ class RRTMG:
         if not self._compute_radiation:
             return
 
-        # get the pointers we need in any case  
+        # get the pointers we need to update tendencies, whether or not it is time to update the fluxes
         ds_dTdt_rad = self._DiagnosticState.get_field('dTdt_rad')
         s = self._ScalarState.get_field('s')
   
@@ -254,7 +254,7 @@ class RRTMG:
         
         if self.time_elapsed > self._radiation_frequency:
             self.time_elapsed = 0.0
-            # THis should get tested
+            # TODO: testing of this code
             self.hourz = self._hourz_init + self._TimeSteppingController.time/3600.0
             self.dyofyr = self._dyofyr_init + np.floor_divide(self._TimeSteppingController.time,86400.0)
             if self.hourz > 24.0:
