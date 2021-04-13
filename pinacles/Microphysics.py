@@ -71,3 +71,9 @@ class MicrophysicsBase:
 
     def get_reffi(self):
         return np.zeros((self._Grid._ngrid_local), dtype=np.double)
+    def restart(self, data_dict):
+        return
+    
+    def dump_restart(self, data_dict):
+        return
+
