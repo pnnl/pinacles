@@ -401,7 +401,8 @@ class RRTMG:
                 for j in range(_nlay):
                     if cldfr[i,j] > 0.0:
                         reliq[i,j] =np.minimum(60.0, np.maximum(reliq[i,j],2.5))
-
+            
+         
             o3vmr = np.asfortranarray(np.repeat(self._profile_o3[np.newaxis,:],_ncol,axis=0))
 
    

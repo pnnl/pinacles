@@ -610,7 +610,7 @@ class MicroSBM(MicrophysicsBase):
         key = 'SBM'
         
         for att in self._restart_attributes:
-            assert self.__dict__[att] == data_dict[key][att]
+            self.__dict__[att] = data_dict[key][att]
 
         return
     
