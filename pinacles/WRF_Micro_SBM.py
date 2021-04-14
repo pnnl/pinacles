@@ -200,7 +200,7 @@ class MicroSBM(MicrophysicsBase):
         except:
             UtilitiesParallel.print_root(' Did not read in aerosol data, will use lognormal distributions')
 
-        self._restart_attributes = ['_th_old', '_qv_old', '_RAINNC']
+        self._restart_attributes = ['_th_old', '_qv_old', '_RAINNC', '_itimestep']
 
         module_mp_fast_sbm.module_mp_warm_sbm.warm_hucminit(5.0,
         ccncon1, radius_mean1, sig1,
@@ -261,7 +261,7 @@ class MicroSBM(MicrophysicsBase):
 
 
     def update(self):
-
+        print('SBM sees timestep as ', self._itimestep)
         #Get grid information
         nhalo = self._Grid.n_halo
 
