@@ -402,10 +402,8 @@ class RRTMG:
                     if cldfr[i,j] > 0.0:
                         reliq[i,j] =np.minimum(60.0, np.maximum(reliq[i,j],2.5))
             
-         
             o3vmr = np.asfortranarray(np.repeat(self._profile_o3[np.newaxis,:],_ncol,axis=0))
 
-   
             self._lib_lw.c_rrtmg_lw(_ncol, _nlay,  icld, idrv, 
             as_pointer(play), as_pointer(plev), as_pointer(tlay), as_pointer(tlev), 
             as_pointer(tsfc), as_pointer(h2ovmr), as_pointer(o3vmr), as_pointer(co2vmr), 
