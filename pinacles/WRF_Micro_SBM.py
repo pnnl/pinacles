@@ -261,7 +261,6 @@ class MicroSBM(MicrophysicsBase):
 
 
     def update(self):
-        print('SBM sees timestep as ', self._itimestep)
         #Get grid information
         nhalo = self._Grid.n_halo
 
