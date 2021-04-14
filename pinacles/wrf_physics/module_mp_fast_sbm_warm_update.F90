@@ -302,7 +302,8 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
   &                      num_sbm_output_container,sbm_output_container, &  
   &                      difful_tend,   &  !liquid mass change rate due to droplet diffusional growth (kg/kg/s)
   &                      diffur_tend,   &  !rain mass change rate due to droplet diffusional growth (kg/kg/s)
-  &                      tempdiffl      &  !latent heat rate due to droplet diffusional growth (K/s)                        
+  &                      tempdiffl,     &  !latent heat rate due to droplet diffusional growth (K/s)   
+  &                      EFFR         &  !effective radius of cloud droplets                       
                                         )
 
   IMPLICIT NONE
@@ -335,7 +336,7 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
  						  qnc, 		      &
  						  qnr, 		      &
               qna,qna_nucl, &
-              MA,LH_rate,CE_rate,CldNucl_rate,n_reg_ccn
+              MA,LH_rate,CE_rate,CldNucl_rate,n_reg_ccn, EFFR
 
        double precision , DIMENSION( ims:ime , jms:jme ) , INTENT(IN)   :: XLAND
        LOGICAL, OPTIONAL, INTENT(IN) :: diagflag
@@ -491,6 +492,7 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
 !---YZ2020:Arrays for process rate calculation---------------------@
    double precision totlbf_diffu, totlaf_diffu, totrbf_diffu, totraf_diffu, del_difful_sum, del_diffur_sum
 !------------------------------------------------------------------@
+  double precision :: D_Mom_2, D_Mom_3
   XS_d = XS
 
   if (itimestep == 1)then
@@ -1070,6 +1072,8 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
           QNR(I,K,J) = 0.0
           QNA(I,K,J) = 0.0
           QNA_nucl(I,K,J) = 0.0
+          D_Mom_3 = 0.0
+          D_Mom_2 = 0.0
 
           tt= th_phy(i,k,j)*pi_phy(i,k,j)
 
@@ -1078,6 +1082,9 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
           DO KR = p_ff1i01,p_ff1i33
             KRR=KRR+1
             IF (KRR < KRDROP)THEN
+              D_Mom_3 = D_Mom_3 + (DROPRADII(KRR)**3.0)*chem_new(i,k,j,KR)*XL(KRR)
+              D_Mom_2 = D_Mom_2 + (DROPRADII(KRR)**2.0)*chem_new(i,k,j,KR)*XL(KRR)
+
               QC(I,K,J) = QC(I,K,J) &
               + (1./RHOCGS(I,K,J))*COL*chem_new(I,K,J,KR)*XL(KRR)*XL(KRR)*3
               QNC(I,K,J) = QNC(I,K,J) &
@@ -1089,6 +1096,11 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
               + COL*chem_new(I,K,J,KR)*XL(KRR)*3.0/rhocgs(I,K,J)*1000.0 ! #/kg
             END IF
           END DO
+          IF(QC(I,K,J) > 1.E-6 .and. D_Mom_2 > 0.0) THEN
+             EFFR(I,K,J) = (D_Mom_3/D_Mom_2)*1.0e4 * 1e-6  ! cm->microns, then microns -> m for PINACLES
+          ELSE
+            EFFR(I,K,J) = 10.0e-6
+          END IF
 
           ! ... Aerosols output 
           KRR = 0

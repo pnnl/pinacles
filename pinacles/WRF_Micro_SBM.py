@@ -39,7 +39,7 @@ class MicroSBM(MicrophysicsBase):
 
         #Add new diag fields
         self._io_fields = ['MA', 'LH_rate', 'CE_rate', 'CldNucl_rate', 'difful_tend', 'diffur_tend',
-            'tempdiffl', 'saturation', 'n_reg_ccn']
+            'tempdiffl', 'saturation', 'n_reg_ccn', 'EFFR']
 
         long_names = {'MA': '', 
                       'LH_rate':'Latent heat rate',
@@ -49,7 +49,8 @@ class MicroSBM(MicrophysicsBase):
                       'diffur_tend':'rain mass change rate due to droplet diffusional growth',
                       'tempdiffl':'latent heat rate due to droplet diffusional growth',
                       'saturation':'Saturaiton Ratio',
-                      'n_reg_ccn':'Aerosol Regeneration Rate'}
+                      'n_reg_ccn':'Aerosol Regeneration Rate',
+                      'EFFR': 'cloud droplet effective radius'}
 
         units = {'MA': '',
                       'LH_rate':'K s^{-1}',
@@ -59,7 +60,8 @@ class MicroSBM(MicrophysicsBase):
                       'diffur_tend':'kg kg^{-1} s^{-1}',
                       'tempdiffl':'K s^{-1}',
                       'saturation':'',
-                      'n_reg_ccn':''}
+                      'n_reg_ccn':'',
+                      'EFFR': 'm'}
 
         for var in self._io_fields:
             self._DiagnosticState.add_variable(var, latex_name=var, long_name=long_names[var])
@@ -350,6 +352,7 @@ class MicroSBM(MicrophysicsBase):
 
 
         wrf_vars['LIQUID_SEDIMENTATION'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
+        wrf_vars['EFFR'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
 
         #Get grid dimensions
         ids = 1; jds = 1; kds = 1
@@ -425,6 +428,7 @@ class MicroSBM(MicrophysicsBase):
                                                       wrf_vars['difful_tend'],
                                                       wrf_vars['diffur_tend'],
                                                       wrf_vars['tempdiffl'],
+                                                      wrf_vars['EFFR'],
                                                       diagflag= wrf_vars['diagflag'],
                                                       rainnc=wrf_vars['RAINNC'],
                                                       rainncv=wrf_vars['RAINNCV'],
@@ -598,12 +602,15 @@ class MicroSBM(MicrophysicsBase):
 
             profiles_grp['CF'][-1,:] = cf_prof[n_halo[2]:-n_halo[2]]
             profiles_grp['RF'][-1,:] = rf_prof[n_halo[2]:-n_halo[2]]
-            
+
+    def get_reffc(self):
+        return self._DiagnosticState.get_field('EFFR')
+
     def restart(self, data_dict):
         key = 'SBM'
         
         for att in self._restart_attributes:
-            assert self.__dict__[att] == data_dict[key][att]
+            self.__dict__[att] = data_dict[key][att]
 
         return
     
