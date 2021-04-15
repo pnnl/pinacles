@@ -23,7 +23,7 @@ class PressureSolver:
         div = div.redistribute(0)
 
         try:
-            self._fft =  fft.PFFT(self._Grid.subcomms, darray=div, axes=(1,0), transforms={}, backend='mkl_fft')
+            self._fft =  fft.PFFT(self._Grid.subcomms, darray=div, axes=(1,0), transforms={}, backend='numpy')
         except:
             self._fft =  fft.PFFT(self._Grid.subcomms, darray=div, axes=(1,0), transforms={})
 
