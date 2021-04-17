@@ -370,11 +370,15 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         micro_scheme = 'base'
     try:
         sbm_init_type = namelist['testbed']['sbm_init_type']
-        # options are 'spread_evenly', 'all_vapor', 
-        if sbm_init_type not in ['spread_evenly', 'all_vapor']:
+        # options are 'assume_distribution', 'all_vapor', 
+        if sbm_init_type not in ['assume_distribution', 'all_vapor']:
             UtilitiesParallel.print_root(' Warning: sbm_init_type is unknown. Defaulting to all_vapor')
     except:
         sbm_init_type = 'all_vapor'
+    try:
+        sbm_init_nc = namelist['testbed']['sbm_init_nc']
+    except:
+        sbm_init_nc = 55.0e6
 
     data = nc.Dataset(file, 'r')
     try:
@@ -431,43 +435,24 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     if init_qc:
         init_var_from_sounding(raw_clwc, init_z, zl, qc)
         shape = qc.shape
-        if micro_scheme == 'sbm' and sbm_init_type == 'spread_evenly':
-            UtilitiesParallel.print_root('\t \t Initializing cloud liquid to bins below KRDROP')
-            nbins = 14.0
-            ff1i1= ScalarState.get_field('ff1i1')
-            ff1i2= ScalarState.get_field('ff1i2')
-            ff1i3= ScalarState.get_field('ff1i3')
-            ff1i4= ScalarState.get_field('ff1i4')
-            ff1i5= ScalarState.get_field('ff1i5')
-            ff1i6= ScalarState.get_field('ff1i6')
-            ff1i7= ScalarState.get_field('ff1i7')
-            ff1i8= ScalarState.get_field('ff1i8')
-            ff1i9= ScalarState.get_field('ff1i9')
-            ff1i10= ScalarState.get_field('ff1i10')
-            ff1i11= ScalarState.get_field('ff1i11')
-            ff1i12= ScalarState.get_field('ff1i12')
-            ff1i13= ScalarState.get_field('ff1i13')
-            ff1i14= ScalarState.get_field('ff1i14')
-            # ff1i15= ScalarState.get_field('ff1i15')
+        if micro_scheme == 'sbm' and sbm_init_type == 'assume_distribution':
+            UtilitiesParallel.print_root('\t \t Initializing cloud liquid to bins with assumptions')
+            nbins = 33
+            sig1 = 1.2
+            
+            # ff1i1= ScalarState.get_field('ff1i1')
+         
             for i in range(shape[0]):
                 for j in range(shape[1]):
                     for k in range(shape[2]):
+                        if qc[i,j,k] > 0.0:
+                            f, xl  = get_lognormal_dist(nbins, qc[i,j,k], sbm_init_nc, sig1)
+                        
+                            for ibin in np.arange(nbins):
+                                ff = ScalarState.get_field('ff1i'+str(np.int(ibin+1)))
+                                ff[i,j,k] = f[ibin] * 1e6 * xl[ibin]/Ref.rho0[k]
                         qc[i,j,k] = qc[i,j,k]/Ref.rho0[k]
-                        # ff1i15[i,j,k] = qc[i,j,k]/nbins
-                        ff1i14[i,j,k] = qc[i,j,k]/nbins
-                        ff1i13[i,j,k] = qc[i,j,k]/nbins
-                        ff1i12[i,j,k] = qc[i,j,k]/nbins
-                        ff1i11[i,j,k] = qc[i,j,k]/nbins
-                        ff1i10[i,j,k] = qc[i,j,k]/nbins
-                        ff1i9[i,j,k] = qc[i,j,k] /nbins
-                        ff1i8[i,j,k] = qc[i,j,k] /nbins
-                        ff1i7[i,j,k] = qc[i,j,k] /nbins
-                        ff1i6[i,j,k] = qc[i,j,k] /nbins
-                        ff1i5[i,j,k] = qc[i,j,k] /nbins
-                        ff1i4[i,j,k] = qc[i,j,k] /nbins
-                        ff1i3[i,j,k] = qc[i,j,k] /nbins
-                        ff1i2[i,j,k] = qc[i,j,k] /nbins
-                        ff1i1[i,j,k] = qc[i,j,k] /nbins
+                        
 
             
                
@@ -529,8 +514,30 @@ def init_var_from_sounding(profile_data, profile_z,  grid_z, var3d):
     var3d += grid_profile[np.newaxis, np.newaxis, :]
     return 
     
-
-    # Integrate the reference profile
+def get_lognormal_dist(nbins,qc, nc_m3, sig1):
+    xl0 = 3.35e-8 * 1e-6
+    xl = np.zeros(nbins,dtype=np.double)
+    xl[0] = xl0
+    for i in np.arange(1,nbins):
+        xl[i] = 2 * xl[i-1]
+    rl  = np.zeros(nbins)
+    rhow=1000.
+    for i in np.arange(nbins):
+        rl[i] = (0.75 * xl[i]/np.pi/rhow)**(1./3.)
+    rl_cm = rl * 100.0
+    ccncon1 = nc_m3 * 1e-6
+    mass_mean_kg = qc/(nc_m3)
+    radius_mean_m = (0.75 * mass_mean_kg/np.pi/rhow)**(1./3.)
+    radius_mean1 = radius_mean_m  * 100*.95
+    f = np.zeros(nbins)
+    arg11 = ccncon1/(np.sqrt(2.0*np.pi)*np.log(sig1))
+    dNbydlogR_norm1 = 0.0
+    for kr in np.arange(nbins-1,-1,-1):
+        arg12 = (np.log(rl_cm[kr]/radius_mean1))**2.0
+        arg13 = 2.0*((np.log(sig1))**2.0);
+        dNbydlogR_norm1 = arg11*np.exp(-arg12/arg13)*(np.log(2.0)/3.0)
+        f[kr] = dNbydlogR_norm1
+    return f, xl
 
 
 def factory(namelist):
