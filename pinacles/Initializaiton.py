@@ -441,7 +441,9 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
             sig1 = 1.2
             
             # ff1i1= ScalarState.get_field('ff1i1')
-         
+            ff_list = []
+            for ibin in range(nbins):
+                ff_list.append(ScalarState.get_field('ff1i'+str(np.int(ibin+1))))
             for i in range(shape[0]):
                 for j in range(shape[1]):
                     for k in range(shape[2]):
@@ -450,13 +452,13 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                             
                             f, xl  = get_lognormal_dist(nbins, qc[i,j,k], sbm_init_nc, sig1)
                             
-                            for ibin in np.arange(nbins):
-                                ff = ScalarState.get_field('ff1i'+str(np.int(ibin+1)))
-                                ff[i,j,k] = f[ibin] * 1e6 * xl[ibin]/Ref.rho0[k]
-                                qc_sum += f[ibin] * 1e6 * xl[ibin]/Ref.rho0[k]
+                            for ibin in range(nbins):
+    
+                                ff_list[ibin][i,j,k] = f[ibin] * 1e6 * xl[ibin]/Ref.rho0[k]
+                                qc_sum += ff_list[ibin][i,j,k]
                         # qc[i,j,k] = qc[i,j,k]/Ref.rho0[k]
                         qc[i,j,k] = qc_sum
-                        
+            
 
             
                
