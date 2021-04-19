@@ -458,6 +458,11 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                                 qc_sum += ff_list[ibin][i,j,k]
                         # qc[i,j,k] = qc[i,j,k]/Ref.rho0[k]
                         qc[i,j,k] = qc_sum
+            UtilitiesParallel.print_root('Max on Rank of Bins')
+            for ff in ff_list:
+                max_on_rank = np.amax(ff)
+                UtilitiesParallel.print_root(str(max_on_rank))
+               
             
 
             
