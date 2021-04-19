@@ -445,8 +445,9 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
             for i in range(shape[0]):
                 for j in range(shape[1]):
                     for k in range(shape[2]):
+                        qc_sum = 0.0
                         if qc[i,j,k] > 0.0:
-                            qc_sum = 0.0
+                            
                             f, xl  = get_lognormal_dist(nbins, qc[i,j,k], sbm_init_nc, sig1)
                             
                             for ibin in np.arange(nbins):
