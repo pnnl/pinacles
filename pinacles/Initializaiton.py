@@ -452,7 +452,7 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                             for ibin in np.arange(nbins):
                                 ff = ScalarState.get_field('ff1i'+str(np.int(ibin+1)))
                                 ff[i,j,k] = f[ibin] * 1e6 * xl[ibin]/Ref.rho0[k]
-                                qc_sum + = f[ibin] * 1e6 * xl[ibin]/Ref.rho0[k]
+                                qc_sum += f[ibin] * 1e6 * xl[ibin]/Ref.rho0[k]
                         # qc[i,j,k] = qc[i,j,k]/Ref.rho0[k]
                         qc[i,j,k] = qc_sum
                         
