@@ -446,12 +446,15 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                 for j in range(shape[1]):
                     for k in range(shape[2]):
                         if qc[i,j,k] > 0.0:
+                            qc_sum = 0.0
                             f, xl  = get_lognormal_dist(nbins, qc[i,j,k], sbm_init_nc, sig1)
-                        
+                            
                             for ibin in np.arange(nbins):
                                 ff = ScalarState.get_field('ff1i'+str(np.int(ibin+1)))
                                 ff[i,j,k] = f[ibin] * 1e6 * xl[ibin]/Ref.rho0[k]
-                        qc[i,j,k] = qc[i,j,k]/Ref.rho0[k]
+                                qc_sum + = f[ibin] * 1e6 * xl[ibin]/Ref.rho0[k]
+                        # qc[i,j,k] = qc[i,j,k]/Ref.rho0[k]
+                        qc[i,j,k] = qc_sum
                         
 
             
