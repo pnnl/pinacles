@@ -1041,8 +1041,8 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
           do kr=p_ff1i01,p_ff1i33
             krr=krr+1
             ffx_z(k,krr)=chem_new(i,k,j,kr)/rhocgs(i,k,j)
-            tot_liq_bf(k) = 3.0*col*sum(ffx_z(k, 1:kr) * xl(1:kr) * xl(1:kr))
           end do
+          tot_liq_bf(k) = 3.0*col*sum(ffx_z(k, :) * xl(:) * xl(:))
         end do
         
         call FALFLUXHUCM_Z(ffx_z,VRX,RHOCGS_z,PCGS_z,ZCGS_z,DT,kts,kte,nkr)
@@ -1053,8 +1053,8 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
           do kr=p_ff1i01,p_ff1i33
             krr=krr+1
             chem_new(i,k,j,kr)=ffx_z(k,krr)*rhocgs(i,k,j)
-            tot_liq_af(k) = 3.0*col*sum(ffx_z(k, 1:kr) * xl(1:kr) * xl(1:kr))
           end do
+          tot_liq_af(k) = 3.0*col*sum(ffx_z(k, :) * xl(:) * xl(:))
         end do
         LIQUID_SEDIMENTATION(i,:,j) = tot_liq_af - tot_liq_bf
       end do
