@@ -230,16 +230,24 @@ class ModelState:
 
         #local_data = self.get_field(name)
         #local_data[:,:,:] = np.arange(local_data.shape[1])[np.newaxis,:,np.newaxis]
-
-        local_data = self.get_field(name)[indx_range[0]:indx_range[1], nh[1]:-nh[1],nh[2]:-nh[2]]
+        #print('Local Start; Local End', ls, le, indx_range); import sys; sys.exit()
+        local_data = self.get_field(name)#indx_range[0]:indx_range[1], nh[1]:-nh[1],nh[2]:-nh[2]]
         local_copy_of_global = np.zeros((indx_range[1]-indx_range[0], n[1], n[2]), dtype=np.double)
 
-        local_copy_of_global[:,ls[1]:le[1], :] = local_data
-
+        si = 0
+        for i in range(indx_range[0], indx_range[1]):
+            if i >= ls[0] and i <= le[0]:
+                print(i, si, ls)
+                local_copy_of_global[si,ls[1]:le[1],:] = local_data[i-ls[0],nh[1]:-nh[1],nh[2]:-nh[2]]
+            si += 1
+        #try:
+        #    local_copy_of_global[:,ls[1]:le[1], :] = local_data
+        #except:
+        #    pass 
         recv_buf = np.empty_like(local_copy_of_global)
         MPI.COMM_WORLD.Allreduce(local_copy_of_global, recv_buf, op=MPI.SUM)
         
-        
+        #print(indx_range, name, recv_buf, np.shape(local_data))
 
         return recv_buf
 
@@ -257,10 +265,20 @@ class ModelState:
         #local_data[:,:,:] = np.arange(local_data.shape[1])[np.newaxis,:,np.newaxis]
 
 
-        local_data = self.get_field(name)[nh[0]:-nh[0], indx_range[0]:indx_range[1], nh[2]:-nh[2]]
+        local_data = self.get_field(name)#[nh[0]:-nh[0], indx_range[0]:indx_range[1], nh[2]:-nh[2]]
         local_copy_of_global = np.zeros((n[0], indx_range[1]-indx_range[0], n[2]), dtype=np.double)
 
-        local_copy_of_global[ls[0]:le[0], :, :] = local_data
+        si = 0
+        for i in range(indx_range[0], indx_range[1]):
+            if i >= ls[1] and i <= le[1]:
+                print(i, si, ls)
+                local_copy_of_global[ls[0]:le[0],si,:] = local_data[nh[0]:-nh[0],i-ls[1],nh[2]:-nh[2]]
+            si += 1
+
+        #try:
+        #    local_copy_of_global[ls[0]:le[0], :, :] = local_data
+        #except:
+        #    pass
 
         recv_buf = np.empty_like(local_copy_of_global)
         MPI.COMM_WORLD.Allreduce(local_copy_of_global, recv_buf, op=MPI.SUM)

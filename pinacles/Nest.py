@@ -52,7 +52,7 @@ class Nest:
 
     @staticmethod
     @numba.njit()
-    def relax_y_parallel(n_halo, factor,  indx_range, tau_i, parent_var, var, var_tend):
+    def relax_y_parallel(n_halo, ls, le, n, factor,  indx_range, tau_i, parent_var, var, var_tend):
 
         # The index range applies to y because we are relaxing an x boundary
 
@@ -63,17 +63,27 @@ class Nest:
         y_indx_range =  (n_halo[1], var_shape[1]- n_halo[1])#(2*n_halo[1], var_shape[1] - 2*n_halo[1]) #(n_halo[1] + factor, var_shape[1] - n_halo[1]-factor) #(indx_range[0], indx_range[0] + (indx_range[1]-indx_range[0])*factor)
         z_indx_range = (n_halo[2], var_shape[2] - n_halo[2])   #Loop over the full range of z w/o halos
         
+       # print(ls, le, n)
 
         # Loop over only the subset of points that needs to be updated.
         for i in range(x_indx_range[0],  x_indx_range[1]):
             i_parent = (i- x_indx_range[0])//factor 
             for j in range(y_indx_range[0], y_indx_range[1]):
-                if j >= 2*n_halo[1] and j  < var_shape[1]- 2*n_halo[1]:
+                if (j >= 2*n_halo[1] and j  < var_shape[1]- 2*n_halo[1]):
                     j_parent = (j-y_indx_range[0]) //factor
                     for k in range(z_indx_range[0],  z_indx_range[1]):
                         k_parent = k - z_indx_range[0]
                         var_tend[i,j,k] += tau_i * (1.0/(np.abs(x_indx_range[0]-i) + 1)) * (parent_var[i_parent,j_parent,k_parent] - var[i,j,k])
-
+                elif j <  2*n_halo[1] and ls[1] != 0:
+                    j_parent = (j-y_indx_range[0]) //factor
+                    for k in range(z_indx_range[0],  z_indx_range[1]):
+                        k_parent = k - z_indx_range[0]
+                        var_tend[i,j,k] += tau_i * (1.0/(np.abs(x_indx_range[0]-i) + 1)) * (parent_var[i_parent,j_parent,k_parent] - var[i,j,k])
+                elif j >= var_shape[1]- 2*n_halo[1] and le[1] != n[1]:
+                     j_parent = (j-y_indx_range[0]) //factor
+                     for k in range(z_indx_range[0],  z_indx_range[1]):
+                        k_parent = k - z_indx_range[0]
+                        var_tend[i,j,k] += tau_i * (1.0/(np.abs(x_indx_range[0]-i) + 1)) * (parent_var[i_parent,j_parent,k_parent] - var[i,j,k])
         return
 
 
@@ -85,6 +95,7 @@ class Nest:
 
         local_start = self._Grid._local_start
         local_end = self._Grid._local_end
+
 
         for v in self._ScalarState._dofs:
             
@@ -99,6 +110,7 @@ class Nest:
             local_part_of_parent =  ((local_start[0])//self.factor + self.root_point[0],
                 (local_end[0] )//self.factor + self.root_point[0])
            
+
             self.x_left_bdys[v] = ParentNest.ScalarState.get_slab_y(v,
                                                                 slab_range 
                                                                 )[local_part_of_parent[0]:local_part_of_parent[1],:,:]
@@ -234,7 +246,9 @@ class Nest:
         partent_pts = self.partent_pts
 
         root_point = self.root_point
-
+        ls = self._Grid.local_start
+        le = self._Grid.local_end
+        n = self._Grid.n
 
         parent_nhalo = ParentNest.ModelGrid.n_halo
         n_halo = self._Grid.n_halo
@@ -248,54 +262,71 @@ class Nest:
 
         tau_i = 1.0/self._TimeSteppingController.dt
 
-        for v in ['s']:
+        nest_y_left_bdy = np.amin(self._Grid._global_axes_edge[1]) ==  np.amin(self._Grid._local_axes_edge[1])
+        nest_y_right_bdy = np.max(self._Grid._global_axes_edge[1]) ==  np.max(self._Grid._local_axes_edge[1])
+        nest_x_left_bdy = np.amin(self._Grid._global_axes_edge[0]) ==  np.amin(self._Grid._local_axes_edge[0])
+        nest_x_right_bdy = np.max(self._Grid._global_axes_edge[0]) ==  np.max(self._Grid._local_axes_edge[0])
+
+        for v in ['s', 'qv']:
 
             var = self._ScalarState.get_field(v)
             var_tend = self._ScalarState.get_tend(v)
             
             indx_range = (n_halo[1], n_halo[1]+1)
-            self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_left_bdys[v], var, var_tend)
+            if nest_y_left_bdy:
+                self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_left_bdys[v], var, var_tend)
 
             indx_range = (var.shape[1] - 2 * n_halo[1],var.shape[1] - 2 * n_halo[1]+1)
-            self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_right_bdys[v], var, var_tend)
+            if nest_y_right_bdy:
+                self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_right_bdys[v], var, var_tend)
 
             indx_range = (n_halo[0], n_halo[0]+1)
-            self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_left_bdys[v], var, var_tend)  
+            if nest_x_left_bdy:
+                self.relax_y_parallel(n_halo, ls, le, n, self.factor,  indx_range, tau_i, self.y_left_bdys[v], var, var_tend)  
 
             indx_range = (var.shape[0] - 2 * n_halo[0],var.shape[0] - 2 * n_halo[0]+1)
-            self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
+            if nest_x_right_bdy:
+                self.relax_y_parallel(n_halo, ls, le, n, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
 
         v = 'u'
         var = self._VelocityState.get_field(v)
         var_tend = self._VelocityState.get_tend(v)
 
         indx_range = (n_halo[1], n_halo[1]+1)
-        self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_left_bdys[v], var, var_tend)
+        if nest_y_left_bdy:
+            self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_left_bdys[v], var, var_tend)
         
         indx_range = (var.shape[1] - 2 * n_halo[1],var.shape[1] - 2 * n_halo[1]+1)
-        self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_right_bdys[v], var, var_tend)
+        if nest_y_right_bdy:
+            self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_right_bdys[v], var, var_tend)
 
         indx_range = (n_halo[0], n_halo[0]+1)
-        self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_left_bdys[v], var, var_tend)  
+        if nest_x_left_bdy:
+            self.relax_y_parallel(n_halo, ls, le, n, self.factor,  indx_range, tau_i, self.y_left_bdys[v], var, var_tend)  
         
         indx_range = (var.shape[0] - 2 * n_halo[0],var.shape[0] - 2 * n_halo[0]+1)
-        self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
+        if nest_x_right_bdy:
+            self.relax_y_parallel(n_halo, ls, le, n, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
 
         v = 'v'
         var = self._VelocityState.get_field(v)
         var_tend = self._VelocityState.get_tend(v)
          
         indx_range = (n_halo[1], n_halo[1]+1)
-        self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_left_bdys[v], var, var_tend)
+        if nest_y_left_bdy:
+            self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_left_bdys[v], var, var_tend)
         
         indx_range = (var.shape[1] - 2 * n_halo[1],var.shape[1] - 2 * n_halo[1]+1)
-        self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_right_bdys[v], var, var_tend)
+        if nest_y_right_bdy:
+            self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_right_bdys[v], var, var_tend)
 
         indx_range = (n_halo[0], n_halo[0]+1)
-        self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_left_bdys[v], var, var_tend)  
+        if nest_x_left_bdy:
+            self.relax_y_parallel(n_halo, ls, le, n, self.factor,  indx_range, tau_i, self.y_left_bdys[v], var, var_tend)  
         
         indx_range = (var.shape[0] - 2 * n_halo[0],var.shape[0] - 2 * n_halo[0]+1)
-        self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
+        if nest_x_right_bdy:
+            self.relax_y_parallel(n_halo, ls, le, n, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
 
 
         v = 'w'
@@ -303,15 +334,19 @@ class Nest:
         var_tend = self._VelocityState.get_tend(v)
         # 
         indx_range = (n_halo[1], n_halo[1]+1)
-        self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_left_bdys[v], var, var_tend)
+        if nest_y_left_bdy:
+            self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_left_bdys[v], var, var_tend)
         
         indx_range = (var.shape[1] - 2 * n_halo[1],var.shape[1] - 2 * n_halo[1]+1)
-        self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_right_bdys[v], var, var_tend)
+        if nest_y_right_bdy:
+            self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_right_bdys[v], var, var_tend)
 
         indx_range = (n_halo[0], n_halo[0]+1)
-        self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_left_bdys[v], var, var_tend)  
+        if nest_x_left_bdy:
+            self.relax_y_parallel(n_halo, ls, le, n, self.factor,  indx_range, tau_i, self.y_left_bdys[v], var, var_tend)  
         
         indx_range = (var.shape[0] - 2 * n_halo[0],var.shape[0] - 2 * n_halo[0]+1)
-        self.relax_y_parallel(n_halo, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
+        if nest_x_right_bdy:
+            self.relax_y_parallel(n_halo, ls, le, n, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
 
         return
