@@ -5322,11 +5322,11 @@ do kr = NKR_local,1,-1
         arg32 = (log(RCCN(kr)/radius_mean3))**2.0
         arg33 = 2.0D0*((log(sig3))**2.0)
         dNbydlogR_norm3 = dNbydlogR_norm2 + arg31*exp(-arg32/arg33)*(log(2.0)/3.0);
-        FCCNR_tmp(kr) = dNbydlogR_norm3
+        FCCNR_tmp(kr) = dNbydlogR_norm3/col
     endif
 enddo
 
-CONCCCNIN = sum(FCCNR_tmp(:))
+CONCCCNIN = sum(FCCNR_tmp(:))*col
 print*,'CONCCCNIN',CONCCCNIN
 if(IType == 1) FCCNR_MAR = Scale_Fa*FCCNR_tmp
 if(IType == 2) FCCNR_CON = Scale_Fa*FCCNR_tmp

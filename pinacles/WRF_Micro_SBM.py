@@ -465,7 +465,6 @@ class MicroSBM(MicrophysicsBase):
         to_our_order(nhalo, s_wrf, s)
 
         to_our_order(nhalo, wrf_vars['qv'], qv)
-        
         to_our_order(nhalo, wrf_vars['LIQUID_SEDIMENTATION'], liq_sed)
         np.multiply(liq_sed, parameters.LV/parameters.CPD, out=s_tend_liq_sed)
         
