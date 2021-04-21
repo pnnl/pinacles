@@ -23,7 +23,7 @@ class MicroP3(MicrophysicsBase):
                 print('\tP3: Using the ' + str(self._rain_moment) + '-moment rain scheme')
 
             #Set the default droplet conencentration for 1-moment rain scheme.
-            self._nccnst =  200.e+6
+            self._nccnst = 200.e+6
             try:
                 self._nccnst = namelist['microphysics']['nccnst']
             except:
@@ -39,7 +39,7 @@ class MicroP3(MicrophysicsBase):
                     aero_in = namelist['microphysics']['aero']
                     inv_rm1 = aero_in['inv_rm1']
                     sig1 = aero_in['sig1']
-                    nanew1 = aero_in['nanew1 ']
+                    nanew1 = aero_in['nanew1']
 
                     inv_rm2 = aero_in['inv_rm2']
                     sig2 = aero_in['sig2']
@@ -75,6 +75,7 @@ class MicroP3(MicrophysicsBase):
             self._DiagnosticState.add_variable('ice_sed')
             self._DiagnosticState.add_variable('reflectivity', long_name='radar reflectivity', units='dBz', latex_name = 'reflectivity')
             self._DiagnosticState.add_variable('diag_effc_3d',  long_name='cloud droplet effective radius', units='m', latex_name='r_e')
+            self._DiagnosticState.add_variable('diag_effi_3d',  long_name='cloud ice effective radius', units='m', latex_name='r_{e,i}')
 
             nhalo = self._Grid.n_halo
             self._our_dims = self._Grid.ngrid_local
@@ -112,6 +113,7 @@ class MicroP3(MicrophysicsBase):
 
         reflectivity = self._DiagnosticState.get_field('reflectivity')
         diag_effc_3d = self._DiagnosticState.get_field('diag_effc_3d')
+        diag_effi_3d = self._DiagnosticState.get_field('diag_effi_3d')
 
         liq_sed = self._DiagnosticState.get_field('liq_sed')
         ice_sed = self._DiagnosticState.get_field('ice_sed')
@@ -145,7 +147,7 @@ class MicroP3(MicrophysicsBase):
 
         reflectivity_wrf = np.empty_like(rho_wrf)
         diag_effc_3d_wrf= np.empty_like(rho_wrf)
-        diag_effi = np.empty_like(rho_wrf)
+        diag_effi_3d_wrf = np.empty_like(rho_wrf)
         diag_vmi = np.empty_like(rho_wrf)
         diag_di = np.empty_like(rho_wrf)
         diag_rhopo = np.empty_like(rho_wrf)
@@ -198,7 +200,7 @@ class MicroP3(MicrophysicsBase):
                     its, ite, jts, jte, kts, kte ,
                     T_wrf, qv_wrf, qc_wrf, qr_wrf,
                     qnr_wrf, reflectivity_wrf, diag_effc_3d_wrf,
-                    diag_effi, diag_vmi, diag_di,
+                    diag_effi_3d_wrf, diag_vmi, diag_di,
                     diag_rhopo, th_old, qv_old,
                     qi1_wrf, qni1_wrf, qir1_wrf, qib1_wrf,
                     liq_sed_wrf, ice_sed_wrf,
@@ -212,7 +214,7 @@ class MicroP3(MicrophysicsBase):
                     its, ite, jts, jte, kts, kte ,
                     T_wrf, qv_wrf, qc_wrf, qr_wrf,
                     qnr_wrf, reflectivity_wrf, diag_effc_3d_wrf,
-                    diag_effi, diag_vmi, diag_di,
+                    diag_effi_3d_wrf, diag_vmi, diag_di,
                     diag_rhopo, th_old, qv_old,
                     qi1_wrf, qni1_wrf, qir1_wrf, qib1_wrf,
                     liq_sed_wrf, ice_sed_wrf,
@@ -253,7 +255,10 @@ class MicroP3(MicrophysicsBase):
         np.multiply(s_tend_ice_sed, -1.0/self._TimeSteppingController.dt, out=s_tend_ice_sed)
 
         to_our_order(nhalo, diag_effc_3d_wrf, diag_effc_3d)
+        to_our_order(nhalo, diag_effi_3d_wrf, diag_effi_3d)
         to_our_order(nhalo, reflectivity_wrf, reflectivity)
+
+     
 
         self._itimestep += 1
         return
@@ -375,5 +380,17 @@ class MicroP3(MicrophysicsBase):
     def get_qc(self):
         return self._ScalarState.get_field('qc') + self._ScalarState.get_field('qr')
 
+    def get_qcloud(self):
+        return self._ScalarState.get_field('qc') 
+
+
     def get_qi(self):
         return self._ScalarState.get_field('qi1')
+
+    def get_reffc(self):
+        return self._DiagnosticState.get_field('diag_effc_3d')
+    
+    def get_reffi(self):
+        return self._DiagnosticState.get_field('diag_effi_3d')
+    
+

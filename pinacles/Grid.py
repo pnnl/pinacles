@@ -399,8 +399,8 @@ class RegularCartesian(GridBase):
 
         on_rank = False
 
-        if  x_range[0] < x and x_range[1] > x:
-            if  y_range[0] < y and y_range[1] > y:
+        if  x_range[0] <= x and x_range[1] >= x:
+            if  y_range[0] <= y and y_range[1] >= y:
                 on_rank = True
 
         return on_rank

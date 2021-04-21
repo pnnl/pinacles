@@ -124,7 +124,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Plumes = Plumes.Plumes(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.TimeSteppingController)
 
         # Instantiate radiation
-        self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.TimeSteppingController)       
+        self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.Micro, self.TimeSteppingController)       
 
         #Instantiate nest
         self.Nest = Nest.Nest(self.TimeSteppingController, self.ModelGrid, self.ScalarState, self.VelocityState)
@@ -137,6 +137,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Restart.add_class_to_restart(self.TimeSteppingController)
         self.Restart.add_class_to_restart(self.Force)
         self.Restart.add_class_to_restart(self.Surf)
+        self.Restart.add_class_to_restart(self.Micro)
 
         # Allocate memory for storage arrays in container classes. This should come after most classes are instantiated becuase the 
         # containter must know how much memory to allocate
@@ -189,6 +190,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.StatsIO.add_class(self.Micro)
         self.StatsIO.add_class(self.DiagTurbulence)
         self.StatsIO.add_class(self.DiagClouds)
+        self.StatsIO.add_class(self.Rad)
 
         # Now iniitalzie the IO field
         self.StatsIO.initialize()
@@ -281,7 +283,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Plumes = Plumes.Plumes(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.TimeSteppingController)
 
         # Instantiate radiation
-        self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.TimeSteppingController)       
+        self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.Micro, self.TimeSteppingController)       
 
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
@@ -289,6 +291,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Restart.add_class_to_restart(self.VelocityState)
         self.Restart.add_class_to_restart(self.DiagnosticState)
         self.Restart.add_class_to_restart(self.TimeSteppingController)
+        self.Restart.add_class_to_restart(self.Micro)
 
         # Allocate memory for storage arrays in container classes. This should come after most classes are instantiated becuase the 
         # containter must know how much memory to allocate
@@ -423,7 +426,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 #Update the forcing
                 self.Force.update()
-                self.Rad.update(n)
+                
 
                 #Update Kinematics and SGS model
                 self.Kine.update()
@@ -462,6 +465,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     self.Thermo.update(apply_buoyancy=False)
                     # We call the microphysics update at the end of the RK steps.
                     self.Micro.update()
+                    self.Rad.update()
                     self.ScalarState.boundary_exchange()
                     self.ScalarState.update_all_bcs()
 
@@ -499,4 +503,4 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         return
 
-         
+            
