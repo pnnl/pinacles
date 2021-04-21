@@ -44,8 +44,6 @@ class Nest:
                 j_parent = (j- y_indx_range[0])//factor
                 for k in range(z_indx_range[0],  z_indx_range[1]):
                     k_parent = k - z_indx_range[0]
-                    #if k == 5:
-                    #    print(parent_var[i_parent,j_parent,k_parent], var[i,j,k], i_parent, j_parent, i, j)
                     var_tend[i,j,k] += tau_i * (1.0/(np.abs(y_indx_range[0]-j)+ 1)) * (parent_var[i_parent,j_parent,k_parent] - var[i,j,k])
 
         return
@@ -63,7 +61,6 @@ class Nest:
         y_indx_range =  (n_halo[1], var_shape[1]- n_halo[1])#(2*n_halo[1], var_shape[1] - 2*n_halo[1]) #(n_halo[1] + factor, var_shape[1] - n_halo[1]-factor) #(indx_range[0], indx_range[0] + (indx_range[1]-indx_range[0])*factor)
         z_indx_range = (n_halo[2], var_shape[2] - n_halo[2])   #Loop over the full range of z w/o halos
         
-       # print(ls, le, n)
 
         # Loop over only the subset of points that needs to be updated.
         for i in range(x_indx_range[0],  x_indx_range[1]):
