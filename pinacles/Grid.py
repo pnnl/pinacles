@@ -341,7 +341,7 @@ class RegularCartesian(GridBase):
 
             #Generate an axis based on upper and lower points
             self._global_axes.append(np.linspace(lx, ux, self.ngrid[i]) + self._ll_corner[i])
-            self._global_axes_edge.append(self._global_axes[i] + 0.5 * dx + self._ll_corner[i])
+            self._global_axes_edge.append(self._global_axes[i] + 0.5 * dx)
 
             # Compute the local axes form the global axes
             start = self._local_start[i]

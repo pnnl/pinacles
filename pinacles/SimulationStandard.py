@@ -127,7 +127,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.Micro, self.TimeSteppingController)       
 
         #Instantiate nest
-        self.Nest = Nest.Nest(self.TimeSteppingController, self.ModelGrid, self.ScalarState, self.VelocityState)
+        self.Nest = Nest.Nest(self._namelist, self.TimeSteppingController, self.ModelGrid, self.ScalarState, self.VelocityState)
 
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)

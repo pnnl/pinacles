@@ -1,9 +1,9 @@
 import numba 
 import numpy as np
-
+import sys
 class Nest:
 
-    def __init__(self, TimeSteppingController, Grid, ScalarState, VelocityState):
+    def __init__(self, namelist, TimeSteppingController, Grid, ScalarState, VelocityState):
 
         self._Grid = Grid
         self._ScalarState = ScalarState
@@ -15,11 +15,12 @@ class Nest:
         self.y_left_bdys = {}
         self.y_right_bdys = {}
 
-
-        self.factor = 3
-        self.partent_pts = 64
-
-        self.root_point = (32, 32, 32)
+        try:
+            self.factor = namelist['nest']['factor']
+            self.partent_pts = namelist['nest']['parent_pts']
+            self.root_point = namelist['nest']['root_point']
+        except:
+            pass
 
         return
 
