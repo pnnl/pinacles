@@ -69,7 +69,7 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     yg = ModelGrid.y_global
 
 
-    print(xl[35])
+    #print(xl[35])
 
     exner = Ref.exner
 
