@@ -39,9 +39,12 @@ from termcolor import colored
 os.environ["HDF5_USE_FILE_LOCKING"]="FALSE"
 class SimulationStandard(SimulationBase.SimulationBase):
 
-    def __init__(self, namelist, llx=0.0, lly=0.0, llz=0.0):
+    def __init__(self, namelist, llx=0.0, lly=0.0, llz=0.0, nest_num=0):
 
         self._ll_corner = (llx, lly, llz)
+
+        assert(type(nest_num) == int)
+        self._nest_num = nest_num
 
         # This is used to keep track of how long the model has been running.
         self.t_init = time.perf_counter()
@@ -366,21 +369,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             prog_state.boundary_exchange()
             prog_state.update_all_bcs()
 
-
-        #self.PSolver.update() #TODO This is to insure dynamic consistnecy but may break BFB Restart
-
         return
     
-    def update(self, ParentNest=None, integrate_by_dt = 0.0):
-
-
-        #for i in range(10):
-        #    tt1 = time.perf_counter()
-        #    self.ScalarState.get_slab_y('s', (1,12))
-        #    tt2 = time.perf_counter()
-        #    print(tt2 - tt1)
-
-        #import sys; sys.exit()
+    def update(self, ParentNest=None, ListOfSims = [], integrate_by_dt = 0.0):
 
 
         """ This function integrates the model forward by integrate_by_dt seconds. """
@@ -389,12 +380,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
         start_time = self.TimeSteppingController.time
         end_time = start_time + integrate_by_dt
 
-
-
-        #s = self.ScalarState.get_field('s')
-        #s[:,:,:] = np.arange(s.shape[0], dtype=np.double)[np.newaxis, :, np.newaxis]
-        #if ParentNest is not None:
-        #    s[:,:,:] = 0.0
 
         # Update boundaries
         tt1 = time.perf_counter()
@@ -485,6 +470,15 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 print(colored('\t Walltime: ', 'green'), colored(t1 -t0, 'green'), 
                     colored('\tModeltime/Walltime: ', 'green'), 
                     colored(self.TimeSteppingController._dt/(t1 - t0), 'green'))
+
+            # Here we use recursion to update all sub-nests
+            if len(ListOfSims) > self._nest_num:
+                if MPI.COMM_WORLD.Get_rank() == 0:
+                    print('Recursively calling update of Nest ' + str(self._nest_num + 1), ' from Nest: ', 
+                         str(self._nest_num ))
+                ListOfSims[self._nest_num + 1].update(integrate_by_dt=self.TimeSteppingController._dt, 
+                    ParentNest = ListOfSims[self._nest_num])
+
 
         #if ParentNest is not None:
         #    self.Nest.update_parent(ParentNest)

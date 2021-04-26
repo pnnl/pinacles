@@ -10,74 +10,52 @@ import copy
 
 def main(namelist):
 
-    # Instantiate and Initialize the Simulation
-    
-    #factor = 3
-    #partent_pts = 64
+    # Instantiate and Initialize the Simulation class for the outermost domain
+    Sim = SimulationStandard.SimulationStandard(namelist, nest_num=0)
 
-
-    #root_point = (32, 32, 32)
-
-    
-    #Setup the outermost domain
-    Sim = SimulationStandard.SimulationStandard(namelist)
+    # Put this the outermost domain in the zero-location of a Python LIst
     ListOfSims = [Sim]
 
+    #Get the toal number of lists
     n_nests = namelist['nests']['n']
     
-
-    # Simclass for each nest
+    # Now we create a class for each of the nests
     for i in range(n_nests):
-        print(i)
-        nest_namelist = copy.deepcopy(namelist)
-        parent_namelist = ListOfSims[i]._namelist
-        parent_sim = ListOfSims[i]
+
+        # Create a namelist file for each of the nests 
+        nest_namelist = copy.deepcopy(namelist)      # This will be used as a namelist for the i + 1 th nest
+        parent_namelist = ListOfSims[i]._namelist    # This is the namelist of the i-th nest
+        parent_sim = ListOfSims[i]                   # This is the namelist of the i-th simulation class
+        
+        # Loop over the dimensions 
         for dim in range(2):
             
+            assert(namelist['nests']['factor'][i]%2 != 0) # Check that the nest refinment factor is odd
+
+            # Compute the number of points and domain physical size for the i+1th nest 
             nest_namelist['grid']['n'][dim] = namelist['nests']['parent_points'][i]* namelist['nests']['factor'][i]
             nest_namelist['grid']['l'][dim] =  namelist['nests']['parent_points'][i]* parent_namelist['grid']['l'][i]/parent_namelist['grid']['n'][dim]
 
-            
-            print(nest_namelist['grid']['l'][dim], nest_namelist['grid']['n'][dim], parent_namelist['grid']['l'][i]/parent_namelist['grid']['n'][dim])
-
+        # Here we use the i + 1 th nest namelist to communicat informaton to the nest class
+        # TODO Perhaps we could clean this up as may get confusing
         nest_namelist['nest'] = {}
         nest_namelist['nest']['factor'] = namelist['nests']['factor'][i]
         nest_namelist['nest']['parent_pts'] = namelist['nests']['parent_points'][i]
         nest_namelist['nest']['root_point'] = namelist['nests']['ll_corner'][i]
 
-
-    
+        # Create a new simname for i + 1 th nest
         nest_namelist['meta']['simname'] = namelist['meta']['simname'] + '_nest_' + str(i)
         
+        # Compute the lower left corner point for the i + 1 th nest
         llx = parent_sim.ModelGrid.x_edge_global[parent_sim.ModelGrid.n_halo[0]-1 + namelist['nests']['ll_corner'][i][0]]
         lly = parent_sim.ModelGrid.y_edge_global[parent_sim.ModelGrid.n_halo[1]-1 + namelist['nests']['ll_corner'][i][1]]
-        llz = 0.0
+        llz = 0.0  # This will always be zero
 
-        #print(parent_sim.ModelGrid.y_edge_global)
-        #print(namelist['nests']['ll_corner'][i][0], namelist['nests']['ll_corner'][i][1], llx, lly, llz,  nest_namelist['grid']['n'][dim],  nest_namelist['grid']['l'][dim])
-
+        # Instantiate and initialize the 
         this_sim = SimulationStandard.SimulationStandard(nest_namelist, llx, lly, llz)
         
+        # Append this simulation to the end of the list of simulations
         ListOfSims.append(this_sim)
-    #nest_namelist = copy.deepcopy(namelist)
-    #for i in range(2):
-    #    nest_namelist['grid']['n'][i] = partent_pts * factor
-    #    nest_namelist['grid']['l'][i] =  partent_pts * namelist['grid']['l'][i]/namelist['grid']['n'][i]    
-    
-    #nest_namelist['meta']['simname'] = namelist['meta']['simname'] + '_nest'
-    #print(nest_namelist)
-
-
-    #llx = Sim.ModelGrid.x_edge_global[Sim.ModelGrid.n_halo[0]-1 + root_point[0]]
-    #lly = Sim.ModelGrid.y_edge_global[Sim.ModelGrid.n_halo[1]-1 + root_point[1]]
-    #llz = 0.0
-
-    #Nest1 = SimulationStandard.SimulationStandard(nest_namelist, llx, lly, llz)
-
-    #ListOfSims.append(Nest1)
-
-    #S_slice = SimulationUtilities.HorizontalSlice('qv_20m', height=20, frequency=10, var='s', state='ScalarState', Sim=Sim)
-    #Albedo = SimulationUtilities.Albedo(20.0, Sim)
 
     # Put all of the output classes into a list (these are just references)
     io_classes = []
@@ -113,18 +91,22 @@ def main(namelist):
     # This is the outerloop over time
     while Sim.TimeSteppingController.time < Sim.TimeSteppingController.time_max:
 
-        for n, Nest_i in enumerate(ListOfSims):
-            print('Nest: ', n)
-            # Integrate model forward by integrate_by_dt seconds
-            if n >= 1:
-                parent = ListOfSims[n-1]
-            else:
-                parent = None
-
-            Nest_i.update(ParentNest=parent, integrate_by_dt=integrate_by_dt)
+        #for n, Nest_i in enumerate(ListOfSims):
+        #    print('Nest: ', n)
+        #    # Integrate model forward by integrate_by_dt seconds
+        #    if n >= 1:
+        #        parent = ListOfSims[n-1]
+        #    else:
+        #        parent = None
+        #
+        #    Nest_i.update(ParentNest=parent, integrate_by_dt=integrate_by_dt)
 
             #Adjust the integration to to make sure output is at the correct time
-            time = Nest_i.TimeSteppingController.time
+        
+        ListOfSims[0].update(integrate_by_dt=integrate_by_dt, ListOfSims=ListOfSims)
+
+        time = ListOfSims[0].TimeSteppingController.time
+        for n, Nest_i in enumerate(ListOfSims):
             for idx, item in enumerate(io_classes[n]):
                 if time - io_frequencies[n * len(io_classes[n]) + idx] == last_io_time[n * len(io_classes[n]) + idx]:
                     if hasattr(item, 'update'):
