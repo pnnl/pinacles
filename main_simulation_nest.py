@@ -36,6 +36,8 @@ def main(namelist):
             nest_namelist['grid']['n'][dim] = namelist['nests']['parent_points'][i]* namelist['nests']['factor'][i]
             nest_namelist['grid']['l'][dim] =  namelist['nests']['parent_points'][i]* parent_namelist['grid']['l'][i]/parent_namelist['grid']['n'][dim]
 
+        nest_namelist['grid']['n'][2] = parent_namelist['grid']['n'][2]* namelist['nests']['factor'][2]
+
         # Here we use the i + 1 th nest namelist to communicat informaton to the nest class
         # TODO Perhaps we could clean this up as may get confusing
         nest_namelist['nest'] = {}
