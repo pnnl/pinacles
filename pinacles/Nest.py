@@ -16,7 +16,7 @@ class Nest:
         self.y_right_bdys = {}
 
         try:
-            self.factor = namelist['nest']['factor']
+            self.factor = tuple(namelist['nests']['factor'])
             self.partent_pts = namelist['nest']['parent_pts']
             self.root_point = namelist['nest']['root_point']
         except:
@@ -34,17 +34,17 @@ class Nest:
         var_shape = var.shape
 
         x_indx_range = (n_halo[0], var_shape[0] - n_halo[0])   #Loop over the full range of x w/o halos
-        y_indx_range = (indx_range[0], indx_range[0] + (indx_range[1]-indx_range[0])*factor)
+        y_indx_range = (indx_range[0], indx_range[0] + (indx_range[1]-indx_range[0])*factor[1])
         z_indx_range = (n_halo[2], var_shape[2] - n_halo[2])   #Loop over the full range of z w/o halos
         
 
         # Loop over only the subset of points that needs to be updated.
         for i in range(x_indx_range[0],  x_indx_range[1]):
-            i_parent = (i -  x_indx_range[0]) //factor
+            i_parent = (i -  x_indx_range[0]) //factor[0]
             for j in range(y_indx_range[0], y_indx_range[1]):
-                j_parent = (j- y_indx_range[0])//factor
+                j_parent = (j- y_indx_range[0])//factor[1]
                 for k in range(z_indx_range[0],  z_indx_range[1]):
-                    k_parent = (k - z_indx_range[0])//factor
+                    k_parent = (k - z_indx_range[0])//factor[2]
                     var_tend[i,j,k] += tau_i * (1.0/(np.abs(y_indx_range[0]-j)+ 1)) * (parent_var[i_parent,j_parent,k_parent] - var[i,j,k])
 
         return
@@ -58,29 +58,29 @@ class Nest:
         # Rexlaxtaion along the x boundary
         var_shape = var.shape
 
-        x_indx_range = (indx_range[0], indx_range[0] + (indx_range[1]-indx_range[0])*factor) #(n_halo[0], var_shape[0] - n_halo[0])   #Loop over the full range of x w/o halos
-        y_indx_range =  (n_halo[1], var_shape[1]- n_halo[1])#(2*n_halo[1], var_shape[1] - 2*n_halo[1]) #(n_halo[1] + factor, var_shape[1] - n_halo[1]-factor) #(indx_range[0], indx_range[0] + (indx_range[1]-indx_range[0])*factor)
+        x_indx_range = (indx_range[0], indx_range[0] + (indx_range[1]-indx_range[0])*factor[0])
+        y_indx_range =  (n_halo[1], var_shape[1]- n_halo[1])
         z_indx_range = (n_halo[2], var_shape[2] - n_halo[2])   #Loop over the full range of z w/o halos
         
 
         # Loop over only the subset of points that needs to be updated.
         for i in range(x_indx_range[0],  x_indx_range[1]):
-            i_parent = (i- x_indx_range[0])//factor 
+            i_parent = (i- x_indx_range[0])//factor[0] 
             for j in range(y_indx_range[0], y_indx_range[1]):
                 if (j >= 2*n_halo[1] and j  < var_shape[1]- 2*n_halo[1]):
-                    j_parent = (j-y_indx_range[0]) //factor
+                    j_parent = (j-y_indx_range[0]) //factor[1]
                     for k in range(z_indx_range[0],  z_indx_range[1]):
-                        k_parent = (k - z_indx_range[0]) //factor
+                        k_parent = (k - z_indx_range[0]) //factor[2]
                         var_tend[i,j,k] += tau_i * (1.0/(np.abs(x_indx_range[0]-i) + 1)) * (parent_var[i_parent,j_parent,k_parent] - var[i,j,k])
                 elif j <  2*n_halo[1] and ls[1] != 0:
-                    j_parent = (j-y_indx_range[0]) //factor
+                    j_parent = (j-y_indx_range[0]) //factor[1]
                     for k in range(z_indx_range[0],  z_indx_range[1]):
-                        k_parent = (k - z_indx_range[0]) //factor
+                        k_parent = (k - z_indx_range[0]) //factor[2]
                         var_tend[i,j,k] += tau_i * (1.0/(np.abs(x_indx_range[0]-i) + 1)) * (parent_var[i_parent,j_parent,k_parent] - var[i,j,k])
                 elif j >= var_shape[1]- 2*n_halo[1] and le[1] != n[1]:
-                     j_parent = (j-y_indx_range[0]) //factor
+                     j_parent = (j-y_indx_range[0]) //factor[1]
                      for k in range(z_indx_range[0],  z_indx_range[1]):
-                        k_parent = (k - z_indx_range[0]) //factor
+                        k_parent = (k - z_indx_range[0]) //factor[2]
                         var_tend[i,j,k] += tau_i * (1.0/(np.abs(x_indx_range[0]-i) + 1)) * (parent_var[i_parent,j_parent,k_parent] - var[i,j,k])
         return
 
@@ -105,8 +105,8 @@ class Nest:
             slab_range = (center_point_y, center_point_y+1)
 
             #Now get the indicies of the subset on this rank
-            local_part_of_parent =  ((local_start[0])//self.factor + self.root_point[0],
-                (local_end[0] )//self.factor + self.root_point[0])
+            local_part_of_parent =  ((local_start[0])//self.factor[0] + self.root_point[0],
+                (local_end[0] )//self.factor[0] + self.root_point[0])
            
 
             self.x_left_bdys[v] = ParentNest.ScalarState.get_slab_y(v,
@@ -120,8 +120,8 @@ class Nest:
                                                                  )[local_part_of_parent[0]:local_part_of_parent[1],:,:]
 
             #Now get the indicies of the subset on this rank
-            local_part_of_parent =  ((local_start[1])//self.factor + self.root_point[1], 
-                (local_end[1] )//self.factor + self.root_point[1])
+            local_part_of_parent =  ((local_start[1])//self.factor[1] + self.root_point[1], 
+                (local_end[1] )//self.factor[1] + self.root_point[1])
 
             slab_range = (center_point_x, center_point_x+1)
             
@@ -144,7 +144,7 @@ class Nest:
         slab_range = (center_point_y, center_point_y+1)
 
         #Now get the indicies of the subset on this rank
-        local_part_of_parent =  ((local_start[0])//self.factor + self.root_point[0],(local_end[0] )//self.factor + self.root_point[0])
+        local_part_of_parent =  ((local_start[0])//self.factor[0] + self.root_point[0],(local_end[0] )//self.factor[0] + self.root_point[0])
         self.x_left_bdys[v] = ParentNest.VelocityState.get_slab_y(v,
                                                             slab_range
                                                             )[local_part_of_parent[0]:local_part_of_parent[1],:,:]
@@ -156,7 +156,7 @@ class Nest:
 
         #Now get the indicies of the subset on this rank
 
-        local_part_of_parent =  ((local_start[1])//self.factor + self.root_point[1],(local_end[1] )//self.factor + self.root_point[1])
+        local_part_of_parent =  ((local_start[1])//self.factor[1] + self.root_point[1],(local_end[1] )//self.factor[1] + self.root_point[1])
 
         slab_range = (center_point_x, center_point_x+1)
         self.y_left_bdys[v] = ParentNest.VelocityState.get_slab_x(v, 
@@ -178,7 +178,7 @@ class Nest:
         slab_range = (center_point_y, center_point_y+1)
 
         #Now get the indicies of the subset on this rank
-        local_part_of_parent =  ((local_start[0])//self.factor + self.root_point[0],(local_end[0] )//self.factor + self.root_point[0])
+        local_part_of_parent =  ((local_start[0])//self.factor[0] + self.root_point[0],(local_end[0] )//self.factor[0] + self.root_point[0])
         self.x_left_bdys[v] = ParentNest.VelocityState.get_slab_y(v,
                                                             slab_range
                                                             )[local_part_of_parent[0]:local_part_of_parent[1],:,:]
@@ -190,7 +190,7 @@ class Nest:
 
         #Now get the indicies of the subset on this rank
 
-        local_part_of_parent =  ((local_start[1])//self.factor + self.root_point[1],(local_end[1] )//self.factor + self.root_point[1])
+        local_part_of_parent =  ((local_start[1])//self.factor[1] + self.root_point[1],(local_end[1] )//self.factor[1] + self.root_point[1])
 
         slab_range = (center_point_x, center_point_x+1)
         self.y_left_bdys[v] = ParentNest.VelocityState.get_slab_x(v, 
@@ -212,7 +212,7 @@ class Nest:
         slab_range = (center_point_y, center_point_y+1)
 
         #Now get the indicies of the subset on this rank
-        local_part_of_parent =  ((local_start[0])//self.factor + self.root_point[0],(local_end[0] )//self.factor + self.root_point[0])
+        local_part_of_parent =  ((local_start[0])//self.factor[0] + self.root_point[0],(local_end[0] )//self.factor[0] + self.root_point[0])
         self.x_left_bdys[v] = ParentNest.VelocityState.get_slab_y(v,
                                                             slab_range
                                                             )[local_part_of_parent[0]:local_part_of_parent[1],:,:]
@@ -224,7 +224,7 @@ class Nest:
 
         #Now get the indicies of the subset on this rank
 
-        local_part_of_parent =  ((local_start[1])//self.factor + self.root_point[1],(local_end[1] )//self.factor + self.root_point[1])
+        local_part_of_parent =  ((local_start[1])//self.factor[1] + self.root_point[1],(local_end[1] )//self.factor[1] + self.root_point[1])
 
         slab_range = (center_point_x, center_point_x+1)
         self.y_left_bdys[v] = ParentNest.VelocityState.get_slab_x(v, 
