@@ -20,7 +20,7 @@ class Tower():
         self._j_indx = int((loc[1] - ybnds[0])//dx[1]) + self._Grid.n_halo[1]
 
         try:
-            self._frequency = namelist['stats']['frequency']
+            self._frequency = namelist['towers']['frequency']
         except:
             self._frequency = 1e9
 
@@ -80,11 +80,15 @@ class Tower():
 
     def update(self):
 
-        if  not  np.allclose(self._TimeSteppingController._time%self._frequency,0.0):
-            return
+        print('Updating tower')
+
+        #if  not  np.allclose(self._TimeSteppingController._time%self._frequency,0.0):
+        #    return
 
         if not self._tower_on_this_rank:
             return
+
+        
 
         nh = self._Grid.n_halo
 

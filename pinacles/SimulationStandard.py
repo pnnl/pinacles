@@ -124,7 +124,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Surf= SurfaceFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.VelocityState, self.ScalarState, self.DiagnosticState, self.TimeSteppingController)
 
         # Instatiate plumes if there are any
-        self.Plumes = Plumes.Plumes(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.TimeSteppingController)
+        self.Plumes = Plumes.Plumes(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.TimeSteppingController, self._nest_num)
 
         # Instantiate radiation
         self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.Micro, self.TimeSteppingController)       
@@ -412,7 +412,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 #Update the forcing
                 self.Force.update()
                 
-
                 #Update Kinematics and SGS model
                 self.Kine.update()
                 self.SGS.update()

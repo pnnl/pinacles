@@ -54,7 +54,7 @@ def main(namelist):
         llz = 0.0  # This will always be zero
 
         # Instantiate and initialize the 
-        this_sim = SimulationStandard.SimulationStandard(nest_namelist, llx, lly, llz)
+        this_sim = SimulationStandard.SimulationStandard(nest_namelist, llx, lly, llz, nest_num=i+1)
         
         # Append this simulation to the end of the list of simulations
         ListOfSims.append(this_sim)
@@ -75,6 +75,7 @@ def main(namelist):
             io_frequencies.append(ic.frequency)
     io_frequencies = np.array(io_frequencies)
 
+    print(io_frequencies)
 
     # Iterate through io classes and do first IO
     for nest_i in range(len(ListOfSims)):

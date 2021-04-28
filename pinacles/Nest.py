@@ -58,8 +58,8 @@ class Nest:
         # Rexlaxtaion along the x boundary
         var_shape = var.shape
 
-        x_indx_range = (indx_range[0], indx_range[0] + (indx_range[1]-indx_range[0])*factor[0])
-        y_indx_range =  (n_halo[1], var_shape[1]- n_halo[1])
+        x_indx_range = (indx_range[0], indx_range[0] + (indx_range[1]-indx_range[0])*factor[0]) #(n_halo[0], var_shape[0] - n_halo[0])   #Loop over the full range of x w/o halos
+        y_indx_range =  (n_halo[1], var_shape[1]- n_halo[1])#(2*n_halo[1], var_shape[1] - 2*n_halo[1]) #(n_halo[1] + factor, var_shape[1] - n_halo[1]-factor) #(indx_range[0], indx_range[0] + (indx_range[1]-indx_range[0])*factor)
         z_indx_range = (n_halo[2], var_shape[2] - n_halo[2])   #Loop over the full range of z w/o halos
         
 
@@ -95,7 +95,7 @@ class Nest:
         local_end = self._Grid._local_end
 
 
-        for v in self._ScalarState._dofs:
+        for v in ['qv', 's']: #self._ScalarState._dofs:
             
             #This is the location of the lower corenr of the nest in the parent's index
             center_point_x = parent_nhalo[0] + self.root_point[0] 
