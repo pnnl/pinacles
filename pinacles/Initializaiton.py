@@ -454,7 +454,7 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                             
                             for ibin in range(nbins):
     
-                                ff_list[ibin][i,j,k] = f[ibin] * 1e6 * xl[ibin]/Ref.rho0[k]
+                                ff_list[ibin][i,j,k] = f[ibin] * 1e6 * xl[ibin]/Ref.rho0[k] #/col* col
                                 qc_sum += ff_list[ibin][i,j,k]
                         # qc[i,j,k] = qc[i,j,k]/Ref.rho0[k]
                         qc[i,j,k] = qc_sum
