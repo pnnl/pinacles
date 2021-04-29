@@ -436,8 +436,9 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         init_var_from_sounding(raw_clwc, init_z, zl, qc)
         shape = qc.shape
         if micro_scheme == 'sbm' and sbm_init_type == 'assume_distribution':
-            UtilitiesParallel.print_root('\t \t Initializing cloud liquid to bins with assumptions')
+            UtilitiesParallel.print_root('\t \t Initializing cloud liquid to bins with assumptions that number of bins = 33!')
             nbins = 33
+            # Assuming a width parameter of the initial distribution, this could be added as a namelist parameter 
             sig1 = 1.2
             
             # ff1i1= ScalarState.get_field('ff1i1')
@@ -526,6 +527,7 @@ def init_var_from_sounding(profile_data, profile_z,  grid_z, var3d):
     return 
     
 def get_lognormal_dist(nbins,qc, nc_m3, sig1):
+    # SMALLEST BIN SIZE IN SBM FOR 33 BINS
     xl0 = 3.35e-8 * 1e-6
     xl = np.zeros(nbins,dtype=np.double)
     xl[0] = xl0
