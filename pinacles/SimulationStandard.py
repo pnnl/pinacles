@@ -31,6 +31,7 @@ from pinacles import Restart
 from pinacles import UtilitiesParallel   
 from pinacles import Nest
 from mpi4py import MPI
+from pinacles import WRF_PBL_ACM
 import numpy as np
 import pylab as plt
 
@@ -114,6 +115,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.ScalarDiff = ScalarDiffusion.ScalarDiffusion(self._namelist, self.ModelGrid, self.Ref, self.DiagnosticState, self.ScalarState)
         self.MomDiff = MomentumDiffusion.MomentumDiffusion(self._namelist, self.ModelGrid, self.Ref, self.DiagnosticState, self.Kine, self.VelocityState)
         
+        self.BL = WRF_PBL_ACM.ACM(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.DiagnosticState, self.TimeSteppingController)
+
         # Instantiate the pressure solver
         self.PSolver = PressureSolver.factory(self._namelist, self.ModelGrid, self.Ref, self.VelocityState, self.DiagnosticState)
         
@@ -405,6 +408,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 #Update the surface
                 self.Surf.update()
+                self.BL.update()
                 
                 #Update plumes if any
                 self.Plumes.update()

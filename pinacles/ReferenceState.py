@@ -103,7 +103,7 @@ class ReferenceBase:
 
     @property
     def p0_edge(self):
-        return np.copy(self.p0_edge)
+        return np.copy(self._P0_edge)
 
     @property
     def T0(self):
