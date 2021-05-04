@@ -95,7 +95,7 @@ class Nest:
         local_end = self._Grid._local_end
 
 
-        for v in ['qv', 's']: #self._ScalarState._dofs:
+        for v in ['qv', 's', 'qr', 'qc']: #self._ScalarState._dofs:
             
             #This is the location of the lower corenr of the nest in the parent's index
             center_point_x = parent_nhalo[0] + self.root_point[0] 
@@ -265,7 +265,7 @@ class Nest:
         nest_x_left_bdy = np.amin(self._Grid._global_axes_edge[0]) ==  np.amin(self._Grid._local_axes_edge[0])
         nest_x_right_bdy = np.max(self._Grid._global_axes_edge[0]) ==  np.max(self._Grid._local_axes_edge[0])
 
-        for v in ['s', 'qv']:
+        for v in ['s', 'qv', 'qr', 'qc']:
 
             var = self._ScalarState.get_field(v)
             var_tend = self._ScalarState.get_tend(v)
@@ -274,7 +274,7 @@ class Nest:
             if nest_y_left_bdy:
                 self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_left_bdys[v], var, var_tend)
 
-            indx_range = (var.shape[1] - 2 * n_halo[1],var.shape[1] - 2 * n_halo[1]+1)
+            indx_range = (var.shape[1] - 2 * n_halo[1]+2,var.shape[1] - 2 * n_halo[1]+3)
             if nest_y_right_bdy:
                 self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_right_bdys[v], var, var_tend)
 
@@ -282,7 +282,7 @@ class Nest:
             if nest_x_left_bdy:
                 self.relax_y_parallel(n_halo, ls, le, n, self.factor,  indx_range, tau_i, self.y_left_bdys[v], var, var_tend)  
 
-            indx_range = (var.shape[0] - 2 * n_halo[0],var.shape[0] - 2 * n_halo[0]+1)
+            indx_range = (var.shape[0] - 2 * n_halo[0]+2,var.shape[0] - 2 * n_halo[0]+3)
             if nest_x_right_bdy:
                 self.relax_y_parallel(n_halo, ls, le, n, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
 
@@ -294,7 +294,7 @@ class Nest:
         if nest_y_left_bdy:
             self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_left_bdys[v], var, var_tend)
         
-        indx_range = (var.shape[1] - 2 * n_halo[1],var.shape[1] - 2 * n_halo[1]+1)
+        indx_range = (var.shape[1] - 2 * n_halo[1] + 2,var.shape[1] - 2 * n_halo[1]+3)
         if nest_y_right_bdy:
             self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_right_bdys[v], var, var_tend)
 
@@ -302,7 +302,7 @@ class Nest:
         if nest_x_left_bdy:
             self.relax_y_parallel(n_halo, ls, le, n, self.factor,  indx_range, tau_i, self.y_left_bdys[v], var, var_tend)  
         
-        indx_range = (var.shape[0] - 2 * n_halo[0],var.shape[0] - 2 * n_halo[0]+1)
+        indx_range = (var.shape[0] - 2 * n_halo[0] + 2 ,var.shape[0] - 2 * n_halo[0]+3)
         if nest_x_right_bdy:
             self.relax_y_parallel(n_halo, ls, le, n, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
 
@@ -314,7 +314,7 @@ class Nest:
         if nest_y_left_bdy:
             self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_left_bdys[v], var, var_tend)
         
-        indx_range = (var.shape[1] - 2 * n_halo[1],var.shape[1] - 2 * n_halo[1]+1)
+        indx_range = (var.shape[1] - 2 * n_halo[1]+1,var.shape[1] - 2 * n_halo[1]+3)
         if nest_y_right_bdy:
             self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_right_bdys[v], var, var_tend)
 
@@ -322,7 +322,7 @@ class Nest:
         if nest_x_left_bdy:
             self.relax_y_parallel(n_halo, ls, le, n, self.factor,  indx_range, tau_i, self.y_left_bdys[v], var, var_tend)  
         
-        indx_range = (var.shape[0] - 2 * n_halo[0],var.shape[0] - 2 * n_halo[0]+1)
+        indx_range = (var.shape[0] - 2 * n_halo[0]+2,var.shape[0] - 2 * n_halo[0]+3)
         if nest_x_right_bdy:
             self.relax_y_parallel(n_halo, ls, le, n, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
 
@@ -335,7 +335,7 @@ class Nest:
         if nest_y_left_bdy:
             self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_left_bdys[v], var, var_tend)
         
-        indx_range = (var.shape[1] - 2 * n_halo[1],var.shape[1] - 2 * n_halo[1]+1)
+        indx_range = (var.shape[1] - 2 * n_halo[1]+2,var.shape[1] - 2 * n_halo[1]+3)
         if nest_y_right_bdy:
             self.relax_x_parallel(n_halo, self.factor,  indx_range, tau_i, self.x_right_bdys[v], var, var_tend)
 
@@ -343,7 +343,7 @@ class Nest:
         if nest_x_left_bdy:
             self.relax_y_parallel(n_halo, ls, le, n, self.factor,  indx_range, tau_i, self.y_left_bdys[v], var, var_tend)  
         
-        indx_range = (var.shape[0] - 2 * n_halo[0],var.shape[0] - 2 * n_halo[0]+1)
+        indx_range = (var.shape[0] - 2 * n_halo[0]+2,var.shape[0] - 2 * n_halo[0]+3)
         if nest_x_right_bdy:
             self.relax_y_parallel(n_halo, ls, le, n, self.factor,  indx_range, tau_i, self.y_right_bdys[v], var, var_tend) 
 
