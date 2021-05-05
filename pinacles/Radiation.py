@@ -689,3 +689,88 @@ def interpolate_trace_gas(p_trace_pa, trace_vmr, p_pa):
     for i in range(nlev-1):
         interp_vmr[i] = 9.81 /(p_pa[i]-p_pa[i+1]) * (trpath[i+1] - trpath[i])
     return interp_vmr
+
+class RadiationDycoms:
+    def __init__(self,namelist, Grid, Ref, ScalarState, DiagnosticState, Surf, Micro, TimeSteppingController):
+        
+        self._F0 = 70.0 # W m^-2
+        self._F1 = 22.0 # W m^-2
+        self._kappa = 85 # m^2 kg^-1
+        self._a = 1.0 # K m^{-1/3}
+        self._rho_zi =1.12 # kg m^{-3} (air density at initial inversion zi = 795)
+        self._qt_zi = 8.0e-3 # kg kg^-1 (total water threshold for diagnosing zi)
+        self._D = 3.75e-6 # s^{-1} divergence of the large-scale horizontal winds
+        self._rad_type = namelist['radiation']['type']
+
+        self._name = 'RadiationDycoms'
+        self._Grid = Grid
+        self._Ref = Ref
+        self._ScalarState = ScalarState
+        self._DiagnosticState = DiagnosticState
+        self._Surf = Surf
+        self._Micro = Micro
+        self._TimeSteppingController = TimeSteppingController
+        
+        self._DiagnosticState.add_variable('heating_rate_lw')
+        self._DiagnosticState.add_variable('heating_rate_sw')
+        self._DiagnosticState.add_variable('dTdt_rad')
+        return
+    
+    def init_profiles(self):
+        # Nothing to do here
+        return
+    
+    def update(self):
+        dTdt_rad = self._DiagnosticState.get_field('dTdt_rad')
+        heating_rate_lw = self._DiagnosticState.get_field('heating_rate_lw')
+        s = self._ScalarState.get_field('s')
+        qc = self._Micro.get_qc()
+        qv = self._ScalarState.get_field('qv')
+        rho_edge = self._Ref._rho0_edge
+        nh = self._Grid.n_halo
+        shape = s.shape
+        lw_flux = np.zeros(shape[2],dtype=np.double)
+        kmin = nh[2]-1
+        kmax = shape[2]-nh[2]
+        z = self._Grid.z_global
+        z_edge = self._Grid.z_edge_global
+        dt = self._TimeSteppingController.dt
+
+        for i in range(nh[0],shape[0]-nh[0]):
+            for j in range(nh[1],shape[1]-nh[1]):
+                index = np.amax(np.argwhere(qc[i,j,:]+qv[i,j,:]> self._qt_zi))
+                zi = z[index]
+                
+                qc_edge = np.interp(z_edge,z,qc[i,j,:], left = 0.0, right = 0.0)
+                for k in range(kmin,kmax):
+                    qtop = np.trapz(rho_edge[k:kmax+1]*qc_edge[k:kmax+1],dx=self._Grid.dx[2]) * self._kappa
+                    qbot = np.trapz(rho_edge[kmin:k+1]*qc_edge[kmin:k+1],dx=self._Grid.dx[2]) * self._kappa
+                    lw_flux[k] = self._F0 * np.exp(-qtop) + self._F1 * np.exp(-qbot)
+                    if z_edge[k] > zi:
+                        cbrt_z = np.cbrt(z_edge[k]-zi)
+                        lw_flux[k]+= self._a * self._rho_zi * self._D * parameters.CPD *(0.25*cbrt_z**4.0 + zi *cbrt_z)
+                    heating_rate_lw[i,j,k]=-(lw_flux[k]-lw_flux[k-1]) * self._Grid.dxi[2]
+                    dTdt_rad[i,j,k] = heating_rate_lw[i,j,k]/parameters.CPD/self._Ref.rho0[k]
+                    s[i,j,k] +=dTdt_rad[i,j,k] * dt
+        # print('zi', zi)
+        # if self._TimeSteppingController.time > 100:
+        #     plt.figure()
+        #     plt.plot(lw_flux,z_edge)
+        #     plt.show()
+        return
+    def io_initialize(self, nc_grp):
+        # add zi to the output?
+        return
+    def io_update(self,nc_grp):
+        return
+    def restart(self,data_dict):
+        return
+    def dump_restart(self, data_dict):
+        return
+    @property
+    def name(self):
+        return self._name 
+
+
+
+
