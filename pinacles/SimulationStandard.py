@@ -381,13 +381,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
         end_time = start_time + integrate_by_dt
 
 
-        # Update boundaries
-        tt1 = time.perf_counter()
+        # Update boundaries for nest if this is Simulation is a nest
         if ParentNest is not None:
             self.Nest.update_boundaries(ParentNest)
-        tt2 = time.perf_counter()
-        print(tt2 - tt1)
-
 
         while self.TimeSteppingController.time < end_time:
             
