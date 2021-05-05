@@ -232,7 +232,7 @@ class ModelState:
 
         si = 0
         for i in range(indx_range[0], indx_range[1]):
-            if i >= ls[0] and i <= le[0]:
+            if i >= ls[0] and i < le[0]:
                 local_copy_of_global[si,ls[1]:le[1],:] = local_data[i-ls[0],nh[1]:-nh[1],nh[2]:-nh[2]]
             si += 1
 
@@ -255,7 +255,7 @@ class ModelState:
 
         si = 0
         for i in range(indx_range[0], indx_range[1]):
-            if i >= ls[1] and i <= le[1]:
+            if i >= ls[1] and i < le[1]:
                 local_copy_of_global[ls[0]:le[0],si,:] = local_data[nh[0]:-nh[0],i-ls[1],nh[2]:-nh[2]]
             si += 1
 
