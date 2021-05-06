@@ -239,6 +239,14 @@ class Plumes:
 
         return
 
+    def io_initialize(self, nc_grp):
+
+        return 
+
+    def io_update(self, nc_grp):
+
+        return
+
     @property
     def n(self):
         return self._n
