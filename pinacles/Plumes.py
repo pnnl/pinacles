@@ -178,6 +178,9 @@ class Plumes:
             # Store the scalar flux of the plumes
             self._plume_flux = namelist['plumes']['plume_flux']
 
+            # Store the plume number flux
+            self._plume_num_flux = namelist['plumes']['num_flux']
+
             # Store the water vapor flux fo the plumes 
             self._plume_qv_flux = namelist['plumes']['qv_flux']
 
@@ -190,10 +193,16 @@ class Plumes:
             # Store the boundary treatment
             self._boundary_outflow = namelist['plumes']['boundary_outflow']
 
+
         else: 
             # If plumes are not in namelist return since there is nothing 
             # to do.
             return
+
+
+        # The critial number concentration used only for output
+        # TODO make this namelist settable
+        self._conc_crit = 100.0  # cm^-3
 
         assert len(self._locations) == len(self._startimes)
         self._n = len(self._startimes)
@@ -299,9 +308,6 @@ class Plumes:
         z_local = self._Grid.z_local
         rho0 = self._Ref.rho0
 
-        conc_crit = 100  #cm^-3
-        emitted_number = 3e14 
-
         # Loop over the number of plumes
         qc = self._ScalarState.get_field('qc')
         for pi, plume in enumerate(self._list_of_plumes):
@@ -309,10 +315,19 @@ class Plumes:
             # Get the plume variable
             plume_var = self._ScalarState.get_field('plume_' + str(pi))
         
+
+
             dist, crit_con_height = self.dist_2_base(plume._location[0], plume._location[1], x_local, y_local ,z_local, 
-                n_halo, rho0, conc_crit, emitted_number, qc, plume_var)
+                n_halo, rho0, self._conc_crit , self._plume_num_flux[pi], qc, plume_var)
 
-
+            dist = UtilitiesParallel.ScalarAllReduce(dist, op=MPI.MIN)
+            crit_con_height = UtilitiesParallel.ScalarAllReduce(crit_con_height, op=MPI.MIN)
+            
+            if my_rank == 0:
+                timeseries_grp = nc_grp['timeseries']
+                timeseries_grp['Source2CBase_' + 'plume_' + str(pi)][-1] = dist
+                timeseries_grp['CriticalConcentrationHeight_' + 'plume_' + str(pi)][-1] = crit_con_height
+        
         return
 
     @property
