@@ -5,7 +5,6 @@ import numba
 import numpy as np
 from mpi4py import MPI
 from scipy import interpolate
-import pylab as plt
 import netCDF4 as nc
 from cffi import FFI
 import ctypes
@@ -689,3 +688,87 @@ def interpolate_trace_gas(p_trace_pa, trace_vmr, p_pa):
     for i in range(nlev-1):
         interp_vmr[i] = 9.81 /(p_pa[i]-p_pa[i+1]) * (trpath[i+1] - trpath[i])
     return interp_vmr
+
+class RadiationDycoms:
+    def __init__(self,namelist, Grid, Ref, ScalarState, DiagnosticState,  Micro, TimeSteppingController):
+        
+        self._name = 'RadiationDycoms'
+        self._Grid = Grid
+        self._Ref = Ref
+        self._ScalarState = ScalarState
+        self._DiagnosticState = DiagnosticState
+        self._Micro = Micro
+        self._TimeSteppingController = TimeSteppingController
+        
+        # self._DiagnosticState.add_variable('heating_rate_lw')
+        # self._DiagnosticState.add_variable('heating_rate_sw')
+        self._DiagnosticState.add_variable('dTdt_rad')
+        return
+    
+    def init_profiles(self):
+        # Nothing to do here
+        return
+    
+    def update(self):
+        dTdt_rad = self._DiagnosticState.get_field('dTdt_rad')
+        # heating_rate_lw = self._DiagnosticState.get_field('heating_rate_lw')
+        s = self._ScalarState.get_field('s')
+        qc = self._Micro.get_qc()
+        qv = self._ScalarState.get_field('qv')
+        rho = self._Ref._rho0
+        rho_edge = self._Ref._rho0_edge
+        nh = self._Grid.n_halo
+        
+        z = self._Grid.z_global
+        z_edge = self._Grid.z_edge_global
+        dt = self._TimeSteppingController.dt
+        dycoms_rad_calc(nh, self._Grid.dxi[2],z, z_edge, rho, rho_edge, qc, qv, dTdt_rad)
+        
+        s[:,:,:] +=dTdt_rad[:,:,:] * dt
+
+    def io_initialize(self, nc_grp):
+        # add zi to the output?
+        return
+    def io_update(self,nc_grp):
+        return
+    def restart(self,data_dict):
+        return
+    def dump_restart(self, data_dict):
+        return
+    @property
+    def name(self):
+        return self._name 
+@numba.njit()
+def dycoms_rad_calc(nh, dzi,z, z_edge, rho, rho_edge, qc, qv, dT):
+    F0 = 70.0 # W m^-2
+    F1 = 22.0 # W m^-2
+    kappa = 85 # m^2 kg^-1
+    a = 1.0 # K m^{-1/3}
+    rho_zi =1.12 # kg m^{-3} (air density at initial inversion zi = 795)
+    qt_zi = 8.0e-3 # kg kg^-1 (total water threshold for diagnosing zi)
+    D = 3.75e-6 # s^{-1} dive
+    shape = qc.shape
+    lw_flux = np.zeros(shape[2],dtype=np.double)
+    kmin = nh[2]-1
+    kmax = shape[2]-nh[2]
+    for i in range(nh[0],shape[0]-nh[0]):
+        for j in range(nh[1],shape[1]-nh[1]):
+            index = np.amax(np.argwhere(qc[i,j,:]+qv[i,j,:]> qt_zi))
+            zi = z[index]   
+            qc_edge = np.interp(z_edge,z,qc[i,j,:])
+            for k in range(kmin,kmax):
+                qtop = np.trapz(rho_edge[k:kmax+1]*qc_edge[k:kmax+1],dx=1./dzi) * kappa
+                qbot = np.trapz(rho_edge[kmin:k+1]*qc_edge[kmin:k+1],dx=1./dzi) * kappa
+                lw_flux[k] = F0 * np.exp(-qtop) + F1 * np.exp(-qbot)
+                if z_edge[k] > zi:
+                    cbrt_z = (z_edge[k]-zi)**(1./3.)
+                    lw_flux[k]+= a * rho_zi * D * 1004. *(0.25*cbrt_z**4.0 + zi *cbrt_z)
+
+                dT[i,j,k] = -(lw_flux[k]-lw_flux[k-1]) * dzi/1004./rho[k]
+    return
+
+
+
+
+
+
