@@ -1,12 +1,13 @@
 from pinacles import UtilitiesParallel
 from pinacles import parameters
 import numpy as np
+from mpi4py import MPI
+import numba
 class Plume:
 
     def __init__(self, location, start_time, n, 
         Grid, Ref, ScalarState, TimeSteppingController):
 
-        
         self._Grid = Grid
         self._Ref = Ref
         self._TimeSteppingController = TimeSteppingController
@@ -154,6 +155,9 @@ class Plumes:
 
     def __init__(self, namelist, Grid, Ref, ScalarState, TimeSteppingController):
 
+        
+        self.name = 'Plumes' # Class name used to make this classes output
+
         self._Grid = Grid
         self._Ref = Ref
         self._TimeSteppingController = TimeSteppingController
@@ -246,15 +250,68 @@ class Plumes:
 
             return
 
+        timeseries_grp = nc_grp['timeseries']
+
+        for pi, plume in enumerate(self._list_of_plumes):
+            v = timeseries_grp.createVariable('Source2CBase_' + 'plume_' + str(pi), np.double, dimensions=('time',))
+            v.long_name = 'Distance from emission point to first plume point at cloud base'
+            v.standard_name = 'dist_cloud_base_' + 'plume_' + str(pi)
+            v.units = 'm'
+
+            v = timeseries_grp.createVariable('CriticalConcentrationHeight_' + 'plume_' + str(pi), np.double, dimensions=('time',))
+            v.long_name = 'Maximum height excedeeing crtical concentration.'
+            v.standard_name = 'crit_con_base_' + 'plume_' + str(pi)
+            v.units = 'm'
 
         return 
+
+    @staticmethod
+    @numba.njit
+    def dist_2_base(plume_x, plume_y, x_local, y_local, z_local, n_halo, rho0, conc_crit, emitted_number, qc, plume_var):
+
+        shape = plume_var.shape
+        min_dist = 99999999.9
+        crit_height = 0.0
+        for i in range(n_halo[0], shape[0] - n_halo[0]):
+            for j in range(n_halo[1], shape[1] - n_halo[1]):
+                for k in range(n_halo[2], shape[2] - n_halo[2]):
+                    plume_cc = plume_var[i,j,k] * rho0[k] / (100.0 * 100.0 * 100.0) * emitted_number
+                    if qc[i,j,k] > 1e-5 and plume_cc > conc_crit:
+                        dist = np.sqrt((x_local[i]-plume_x)**2.0 + (y_local[j] - plume_y)**2.0)
+                        min_dist = min(dist, min_dist)
+
+                    if plume_cc > conc_crit:
+                        crit_height = max(crit_height, z_local[k])
+
+        return (min_dist, crit_height) 
 
     def io_update(self, nc_grp):
 
         if self._n == 0:
-            # N plumes so we can jump out here 
+            # No plumes so we can jump out here 
 
             return 
+
+        my_rank = MPI.COMM_WORLD.Get_rank()
+        n_halo = self._Grid.n_halo
+        y_local = self._Grid.y_local
+        x_local = self._Grid.x_local
+        z_local = self._Grid.z_local
+        rho0 = self._Ref.rho0
+
+        conc_crit = 100  #cm^-3
+        emitted_number = 3e14 
+
+        # Loop over the number of plumes
+        qc = self._ScalarState.get_field('qc')
+        for pi, plume in enumerate(self._list_of_plumes):
+            
+            # Get the plume variable
+            plume_var = self._ScalarState.get_field('plume_' + str(pi))
+        
+            dist, crit_con_height = self.dist_2_base(plume._location[0], plume._location[1], x_local, y_local ,z_local, 
+                n_halo, rho0, conc_crit, emitted_number, qc, plume_var)
+
 
         return
 
