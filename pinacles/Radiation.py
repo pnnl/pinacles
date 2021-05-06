@@ -5,7 +5,6 @@ import numba
 import numpy as np
 from mpi4py import MPI
 from scipy import interpolate
-import pylab as plt
 import netCDF4 as nc
 from cffi import FFI
 import ctypes
@@ -736,12 +735,7 @@ class RadiationDycoms:
         dycoms_rad_calc(nh, self._Grid.dxi[2],z, z_edge, rho, rho_edge, qc, qv, dTdt_rad)
         
         s[:,:,:] +=dTdt_rad[:,:,:] * dt
-        # print('zi', zi)
-        if self._TimeSteppingController.time > 100:
-            plt.figure()
-            plt.plot(dTdt_rad[4,4,:]*3600,z_edge)
-            plt.show()
-        return
+
     def io_initialize(self, nc_grp):
         # add zi to the output?
         return
