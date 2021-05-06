@@ -690,23 +690,13 @@ def interpolate_trace_gas(p_trace_pa, trace_vmr, p_pa):
     return interp_vmr
 
 class RadiationDycoms:
-    def __init__(self,namelist, Grid, Ref, ScalarState, DiagnosticState, Surf, Micro, TimeSteppingController):
+    def __init__(self,namelist, Grid, Ref, ScalarState, DiagnosticState,  Micro, TimeSteppingController):
         
-        self._F0 = 70.0 # W m^-2
-        self._F1 = 22.0 # W m^-2
-        self._kappa = 85 # m^2 kg^-1
-        self._a = 1.0 # K m^{-1/3}
-        self._rho_zi =1.12 # kg m^{-3} (air density at initial inversion zi = 795)
-        self._qt_zi = 8.0e-3 # kg kg^-1 (total water threshold for diagnosing zi)
-        self._D = 3.75e-6 # s^{-1} divergence of the large-scale horizontal winds
-        self._rad_type = namelist['radiation']['type']
-
         self._name = 'RadiationDycoms'
         self._Grid = Grid
         self._Ref = Ref
         self._ScalarState = ScalarState
         self._DiagnosticState = DiagnosticState
-        self._Surf = Surf
         self._Micro = Micro
         self._TimeSteppingController = TimeSteppingController
         
