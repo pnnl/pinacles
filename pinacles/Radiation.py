@@ -711,8 +711,8 @@ class RadiationDycoms:
         self._Micro = Micro
         self._TimeSteppingController = TimeSteppingController
         
-        self._DiagnosticState.add_variable('heating_rate_lw')
-        self._DiagnosticState.add_variable('heating_rate_sw')
+        # self._DiagnosticState.add_variable('heating_rate_lw')
+        # self._DiagnosticState.add_variable('heating_rate_sw')
         self._DiagnosticState.add_variable('dTdt_rad')
         return
     
@@ -722,41 +722,25 @@ class RadiationDycoms:
     
     def update(self):
         dTdt_rad = self._DiagnosticState.get_field('dTdt_rad')
-        heating_rate_lw = self._DiagnosticState.get_field('heating_rate_lw')
+        # heating_rate_lw = self._DiagnosticState.get_field('heating_rate_lw')
         s = self._ScalarState.get_field('s')
         qc = self._Micro.get_qc()
         qv = self._ScalarState.get_field('qv')
+        rho = self._Ref._rho0
         rho_edge = self._Ref._rho0_edge
         nh = self._Grid.n_halo
-        shape = s.shape
-        lw_flux = np.zeros(shape[2],dtype=np.double)
-        kmin = nh[2]-1
-        kmax = shape[2]-nh[2]
+        
         z = self._Grid.z_global
         z_edge = self._Grid.z_edge_global
         dt = self._TimeSteppingController.dt
-
-        for i in range(nh[0],shape[0]-nh[0]):
-            for j in range(nh[1],shape[1]-nh[1]):
-                index = np.amax(np.argwhere(qc[i,j,:]+qv[i,j,:]> self._qt_zi))
-                zi = z[index]
-                
-                qc_edge = np.interp(z_edge,z,qc[i,j,:], left = 0.0, right = 0.0)
-                for k in range(kmin,kmax):
-                    qtop = np.trapz(rho_edge[k:kmax+1]*qc_edge[k:kmax+1],dx=self._Grid.dx[2]) * self._kappa
-                    qbot = np.trapz(rho_edge[kmin:k+1]*qc_edge[kmin:k+1],dx=self._Grid.dx[2]) * self._kappa
-                    lw_flux[k] = self._F0 * np.exp(-qtop) + self._F1 * np.exp(-qbot)
-                    if z_edge[k] > zi:
-                        cbrt_z = np.cbrt(z_edge[k]-zi)
-                        lw_flux[k]+= self._a * self._rho_zi * self._D * parameters.CPD *(0.25*cbrt_z**4.0 + zi *cbrt_z)
-                    heating_rate_lw[i,j,k]=-(lw_flux[k]-lw_flux[k-1]) * self._Grid.dxi[2]
-                    dTdt_rad[i,j,k] = heating_rate_lw[i,j,k]/parameters.CPD/self._Ref.rho0[k]
-                    s[i,j,k] +=dTdt_rad[i,j,k] * dt
+        dycoms_rad_calc(nh, self._Grid.dxi[2],z, z_edge, rho, rho_edge, qc, qv, dTdt_rad)
+        
+        s[:,:,:] +=dTdt_rad[:,:,:] * dt
         # print('zi', zi)
-        # if self._TimeSteppingController.time > 100:
-        #     plt.figure()
-        #     plt.plot(lw_flux,z_edge)
-        #     plt.show()
+        if self._TimeSteppingController.time > 100:
+            plt.figure()
+            plt.plot(dTdt_rad[4,4,:]*3600,z_edge)
+            plt.show()
         return
     def io_initialize(self, nc_grp):
         # add zi to the output?
@@ -770,6 +754,36 @@ class RadiationDycoms:
     @property
     def name(self):
         return self._name 
+@numba.njit()
+def dycoms_rad_calc(nh, dzi,z, z_edge, rho, rho_edge, qc, qv, dT):
+    F0 = 70.0 # W m^-2
+    F1 = 22.0 # W m^-2
+    kappa = 85 # m^2 kg^-1
+    a = 1.0 # K m^{-1/3}
+    rho_zi =1.12 # kg m^{-3} (air density at initial inversion zi = 795)
+    qt_zi = 8.0e-3 # kg kg^-1 (total water threshold for diagnosing zi)
+    D = 3.75e-6 # s^{-1} dive
+    shape = qc.shape
+    lw_flux = np.zeros(shape[2],dtype=np.double)
+    kmin = nh[2]-1
+    kmax = shape[2]-nh[2]
+    for i in range(nh[0],shape[0]-nh[0]):
+        for j in range(nh[1],shape[1]-nh[1]):
+            index = np.amax(np.argwhere(qc[i,j,:]+qv[i,j,:]> qt_zi))
+            zi = z[index]   
+            qc_edge = np.interp(z_edge,z,qc[i,j,:])
+            for k in range(kmin,kmax):
+                qtop = np.trapz(rho_edge[k:kmax+1]*qc_edge[k:kmax+1],dx=1./dzi) * kappa
+                qbot = np.trapz(rho_edge[kmin:k+1]*qc_edge[kmin:k+1],dx=1./dzi) * kappa
+                lw_flux[k] = F0 * np.exp(-qtop) + F1 * np.exp(-qbot)
+                if z_edge[k] > zi:
+                    cbrt_z = (z_edge[k]-zi)**(1./3.)
+                    lw_flux[k]+= a * rho_zi * D * 1004. *(0.25*cbrt_z**4.0 + zi *cbrt_z)
+
+                dT[i,j,k] = -(lw_flux[k]-lw_flux[k-1]) * dzi/1004./rho[k]
+    return
+
+
 
 
 
