@@ -184,6 +184,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.StatsIO.add_class(self.DiagTurbulence)
         self.StatsIO.add_class(self.DiagClouds)
         self.StatsIO.add_class(self.Rad)
+        self.StatsIO.add_class(self.Plumes)
 
         # Now iniitalzie the IO field
         self.StatsIO.initialize()
@@ -337,6 +338,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.StatsIO.add_class(self.Micro)
         self.StatsIO.add_class(self.DiagTurbulence)
         self.StatsIO.add_class(self.DiagClouds)
+        self.StatsIO.add_class(self.Rad)
+        self.StatsIO.add_class(self.Plumes)
 
         # Now iniitalzie the IO field
         self.StatsIO.initialize()

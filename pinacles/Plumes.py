@@ -241,9 +241,20 @@ class Plumes:
 
     def io_initialize(self, nc_grp):
 
+        if self._n == 0:
+            # No plumes so we can jump out here
+
+            return
+
+
         return 
 
     def io_update(self, nc_grp):
+
+        if self._n == 0:
+            # N plumes so we can jump out here 
+
+            return 
 
         return
 
