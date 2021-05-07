@@ -18,6 +18,12 @@ class ParticlesBase:
         self._DiagnosticState = DiagnosticState
         self._TimeSteppingController = TimeSteppingController
 
+
+
+        #Add a variable for the number of lagrangian particles
+        self._DiagnosticState.add_variable('n_lagrangian')
+        self._DiagnosticState.add_variable('n_particles')
+
         self._particle_dofs = 0    # The first three dofs are always position
         self._interp_particle_dofs = 0
         self._nointerp_particle_dofs = 0
@@ -39,8 +45,7 @@ class ParticlesBase:
         self.add_particle_variable('u')
         self.add_particle_variable('v')
         self.add_particle_variable('w')
-
-
+        self.add_particle_variable('n_particles') # Number of particles
 
 
 
@@ -160,28 +165,31 @@ class ParticlesBase:
 
 
     @staticmethod
-    #@numba.njit()
-    def point_inject(low_corner_local, high_corner_local, local_shape, dx, n, particle_varnames, particle_data, x, y, z, n_total):
+    @numba.njit()
+    def point_inject(low_corner_local, high_corner_local, local_shape, dx, n, dt, particle_varnames, particle_data, indicies, n_total):
 
         #If the point is not on this rank then reutrn
-        for lp, li, hi in zip([x,y,z], low_corner_local, high_corner_local):
-            if lp  < li or lp >= hi:
-                return
+        #for lp, li, hi in zip([x,y,z], low_corner_local, high_corner_local):
+        #    if lp  < li or lp >= hi:
+        #        return
 
+        i,j,k = indicies
+        shape = n.shape
 
         #Now that we are on the correct rank let's find compute the i,j,k index
-        i = int((x - low_corner_local[0])//dx[0])
-        j = int((y - low_corner_local[1])//dx[1])
-        k = int((z - low_corner_local[2])//dx[2])
+        #i = int((x - low_corner_local[0])//dx[0])
+        #j = int((y - low_corner_local[1])//dx[1])
+        #k = int((z - low_corner_local[2])//dx[2])
 
 
         # Now let's check and see if we need to add particles to this rank
-        if n[i,j,k] >= n_total:
-            return
+        #if n[i,j,k] >= n_total:
+        #    return
 
         #Get the particle array at this point
-        ishift = local_shape[1] * local_shape[2]
-        jshift = local_shape[2]
+
+        ishift = shape[1] * shape[2]
+        jshift = shape[2]
         ii = i * ishift
         jj = j * jshift
         arr = particle_data[ii + jj + k]
@@ -192,6 +200,7 @@ class ParticlesBase:
         ydof = particle_varnames['y']
         zdof = particle_varnames['z']
         valid = particle_varnames['valid']
+        ndof = particle_varnames['n_particles']
 
         #Now let check an see if we need to allocate more memory
         if n_arr < n_total:
@@ -200,13 +209,20 @@ class ParticlesBase:
             arr = particle_data[ii + jj + k]
 
        # print("adding particles", arr.shape)
+        if n[i,j,k] < n_total:
+            for pi in range(arr.shape[1]):
+                if arr[valid, pi] == 0.0:
+                    arr[xdof, pi] = np.random.uniform(low_corner_local[0] + dx[0]*i, low_corner_local[0] + dx[0]*(i+1))
+                    arr[ydof, pi] = np.random.uniform(low_corner_local[1] + dx[1]*j, low_corner_local[1] + dx[1]*(j+1))
+                    arr[zdof, pi] = np.random.uniform(low_corner_local[2] + dx[2]*k, low_corner_local[2] + dx[2]*(k+1))
+                    arr[valid,pi] = 1.0
+                    n[i,j,k] += 1
+    
+        # Now divide flux among particles  
         for pi in range(arr.shape[1]):
-            if arr[valid, pi] == 0.0:
-                arr[xdof, pi] = np.random.uniform(low_corner_local[0] + dx[0]*i, low_corner_local[0] + dx[0]*(i+1))
-                arr[ydof, pi] = np.random.uniform(low_corner_local[1] + dx[1]*j, low_corner_local[1] + dx[1]*(j+1))
-                arr[zdof, pi] = np.random.uniform(low_corner_local[2] + dx[2]*k, low_corner_local[2] + dx[2]*(k+1))
-                arr[valid,pi] = 1.0
-                n[i,j,k] += 1
+            if arr[valid, pi] == 1.0:
+                arr[ndof, pi] += 1.0 * dt/n[i,j,k]
+
 
         #xdof = particle_varnames['x']
         #ydof = particle_varnames['y']
@@ -251,7 +267,10 @@ class ParticlesBase:
         v = self._VelocityState.get_field('v')
         w = self._VelocityState.get_field('w')
 
+        tke_sgs = self._DiagnosticState.get_field('tke_sgs')
+
         local_shape = self._Grid.local_shape
+        n_halo = self._Grid.n_halo
         low_corner = (self._Grid.x_range[0], self._Grid.y_range[0], self._Grid.z_range[0])
         high_corner = (self._Grid.x_range[1], self._Grid.y_range[1], self._Grid.z_range[1])
 
@@ -265,7 +284,7 @@ class ParticlesBase:
         # Compute the new particle position
         # Communicate particles
         t00 = time.perf_counter()
-        self.compute_new_position(local_shape, self._n, self._particle_varnames, self._particle_data, self._TimeSteppingController.dt)
+        self.compute_new_position(local_shape, tke_sgs[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1],n_halo[2]:-n_halo[2]], self._n, self._particle_varnames, self._particle_data, self._TimeSteppingController.dt)
         t1 = time.perf_counter()
         #print('New position: ', t1 - t00)
 
@@ -458,7 +477,27 @@ class ParticlesBase:
         # Inject new particles
         t00 = time.perf_counter()
         if self._TimeSteppingController.time > 0.0:
-            self.point_inject(low_corner_local, high_corner_local, local_shape, self._Grid.dx, self._n, self._particle_varnames, self._particle_data, 800.0, 5600.0, 2.5, 1024)
+
+            point = (800.0, 5600.0, 2.5)
+            plume_on_rank = self._Grid.point_on_rank(point[0], point[1], point[2])
+            if plume_on_rank:
+                ih = self._Grid.point_indicies(point[0], 
+                                                     point[1], 
+                                                     point[2])
+                
+                indicies = (ih[0]-n_halo[0], 
+                    ih[1]-n_halo[1],
+                    ih[2]-n_halo[2])
+                
+                self.point_inject(low_corner_local, 
+                    high_corner_local, 
+                    local_shape, 
+                    self._Grid.dx, 
+                    self._n, 
+                    self._TimeSteppingController.dt, 
+                    self._particle_varnames, 
+                    self._particle_data, indicies, 1024)
+
         t1 = time.perf_counter()
        # print('Inject at a pont: ', t1 - t00)
 
@@ -516,7 +555,7 @@ class ParticlesBase:
 
     @staticmethod
     @numba.njit()
-    def compute_new_position(local_shape, n, particle_varnames, particle_data, dt):
+    def compute_new_position(local_shape, tke_sgs, n, particle_varnames, particle_data, dt):
 
         xdof = particle_varnames['x']
         ydof = particle_varnames['y']
@@ -538,9 +577,9 @@ class ParticlesBase:
                         arr = particle_data[ii + jj + k]
                         for p in range(arr.shape[1]):
                             if arr[valid,p] != 0.0:
-                                arr[xdof,p] += (arr[udof,p])*dt  #+ np.random.normal(loc=0.0, scale=0.1)) * dt
-                                arr[ydof,p] += (arr[vdof,p])*dt  #+ np.random.normal(loc=0.0, scale=0.1))* dt
-                                arr[zdof,p] += (arr[wdof,p])*dt  #+ np.random.normal(loc=0.0, scale=0.1)) * dt
+                                arr[xdof,p] += (arr[udof,p])*dt  + np.random.normal(loc=0.0, scale=0.33*np.sqrt(tke_sgs[i,j,k])) * dt
+                                arr[ydof,p] += (arr[vdof,p])*dt  + np.random.normal(loc=0.0, scale=0.33*np.sqrt(tke_sgs[i,j,k]))* dt
+                                arr[zdof,p] += (arr[wdof,p])*dt  + np.random.normal(loc=0.0, scale=0.33*np.sqrt(tke_sgs[i,j,k])) * dt
 
         return
 
@@ -932,14 +971,43 @@ class ParticlesBase:
         dof = particle_varnames[var]
         valid = particle_varnames['valid']
         count = 0
+        
         for arr in particle_data:
             for p in range(arr.shape[1]):
                 if arr[valid,p] != 0.0:
                     data[count] = arr[dof,p]
                     count += 1
+                    
 
 
         return
+
+
+    @staticmethod
+    @numba.njit()
+    def particle_sum_on_grid(particle_varnames, n, var, particle_data, data):
+
+        shape  = data.shape
+
+        dof = particle_varnames[var]
+        valid = particle_varnames['valid']
+        
+        ishift = shape[1] * shape[2]
+        jshift = shape[2]
+
+        for i in range(shape[0]):
+            ii = i * ishift
+            for j in range(shape[1]):
+                jj = j * jshift
+                for k in range(shape[2]):
+                    arr = particle_data[ii + jj + k]
+                    data[i,j,k] = 0
+                    for pi in range(arr.shape[1]):
+                        if arr[valid,pi]!= 0.0:
+                            data[i,j,k] += arr[dof,pi]
+    
+        
+
 
 
 
@@ -972,5 +1040,15 @@ class ParticlesSimple(ParticlesBase):
     def update(self):
 
         self.update_position()
+
+
+        n_halo = self._Grid.n_halo
+        n_lagrangian = self._DiagnosticState.get_field('n_lagrangian')
+        n_lagrangian[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1],n_halo[2]:-n_halo[2]] = self._n[:,:,:]
+
+
+        n_particles = self._DiagnosticState.get_field('n_particles')
+        self.particle_sum_on_grid(self._particle_varnames, self._n, 'n_particles', self._particle_data, n_particles[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1],n_halo[2]:-n_halo[2]])
+
 
         return
