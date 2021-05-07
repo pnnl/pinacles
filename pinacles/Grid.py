@@ -6,19 +6,38 @@ from mpi4py_fft.pencil import Subcomm
 class GridBase:
     def __init__(self, namelist):
 
+        #List of class atributes that will be restarted
+        self._restart_attributes = []
+
         #The total number of points in the domain NOT including halo/ghost points
         self._n = np.array(namelist['grid']['n'], dtype=np.int)
+        self._restart_attributes.append('_n')
         assert len(self._n) == 3
 
         #The number of halo points
         self._n_halo = np.array(namelist['grid']['n_halo'], dtype=np.int)
+        self._restart_attributes.append('_n_halo')
         assert len(self._n_halo) == 3
 
         #The total number of points in the CRM domain including halo/ghost points
         self._ngrid = self._n + 2 * self._n_halo
+        self._restart_attributes.append('_ngrid')
+
+        self._ngrid_local = None
+        self._restart_attributes.append('_ngrid_local')
+
+        self._local_shape = None
+        self._restart_attributes.append('_local_shape')
+
+        self._local_start = None
+        self._restart_attributes.append('_local_start')
+
+        self._local_end = None
+        self._restart_attributes.append('_local_end')
 
         #Lenght of each CRM domain side
         self._l = np.array(namelist['grid']['l'], dtype=np.double)
+        self._restart_attributes.append('_l')
         assert len(self._l) == 3
 
         #The global x,y,z coordiantes
@@ -27,9 +46,17 @@ class GridBase:
         self._local_axes = None
         self._local_axes_edge = None
 
+        self._restart_attributes.append('_global_axes')
+        self._restart_attributes.append('_global_axes_edge')
+        self._restart_attributes.append('_local_axes')
+        self._restart_attributes.append('_local_axes_edge')
+
+
         #Set the grid spacing
         self._dx = None
+        self._restart_attributes.append('_dx')
         self._dxi = None
+        self._restart_attributes.append('_dxi')
 
         #Store sub-cummunicators created by mpi4py_fft
         self.subcomms = None
@@ -37,6 +64,14 @@ class GridBase:
 
         #Get local grid information
         self._get_local_grid_indicies()
+
+        return
+
+    def restart(self):
+
+        return
+
+    def dump_restart(self, data_dict):
 
         return
 
@@ -96,6 +131,10 @@ class GridBase:
     @property
     def local_start(self): 
         return self._local_start 
+
+    @property
+    def local_end(self):
+        return self._local_end
 
     @property
     def dx(self):
@@ -304,3 +343,60 @@ class RegularCartesian(GridBase):
         self._dx = np.array(dx_list)
         self._dxi = 1.0/self._dx
         return
+
+    def restart(self, data_dict):
+        """ 
+        Here we just do checks for domain decomposition consistency with the namelist file
+        # currently, we require that a restarted simulation have exactly the same domain 
+        # as the simulation from which it is being restarted.
+        """
+
+        key = 'RegularCartesianGrid'
+        assert np.array_equal(self._dx, data_dict[key]['_dx'])
+        assert np.array_equal(self._dxi, data_dict[key]['_dxi'])
+
+        for i in range(3):
+            assert np.array_equal(self._local_axes[i], data_dict[key]['_local_axes'][i])
+            assert np.array_equal(self._local_axes_edge[i], data_dict[key]['_local_axes_edge'][i])
+
+            assert np.array_equal(self._global_axes[i], data_dict[key]['_global_axes'][i])
+            assert np.array_equal(self._global_axes_edge[i], data_dict[key]['_global_axes_edge'][i])  
+
+        for item in ['_l', '_n', '_n_halo', '_ngrid', '_ngrid_local', 
+            '_local_shape', '_local_start', '_local_end']:
+            assert np.all(self.__dict__[item] == data_dict[key][item])
+
+        return
+
+    def dump_restart(self, data_dict):
+
+        # Loop through all attributes storing them
+        key = 'RegularCartesianGrid'
+        data_dict[key] = {}
+        for item in self._restart_attributes:
+            data_dict[key][item] = self.__dict__[item]
+
+        return
+
+    def point_on_rank(self, x, y, z):
+         
+        x_range = self.x_range_local
+        y_range = self.y_range_local
+
+        on_rank = False
+
+        if  x_range[0] <= x and x_range[1] >= x:
+            if  y_range[0] <= y and y_range[1] >= y:
+                on_rank = True
+
+        return on_rank
+
+
+    def point_indicies(self, x, y, z):
+
+        # Get the indicies of the x, y, and z points
+        x_index = np.argmin(np.abs(self.x_local - x))
+        y_index = np.argmin(np.abs(self.y_local - y))
+        z_index = np.argmin(np.abs(self.z_local - z))
+
+        return (x_index, y_index, z_index)

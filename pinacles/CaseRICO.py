@@ -40,14 +40,37 @@ class SurfaceRICO(Surface.SurfaceBase):
 
         # Add surface stresses
         #timeseries_grp.createVariable('ustar', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('taux', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('tauy', np.double, dimensions=('time',))
+        v = timeseries_grp.createVariable('taux', np.double, dimensions=('time',))
+        v.long_name = 'surface shear stress x-component'
+        v.unts = 'm^2 s^{-2}'
+        v.standard_name = '\tau{13}'
+
+        v = timeseries_grp.createVariable('tauy', np.double, dimensions=('time',))
+        v.long_name = 'surface shear stress y-component'
+        v.units = 'm^2 s^{-2}'
+        v.standard_name = '\tau{23}'
 
         #Add thermodynamic fluxes
-        timeseries_grp.createVariable('tflx', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('qvflx', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('shf', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('lhf', np.double, dimensions=('time',))
+        v = timeseries_grp.createVariable('tflx', np.double, dimensions=('time',))
+        v.long_name = 'surface temperature flux'
+        v.units = 'K m s^{-2}'
+        v.standard_name =  'surface temperature flux'
+
+        v = timeseries_grp.createVariable('qvflx', np.double, dimensions=('time',))
+        v.long_name = 'surface water vapor flux'
+        v.units = 'kg kg^{-2} m s^{-2}'
+        v.standard_name =  'surface water vapor flux'
+
+
+        v = timeseries_grp.createVariable('shf', np.double, dimensions=('time',))
+        v.long_name = 'surface sensible heat flux'
+        v.units = 'W m^{-2}'
+        v.standard_name = 'shf'
+
+        v = timeseries_grp.createVariable('lhf', np.double, dimensions=('time',))
+        v.long_name = 'surface latent heat flux'
+        v.units = 'W m^{-2}'
+        v.standard_name = 'lhf'
 
         return
 

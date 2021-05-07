@@ -16,12 +16,16 @@ class PressureSolver:
         self._wavenumber_n = None
 
         #Add dynamic pressure as a diagnsotic state
-        self._DiagnosticState.add_variable('dynamic pressure')
+        self._DiagnosticState.add_variable('dynamic pressure', long_name='Dynamic Pressure', units='Pa', latex_name='p^*')
 
         #Setup the Fourier Transform
         div =  fft.DistArray(self._Grid.n , self._Grid.subcomms, dtype=np.complex)
         div = div.redistribute(0)
-        self._fft =  fft.PFFT(self._Grid.subcomms, darray=div, axes=(1,0), transforms={}, backend='mkl_fft')
+
+        try:
+            self._fft =  fft.PFFT(self._Grid.subcomms, darray=div, axes=(1,0), transforms={}, backend='numpy')
+        except:
+            self._fft =  fft.PFFT(self._Grid.subcomms, darray=div, axes=(1,0), transforms={})
 
         self.fft_local_starts()
 
@@ -38,7 +42,6 @@ class PressureSolver:
         div_hat2 = div_hat.redistribute(2)
 
         self._wavenumber_n = div_hat2.shape
-        print(self._wavenumber_n)
         self._wavenumber_substarts = div_hat2.substart
 
         return

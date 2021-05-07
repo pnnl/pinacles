@@ -13,11 +13,8 @@ class Kinematics:
         self._VelocityState = VelocityState
         self._DiagnosticState = DiagnosticState
 
-
-        DiagnosticState.add_variable('strain_rate_mag')
-        DiagnosticState.add_variable('dudx')
-        DiagnosticState.add_variable('dvdy')
-        DiagnosticState.add_variable('dwdz')
+        DiagnosticState.add_variable('strain_rate_mag', long_name = 'Magnitude of strain rate tensor', latex_name = '|S_{i,j}|', units='s^{-1}')
+        DiagnosticState.add_variable('Q_criterion', long_name = 'Q criterion', latex_name = 'Q', units='m^2 s^-2')
 
         nl = self._Grid.ngrid_local
 
@@ -47,10 +44,8 @@ class Kinematics:
         w = self._VelocityState.get_field('w')
 
         strain_rate_mag = self._DiagnosticState.get_field('strain_rate_mag')
-        dudx = self._DiagnosticState.get_field('dudx')
-        dvdy = self._DiagnosticState.get_field('dvdy')
-        dwdz = self._DiagnosticState.get_field('dwdz')
-        
+        Q_mag = self._DiagnosticState.get_field('Q_criterion')
+
         #Get grid spacing
         dxi = self._Grid.dxi
 
@@ -67,13 +62,11 @@ class Kinematics:
             self._dwdx, self._dwdy, self._dwdz,
             strain_rate_mag)
 
-        dudx[:,:,:] = self._dudx[:,:,:]
-        dvdy[:,:,:] = self._dvdy[:,:,:]
-        dwdz[:,:,:] = self._dwdz[:,:,:]
-        #import pylab as plt
-        #plt.contourf(self._dudy[:,4,:].T + self._dvdx[:,4,:].T)
-        #plt.show()
-        #eturn
+        Kinematics_impl.q_criterion(self._dudx, self._dudy, self._dudz,
+            self._dvdx, self._dvdy, self._dvdz,
+            self._dwdx, self._dwdy, self._dwdz,
+            Q_mag)
+
 
 
 

@@ -457,8 +457,8 @@ class ParticlesBase:
 
         # Inject new particles
         t00 = time.perf_counter()
-        if self._TimeSteppingController.time > 1800.0:
-            self.point_inject(low_corner_local, high_corner_local, local_shape, self._Grid.dx, self._n, self._particle_varnames, self._particle_data, 5120/8.0, 5120.0/2.0, 80.0, 1024)
+        if self._TimeSteppingController.time > 0.0:
+            self.point_inject(low_corner_local, high_corner_local, local_shape, self._Grid.dx, self._n, self._particle_varnames, self._particle_data, 800.0, 5600.0, 2.5, 1024)
         t1 = time.perf_counter()
        # print('Inject at a pont: ', t1 - t00)
 
@@ -504,9 +504,9 @@ class ParticlesBase:
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
             ax.scatter(xp, yp, zp, s=0.1)
-            ax.axes.set_xlim3d(left=0, right=5120.0)
-            ax.axes.set_ylim3d(bottom=0, top=5120.0)
-            ax.axes.set_zlim3d(bottom=0, top=2048.0)
+            ax.axes.set_xlim3d(left=0, right=6400.0)
+            ax.axes.set_ylim3d(bottom=0, top=6400.0)
+            ax.axes.set_zlim3d(bottom=0, top=1500.0)
             plt.savefig('./part_figs/' + str(self.call_count) + '_' + str(MPI.COMM_WORLD.Get_rank()) + '.png' ,dpi=300)
             plt.close()
         ##import sys; sys.exit()

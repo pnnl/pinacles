@@ -45,11 +45,23 @@ class ScalarDiffusion:
     def io_initialize(self, this_grp):
         profiles_grp = this_grp['profiles']
         for var in self._ScalarState.names:
-            profiles_grp.createVariable('w' + var + '_sgs', np.double, dimensions=('time', 'z',))
+            if 'ff' in var:
+                continue
 
+            v = profiles_grp.createVariable('w' + var + '_sgs', np.double, dimensions=('time', 'z',))
+            v.long_name = 'SGS flux of ' + var
+            v.units = 'm s^{-1} ' + self._ScalarState.get_units(var)
+            v.standard_name = 'w ' + self._ScalarState._latex_names[var] + ' sgs'
         #Add the thetali flux
-        profiles_grp.createVariable('w' + 'T' + '_sgs', np.double, dimensions=('time', 'z',))
-        profiles_grp.createVariable('w' + 'thetali' + '_sgs', np.double, dimensions=('time', 'z',))
+        v = profiles_grp.createVariable('w' + 'T' + '_sgs', np.double, dimensions=('time', 'z',))
+        v.long_name = 'SGS flux of temperature'
+        v.units = 'm s^{-1} K'
+        v.standard_name = 'wT sgs'
+
+        v = profiles_grp.createVariable('w' + 'thetali' + '_sgs', np.double, dimensions=('time', 'z',))
+        v.long_name = 'SGS flux of liquid-ice potential temperature'
+        v.units = 'm s^{-1} K'
+        v.standard_name = 'w \theta_{li} sgs'
 
         return
 
@@ -60,6 +72,9 @@ class ScalarDiffusion:
         my_rank = MPI.COMM_WORLD.Get_rank()
 
         for var in self._ScalarState.names:
+            if 'ff' in var:
+                return
+
             flux_mean = UtilitiesParallel.ScalarAllReduce(self._flux_profiles[var]/npts)
 
             MPI.COMM_WORLD.barrier()

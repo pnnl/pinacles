@@ -10,7 +10,7 @@ from pinacles.WRFUtil import to_wrf_order_halo, to_wrf_order_4d_halo, to_our_ord
 module_mp_fast_sbm = module_mp_fast_sbm_warm
 class MicroSBM(MicrophysicsBase):
 
-    def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController):
+    def __init__(self,namelist, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController):
         MicrophysicsBase.__init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController)
 
 
@@ -35,11 +35,11 @@ class MicroSBM(MicrophysicsBase):
 
 
         for var in self._list_of_ScalarStatevars:
-            self._ScalarState.add_variable(var, units='kg kg^-1', latex_name=var, long_name=long_names[var])
+            self._ScalarState.add_variable(var, units='kg kg^-1', latex_name=var, long_name=long_names[var], limit=True)
 
         #Add new diag fields
         self._io_fields = ['MA', 'LH_rate', 'CE_rate', 'CldNucl_rate', 'difful_tend', 'diffur_tend',
-            'tempdiffl', 'saturation', 'n_reg_ccn']
+            'tempdiffl', 'saturation', 'n_reg_ccn', 'EFFR']
 
         long_names = {'MA': '', 
                       'LH_rate':'Latent heat rate',
@@ -49,7 +49,8 @@ class MicroSBM(MicrophysicsBase):
                       'diffur_tend':'rain mass change rate due to droplet diffusional growth',
                       'tempdiffl':'latent heat rate due to droplet diffusional growth',
                       'saturation':'Saturaiton Ratio',
-                      'n_reg_ccn':'Aerosol Regeneration Rate'}
+                      'n_reg_ccn':'Aerosol Regeneration Rate',
+                      'EFFR': 'cloud droplet effective radius'}
 
         units = {'MA': '',
                       'LH_rate':'K s^{-1}',
@@ -59,7 +60,8 @@ class MicroSBM(MicrophysicsBase):
                       'diffur_tend':'kg kg^{-1} s^{-1}',
                       'tempdiffl':'K s^{-1}',
                       'saturation':'',
-                      'n_reg_ccn':''}
+                      'n_reg_ccn':'',
+                      'EFFR': 'm'}
 
         for var in self._io_fields:
             self._DiagnosticState.add_variable(var, latex_name=var, long_name=long_names[var])
@@ -85,6 +87,7 @@ class MicroSBM(MicrophysicsBase):
                       'qna_sbm_in': 'kg/kg',
                       'qna_nucl_sbm_in': 'kg/kg'}
 
+
         for var in self._sbm_in_iofield :
             self._DiagnosticState.add_variable(var, latex_name=var, long_name=long_names[var])
 
@@ -92,17 +95,22 @@ class MicroSBM(MicrophysicsBase):
         self._qc_start = self._ScalarState.nvars 
         for i in range(1,34):
             name = "ff1i" + str(i)
-            self._ScalarState.add_variable(name, units='kg kg^{-1}', long_name='liquid bin mass ' + str(i) )
+            self._ScalarState.add_variable(name, units='kg kg^{-1}', long_name='liquid bin mass ' + str(i), limit=True )
         self._qc_end = self._ScalarState.nvars
         #Add aersol bins
         for i in range(1,34):
             name = 'ff8i' + str(i)
-            self._ScalarState.add_variable(name, units='kg kg^{-1}', long_name='aerosol bin mass ' + str(i))
+            self._ScalarState.add_variable(name, units='kg kg^{-1}', long_name='aerosol bin mass ' + str(i), limit=True)
 
         for i in range(1,34):
             name = 'ff8in' + str(i)
-            self._ScalarState.add_variable(name,units='kg kg^{-1}', long_name='(regeneration) aerosol bin mass ' + str(i))
+            self._ScalarState.add_variable(name,units='kg kg^{-1}', long_name='(regeneration) aerosol bin mass ' + str(i), limit=True)
         self._bin_end = self._ScalarState.nvars
+
+
+        self._DiagnosticState.add_variable('liq_sed', long_name ='liquid water sedimentation', units='kg kg^{-1} s^{-1}')
+        self._DiagnosticState.add_variable('s_tend_liq_sed', long_name ='s tend liquid water sedimentation', units='')
+
 
         # Call add output container diagnostics to the container
         self.add_output_container_diags()
@@ -124,6 +132,8 @@ class MicroSBM(MicrophysicsBase):
         self._itimestep = 1
         self._call_count = 0
 
+        # Unless we find a valid aerosol data file, assume we want to use lognormal distributions
+       
         ccncon1 = 90.0
         radius_mean1 = 0.03e-4
         sig1 = 1.28
@@ -135,12 +145,69 @@ class MicroSBM(MicrophysicsBase):
         ccncon3 = 0.0
         radius_mean3 = 0.31000e-04
         sig3 = 2.70000
+        
+        # Determine if an analytical aerosol size distribution is to be used, or a data file
+        try:
+            aero_in = namelist['microphysics']['aero_sbm']
+            ccncon1 = aero_in['ccncon'][0]
+            sig1 = aero_in['sig'][0]
+            radius_mean1 = aero_in['rm'][0]
 
+            ccncon2 = aero_in['ccncon'][1]
+            sig2 = aero_in['sig'][1]
+            radius_mean2 = aero_in['rm'][1]
+
+            ccncon3 = aero_in['ccncon'][2]
+            sig3 = aero_in['sig'][2]
+            radius_mean3 = aero_in['rm'][2]
+        except:
+            UtilitiesParallel.print_root(' Analytical aerosol distribution parameters are not defined in namelist')
+            UtilitiesParallel.print_root(' Default values will be used unless an aerosol file has been defined')
+
+        try:
+            aerosol_species = namelist['microphysics']['aerosol_species']
+            #options are sea_salt, ammonium_bisulfate
+            if not aerosol_species in ['sea_salt', 'ammonium_bisulfate']:
+                aerosol_species = 'sea_salt'
+                UtilitiesParallel.print_root('Warning: Unknown aerosol species, defaulting to sea_salt')
+        except:
+            aerosol_species = 'sea_salt'
+            UtilitiesParallel.print_root(' No aerosol species specified, defaulting to sea_salt.')
+        
+        if aerosol_species == 'sea_salt':
+            mwaero_in = 22.9 + 35.5
+            ions_in = 2
+            ro_solute_in = 2.16
+        elif aerosol_species == 'ammonium_bisulfate':
+            mwaero_in = 115.0
+            ions_in = 2
+            ro_solute_in = 1.79
+             
+
+        # Read in the aerosol file here which previously was read in the fortran code
+        # and assumed to be named 'CCN_size_33bin.dat'
+        ccn_size_bin_dat = np.ones((33,3),dtype=np.double,order='F') * -9999
+        try:
+            aerosol_file = namelist['microphysics']['aerosol_file']
+            UtilitiesParallel.print_root('Trying to read a specified aerosol file')
+
+            if MPI.COMM_WORLD.Get_rank() == 0:
+                ccn_size_bin_dat = np.asfortranarray(np.loadtxt(aerosol_file))
+                print(np.shape(ccn_size_bin_dat))
+        
+            ccn_size_bin_dat =  MPI.COMM_WORLD.bcast(ccn_size_bin_dat)
+            
+        except:
+            UtilitiesParallel.print_root(' Did not read in aerosol data, will use lognormal distributions')
+
+        self._restart_attributes = ['_th_old', '_qv_old', '_RAINNC', '_itimestep']
 
         module_mp_fast_sbm.module_mp_warm_sbm.warm_hucminit(5.0,
         ccncon1, radius_mean1, sig1,
         ccncon2, radius_mean2, sig2,
-        ccncon3, radius_mean3, sig3)
+        ccncon3, radius_mean3, sig3,
+        ccn_size_bin_dat,
+        mwaero_in, ions_in, ro_solute_in)
 
         return
 
@@ -194,7 +261,6 @@ class MicroSBM(MicrophysicsBase):
 
 
     def update(self):
-
         #Get grid information
         nhalo = self._Grid.n_halo
 
@@ -203,6 +269,11 @@ class MicroSBM(MicrophysicsBase):
 
         s = self._ScalarState.get_field('s')
         qv = self._ScalarState.get_field('qv')
+
+
+        liq_sed = self._DiagnosticState.get_field('liq_sed')
+        s_tend_liq_sed = self._DiagnosticState.get_field('s_tend_liq_sed')
+
         wrf_vars['qv'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         to_wrf_order(nhalo, qv, wrf_vars['qv'])
 
@@ -278,6 +349,10 @@ class MicroSBM(MicrophysicsBase):
         wrf_vars['nprc_tend'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
         wrf_vars['saturation'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
 
+
+        wrf_vars['LIQUID_SEDIMENTATION'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
+        wrf_vars['EFFR'] = np.zeros(self._wrf_dims, order='F', dtype=np.double)
+
         #Get grid dimensions
         ids = 1; jds = 1; kds = 1
         ide = self._wrf_dims[0]; jde = self._wrf_dims[2]; kde = self._wrf_dims[1]
@@ -342,6 +417,7 @@ class MicroSBM(MicrophysicsBase):
                                                       its,ite, jts,jte, kts,kte,
                                                       KRDROP,
                                                       wrf_vars['sbmradar'],
+                                                      wrf_vars['LIQUID_SEDIMENTATION'],
                                                       wrf_vars['MA'],
                                                       wrf_vars['LH_rate'],
                                                       wrf_vars['CE_rate'],
@@ -351,6 +427,7 @@ class MicroSBM(MicrophysicsBase):
                                                       wrf_vars['difful_tend'],
                                                       wrf_vars['diffur_tend'],
                                                       wrf_vars['tempdiffl'],
+                                                      wrf_vars['EFFR'],
                                                       diagflag= wrf_vars['diagflag'],
                                                       rainnc=wrf_vars['RAINNC'],
                                                       rainncv=wrf_vars['RAINNCV'],
@@ -388,6 +465,15 @@ class MicroSBM(MicrophysicsBase):
         to_our_order(nhalo, s_wrf, s)
 
         to_our_order(nhalo, wrf_vars['qv'], qv)
+        to_our_order(nhalo, wrf_vars['LIQUID_SEDIMENTATION'], liq_sed)
+        np.multiply(liq_sed, parameters.LV/parameters.CPD, out=s_tend_liq_sed)
+        
+        # Sedimentation source term
+        np.subtract(s, s_tend_liq_sed, out=s)
+
+        # Convert sedimentation sources to units of tendency
+        np.multiply(liq_sed, 1.0/self._TimeSteppingController.dt, out=liq_sed)
+        np.multiply(s_tend_liq_sed, -1.0/self._TimeSteppingController.dt, out=s_tend_liq_sed)
 
         self._call_count += 1
         self._itimestep  += 1
@@ -396,28 +482,63 @@ class MicroSBM(MicrophysicsBase):
     def get_qc(self):
         return self._ScalarState.get_field('qc') +  self._ScalarState.get_field('qr')  #np.sum(self._ScalarState._state_array.array[self._qc_start:self._qc_end,:,:,:], axis=0)
 
+    def get_qcloud(self):
+        return self._ScalarState.get_field('qc')
+
     def io_initialize(self, nc_grp):
 
         timeseries_grp = nc_grp['timeseries']
         profiles_grp = nc_grp['profiles']
 
         #Cloud fractions
-        timeseries_grp.createVariable('CF', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('RF', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('LWP', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('RWP', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('VWP', np.double, dimensions=('time',))
+        v = timeseries_grp.createVariable('CF', np.double, dimensions=('time',))
+        v.long_name = 'Cloud Fraction'
+        v.standard_name = 'CF'
+        v.units = ''
+
+        v = timeseries_grp.createVariable('RF', np.double, dimensions=('time',))
+        v.long_name = 'Rain Fraction'
+        v.standard_name = 'RF'
+        v.units = ''
+
+        v = timeseries_grp.createVariable('LWP', np.double, dimensions=('time',))
+        v.long_name = 'Liquid Water Path'
+        v.standard_name = 'LWP'
+        v.units = 'kg/m^2'
+
+        v = timeseries_grp.createVariable('RWP', np.double, dimensions=('time',))
+        v.long_name = 'Rain Water Path'
+        v.standard_name = 'RWP'
+        v.units = 'kg/m^2'
+
+        v = timeseries_grp.createVariable('VWP', np.double, dimensions=('time',))
+        v.long_name = 'Water Vapor Path'
+        v.standard_name = 'VWP'
+        v.units = 'kg/m^2'
 
 
         #Precipitation
-        timeseries_grp.createVariable('RAINNC', np.double, dimensions=('time',))
+        v = timeseries_grp.createVariable('RAINNC', np.double, dimensions=('time',))
+        v.long_name = 'accumulated surface precip'
+        v.units = 'mm'
+        v.latex_name = 'rainnc'
+
         timeseries_grp.createVariable('RAINNCV', np.double, dimensions=('time',))
+        v.long_name = 'one time step accumulated surface precip'
+        v.units = 'mm'
+        v.latex_name = 'rainncv'
+
         timeseries_grp.createVariable('rain_rate', np.double, dimensions=('time',))
-
-
         #Now add cloud fraction and rain fraction profiles
-        profiles_grp.createVariable('CF', np.double, dimensions=('time', 'z',))
+        v = profiles_grp.createVariable('CF', np.double, dimensions=('time', 'z',))
+        v.long_name = 'Cloud Fraction'
+        v.standard_name = 'CF'
+        v.units = ''
+
         profiles_grp.createVariable('RF', np.double, dimensions=('time', 'z',))
+        v.long_name = 'Rain Fraction'
+        v.standard_name = 'RF'
+        v.units = ''
 
         return
 
@@ -480,4 +601,26 @@ class MicroSBM(MicrophysicsBase):
             profiles_grp['CF'][-1,:] = cf_prof[n_halo[2]:-n_halo[2]]
             profiles_grp['RF'][-1,:] = rf_prof[n_halo[2]:-n_halo[2]]
 
-            
+    def get_reffc(self):
+        return self._DiagnosticState.get_field('EFFR')
+
+    def restart(self, data_dict):
+        key = 'SBM'
+        
+        for att in self._restart_attributes:
+            self.__dict__[att] = data_dict[key][att]
+
+        return
+    
+    def dump_restart(self, data_dict):
+        # Get the name of this particualr container and create a dictionary for it in the 
+        # restart data dict. 
+    
+        key ='SBM'
+        data_dict[key] = {}
+
+        # Loop over the restart_attributes and add it to the data_dict
+        for att in self._restart_attributes:
+            data_dict[key][att] = self.__dict__[att]
+
+        return

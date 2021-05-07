@@ -14,3 +14,4 @@ OMEGA = 7.2921151467064e-5  #Earth's Rotation Rate
 LV = 2.5014e6
 LS = 2.8440e6
 LF = 0.336e6 
+LARGE = 1e11  # A very large number

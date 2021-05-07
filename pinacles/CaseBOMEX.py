@@ -4,8 +4,8 @@ from pinacles import parameters
 from pinacles import Surface, Surface_impl, Forcing_impl, Forcing
 from pinacles import UtilitiesParallel
 
-class SurfaceBOMEX(Surface.SurfaceBase): 
-    def __init__(self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState): 
+class SurfaceBOMEX(Surface.SurfaceBase):
+    def __init__(self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState):
 
         Surface.SurfaceBase.__init__(self, namelist, Grid, Ref, VelocityState,
             ScalarState, DiagnosticState)
@@ -15,6 +15,7 @@ class SurfaceBOMEX(Surface.SurfaceBase):
         self._qv_flux = 5.2e-5
         self._ustar = 0.28 #m/s
         self._theta_surface = 299.1 #K
+        self.T_surface = 299.1
         self.bflux_from_thflux()
 
         nl = self._Grid.ngrid_local
@@ -32,22 +33,47 @@ class SurfaceBOMEX(Surface.SurfaceBase):
         timeseries_grp = rt_grp['timeseries']
 
         #Add surface windspeed
-        timeseries_grp.createVariable('wind_horizontal', np.double, dimensions=('time',))
+        v = timeseries_grp.createVariable('wind_horizontal', np.double, dimensions=('time',))
+        v.long_name = 'Surface layer wind speed'
+        v.unts = 'm s^{-1}'
+        v.standard_name = 'surface wind'
 
         # Add surface stresses
-        timeseries_grp.createVariable('ustar', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('taux', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('tauy', np.double, dimensions=('time',))
+        v = timeseries_grp.createVariable('ustar', np.double, dimensions=('time',))
+        v.long_name = 'friction velocity'
+        v.units = 'm s^{-1}'
+        v.standard_name = 'u^{\star}'
+
+        v = timeseries_grp.createVariable('taux', np.double, dimensions=('time',))
+        v.long_name = 'surface shear stress x-component'
+        v.unts = 'm^2 s^{-2}'
+        v.standard_name = '\tau{13}'
+
+        v = timeseries_grp.createVariable('tauy', np.double, dimensions=('time',))
+        v.long_name = 'surface shear stress y-component'
+        v.units = 'm^2 s^{-2}'
+        v.standard_name = '\tau{23}'
 
         #Add thermodynamic fluxes
-        timeseries_grp.createVariable('tflx', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('shf', np.double, dimensions=('time',))
-        timeseries_grp.createVariable('lhf', np.double, dimensions=('time',))
+        v = timeseries_grp.createVariable('tflx', np.double, dimensions=('time',))
+        v.long_name = 'surface temperature flux'
+        v.units = 'K m s^{-2}'
+        v.standard_name =  'surface temperature flux'
+
+        v = timeseries_grp.createVariable('shf', np.double, dimensions=('time',))
+        v.long_name = 'surface sensible heat flux'
+        v.units = 'W m^{-2}'
+        v.standard_name = 'shf'
+
+        v = timeseries_grp.createVariable('lhf', np.double, dimensions=('time',))
+        v.long_name = 'surface latent heat flux'
+        v.units = 'W m^{-2}'
+        v.standard_name = 'lhf'
 
         return
 
     def io_update(self, rt_grp):
-    
+
         my_rank = MPI.COMM_WORLD.Get_rank()
         n_halo = self._Grid.n_halo
         npts = self._Grid.n[0] * self._Grid.n[1]

@@ -1,13 +1,15 @@
 from pinacles import ParallelArrays
 import numpy as np
+import numba
 from mpi4py import MPI
 
 class ModelState:
     def __init__(self, Grid, container_name, prognostic=False, identical_bcs=False):
 
         self._Grid = Grid          #The grid to use for this ModelState container
-        self._prognostic = prognostic  #Is prognostic, if True we will allocate a tendency array
 
+
+        self._prognostic = prognostic  #Is prognostic, if True we will allocate a tendency array
         self._state_array = None   #This will store present values of the model state
         self._tend_array = None    #If prognostic this will store the values of the tend array
         self._dofs = {}            #This maps variable name to the GhostArray dof where it stored
@@ -17,10 +19,13 @@ class ModelState:
         self._nvars = 0            #The number of 3D field stored in this model state
         self._bcs = {}
         self._loc = {}
+        self._limit = {}
         self._identical_bcs = identical_bcs
 
-
         self.name = container_name
+
+        self._restart_attributes = ['_prognostic', '_dofs', '_long_names', '_latex_names', '_units', 
+            '_nvars', '_bcs', '_loc', '_identical_bcs', 'name']
 
         return
 
@@ -52,7 +57,7 @@ class ModelState:
     def identical_bcs(self):
         return self._identical_bcs
 
-    def add_variable(self, name, long_name='None', latex_name='None', units='None', bcs='gradient zero', loc='c'):
+    def add_variable(self, name, long_name='None', latex_name='None', units='None', bcs='gradient zero', loc='c', limit=False):
 
         #Do some correctness checks and warn for some behavior
         assert(bcs in  ['gradient zero', 'value zero'])
@@ -65,6 +70,7 @@ class ModelState:
         self._units[name] = units
         self._bcs[name] = bcs
         self._loc[name] = loc
+        self._limit[name] = limit
 
         #Increment the bumber of variables
         self._nvars += 1
@@ -234,6 +240,27 @@ class ModelState:
 
         return
 
+
+    @staticmethod
+    @numba.njit()
+    def limiter(array):
+        shape = array.shape
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                for k in range(shape[2]):
+                    array[i,j,k] = max(0.0, array[i,j,k])
+
+        return
+
+    def apply_limiter(self):
+
+        for key, value in self._limit.items():
+            field = self.get_field(key)
+            self.limiter(field)
+
+        return
+
+
     def io_initialize(self, nc_grp):
 
         timeseries_grp = nc_grp['timeseries']
@@ -243,21 +270,59 @@ class ModelState:
         for var in self._dofs:
             if  not 'ff' in  var:  #Avoid SBM Bins
                 if self._loc[var] != 'z':
-                    profiles_grp.createVariable(var, np.double, dimensions=('time', 'z',))
-                    profiles_grp.createVariable(var + '_squared', np.double, dimensions=('time', 'z',))
-                    profiles_grp.createVariable(var + '_min', np.double, dimensions=('time', 'z',))
-                    profiles_grp.createVariable(var + '_max', np.double, dimensions=('time', 'z',))
+                    v = profiles_grp.createVariable(var, np.double, dimensions=('time', 'z',))
+                    v.units = self._units[var]
+                    v.long_name = self._long_names[var]
+                    v.standard_name = '\bar{' + self._latex_names[var] + '}'
+
+                    v = profiles_grp.createVariable(var + '_squared', np.double, dimensions=('time', 'z',))
+                    v.units = '{' + self._units[var] + '}^2'
+                    v.long_name = self._long_names[var] + ' mean of squared'
+                    v.standard_name = self._latex_names[var]
+
+                    v = profiles_grp.createVariable(var + '_min', np.double, dimensions=('time', 'z',))
+                    v.units = self._units[var]
+                    v.long_name = 'minimum '+ self._long_names[var]
+                    v.standard_name = 'min{' + self._latex_names[var] + '}'
+
+                    v = profiles_grp.createVariable(var + '_max', np.double, dimensions=('time', 'z',))
+                    v.units = self._units[var]
+                    v.long_name = 'maximum '+ self._long_names[var]
+                    v.standard_name = 'max{' + self._latex_names[var] + '}'
+
                 else:
-                    profiles_grp.createVariable(var, np.double, dimensions=('time', 'z_edge',))
-                    profiles_grp.createVariable(var + '_squared', np.double, dimensions=('time', 'z_edge',))
-                    profiles_grp.createVariable(var + '_min', np.double, dimensions=('time', 'z_edge'))
-                    profiles_grp.createVariable(var + '_max', np.double, dimensions=('time', 'z_edge'))
+                    v = profiles_grp.createVariable(var, np.double, dimensions=('time', 'z_edge',))
+                    v.units = self._units[var]
+                    v.long_name = self._long_names[var]
+                    v.standard_name = '\bar{' + self._latex_names[var] + '}'
+
+                    v = profiles_grp.createVariable(var + '_squared', np.double, dimensions=('time', 'z_edge',))
+                    v.units = '{' + self._units[var] + '}^2'
+                    v.long_name = self._long_names[var] + ' mean of squared'
+                    v.standard_name = '\bar{' + self._latex_names[var] + '^2}'
+
+                    v = profiles_grp.createVariable(var + '_min', np.double, dimensions=('time', 'z_edge'))
+                    v.units = self._units[var]
+                    v.long_name = 'minimum '+ self._long_names[var]
+                    v.standard_name = 'min{' + self._latex_names[var] + '}'
+
+                    v = profiles_grp.createVariable(var + '_max', np.double, dimensions=('time', 'z_edge'))
+                    v.units = self._units[var]
+                    v.long_name = 'maximum '+ self._long_names[var]
+                    v.standard_name = 'max{' + self._latex_names[var] + '}'
 
         #Now loop over variables createing domain max/min timeseries for each
         for var in self._dofs:
             if  not 'ff' in  var: #Avoid SBM Bins
-                timeseries_grp.createVariable(var + '_max', np.double, dimensions=('time',))
-                timeseries_grp.createVariable(var + '_min', np.double, dimensions=('time',))
+                v = timeseries_grp.createVariable(var + '_max', np.double, dimensions=('time',))
+                v.units = self._units[var]
+                v.long_name = 'minimum '+ self._long_names[var]
+                v.standard_name = 'min{' + self._latex_names[var] + '}'
+
+                v = timeseries_grp.createVariable(var + '_min', np.double, dimensions=('time',))
+                v.units = self._units[var]
+                v.long_name = 'maximum '+ self._long_names[var]
+                v.standard_name = 'max{' + self._latex_names[var] + '}'
 
         return
 
@@ -302,5 +367,44 @@ class ModelState:
                     timeseries_grp = nc_grp['timeseries']
                     timeseries_grp[var + '_max'][-1] = var_max
                     timeseries_grp[var + '_min'][-1] = var_min
+
+        return
+
+    def restart(self, data_dict):
+
+        #Do consistency checks
+        key = self.name
+        
+        for att in self._restart_attributes:
+            assert self.__dict__[att] == data_dict[key][att]
+
+        # Update the internal arrays
+        self._state_array.array[:,:,:,:] = data_dict[key]['_state_array'][:,:,:,:]
+        if data_dict[key]['_tend_array'] is not None:
+            self._tend_array.array[:,:,:,:] = data_dict[key]['_tend_array'][:,:,:,:]
+
+
+        return
+    
+    def dump_restart(self, data_dict):
+
+
+        # Get the name of this particualr container and create a dictionary for it in the 
+        # restart data dict. 
+    
+        key = self.name
+        data_dict[key] = {}
+
+        # Loop over the restart_attributes and add it to the data_dict
+        for att in self._restart_attributes:
+            data_dict[key][att] = self.__dict__[att]
+
+        # Add the state and tendency arrays to the restart data_dict
+        data_dict[key]['_state_array'] = self._state_array.array
+        if self._tend_array is not None:
+            data_dict[key]['_tend_array'] = self._tend_array.array
+        else:
+            data_dict[key]['_tend_array'] = None
+
 
         return
