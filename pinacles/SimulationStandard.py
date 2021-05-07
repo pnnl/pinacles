@@ -115,7 +115,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Force = ForcingFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.Micro, self.VelocityState, self.ScalarState, self.DiagnosticState, self.TimeSteppingController)
 
         #Instantiate particles
-        self.Parts = ParticlesGrid.ParticlesSimple(self.ModelGrid, self.TimeSteppingController, self.VelocityState, self.ScalarState, self.DiagnosticState)
+        self.Parts = ParticlesGrid.ParticlesSimple(self.ModelGrid, self.Ref, self.TimeSteppingController, self.VelocityState, self.ScalarState, self.DiagnosticState)
 
         # Instantiate surface
         self.Surf= SurfaceFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.VelocityState, self.ScalarState, self.DiagnosticState, self.TimeSteppingController)

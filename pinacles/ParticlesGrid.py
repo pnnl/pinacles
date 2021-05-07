@@ -9,10 +9,11 @@ from mpi4py import MPI
 
 class ParticlesBase:
 
-    def __init__(self, Grid, TimeSteppingController, VelocityState, ScalarState, DiagnosticState):
+    def __init__(self, Grid, Ref, TimeSteppingController, VelocityState, ScalarState, DiagnosticState):
 
         # Initialize data
         self._Grid = Grid
+        self._Ref = Ref
         self._VelocityState = VelocityState
         self._ScalarState = ScalarState
         self._DiagnosticState = DiagnosticState
@@ -216,12 +217,15 @@ class ParticlesBase:
                     arr[ydof, pi] = np.random.uniform(low_corner_local[1] + dx[1]*j, low_corner_local[1] + dx[1]*(j+1))
                     arr[zdof, pi] = np.random.uniform(low_corner_local[2] + dx[2]*k, low_corner_local[2] + dx[2]*(k+1))
                     arr[valid,pi] = 1.0
+                    
+                    arr[ndof, pi] = 0.0
                     n[i,j,k] += 1
     
         # Now divide flux among particles  
         for pi in range(arr.shape[1]):
             if arr[valid, pi] == 1.0:
                 arr[ndof, pi] += 1.0 * dt/n[i,j,k]
+
 
 
         #xdof = particle_varnames['x']
@@ -1031,9 +1035,9 @@ class ParticlesBase:
     
 class ParticlesSimple(ParticlesBase):
 
-    def __init__(self, Grid, TimeSteppingController, VelocityState, ScalarState, DiagnsoticState):
+    def __init__(self, Grid, Ref, TimeSteppingController, VelocityState, ScalarState, DiagnsoticState):
 
-        ParticlesBase.__init__(self,Grid, TimeSteppingController, VelocityState, ScalarState, DiagnsoticState)
+        ParticlesBase.__init__(self, Grid, Ref, TimeSteppingController, VelocityState, ScalarState, DiagnsoticState)
 
         return
 
@@ -1049,6 +1053,8 @@ class ParticlesSimple(ParticlesBase):
 
         n_particles = self._DiagnosticState.get_field('n_particles')
         self.particle_sum_on_grid(self._particle_varnames, self._n, 'n_particles', self._particle_data, n_particles[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1],n_halo[2]:-n_halo[2]])
-
+        
+        # Missing a factor of density here
+        n_particles[:,:,:] = n_particles[:,:,:] / (self._Grid.dx[0] * self._Grid.dx[1]* self._Grid.dx[2]) / self._Ref.rho0[np.newaxis,np.newaxis,:]
 
         return

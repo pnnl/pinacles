@@ -3,10 +3,11 @@ import numba
 
 class ParticlesBase:
 
-    def __init__(self, Grid, TimeSteppingController, VelocityState, ScalarState, DiagnosticState):
+    def __init__(self, Grid, Ref, TimeSteppingController, VelocityState, ScalarState, DiagnosticState):
 
         # Initialize data
         self._Grid = Grid
+        self._Ref = Ref
         self._VelocityState = VelocityState
         self._ScalarState = ScalarState
         self._DiagnosticState = DiagnosticState
@@ -266,9 +267,9 @@ class ParticlesBase:
 
 class ParticlesSimple(ParticlesBase):
 
-    def __init__(self, Grid, TimeSteppingController, VelocityState, ScalarState, DiagnsoticState):
+    def __init__(self, Grid, Ref, TimeSteppingController, VelocityState, ScalarState, DiagnsoticState):
 
-        ParticlesBase.__init__(self,Grid, TimeSteppingController, VelocityState, ScalarState, DiagnsoticState)
+        ParticlesBase.__init__(self,Grid, Ref, TimeSteppingController, VelocityState, ScalarState, DiagnsoticState)
 
         return
 
