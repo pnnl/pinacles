@@ -40,6 +40,31 @@ class Plume:
         
     def update(self):
 
+
+        # If needed, zero the plume scalar on the boundaries 
+        if self._boundary_outflow:
+            plume_value = self._ScalarState.get_field(self._scalar_name)
+
+            n_halo = self._Grid.n_halo
+
+            x_local = self._Grid.x_local
+            x_global = self._Grid.x_global
+
+            if np.amin(x_local) == np.amin(x_global):
+                plume_value[:n_halo[0],:,:] = 0
+
+            if np.max(x_local) == np.amax(x_global):
+                plume_value[-n_halo[0]:,:,:] = 0
+
+            y_local = self._Grid.y_local
+            y_global = self._Grid.y_global
+
+            if np.amin(y_local) == np.amin(y_global):
+                plume_value[:,:n_halo[1],:] = 0
+
+            if np.max(y_local) == np.amax(y_global):
+                plume_value[:,-n_halo[1]:,:] = 0
+
         # If it is not time to start the plume just return w/o doing anything
         if  self._TimeSteppingController.time  < self._start_time or not self._plume_on_rank :
             return
@@ -67,29 +92,6 @@ class Plume:
             ql_tend = self._ScalarState.get_tend('ql')
             ql_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = self._plume_ql_flux/grid_cell_mass
 
-        # If needed, zero the plume scalar on the boundaries 
-        if self._boundary_outflow:
-            plume_value = self._ScalarState.get_field(self._scalar_name)
-
-            n_halo = self._Grid.n_halo
-
-            x_local = self._Grid.x_local 
-            x_global = self._Grid.x_global
-
-            if np.amin(x_local) == np.amin(x_global):
-                plume_value[:n_halo[0],:,:] = 0
-            
-            if np.max(x_local) == np.amax(x_global):
-                plume_value[-n_halo[0]:,:,:] = 0
-
-            y_local = self._Grid.y_local 
-            y_global = self._Grid.y_global
-
-            if np.amin(y_local) == np.amin(y_global):
-                plume_value[:,:n_halo[1],:] = 0
-            
-            if np.max(y_local) == np.amax(y_global):
-                plume_value[:,-n_halo[1]:,:] = 0
 
         return
     
