@@ -19,8 +19,6 @@ class ParticlesBase:
         self._DiagnosticState = DiagnosticState
         self._TimeSteppingController = TimeSteppingController
 
-
-
         #Add a variable for the number of lagrangian particles
         self._DiagnosticState.add_variable('n_lagrangian')
         self._DiagnosticState.add_variable('n_particles')
@@ -30,7 +28,7 @@ class ParticlesBase:
         self._nointerp_particle_dofs = 0
         self._particle_data = None
         self._initialzied = False
-        self._n_buffer =  16 #The size of the buffer
+        self._n_buffer =  1024 #The size of the buffer
 
         # These are numba dictionaries
         self._particle_varnames = Dict.empty(key_type=types.unicode_type, value_type=types.int64)
@@ -42,13 +40,10 @@ class ParticlesBase:
         self.add_particle_variable('y')
         self.add_particle_variable('z')
 
-
         self.add_particle_variable('u')
         self.add_particle_variable('v')
         self.add_particle_variable('w')
         self.add_particle_variable('n_particles') # Number of particles
-
-
 
         n = 0
         if MPI.COMM_WORLD.Get_rank() == 0:
@@ -169,23 +164,8 @@ class ParticlesBase:
     @numba.njit()
     def point_inject(low_corner_local, high_corner_local, local_shape, dx, n, dt, particle_varnames, particle_data, indicies, n_total):
 
-        #If the point is not on this rank then reutrn
-        #for lp, li, hi in zip([x,y,z], low_corner_local, high_corner_local):
-        #    if lp  < li or lp >= hi:
-        #        return
-
         i,j,k = indicies
         shape = n.shape
-
-        #Now that we are on the correct rank let's find compute the i,j,k index
-        #i = int((x - low_corner_local[0])//dx[0])
-        #j = int((y - low_corner_local[1])//dx[1])
-        #k = int((z - low_corner_local[2])//dx[2])
-
-
-        # Now let's check and see if we need to add particles to this rank
-        #if n[i,j,k] >= n_total:
-        #    return
 
         #Get the particle array at this point
 
@@ -209,7 +189,6 @@ class ParticlesBase:
             particle_data[ii + jj + k] = np.concatenate((arr, new_buf),axis=1)
             arr = particle_data[ii + jj + k]
 
-       # print("adding particles", arr.shape)
         if n[i,j,k] < n_total:
             for pi in range(arr.shape[1]):
                 if arr[valid, pi] == 0.0:
@@ -225,28 +204,6 @@ class ParticlesBase:
         for pi in range(arr.shape[1]):
             if arr[valid, pi] == 1.0:
                 arr[ndof, pi] += 1.0 * dt/n[i,j,k]
-
-
-
-        #xdof = particle_varnames['x']
-        #ydof = particle_varnames['y']
-        #zdof = particle_varnames['z']
-        #valid = particle_varnames['val']
-
-        #ishift = local_shape[1] * local_shape[2]
-        #jshift = local_shape[2]
-        #ii = i * ishift
-        #jj = j * jshift
-        #arr = particle_data[ii + jj + k]
-        #n_arr = arr.shape[1]
-        #if n[i,j,k] < ntotal:
-        #    if n_arr != ntotal:
-        #        #Create a new buffer
-        #        new_buf = np.zeros((arr.shape[0], ntotal - n_arr), dtype=np.double)
-        #    particle_data[ii + jj + k] = np.concatenate((arr, new_buf),axis=1)
-
-
-
 
         return
 
@@ -282,39 +239,21 @@ class ParticlesBase:
         high_corner_local = (self._Grid.x_range_local[1], self._Grid.y_range_local[1], self._Grid.z_range_local[1])
 
         l = self._Grid.l
-       # #print(xdof, ydof, zdof)
 
-        t0 = time.perf_counter()
-        # Compute the new particle position
-        # Communicate particles
-        t00 = time.perf_counter()
         self.compute_new_position(local_shape, tke_sgs[n_halo[0]:-n_halo[0],n_halo[1]:-n_halo[1],n_halo[2]:-n_halo[2]], self._n, self._particle_varnames, self._particle_data, self._TimeSteppingController.dt)
-        t1 = time.perf_counter()
-        #print('New position: ', t1 - t00)
 
         # Bounce particles at the surface
-        t00 = time.perf_counter()
-        self._surface_bounce(local_shape, self._n, self._particle_varnames, self._particle_data)
-        t1 = time.perf_counter()
-       # print('Bounce: ', t1 - t00)
 
-        t00 = time.perf_counter()
+        self._surface_bounce(local_shape, self._n, self._particle_varnames, self._particle_data)
+
         if MPI.COMM_WORLD.Get_size() == 0:
             self._boundary_exit_serial(local_shape, l, self._n, self._particle_varnames, self._particle_data)
         else:
 
 
             # Apply global lateral boundaries here. I think we can use the serial code
-            #self._boundary_periodic_serial(local_shape, high_corner, self._n, self._particle_varnames, self._particle_data)
             self._boundary_exit_serial(local_shape, l, self._n, self._particle_varnames, self._particle_data)
-
-            #Compute the number of boundary crossers in the x-direction
-            t00 =  time.perf_counter()
             
-            #nglob =np.empty((1,), dtype=np.int)
-            #MPI.COMM_WORLD.Allreduce(np.array(np.sum(self._n), dtype=np.int), nglob, op=MPI.SUM)
-            #print('Before mpi', nglob)
-
             n_send = np.zeros((local_shape[0], local_shape[1], local_shape[2],2), dtype=np.int)
 
             #First do x
@@ -330,23 +269,9 @@ class ParticlesBase:
                 send_buffer_left = np.empty((self._particle_dofs, n_send_left), dtype=np.double)
                 send_buffer_right = np.empty((self._particle_dofs, n_send_right), dtype=np.double)
 
-                #nglob =np.empty((1,), dtype=np.int)
-                #MPI.COMM_WORLD.Allreduce(np.array(np.sum(self._n), dtype=np.int), nglob, op=MPI.SUM)
-                #print('x_crossing', nglob)
-
-
                 # In the future we can take this out of the loop when the number to send are zero
                 self._pack_x_buffers(local_shape, low_corner_local, high_corner_local, self._n,
                     self._particle_varnames, self._particle_data, n_send, send_buffer_left, send_buffer_right)
-                print(np.shape(send_buffer_left), np.shape(send_buffer_right))
-
-                #nglob =np.empty((1,), dtype=np.int)
-                #MPI.COMM_WORLD.Allreduce(np.array(np.sum(self._n), dtype=np.int), nglob, op=MPI.SUM)
-                #print('pack buffers', nglob)
-
-
-            #print(np.shape(send_buffer_left), np.shape(send_buffer_right), np.sum(self._n))
-
 
                 # Send from left to right
                 source, dest = comm.Shift(0, 1)
@@ -364,10 +289,6 @@ class ParticlesBase:
                 recv_buffer_left = np.empty((self._particle_dofs, n_recv_left), dtype=np.double)
                 comm.Sendrecv(send_buffer_right, dest, recvbuf=recv_buffer_left, source=source)
                 self.unpack_buffer(low_corner_local, high_corner_local, high_corner, self._Grid.dx, self._n, self._n_buffer,  recv_buffer_left, self._particle_varnames, self._particle_data)
-            
-                #nglob =np.empty((1,), dtype=np.int)
-                #MPI.COMM_WORLD.Allreduce(np.array(np.sum(self._n), dtype=np.int), nglob, op=MPI.SUM)
-                #print('unpack buffers 1', nglob)
 
                 source, dest = comm.Shift(0,-1)
                 if source == MPI.PROC_NULL:
@@ -381,12 +302,6 @@ class ParticlesBase:
                 recv_buffer_right = np.empty((self._particle_dofs, n_recv_right), dtype=np.double)
                 comm.Sendrecv(send_buffer_left, dest, recvbuf=recv_buffer_right, source=source)
                 self.unpack_buffer(low_corner_local, high_corner_local, high_corner, self._Grid.dx, self._n, self._n_buffer, recv_buffer_right, self._particle_varnames, self._particle_data)
-                # Now fill the particle array 
-                #nglob =np.empty((1,), dtype=np.int)
-                #MPI.COMM_WORLD.Allreduce(np.array(np.sum(self._n), dtype=np.int), nglob, op=MPI.SUM)
-                #print('unpack buffers 2', nglob)
-
-
 
             # Get the y sub communicator and it size
             comm = self._Grid.subcomms[1]
@@ -401,23 +316,12 @@ class ParticlesBase:
                 n_send_right = np.sum(n_send[:,:,:,0])
                 n_send_left = np.sum(n_send[:,:,:,1])
 
-                #nglob =np.empty((1,), dtype=np.int)
-                #MPI.COMM_WORLD.Allreduce(np.array(np.sum(self._n), dtype=np.int), nglob, op=MPI.SUM)
-                #print('y_crossing', nglob)
-
                 send_buffer_left = np.empty((self._particle_dofs, n_send_left), dtype=np.double)
                 send_buffer_right = np.empty((self._particle_dofs, n_send_right), dtype=np.double)
 
                 # In the future we can take this out of the loop when the number to send are zero
                 self._pack_y_buffers(local_shape, low_corner_local, high_corner_local, self._n,
                     self._particle_varnames, self._particle_data, n_send, send_buffer_left, send_buffer_right)
-
-                #nglob =np.empty((1,), dtype=np.int)
-                #MPI.COMM_WORLD.Allreduce(np.array(np.sum(self._n), dtype=np.int), nglob, op=MPI.SUM)
-                #print('pack buffers', nglob)
-
-
-                #print(send_buffer_left)
 
                 # Send from left to right
                 source, dest = comm.Shift(0, 1)
@@ -438,11 +342,6 @@ class ParticlesBase:
                 self.unpack_buffer(low_corner_local, high_corner_local, high_corner, self._Grid.dx, self._n, self._n_buffer,  recv_buffer_left, self._particle_varnames, self._particle_data)
                 source, dest = comm.Shift(0,-1)
 
-
-                #nglob =np.empty((1,), dtype=np.int)
-                #MPI.COMM_WORLD.Allreduce(np.array(np.sum(self._n), dtype=np.int), nglob, op=MPI.SUM)
-                #print('unpack buffers 1', nglob)
-
                 if source == MPI.PROC_NULL:
                     source = 0
 
@@ -456,30 +355,10 @@ class ParticlesBase:
                 self.unpack_buffer(low_corner_local, high_corner_local, high_corner, self._Grid.dx, self._n, self._n_buffer,  recv_buffer_right, self._particle_varnames, self._particle_data)
 
 
-                #nglob =np.empty((1,), dtype=np.int)
-                #MPI.COMM_WORLD.Allreduce(np.array(np.sum(self._n), dtype=np.int), nglob, op=MPI.SUM)
-                #print('unpack buffers 2', nglob)
-
-
-
-
-
-            t1 = time.perf_counter()
-          #  print('Send particles: ', t1 - t00)
-
-
-
-        t1 = time.perf_counter()
-       # print('Handle boundaries: ', t1 - t00)
-
         # Move particles to new eulerian grid cells
-        t00 = time.perf_counter()
         self.move_particles_on_grid(low_corner_local, local_shape, self._Grid.dx, self._n_buffer, self._n, self._particle_varnames, self._particle_data)
-        t1 = time.perf_counter()
-       # print('Move particles: ', t1 - t00)
 
         # Inject new particles
-        t00 = time.perf_counter()
         if self._TimeSteppingController.time > 0.0:
 
             point = (800.0, 5600.0, 2.5)
@@ -500,23 +379,16 @@ class ParticlesBase:
                     self._n, 
                     self._TimeSteppingController.dt, 
                     self._particle_varnames, 
-                    self._particle_data, indicies, 1024)
+                    self._particle_data, indicies, 32)
 
-        t1 = time.perf_counter()
-       # print('Inject at a pont: ', t1 - t00)
 
         #Interpolate velocities onto the particles
-        t00 = time.perf_counter()
+
         self.interpolate_pt(local_shape, self._Grid.n_halo, low_corner_local, self._Grid.dx, self._n, self._particle_varnames, self._particle_data, u, 'u', 0)
         self.interpolate_pt(local_shape, self._Grid.n_halo, low_corner_local, self._Grid.dx, self._n, self._particle_varnames, self._particle_data, v, 'v', 1)
         self.interpolate_pt(local_shape, self._Grid.n_halo, low_corner_local, self._Grid.dx, self._n, self._particle_varnames, self._particle_data, w, 'w', 2)
-        t1 = time.perf_counter()
-        #print('Interpolate velocities to points: ', t1 - t00)
 
-        #print(low_corner)
-        print('Timing: ', t1 - t0)
-        print(np.sum(self._n))
-        #import sys; sys.exit()
+
 
         xp_loc = np.empty((np.sum(self._n),), dtype=np.double)
         yp_loc = np.empty((np.sum(self._n),), dtype=np.double)
@@ -530,7 +402,6 @@ class ParticlesBase:
         yp_tuple = MPI.COMM_WORLD.allgather(yp_loc)
         zp_tuple = MPI.COMM_WORLD.allgather(zp_loc)
 
-        #print(xp_tuple)
 
         xp = np.empty((0,), dtype=np.double)
         yp = np.empty((0,), dtype=np.double)
@@ -540,21 +411,23 @@ class ParticlesBase:
             yp = np.concatenate((yp, yp_tuple[i]))
             zp = np.concatenate((zp, zp_tuple[i]))
 
-        if MPI.COMM_WORLD.Get_rank() == 0:
 
-        #print(np.amin(xp), np.amax(xp), np.amin(yp), np.amax(yp), np.amin(zp), np.amax(zp), np.shape(xp))
-            import pylab as plt
-            fig = plt.figure()
-            ax = fig.add_subplot(111, projection='3d')
-            ax.scatter(xp, yp, zp, s=0.1)
-            ax.axes.set_xlim3d(left=0, right=6400.0)
-            ax.axes.set_ylim3d(bottom=0, top=6400.0)
-            ax.axes.set_zlim3d(bottom=0, top=1500.0)
-            plt.savefig('./part_figs/' + str(self.call_count) + '_' + str(MPI.COMM_WORLD.Get_rank()) + '.png' ,dpi=300)
-            plt.close()
-        ##import sys; sys.exit()
+
+        # Here we enforce that there is a minimum number of particles per grid cell. 
+
+
+        #if MPI.COMM_WORLD.Get_rank() == 0:
+        #    import pylab as plt
+        #    fig = plt.figure()
+        #    ax = fig.add_subplot(111, projection='3d')
+        #    ax.scatter(xp, yp, zp, s=0.1)
+        #    ax.axes.set_xlim3d(left=0, right=6400.0)
+        #    ax.axes.set_ylim3d(bottom=0, top=6400.0)
+        #    ax.axes.set_zlim3d(bottom=0, top=1500.0)
+        #    plt.savefig('./part_figs/' + str(self.call_count) + '_' + str(MPI.COMM_WORLD.Get_rank()) + '.png' ,dpi=300)
+        #    plt.close()
+
             self.call_count += 1
-        #print('plot finished')
         return
 
     @staticmethod
@@ -732,10 +605,7 @@ class ParticlesBase:
             i = int(( (recv_buffer[x_dof, bi]%high_corner_global[0])- low_corner_local[0])//dx[0])
             j = max(min(int(((recv_buffer[y_dof, bi]%high_corner_global[1] ) - low_corner_local[1])//dx[1]), shape[0] -1), 0)
             k = int((recv_buffer[z_dof, bi]  - low_corner_local[2])//dx[2])
-
-            #if( i < 0 or i>31 or j < 0 or j > 31):
-            #    print('bi ', bi, 'buf ', recv_buffer[x_dof, bi], 'i ',  i, 'j ', j, 'k ',  k, i * ishift + j * jshift + k)
-
+            
             arr = particle_data[i * ishift + j * jshift + k]
 
             fits = False
