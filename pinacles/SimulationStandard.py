@@ -30,6 +30,7 @@ from pinacles import Plumes
 from pinacles import Restart
 from pinacles import UtilitiesParallel
 from pinacles import ParticlesGrid   
+from pinacles import DryDeposition
 from mpi4py import MPI
 import numpy as np
 import pylab as plt
@@ -126,6 +127,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instantiate radiation
         self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.Micro, self.TimeSteppingController)       
 
+        self.Dep = DryDeposition.DryDeposition(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf)
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
         self.Restart.add_class_to_restart(self.ScalarState)
@@ -281,7 +283,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Instantiate radiation
         self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.Micro, self.TimeSteppingController)       
-
+        
+        self.Dep = DryDeposition.DryDeposition(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf)
+   
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
         self.Restart.add_class_to_restart(self.ScalarState)
@@ -396,6 +400,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 #Update plumes if any
                 self.Plumes.update()
 
+
                 #Update the forcing
                 self.Force.update()
                 
@@ -434,6 +439,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     self.Thermo.update(apply_buoyancy=False)
                     #We call the microphysics update at the end of the RK steps.
                     self.Micro.update()
+                    self.Dep.update()
                     self.Rad.update()
                     self.Parts.update()
                     self.ScalarState.boundary_exchange()

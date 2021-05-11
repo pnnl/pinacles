@@ -62,6 +62,8 @@ class SurfaceTestbed(Surface.SurfaceBase):
         self._lhf = self._forcing_lhf[0]
         self._ustar = self._forcing_ustar[0]
 
+        print('USTAR IN SURFACE', self._ustar)
+
         self._z0 = 0.0
         return
 
@@ -129,8 +131,12 @@ class SurfaceTestbed(Surface.SurfaceBase):
         #-----------------------------------------------------------
         self._ustar_sfc[:,:] = ustar_interp
         self._ustar = ustar_interp
-       
+     
         #--------------------------------------------------------
+        # Get a roughness for the dry dep scheme
+        wspd_local = np.sum(self._windspeed_sfc[nh[0]:-nh[0], nh[1]:-nh[1]])/(self._Grid.n[0] * self._Grid.n[1])
+        wspd_mean = UtilitiesParallel.ScalarAllReduce(wspd_local)
+        self._z0 =self._compute_z0(self._Grid.dx[2]/2.0,wspd_mean)
         #OPTION 2-- z0 from windspeed (this is rough, should be improved), then get u*
         # Using the mean windspeed rather than pointwise, should also be interpolated to 10m
         # Expression from ARPS based on anderson 1993, we also used this in pycles
