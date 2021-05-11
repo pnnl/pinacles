@@ -71,7 +71,7 @@ class Fields2D:
         self.setup_nc_dims(rt_grp)
 
         for aclass in self._classes:
-            self._classes[aclass].fields2d_update(rt_grp)
+            self._classes[aclass].io_fields2d_update(rt_grp)
 
 
         # Sync and closue netcdf file

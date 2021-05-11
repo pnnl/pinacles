@@ -189,6 +189,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Now iniitalzie the IO field
         self.StatsIO.initialize()
         self.Fields2d = Fields2D.Fields2D(self._namelist, self.ModelGrid, self.Ref, self.TimeSteppingController)
+        self.Fields2d.add_class(self.Micro)
+        self.Fields2d.add_class(self.Rad)
+
 
         # Now initialze for the output of 3D fields
         self.FieldsIO = DumpFields.DumpFields(self._namelist, self.ModelGrid, self.TimeSteppingController)
