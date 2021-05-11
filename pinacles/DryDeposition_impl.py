@@ -45,6 +45,7 @@ def r_surface(particle_diameter, air_density, temperature, vg, ustar):
     beta = 2.0
     E_im = (St/(alpha + St))** beta
     return 1.0/3.0/ustar/(E_b + E_im)
+
 # compute dry deposition velocity for a given particle size and density
 @numba.njit
 def compute_dry_deposition_velocity( dry_particle_diameter, T,rh, nh,z, rho0, p0,shf, lhf, ustar, z0, vdep):
@@ -57,6 +58,9 @@ def compute_dry_deposition_velocity( dry_particle_diameter, T,rh, nh,z, rho0, p0
     C4 = -1.424
     for i in range(nh[0], shape[0]-nh[0]):
         for j in range(nh[1],shape[1]-nh[1]):
+
+            #TODO Move the computation of lmo to surface, should we do this for all sfc classes
+
             # Aerodynamic resistance depends on stability condition 
             bflux = ((parameters.G/parameters.CPD/T[i,j,nh[2]] * shf[i,j] 
                        + (parameters.EPSVI -1.0) * lhf[i,j]/parameters.LV)/rho0[nh[2]])
@@ -87,9 +91,33 @@ def compute_dry_deposition_velocity( dry_particle_diameter, T,rh, nh,z, rho0, p0
                 vdep[i,j,k] = vg + 1.0/(R_aero[k]+ R_surf)
     return
 
+@numba.njit()
+def compute_rh(nh, P0, qv, T, rh):
+    #TODO Let just move this over to thermodynamics
+    shape = rh.shape
+
+    for i in range(nh[0],shape[0]-nh[0]):
+        for j in range(nh[1],shape[1]-nh[1]):
+            for k in range(nh[2],shape[2]-nh[2]):
+                pv = P0[k] *parameters.EPSVI * qv[i,j,k]/(1.0-qv[i,j,k] + parameters.EPSVI * qv[i,j,k])
+                Tcel = T[i,j,k]-273.15
+                pvsat = 610.94 * np.exp(17.625*Tcel/(Tcel+243.04))
+                rh[i,j,k] = pv/pvsat
+
+    return
 
 
+@numba.njit()
+def compute_dry_deposition_sedimentation(nh, vdep, dxi, phi, phi_t, surface_flux):
+    shape = phi_t.shape
 
+    for i in range(nh[0],shape[0]-nh[0]):
+        for j in range(nh[1],shape[1]-nh[1]):
+            for k in range(nh[2],shape[2]-nh[2]):
+                phi_t[i,j,k] += vdep[i,j,k] *  (phi[i,j,k+1] - phi[i,j,k])*dxi[2]
 
-
-
+            k = nh[2]
+            for i in range(nh[0],shape[0]-nh[0]):
+                for j in range(nh[1],shape[1]-nh[1]):
+                        surface_flux[i,j] = vdep[i,j,k] * phi[i,j,k]
+    return

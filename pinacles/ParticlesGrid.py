@@ -29,7 +29,7 @@ class ParticlesBase:
         self._particle_data = None
         self._initialzied = False
         self._n_buffer =  1024 #The size of the buffer
-        self._minimum_particles = 2
+        self._minimum_particles = 16 
 
         # These are numba dictionaries
         self._particle_varnames = Dict.empty(key_type=types.unicode_type, value_type=types.int64)
@@ -383,7 +383,7 @@ class ParticlesBase:
                     self._n, 
                     self._TimeSteppingController.dt, 
                     self._particle_varnames, 
-                    self._particle_data, indicies, 16)
+                    self._particle_data, indicies, 128)
 
 
         #Interpolate velocities onto the particles
@@ -458,9 +458,9 @@ class ParticlesBase:
                         arr = particle_data[ii + jj + k]
                         for p in range(arr.shape[1]):
                             if arr[valid,p] != 0.0:
-                                arr[xdof,p] += (arr[udof,p])*dt  + np.random.normal(loc=0.0, scale=0.67*np.sqrt(tke_sgs[i,j,k])) * dt
-                                arr[ydof,p] += (arr[vdof,p])*dt  + np.random.normal(loc=0.0, scale=0.67*np.sqrt(tke_sgs[i,j,k]))* dt
-                                arr[zdof,p] += (arr[wdof,p])*dt  + np.random.normal(loc=0.0, scale=0.67*np.sqrt(tke_sgs[i,j,k])) * dt
+                                arr[xdof,p] += (arr[udof,p])*dt  + np.sqrt(2.0/3.0*tke_sgs[i,j,k]) * np.random.normal(loc=0.0, scale=1) * dt
+                                arr[ydof,p] += (arr[vdof,p])*dt  + np.sqrt(2.0/3.0*tke_sgs[i,j,k])  * np.random.normal(loc=0.0, scale=1) * dt
+                                arr[zdof,p] += (arr[wdof,p])*dt  + np.sqrt(2.0/3.0*tke_sgs[i,j,k])  * np.random.normal(loc=0.0, scale=1) * dt
 
         return
 
@@ -949,7 +949,6 @@ class ParticlesBase:
                         #    mean_count, n[i,j,k], arr[valid,:], 
                         #    x_pos_mean, y_pos_mean, z_pos_mean)
 
-                        n_old =  n[i,j,k]
                         new_points = int(n_minimum - n[i,j,k])
                         new_added =  0
                         # Nucleate 
@@ -962,12 +961,14 @@ class ParticlesBase:
                                 arr[valid, pi] = 1.0
                             
                                 new_added += 1
-                                n[i,j,k] += 1.0
+                                
                             elif arr[valid, pi] != 0.0:
                                 arr[npart_dof,pi] = npart_mean/n_minimum   # Set the mean value to the
                             
-                            #if new_added == new_points:
-                            #    break
+                            if new_added == new_points:
+                                break
+                        n[i,j,k] = n_minimum
+                        #print(n[i,j,k], new_added, new_points)
 
 
                     
@@ -993,9 +994,6 @@ class ParticlesSimple(ParticlesBase):
         self.update_position()
 
         self.fulfill_minimum_particles()
-
-
-        print(np.sum(self._n))
 
         n_halo = self._Grid.n_halo
         n_lagrangian = self._DiagnosticState.get_field('n_lagrangian')

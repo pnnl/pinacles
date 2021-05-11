@@ -33,6 +33,12 @@ class DryDeposition:
         self._DiagnosticState.add_variable('v_deposition')
         self._DiagnosticState.add_variable('rh')
 
+
+        # Store these fields for IO
+        ng_local = self._Grid.ngrid_local
+        self._surface_flux = np.zeros((ng_local[0], ng_local[1]), dtype=np.double)
+        self._surface_accum = np.zeros_like(self._surface_flux)
+
         return
     
     def update(self):
@@ -52,14 +58,9 @@ class DryDeposition:
 
        
         z02d =np.ones_like(shf2d) * self._Surface._z0
-        for i in range(nh[0],shape[0]-nh[0]):
-            for j in range(nh[1],shape[1]-nh[1]):
-                for k in range(nh[2],shape[2]-nh[2]):
-                    pv = self._Ref._P0[k] *parameters.EPSVI * qv[i,j,k]/(1.0-qv[i,j,k] + parameters.EPSVI * qv[i,j,k])
-                    Tcel = T[i,j,k]-273.15
-                    pvsat = 610.94 * np.exp(17.625*Tcel/(Tcel+243.04))
-                    rh[i,j,k] = pv/pvsat
-       
+
+        DryDeposition_impl.compute_rh(nh, self._Ref._P0, qv, T, rh)
+
         DryDeposition_impl.compute_dry_deposition_velocity(self._dry_diameter, T, rh, nh, z,
                                         self._Ref._rho0, self._Ref._P0, shf2d, lhf2d, ustar2d, z02d, vdep)
         #vdep is positive but directed downward
@@ -67,10 +68,10 @@ class DryDeposition:
             if   'plume' in  var:
                 phi = self._ScalarState.get_field(var)
                 phi_t = self._ScalarState.get_tend(var)
-                for i in range(nh[0],shape[0]-nh[0]):
-                    for j in range(nh[1],shape[1]-nh[1]):
-                        for k in range(nh[2],shape[2]-nh[2]):
-                             phi_t[i,j,k] += vdep[i,j,k] *  (phi[i,j,k+1] - phi[i,j,k])*self._Grid.dxi[2]
+                
+                
+                DryDeposition_impl.compute_dry_deposition_sedimentation(nh, vdep, self._Grid.dxi, 
+                    phi, phi_t, self._surface_flux)                
 
-        
-        
+
+                

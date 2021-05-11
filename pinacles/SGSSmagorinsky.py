@@ -31,7 +31,7 @@ def compute_visc(dx, z, strain_rate_mag, bvf, cs, pr,
                     (cs * filt_scale) ** 2.0 * (fb * strain_rate_mag[i, j, k]))
 
 
-                tke_sgs[i,j,k] = (eddy_viscosity[i, j, k]/(filt_scale*0.1))**2.0
+                tke_sgs[i,j,k] = (10.0*eddy_viscosity[i, j, k]/filt_scale)**2.0
                 # Compute the eddy diffusivty from the  eddy viscosity using an assumed
                 # inverse SGS Prandtl number tune this using
                 eddy_diffusivity[i, j, k] = eddy_viscosity[i, j, k] * pri
