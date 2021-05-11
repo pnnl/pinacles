@@ -377,6 +377,17 @@ class MicroP3(MicrophysicsBase):
 
         return
 
+    def io_fields2d_update(self, nc_grp):
+        
+        rainnc = nc_grp.createVariable('RAINNC', np.double, dimensions=('X', 'Y',))
+        rainnc[:,:] = self._RAINNC
+        
+        rainncv = nc_grp.createVariable('RAINNCV', np.double, dimensions=('X', 'Y'))
+        rainncv[:,:] = self._RAINNCV
+
+        nc_grp.sync()
+        return
+
     def get_qc(self):
         return self._ScalarState.get_field('qc') + self._ScalarState.get_field('qr')
 
