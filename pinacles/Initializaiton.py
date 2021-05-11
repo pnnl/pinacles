@@ -393,8 +393,8 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     if psfc < 1.0e4: 
         psfc *= 100.0 # Convert from hPa to Pa
     tsfc = init_data.variables['surface_temperature'][0]
-    u0 = init_data.variables['reference_u0'][0]
-    v0 = init_data.variables['reference_v0'][0]
+    u0 = init_data.variables['reference_u0'][0] * 0.0
+    v0 = init_data.variables['reference_v0'][0] * 0.0
     
     Ref.set_surface(Psfc=psfc, Tsfc=tsfc, u0=u0, v0=v0)
     Ref.integrate()

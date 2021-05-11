@@ -601,6 +601,18 @@ class MicroSBM(MicrophysicsBase):
             profiles_grp['CF'][-1,:] = cf_prof[n_halo[2]:-n_halo[2]]
             profiles_grp['RF'][-1,:] = rf_prof[n_halo[2]:-n_halo[2]]
 
+
+    def io_fields2d_update(self, nc_grp):
+        
+        rainnc = nc_grp.createVariable('RAINNC', np.double, dimensions=('X', 'Y',))
+        rainnc[:,:] = self._RAINNC
+        
+        rainncv = nc_grp.createVariable('RAINNCV', np.double, dimensions=('X', 'Y'))
+        rainncv[:,:] = self._RAINNCV
+
+        nc_grp.sync()
+        return
+
     def get_reffc(self):
         return self._DiagnosticState.get_field('EFFR')
 

@@ -19,7 +19,8 @@ def main(namelist):
     io_classes = [Sim.StatsIO,
                  Sim.FieldsIO,
                  Sim.IOTower, 
-                 Sim.Restart]
+                 Sim.Restart,
+                 Sim.Fields2d]
 
     # Determine all of the output frequencies
     io_frequencies = []

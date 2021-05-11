@@ -159,6 +159,8 @@ class RRTMG:
         self._toa_lw_up = 0.0
         self._toa_lw_dn = 0.0
 
+        self._toa_sw_dn_2d = np.zeros((self._Grid.ngrid_local[0], self._Grid.ngrid_local[1]))
+        self._surf_sw_dn_2d = np.zeros_like(self._toa_sw_dn_2d)
 
         self._restart_attributes = ['time_elapsed', '_profile_o3', 'p_buffer', 'p_extension', 't_extension', 
             'qv_extension', 'ql_extension', 'qi_extension']
@@ -437,7 +439,10 @@ class RRTMG:
             self._toa_sw_dn = np.sum(dflx_sw[:,-1])/npts
             self._toa_sw_up = np.sum(uflx_sw[:,-1])/npts
             self._toa_lw_dn = np.sum(dflx_lw[:,-1])/npts
-            self._toa_lw_up = np.sum(uflx_lw[:,-1])/npts           
+            self._toa_lw_up = np.sum(uflx_lw[:,-1])/npts
+            
+            self._toa_sw_dn_2d = dflx_sw[:,-1]
+            self._surf_sw_dn_2d = dflx_sw[:,0]
 
             # ds_uflux_lw = self._DiagnosticState.get_field('uflux_lw')
             # ds_dflux_lw = self._DiagnosticState.get_field('dflux_lw')
@@ -569,6 +574,24 @@ class RRTMG:
 
             profiles_grp['r_eff_cloud'][-1,:] = re_prof[:]
         return
+
+    def io_fields2d_update(self, nc_grp):
+
+        nh = self._Grid.n_halo
+        #if np.all(self._toa_sw_dn_2d == 0.0):
+        #    alb = np.zeros_like(self._surf_sw_dn_2d)
+        #else:
+        #    alb = -(self._surf_sw_dn_2d - self._toa_sw_dn_2d)/self._toa_sw_dn_2d
+        #    
+        # print(np.shape(alb), np.shape(self._surf_sw_dn_2d))
+
+        # albedo = nc_grp.createVariable('albedo', np.double, dimensions=('X', 'Y',))
+        # albedo[:,:] = alb[nh[0]:-nh[0],nh[1]:-nh[1]]
+        #
+        #nc_grp.sync()
+
+        return
+
 
     @property
     def name(self):
@@ -729,15 +752,23 @@ class RadiationDycoms:
     def io_initialize(self, nc_grp):
         # add zi to the output?
         return
+
     def io_update(self,nc_grp):
         return
+    
+    def io_fields2d_update(self, nc_grp):
+        return
+    
     def restart(self,data_dict):
         return
+    
     def dump_restart(self, data_dict):
         return
+    
     @property
     def name(self):
         return self._name 
+
 @numba.njit()
 def dycoms_rad_calc(nh, dzi,z, z_edge, rho, rho_edge, qc, qv, dT):
     F0 = 70.0 # W m^-2

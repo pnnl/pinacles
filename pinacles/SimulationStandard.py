@@ -19,6 +19,7 @@ from pinacles import SurfaceFactory
 from pinacles import ForcingFactory
 from pinacles.Stats import Stats
 from pinacles import DumpFields
+from pinacles import Fields2D
 from pinacles import MicrophysicsFactory
 from pinacles import RadiationFactory
 from pinacles import Kinematics
@@ -193,6 +194,10 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Now iniitalzie the IO field
         self.StatsIO.initialize()
+        self.Fields2d = Fields2D.Fields2D(self._namelist, self.ModelGrid, self.Ref, self.TimeSteppingController)
+        self.Fields2d.add_class(self.Micro)
+        self.Fields2d.add_class(self.Rad)
+
 
         # Now initialze for the output of 3D fields
         self.FieldsIO = DumpFields.DumpFields(self._namelist, self.ModelGrid, self.TimeSteppingController)
