@@ -200,6 +200,9 @@ class ParticlesBase:
                     
                     arr[ndof, pi] = 0.0
                     n[i,j,k] += 1
+
+                    if n[i,j,k] >= n_total:
+                        break
     
         # Now divide flux among particles  
         for pi in range(arr.shape[1]):
@@ -972,7 +975,7 @@ class ParticlesBase:
 
     def fulfill_minimum_particles(self):
 
-        #self._fulfill_minimum_particles(self._n, self._minimum_particles, self._particle_varnames, self._particle_data)
+        self._fulfill_minimum_particles(self._n, self._minimum_particles, self._particle_varnames, self._particle_data)
 
 
 
