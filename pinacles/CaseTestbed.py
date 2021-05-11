@@ -261,7 +261,7 @@ class ForcingTestbed(Forcing.ForcingBase):
             
             self._vtend_qt = interpolate.interp1d(forcing_z, raw_vtend_qt, 
                                                             axis=1,fill_value='extrapolate',assume_sorted=True)(zl)
-        
+            print(self._vtend_temperature[:])
         z_top = self._Grid.l[2]
         # Performing relaxation nudging over the same depth as damping, this is an assumption to revisit
         _depth = namelist['damping']['depth']
