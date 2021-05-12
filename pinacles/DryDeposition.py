@@ -7,13 +7,15 @@ from pinacles import parameters
 from pinacles import DryDeposition_impl
 
 class DryDeposition:
-    def __init__(self, namelist, Grid, Ref, ScalarState,  DiagnosticState, Surface):
+    def __init__(self, namelist, Grid, Ref, ScalarState,  DiagnosticState, Surface, TimeSteppingController):
         self._Grid = Grid
         self._Ref = Ref
         self._ScalarState = ScalarState
         self._DiagnosticState = DiagnosticState
         self._Surface = Surface
+        self._TimeSteppingController = TimeSteppingController
 
+        self.name ='DryDeposition'
         try:
             self._apply_deposition = namelist['dry_deposition']['apply_deposition']
         except:
@@ -73,5 +75,18 @@ class DryDeposition:
                 DryDeposition_impl.compute_dry_deposition_sedimentation(nh, vdep, self._Grid.dxi, 
                     phi, phi_t, self._surface_flux)                
 
+                self._surface_accum += self._surface_flux * self._TimeSteppingController.dt
 
+    def io_fields2d_update(self, nc_grp):
+        
+        nh = self._Grid.n_halo
+        sed =  nc_grp.createVariable('dry_sed_flux', np.double, dimensions=('X', 'Y',))       
+        sed[:,:] = self._surface_flux[nh[0]:-nh[0], nh[1]:-nh[1]]
+
+        nh = self._Grid.n_halo
+        sed_accum =  nc_grp.createVariable('dry_sed_accum', np.double, dimensions=('X', 'Y',))       
+        sed_accum[:,:] = self._surface_accum[nh[0]:-nh[0], nh[1]:-nh[1]]
+
+        nc_grp.sync()
+        return
                 

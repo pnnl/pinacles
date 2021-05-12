@@ -128,7 +128,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instantiate radiation
         self.Rad = RadiationFactory.factory(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.Micro, self.TimeSteppingController)       
 
-        self.Dep = DryDeposition.DryDeposition(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf)
+        self.Dep = DryDeposition.DryDeposition(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf, self.TimeSteppingController)
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
         self.Restart.add_class_to_restart(self.ScalarState)
@@ -197,6 +197,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Fields2d = Fields2D.Fields2D(self._namelist, self.ModelGrid, self.Ref, self.TimeSteppingController)
         self.Fields2d.add_class(self.Micro)
         self.Fields2d.add_class(self.Rad)
+        self.Fields2d.add_class(self.Dep)
 
 
         # Now initialze for the output of 3D fields
@@ -215,7 +216,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Update thermo this is mostly for IO at time 0
         self.Thermo.update(apply_buoyancy=False)
-        
+        self.Rad.update()
         self.PSolver.update()
 
         return

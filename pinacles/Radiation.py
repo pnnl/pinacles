@@ -577,18 +577,12 @@ class RRTMG:
 
     def io_fields2d_update(self, nc_grp):
 
-        nh = self._Grid.n_halo
-        #if np.all(self._toa_sw_dn_2d == 0.0):
-        #    alb = np.zeros_like(self._surf_sw_dn_2d)
-        #else:
-        #    alb = -(self._surf_sw_dn_2d - self._toa_sw_dn_2d)/self._toa_sw_dn_2d
-        #    
-        # print(np.shape(alb), np.shape(self._surf_sw_dn_2d))
+        alb = -(self._surf_sw_dn_2d - self._toa_sw_dn_2d)/self._toa_sw_dn_2d
 
-        # albedo = nc_grp.createVariable('albedo', np.double, dimensions=('X', 'Y',))
-        # albedo[:,:] = alb[nh[0]:-nh[0],nh[1]:-nh[1]]
-        #
-        #nc_grp.sync()
+        albedo = nc_grp.createVariable('albedo', np.double, dimensions=('X', 'Y',))
+        albedo[:,:] = alb.reshape((self._Grid.nl[0], self._Grid.nl[1]))
+        
+        nc_grp.sync()
 
         return
 
