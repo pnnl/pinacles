@@ -108,7 +108,7 @@ def compute_rh(nh, P0, qv, T, rh):
 
 
 @numba.njit()
-def compute_dry_deposition_sedimentation(nh, vdep, dxi, phi, phi_t, surface_flux):
+def compute_dry_deposition_sedimentation(nh, vdep, dxi, rho0, phi, phi_t, surface_flux):
     shape = phi_t.shape
 
     for i in range(nh[0],shape[0]-nh[0]):
@@ -119,5 +119,5 @@ def compute_dry_deposition_sedimentation(nh, vdep, dxi, phi, phi_t, surface_flux
             k = nh[2]
             for i in range(nh[0],shape[0]-nh[0]):
                 for j in range(nh[1],shape[1]-nh[1]):
-                        surface_flux[i,j] = vdep[i,j,k] * phi[i,j,k]
+                        surface_flux[i,j] = vdep[i,j,k] * phi[i,j,k]*rho0[k]
     return
