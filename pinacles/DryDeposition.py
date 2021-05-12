@@ -41,6 +41,9 @@ class DryDeposition:
         self._surface_flux = np.zeros((ng_local[0], ng_local[1]), dtype=np.double)
         self._surface_accum = np.zeros_like(self._surface_flux)
 
+        # Class data that will be dumped for restart
+        self._restart_attributes = ['_surface_flux', '_surface_accum']
+
         return
     
     def update(self):
@@ -89,5 +92,28 @@ class DryDeposition:
         sed_accum[:,:] = self._surface_accum[nh[0]:-nh[0], nh[1]:-nh[1]]
 
         nc_grp.sync()
+        return
+
+    def restart(self, data_dict):
+
+        key = self.name
+        
+        for att in self._restart_attributes:
+            self.__dict__[att] = data_dict[key][att]
+
+        return
+
+    def dump_restart(self, data_dict):
+
+        # Get the name of this particualr container and create a dictionary for it in the 
+        # restart data dict. 
+    
+        key = self.name
+        data_dict[key] = {}
+
+        # Loop over the restart_attributes and add it to the data_dict
+        for att in self._restart_attributes:
+            data_dict[key][att] = self.__dict__[att]
+
         return
                 

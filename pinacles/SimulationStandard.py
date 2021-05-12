@@ -138,6 +138,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Restart.add_class_to_restart(self.Force)
         self.Restart.add_class_to_restart(self.Surf)
         self.Restart.add_class_to_restart(self.Micro)
+        self.Restart.add_class_to_restart(self.Dep)
 
         # Allocate memory for storage arrays in container classes. This should come after most classes are instantiated becuase the 
         # containter must know how much memory to allocate
@@ -298,7 +299,11 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Restart.add_class_to_restart(self.VelocityState)
         self.Restart.add_class_to_restart(self.DiagnosticState)
         self.Restart.add_class_to_restart(self.TimeSteppingController)
+        self.Restart.add_class_to_restart(self.Force)
+        self.Restart.add_class_to_restart(self.Surf)
         self.Restart.add_class_to_restart(self.Micro)
+        self.Restart.add_class_to_restart(self.Dep)
+
 
         # Allocate memory for storage arrays in container classes. This should come after most classes are instantiated becuase the 
         # containter must know how much memory to allocate
