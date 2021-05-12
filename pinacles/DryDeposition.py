@@ -73,9 +73,10 @@ class DryDeposition:
                 
                 
                 DryDeposition_impl.compute_dry_deposition_sedimentation(nh, vdep, self._Grid.dxi, 
-                    phi, phi_t, self._surface_flux)                
+                    self._Ref.rho0, phi, phi_t, self._surface_flux)                
 
-                self._surface_accum += self._surface_flux * self._TimeSteppingController.dt
+                self._surface_flux  *= self._TimeSteppingController.dt
+                self._surface_accum += self._surface_flux
 
     def io_fields2d_update(self, nc_grp):
         
