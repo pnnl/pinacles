@@ -44,7 +44,9 @@ class Nest:
                 j_parent = (j- y_indx_range[0])//factor[1]
                 for k in range(z_indx_range[0],  z_indx_range[1]):
                     k_parent = (k - z_indx_range[0])//factor[2]
-                    var_tend[i,j,k] += tau_i * (1.0/(np.abs(y_indx_range[0]-j)+ 1)) * (parent_var[i_parent,j_parent,k_parent] - var[i,j,k])
+                    #var_tend[i,j,k] += tau_i * (1.0/(np.abs(y_indx_range[0]-j)+ 1)) * (parent_var[i_parent,j_parent,k_parent] - var[i,j,k])
+                    var_tend[i,j,k] += tau_i * (1.0/np.exp((np.abs(y_indx_range[0]-j)))) * (parent_var[i_parent,j_parent,k_parent] - var[i,j,k])
+
 
 
         return
@@ -70,17 +72,18 @@ class Nest:
                     j_parent = (j-y_indx_range[0]) //factor[1]
                     for k in range(z_indx_range[0],  z_indx_range[1]):
                         k_parent = (k - z_indx_range[0]) //factor[2]
-                        var_tend[i,j,k] += tau_i * (1.0/(np.abs(x_indx_range[0]-i) + 1)) * (parent_var[i_parent,j_parent,k_parent] - var[i,j,k])
+                        #var_tend[i,j,k] += tau_i * (1.0/(np.abs(x_indx_range[0]-i) + 1)) * (parent_var[i_parent,j_parent,k_parent] - var[i,j,k])
+                        var_tend[i,j,k] += tau_i * (1.0/np.exp((np.abs(x_indx_range[0]-i)))) * (parent_var[i_parent,j_parent,k_parent] - var[i,j,k])
                 elif j <  2*n_halo[1] + factor[1] and ls[1] != 0:
                     j_parent = (j-y_indx_range[0]) //factor[1]
                     for k in range(z_indx_range[0],  z_indx_range[1]):
                         k_parent = (k - z_indx_range[0]) //factor[2]
-                        var_tend[i,j,k] += tau_i * (1.0/(np.abs(x_indx_range[0]-i) + 1)) * (parent_var[i_parent,j_parent,k_parent] - var[i,j,k])
+                        var_tend[i,j,k] += tau_i * (1.0/np.exp((np.abs(x_indx_range[0]-i)))) * (parent_var[i_parent,j_parent,k_parent] - var[i,j,k])
                 elif j >= var_shape[1]- n_halo[1] - factor[1] and le[1] != n[1]:
                      j_parent = (j-y_indx_range[0]) //factor[1]
                      for k in range(z_indx_range[0],  z_indx_range[1]):
                         k_parent = (k - z_indx_range[0]) //factor[2]
-                        var_tend[i,j,k] += tau_i * (1.0/(np.abs(x_indx_range[0]-i) + 1)) * (parent_var[i_parent,j_parent,k_parent] - var[i,j,k])
+                        var_tend[i,j,k] += tau_i * (1.0/np.exp((np.abs(x_indx_range[0]-i)))) * (parent_var[i_parent,j_parent,k_parent] - var[i,j,k])
         return
 
 
