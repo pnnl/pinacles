@@ -762,7 +762,6 @@ END subroutine p3_init
       print*,'Stopping in P3, problem in P3 main'
       stop
    endif
-
    END SUBROUTINE mp_p3_wrapper_wrf
 
    !------------------------------------------------------------------------------------------!
@@ -1581,7 +1580,6 @@ END subroutine p3_init
  t_old   = th_old*tmparr1    !compute temperature from theta (value at beginning of model time step)
  qv      = max(qv,0.)        !clip water vapor to prevent negative values passed in (beginning of microphysics)
 !==
-
 
 
 !-----------------------------------------------------------------------------------!
@@ -2907,7 +2905,6 @@ END subroutine p3_init
        qv(i,k) = qv(i,k) + (-qcnuc-qccon-qrcon+qcevp+qrevp)*dt
        th(i,k) = th(i,k) + invexn(i,k)*((qcnuc+qccon+qrcon-qcevp-qrevp)*xxlv(i,k)*    &
                  inv_cp)*dt
-   
    
    
          diag_3d(i,k,1) = qcacc

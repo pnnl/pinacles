@@ -216,11 +216,8 @@ class MicroP3(MicrophysicsBase):
         to_wrf_order(nhalo, qir1, qir1_wrf)
         to_wrf_order(nhalo, qib1, qib1_wrf)
 
-        for i in range(self._wrf_dims[0]):
-            for j in range(self._wrf_dims[1]):
-                for k in range(self._wrf_dims[2]):
-                    th_old[i,j,k] = T_wrf[i,j,k]
-                    qv_old[i,j,k] = qv_wrf[i,j,k]
+        np.copyto(th_old, T_wrf, casting='no')
+        np.copyto(qv_old, qv_wrf, casting='no')
 
         n_iceCat = 1
 
@@ -274,7 +271,8 @@ class MicroP3(MicrophysicsBase):
         # Reorder the diagnostic arrays
         for i, vn in enumerate(self._diag_3d_vars):
             dv = self._DiagnosticState.get_field('p3_' + vn)
-            to_our_order(nhalo, dv, self._diag_3d[:,:,:,i])
+            to_our_order(nhalo, self._diag_3d[:,:,:,i], dv)
+
 
         #Update the energys (TODO Move this to numba)
         T_wrf *= self._Ref.exner[np.newaxis,nhalo[2]:-nhalo[2],np.newaxis]
