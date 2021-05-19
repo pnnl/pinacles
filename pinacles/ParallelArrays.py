@@ -65,72 +65,137 @@ class GhostArray(GhostArrayBase):
 
         return global_min
 
-    def boundary_exchange(self):
+    def boundary_exchange(self, dof=None):
         #TODO At present this boundary exchange sends all dofs. We could do this DOF by DOF.
 
-        for dim in range(2):
+        if dof is None:
+            for dim in range(2):
 
-            comm = self._Grid.subcomms[dim]
-            comm_size = comm.Get_size()
+                comm = self._Grid.subcomms[dim]
+                comm_size = comm.Get_size()
 
-            #First do the right exchange
-            source, dest = comm.Shift(0,1)
+                #First do the right exchange
+                source, dest = comm.Shift(0,1)
 
-            if source == MPI.PROC_NULL:
-                source = comm_size - 1
+                if source == MPI.PROC_NULL:
+                    source = comm_size - 1
 
-            if dest == MPI.PROC_NULL:
-                dest = 0
+                if dest == MPI.PROC_NULL:
+                    dest = 0
 
-            #Construct the buffers
-            nh = self._n_halo[dim]
+                #Construct the buffers
+                nh = self._n_halo[dim]
 
-            if dim == 0:
-                if comm_size > 1:
-                    send_buf = np.copy(self.array[:,-2*nh:-nh,:,:])
-                    recv_buf = np.empty_like(send_buf)
-                    comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                    self.array[:,:nh,:,:] = recv_buf
-                else:
-                    self.array[:,:nh,:,:] = self.array[:,-2*nh:-nh,:,:]
+                if dim == 0:
+                    if comm_size > 1:
+                        send_buf = np.copy(self.array[:,-2*nh:-nh,:,:])
+                        recv_buf = np.empty_like(send_buf)
+                        comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
+                        self.array[:,:nh,:,:] = recv_buf
+                    else:
+                        self.array[:,:nh,:,:] = self.array[:,-2*nh:-nh,:,:]
 
-            if dim == 1:
-                if comm_size > 1:
-                    send_buf = np.copy(self.array[:,:,-2*nh:-nh,:])
-                    recv_buf = np.empty_like(send_buf)
-                    comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                    self.array[:,:,:nh,:] = recv_buf
-                else:
-                    self.array[:,:,:nh,:] = self.array[:,:,-2*nh:-nh,:]
+                if dim == 1:
+                    if comm_size > 1:
+                        send_buf = np.copy(self.array[:,:,-2*nh:-nh,:])
+                        recv_buf = np.empty_like(send_buf)
+                        comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
+                        self.array[:,:,:nh,:] = recv_buf
+                    else:
+                        self.array[:,:,:nh,:] = self.array[:,:,-2*nh:-nh,:]
 
 
-            #Now do the left exchange
-            source, dest = comm.Shift(0,-1)
+                #Now do the left exchange
+                source, dest = comm.Shift(0,-1)
 
-            if source == MPI.PROC_NULL:
-                source = 0
+                if source == MPI.PROC_NULL:
+                    source = 0
 
-            if dest == MPI.PROC_NULL:
-                dest = comm_size - 1
+                if dest == MPI.PROC_NULL:
+                    dest = comm_size - 1
 
-            if dim == 0:
-                if comm_size > 1:
-                    send_buf = np.copy(self.array[:,nh:2*nh,:,:])
-                    recv_buf = np.empty_like(send_buf)
-                    comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                    self.array[:,-nh:,:,:] = recv_buf
-                else:
-                    self.array[:,-nh:,:,:] = self.array[:,nh:2*nh,:,:]
+                if dim == 0:
+                    if comm_size > 1:
+                        send_buf = np.copy(self.array[:,nh:2*nh,:,:])
+                        recv_buf = np.empty_like(send_buf)
+                        comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
+                        self.array[:,-nh:,:,:] = recv_buf
+                    else:
+                        self.array[:,-nh:,:,:] = self.array[:,nh:2*nh,:,:]
 
-            if dim == 1:
-                if comm_size > 1:
-                    send_buf = np.copy(self.array[:,:,nh:2*nh,:])
-                    recv_buf = np.empty_like(send_buf)
-                    comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                    self.array[:,:,-nh:,:] = recv_buf
-                else:
-                    self.array[:,:,-nh:,:] = self.array[:,:,nh:2*nh,:]
+                if dim == 1:
+                    if comm_size > 1:
+                        send_buf = np.copy(self.array[:,:,nh:2*nh,:])
+                        recv_buf = np.empty_like(send_buf)
+                        comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
+                        self.array[:,:,-nh:,:] = recv_buf
+                    else:
+                        self.array[:,:,-nh:,:] = self.array[:,:,nh:2*nh,:]
+            
+        else:
+            for dim in range(2):
 
+                comm = self._Grid.subcomms[dim]
+                comm_size = comm.Get_size()
+
+                #First do the right exchange
+                source, dest = comm.Shift(0,1)
+
+                if source == MPI.PROC_NULL:
+                    source = comm_size - 1
+
+                if dest == MPI.PROC_NULL:
+                    dest = 0
+
+                #Construct the buffers
+                nh = self._n_halo[dim]
+
+                if dim == 0:
+                    if comm_size > 1:
+                        send_buf = np.copy(self.array[dof,-2*nh:-nh,:,:])
+                        recv_buf = np.empty_like(send_buf)
+                        comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
+                        self.array[dof,:nh,:,:] = recv_buf
+                    else:
+                        self.array[dof,:nh,:,:] = self.array[dof,:,-2*nh:-nh,:,:]
+
+                if dim == 1:
+                    if comm_size > 1:
+                        send_buf = np.copy(self.array[dof,:,-2*nh:-nh,:])
+                        recv_buf = np.empty_like(send_buf)
+                        comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
+                        self.array[dof,:,:nh,:] = recv_buf
+                    else:
+                        self.array[dof,:,:nh,:] = self.array[dof,:,-2*nh:-nh,:]
+
+
+                #Now do the left exchange
+                source, dest = comm.Shift(0,-1)
+
+                if source == MPI.PROC_NULL:
+                    source = 0
+
+                if dest == MPI.PROC_NULL:
+                    dest = comm_size - 1
+
+                if dim == 0:
+                    if comm_size > 1:
+                        send_buf = np.copy(self.array[dof,nh:2*nh,:,:])
+                        recv_buf = np.empty_like(send_buf)
+                        comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
+                        self.array[dof,-nh:,:,:] = recv_buf
+                    else:
+                        self.array[dof,-nh:,:,:] = self.array[dof,nh:2*nh,:,:]
+
+                if dim == 1:
+                    if comm_size > 1:
+                        send_buf = np.copy(self.array[dof,:,nh:2*nh,:])
+                        recv_buf = np.empty_like(send_buf)
+                        comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
+                        self.array[dof,:,-nh:,:] = recv_buf
+                    else:
+                        self.array[dof,:,-nh:,:] = self.array[dof,:,nh:2*nh,:]
+        
         return
 
     def mean(self, dof=0, pow=1.0):
