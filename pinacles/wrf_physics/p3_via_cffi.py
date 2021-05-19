@@ -29,6 +29,7 @@ class P3:
             double diag_effi_3d[], double diag_vmi_3d[], double diag_di_3d[], \
             double diag_rhopo_3d[], double th_old_3d[], double qv_old_3d[], \
             double qi1_3d[], double qni1_3d[], double qir1_3d[], double qib1_3d[], \
+            int n_diag_3d, double diag_3d[], \
             double LIQUID_SEDIMENTATION[], double ICE_SEDIMENTATION[], \
             double nc_3d[], double pii[], double p[], double dz[], double w[], \
             double RAINNC[], double RAINNCV[] ,double SR[], double SNOWNC[],double SNOWNCV[], \
@@ -43,6 +44,7 @@ class P3:
             double diag_effi_3d[], double diag_vmi_3d[], double diag_di_3d[], \
             double diag_rhopo_3d[], double th_old_3d[], double qv_old_3d[], \
             double qi1_3d[], double qni1_3d[], double qir1_3d[], double qib1_3d[], \
+            int n_diag_3d, double diag_3d[], \
             double LIQUID_SEDIMENTATION[], double ICE_SEDIMENTATION[], \
             double pii[], double p[], double dz[], double w[], \
             double RAINNC[], double RAINNCV[] ,double SR[], double SNOWNC[],double SNOWNCV[], \
@@ -71,6 +73,7 @@ class P3:
             diag_effi_3d, diag_vmi_3d, diag_di_3d,
             diag_rhopo_3d, th_old_3d, qv_old_3d,
             qi1_3d, qni1_3d, qir1_3d, qib1_3d,
+            n_diag_3d, diag_3d, 
             LIQUID_SEDIMENTATION, ICE_SEDIMENTATION,
             nc_3d, pii, p, dz, w,
             RAINNC, RAINNCV ,SR, SNOWNC, SNOWNCV,
@@ -85,6 +88,7 @@ class P3:
             self.as_pointer(diag_effi_3d), self.as_pointer(diag_vmi_3d), self.as_pointer(diag_di_3d),
             self.as_pointer(diag_rhopo_3d), self.as_pointer(th_old_3d), self.as_pointer(qv_old_3d),
             self.as_pointer(qi1_3d), self.as_pointer(qni1_3d), self.as_pointer(qir1_3d), self.as_pointer(qib1_3d),
+            n_diag_3d, self.as_pointer(diag_3d),
             self.as_pointer(LIQUID_SEDIMENTATION), self.as_pointer(ICE_SEDIMENTATION),
             self.as_pointer(nc_3d), self.as_pointer(pii), self.as_pointer(p), self.as_pointer(dz), self.as_pointer(w),
             self.as_pointer(RAINNC), self.as_pointer(RAINNCV) ,self.as_pointer(SR), self.as_pointer(SNOWNC), self.as_pointer(SNOWNCV),
@@ -101,6 +105,7 @@ class P3:
             diag_effi_3d, diag_vmi_3d, diag_di_3d,
             diag_rhopo_3d, th_old_3d, qv_old_3d,
             qi1_3d, qni1_3d, qir1_3d, qib1_3d,
+            n_diag_3d, diag_3d,
             LIQUID_SEDIMENTATION, ICE_SEDIMENTATION,
             pii, p, dz, w,
             RAINNC, RAINNCV ,SR, SNOWNC, SNOWNCV,
@@ -115,6 +120,7 @@ class P3:
             self.as_pointer(diag_effi_3d), self.as_pointer(diag_vmi_3d), self.as_pointer(diag_di_3d),
             self.as_pointer(diag_rhopo_3d), self.as_pointer(th_old_3d), self.as_pointer(qv_old_3d),
             self.as_pointer(qi1_3d), self.as_pointer(qni1_3d), self.as_pointer(qir1_3d), self.as_pointer(qib1_3d),
+            n_diag_3d, self.as_pointer(diag_3d),
             self.as_pointer(LIQUID_SEDIMENTATION), self.as_pointer(ICE_SEDIMENTATION),
             self.as_pointer(pii), self.as_pointer(p), self.as_pointer(dz), self.as_pointer(w),
             self.as_pointer(RAINNC), self.as_pointer(RAINNCV) ,self.as_pointer(SR), self.as_pointer(SNOWNC), self.as_pointer(SNOWNCV),
@@ -169,6 +175,13 @@ def main():
     dz = np.zeros_like(th_3d) + 5.0
     w = np.zeros_like(th_3d)
 
+
+    LIQUID_SEDIMENTATION = np.zeros_like(th_3d)
+    ICE_SEDIMENTATION = np.zeros_like(th_3d)
+
+    n_diag_3d = 5
+    diag_3d = np.zeros((shape_3d[0], shape_3d[1], shape_3d[2], n_diag_3d), order='F', dtype=np.double)
+
     RAINNC = np.zeros(shape_2d, dtype=np.double, order='F')
     RAINNCV = np.zeros_like(RAINNC)
     SR = np.zeros_like(RAINNC)
@@ -188,6 +201,8 @@ def main():
                 diag_effi_3d, diag_vmi_3d, diag_di_3d,
                 diag_rhopo_3d, th_old_3d, qv_old_3d,
                 qi1_3d, qni1_3d, qir1_3d, qib1_3d,
+                n_diag_3d, diag_3d,
+                LIQUID_SEDIMENTATION, ICE_SEDIMENTATION,
                 nc_3d, pii, p, dz, w,
                 RAINNC, RAINNCV ,SR, SNOWNC, SNOWNCV,
                 dt, itimestep, 1)

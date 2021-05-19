@@ -597,6 +597,7 @@ END subroutine p3_init
                               diag_zdbz_3d,diag_effc_3d,diag_effi_3d,                    &
                               diag_vmi_3d,diag_di_3d,diag_rhopo_3d,                      &
                               qi1_3d,qni1_3d,qir1_3d,qib1_3d,                            &
+                              n_diag_3d,diag_3d,                                         &
                               LIQUID_SEDIMENTATION, ICE_SEDIMENTATION,                   &
                               nc_3d)
 
@@ -669,6 +670,7 @@ END subroutine p3_init
    real, intent(in)    :: dt
    integer, intent(in) :: itimestep
    integer, intent(in) :: n_iceCat
+   integer, intent(in) :: n_diag_3d
 
    !--- local variables/parameters:
 
@@ -679,10 +681,10 @@ END subroutine p3_init
    real, dimension(its:ite) :: pcprt_liq,pcprt_sol
    real                     :: dum1,dum2
    integer                  :: i,k,j
-   integer, parameter       :: n_diag_3d = 1         ! number of user-defined diagnostic fields
+   !integer, parameter       :: n_diag_3d = 1         ! number of user-defined diagnostic fields
    integer, parameter       :: n_diag_2d = 1         ! number of user-defined diagnostic fields
 
-   real, dimension(ims:ime, kms:kme, n_diag_3d) :: diag_3d
+   real, dimension(ims:ime, kms:kme, jms:jme, n_diag_3d), intent(out) :: diag_3d
    real, dimension(ims:ime, n_diag_2d)          :: diag_2d
    logical                  :: log_predictNc
    logical, parameter       :: debug_on      = .false. !switch for internal debug checking
@@ -732,7 +734,7 @@ END subroutine p3_init
                diag_effi_3d(its:ite,kts:kte,j),diag_vmi_3d(its:ite,kts:kte,j),                          &
                diag_di_3d(its:ite,kts:kte,j),diag_rhopo_3d(its:ite,kts:kte,j),                          &
                n_diag_2d,diag_2d(its:ite,1:n_diag_2d),                                                  &
-               n_diag_3d,diag_3d(its:ite,kts:kte,1:n_diag_3d),                                          &
+               n_diag_3d,diag_3d(its:ite,kts:kte,j,1:n_diag_3d),                                          &
                LIQUID_SEDIMENTATION(its:ite,kts:kte,j), ICE_SEDIMENTATION(its:ite,kts:kte,j),                                                 &
                log_predictNc,typeDiags_ON,trim(model),clbfact_dep,clbfact_sub,debug_on,                 &
                scpf_on,scpf_pfrac,scpf_resfact,cldfrac)
@@ -2905,7 +2907,26 @@ END subroutine p3_init
        qv(i,k) = qv(i,k) + (-qcnuc-qccon-qrcon+qcevp+qrevp)*dt
        th(i,k) = th(i,k) + invexn(i,k)*((qcnuc+qccon+qrcon-qcevp-qrevp)*xxlv(i,k)*    &
                  inv_cp)*dt
-   !==
+   
+   
+   
+         diag_3d(i,k,1) = qcacc
+         diag_3d(i,k,2) = qrevp    
+         diag_3d(i,k,3) = qccon
+         diag_3d(i,k,4) = qcaut  
+         diag_3d(i,k,5) = qcevp  
+         diag_3d(i,k,6) = qrcon
+         diag_3d(i,k,7) = ncacc  
+         diag_3d(i,k,8) = ncnuc 
+         diag_3d(i,k,9) = ncslf
+         diag_3d(i,k,10) = ncautc   
+         diag_3d(i,k,11) = qcnuc  
+         diag_3d(i,k,12) = nrslf
+         diag_3d(i,k,13) = nrevp 
+         diag_3d(i,k,14) = ncautr
+
+   
+     !==
 
      ! clipping for small hydrometeor values
        if (qc(i,k).lt.qsmall) then
