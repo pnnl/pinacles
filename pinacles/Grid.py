@@ -4,11 +4,14 @@ import numpy as np
 from mpi4py_fft.pencil import Subcomm
 
 class GridBase:
-    def __init__(self, namelist):
+    def __init__(self, namelist, llx, lly, llz):
 
         #List of class atributes that will be restarted
         self._restart_attributes = []
 
+        self._ll_corner = (llx, lly, llz)
+
+        print(self._ll_corner)
         #The total number of points in the domain NOT including halo/ghost points
         self._n = np.array(namelist['grid']['n'], dtype=np.int)
         self._restart_attributes.append('_n')
@@ -74,6 +77,9 @@ class GridBase:
     def dump_restart(self, data_dict):
 
         return
+
+
+    
 
     @property
     def n(self):
@@ -306,10 +312,13 @@ class GridBase:
         return
 
 class RegularCartesian(GridBase):
-    def __init__(self, namelist):
+    def __init__(self, namelist, llx=0.0, lly=0.0, llz = 0.0):
+  
 
-        GridBase.__init__(self, namelist)
+        GridBase.__init__(self, namelist, llx=llx, lly=lly, llz=llz)
         self._compute_globalcoordiantes()
+
+
 
         return
 
@@ -331,7 +340,7 @@ class RegularCartesian(GridBase):
             ux = ((self._n[i]+self._n_halo[i]) - 0.5) * dx
 
             #Generate an axis based on upper and lower points
-            self._global_axes.append(np.linspace(lx, ux, self.ngrid[i]))
+            self._global_axes.append(np.linspace(lx, ux, self.ngrid[i]) + self._ll_corner[i])
             self._global_axes_edge.append(self._global_axes[i] + 0.5 * dx)
 
             # Compute the local axes form the global axes
@@ -343,6 +352,11 @@ class RegularCartesian(GridBase):
         self._dx = np.array(dx_list)
         self._dxi = 1.0/self._dx
         return
+
+
+    @property
+    def ll_corner(self):
+        return  self._ll_corner
 
     def restart(self, data_dict):
         """ 

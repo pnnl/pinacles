@@ -4,13 +4,14 @@ import numpy as np
 class Plume:
 
     def __init__(self, location, start_time, n, 
-        Grid, Ref, ScalarState, TimeSteppingController):
+        Grid, Ref, ScalarState, VelocityState, TimeSteppingController):
 
         
         self._Grid = Grid
         self._Ref = Ref
         self._TimeSteppingController = TimeSteppingController
         self._ScalarState = ScalarState
+        self._VelocityState = VelocityState
 
 
         # These are the plume properties
@@ -67,8 +68,35 @@ class Plume:
 
         # If it is not time to start the plume just return w/o doing anything
         if  self._TimeSteppingController.time  < self._start_time or not self._plume_on_rank :
-            return
+            
 
+            #TODO Move this.boundary setting into a function 
+
+            # If needed, zero the plume scalar on the boundaries 
+            if self._boundary_outflow:
+                plume_value = self._ScalarState.get_field(self._scalar_name)
+
+                n_halo = self._Grid.n_halo
+
+                x_local = self._Grid.x_local 
+                x_global = self._Grid.x_global
+
+                if np.amin(x_local) == np.amin(x_global):
+                    plume_value[:n_halo[0],:,:] = 0
+                
+                if np.max(x_local) == np.amax(x_global):
+                    plume_value[-n_halo[0]:,:,:] = 0
+
+                y_local = self._Grid.y_local 
+                y_global = self._Grid.y_global
+
+                if np.amin(y_local) == np.amin(y_global):
+                    plume_value[:,:n_halo[1],:] = 0
+                
+                if np.max(y_local) == np.amax(y_global):
+                    plume_value[:,-n_halo[1]:,:] = 0
+
+                return
         dxs = self._Grid.dx
 
         grid_cell_volume = dxs[0] * dxs[1] * dxs[2]
@@ -156,16 +184,21 @@ class Plume:
 
 class Plumes:
 
-    def __init__(self, namelist, Grid, Ref, ScalarState, TimeSteppingController):
+    def __init__(self, namelist, Grid, Ref, ScalarState, VelocityState, TimeSteppingController, nest_level):
+
+        self._n = 0
+        
+        #if namelist['plumes']['nest_level'] != nest_level:
+        #    return
 
         self._Grid = Grid
         self._Ref = Ref
         self._TimeSteppingController = TimeSteppingController
         self._ScalarState = ScalarState
+        self._VelocityState = VelocityState
         self._locations = None
         self._startimes = None
 
-        self._n = 0
 
         if 'plumes' in namelist:
 
@@ -211,7 +244,7 @@ class Plumes:
             
             # Add plume classes to the list of plumes
             self._list_of_plumes.append(Plume(loc, start, count,
-                self._Grid, self._Ref, self._ScalarState, self._TimeSteppingController))
+                self._Grid, self._Ref, self._ScalarState, self._VelocityState, self._TimeSteppingController))
             count += 1 
 
         # Now set the plume fluxes for each plume and how the boundaries are treated
@@ -239,6 +272,7 @@ class Plumes:
 
         # Iterate over the list of plumes and update them
         for plume_i in self._list_of_plumes:
+            print('Updating plumes.')
             plume_i.update()
 
         return

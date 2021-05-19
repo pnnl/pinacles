@@ -30,9 +30,10 @@ from pinacles import DiagnosticsClouds
 from pinacles import TowersIO
 from pinacles import Plumes
 from pinacles import Restart
-from pinacles import UtilitiesParallel
 from pinacles import ParticlesGrid
 from pinacles import DryDeposition
+from pinacles import UtilitiesParallel   
+from pinacles import Nest
 from mpi4py import MPI
 import numpy as np
 import pylab as plt
@@ -44,7 +45,12 @@ os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
 
 class SimulationStandard(SimulationBase.SimulationBase):
-    def __init__(self, namelist):
+    def __init__(self, namelist, llx=0.0, lly=0.0, llz=0.0, nest_num=0):
+
+        self._ll_corner = (llx, lly, llz)
+
+        assert(type(nest_num) == int)
+        self._nest_num = nest_num
 
         # This is used to keep track of how long the model has been running.
         self.t_init = time.perf_counter()
@@ -67,7 +73,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
     def initialize(self):
 
         # Instantiate the model grid
-        self.ModelGrid = Grid.RegularCartesian(self._namelist)
+        self.ModelGrid = Grid.RegularCartesian(self._namelist, 
+            llx=self._ll_corner[0], lly=self._ll_corner[1], llz=self._ll_corner[2])
 
         # Instantiate variables for storing containers
         self.ScalarState = Containers.ModelState(
@@ -233,7 +240,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
+            self.VelocityState,
             self.TimeSteppingController,
+            self._nest_num
         )
 
         # Instantiate radiation
@@ -257,6 +266,10 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Surf,
             self.TimeSteppingController,
         )
+
+        #Instantiate nest
+        self.Nest = Nest.Nest(self._namelist, self.TimeSteppingController, self.ModelGrid, self.ScalarState, self.VelocityState)
+
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
         self.Restart.add_class_to_restart(self.ScalarState)
@@ -683,13 +696,19 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         return
 
-    def update(self, integrate_by_dt=0.0):
+    def update(self, ParentNest=None, ListOfSims = [], integrate_by_dt = 0.0):
+
 
         """ This function integrates the model forward by integrate_by_dt seconds. """
 
         # Compute the startime and endtime for this integration
         start_time = self.TimeSteppingController.time
         end_time = start_time + integrate_by_dt
+
+
+        # Update boundaries for nest if this is Simulation is a nest
+        if ParentNest is not None:
+            self.Nest.update_boundaries(ParentNest)
 
         while self.TimeSteppingController.time < end_time:
 
@@ -713,8 +732,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 # Update the forcing
                 self.Force.update()
-
-                # Update Kinematics and SGS model
+                
+                #Update Kinematics and SGS model
                 self.Kine.update()
                 self.SGS.update()
 
@@ -729,7 +748,10 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 # Do Damping
                 self.RayleighDamping.update()
 
-                # Do time stepping
+                if ParentNest is not None:
+                    self.Nest.update(ParentNest)
+
+                #Do time stepping
                 self.ScalarTimeStepping.update()
                 self.VelocityTimeStepping.update()
 
@@ -754,6 +776,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     self.ScalarState.boundary_exchange()
                     self.ScalarState.update_all_bcs()
 
+
+
             self.TimeSteppingController._time += self.TimeSteppingController._dt
 
             # End wall time for
@@ -765,13 +789,22 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.walltime_restart()
 
             if MPI.COMM_WORLD.Get_rank() == 0:
-                print(
-                    colored("\t Walltime: ", "green"),
-                    colored(t1 - t0, "green"),
-                    colored("\tModeltime/Walltime: ", "green"),
-                    colored(self.TimeSteppingController._dt / (t1 - t0), "green"),
-                )
+                print(colored('\t Walltime: ', 'green'), colored(t1 -t0, 'green'), 
+                    colored('\tModeltime/Walltime: ', 'green'), 
+                    colored(self.TimeSteppingController._dt/(t1 - t0), 'green'))
 
+            # Here we use recursion to update all sub-nests
+            if len(ListOfSims) > self._nest_num:
+                if MPI.COMM_WORLD.Get_rank() == 0:
+                    print('Recursively calling update of Nest ' + str(self._nest_num + 1), ' from Nest: ', 
+                         str(self._nest_num ))
+                ListOfSims[self._nest_num + 1].update(integrate_by_dt=self.TimeSteppingController._dt, 
+                    ParentNest = ListOfSims[self._nest_num])
+
+
+        #if ParentNest is not None:
+        #    self.Nest.update_parent(ParentNest)
+        
         return
 
     def walltime_restart(self):
