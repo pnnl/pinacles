@@ -90,9 +90,13 @@ class ModelState:
             self._tend_array.zero()
         return
 
-    def boundary_exchange(self):
+    def boundary_exchange(self, var=None):
         #Call boundary exchange on the _state_array (Ghost Array)
-        self._state_array.boundary_exchange()
+        if var is None:
+            self._state_array.boundary_exchange()
+        else:
+            dof = self._dofs[var]
+            self._state_array.boundary_exchange(dof=dof)
         return
 
     def update_bcs(self, name):

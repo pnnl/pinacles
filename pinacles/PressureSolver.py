@@ -96,7 +96,7 @@ class PressureSolver:
         fill_pressure(n_halo, div, dynp)
 
         #TODO add single vairable exchange
-        self._DiagnosticState.boundary_exchange()
+        self._DiagnosticState.boundary_exchange('dynamic pressure')
         self._DiagnosticState._gradient_zero_bc('dynamic pressure')
 
         apply_pressure(dxs, dynp, u, v, w)

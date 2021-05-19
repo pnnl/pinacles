@@ -445,7 +445,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     self.Thermo.update(apply_buoyancy=False)
                     # We call the microphysics update at the end of the RK steps.
                     self.Micro.update()
-                    self.Rad.update()
+                    self.Rad.update(time_loop=True)
                     self.ScalarState.boundary_exchange()
                     self.ScalarState.update_all_bcs()
 

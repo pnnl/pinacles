@@ -89,6 +89,38 @@ class MicroP3(MicrophysicsBase):
             self._SNOWNC = np.zeros_like(self._RAINNC)
             self._SNOWNCV =  np.zeros_like(self._RAINNC)
 
+            # For diagnostic variables
+
+            self._diag_3d_vars = ['qcacc', 'qrevp',  'qccon', 'qcaut', 'qcevp', 'qrcon',
+                                  'ncacc', 'ncnuc',  'ncslf', 'ncautc', 'qcnuc', 'nrslf',
+                                  'nrevp', 'ncautr']
+
+
+            qc_tend_units = 'kg kg-1 s-1'
+            n_tend_units = 'kg-1'
+            diag_3d_long_names = {'qcacc': ('cloud droplet accretion by rain', qc_tend_units), 
+                                  'qrevp': ('rain evaporation', qc_tend_units),
+                                  'qccon': ('cloud droplet condensation', qc_tend_units), 
+                                  'qcaut': ('cloud droplet autoconversion to rain', qc_tend_units),
+                                  'qcevp': ('cloud droplet evaporation', qc_tend_units),
+                                  'qrcon': ('rain condensation', qc_tend_units),
+                                  'ncacc': ('change in cloud droplet number from accretion by rain', n_tend_units ), 
+                                  'ncnuc': ('change in cloud droplet number from activation of CCN', n_tend_units ),
+                                  'ncslf': ('change in cloud droplet number from self-collection', n_tend_units ),
+                                  'ncautc': ('change in cloud droplet number from autoconversion', n_tend_units ), 
+                                  'qcnuc': ('activation of cloud droplets from CCN', qc_tend_units),
+                                  'nrslf': ('change in rain number from self-collection', n_tend_units ),
+                                  'nrevp': ('change in rain number from evaporation', n_tend_units ),
+                                  'ncautr': ('change in rain number from autoconversion of cloud water', n_tend_units )}
+
+            self._n_diag_3d = len(self._diag_3d_vars)
+
+            self._diag_3d = np.empty((self._wrf_dims[0], self._wrf_dims[1], self._wrf_dims[2], self._n_diag_3d), dtype=np.double, order='F')
+
+
+            # Add a diagnostic variable for each of the process rates 
+            for i, vn in enumerate(self._diag_3d_vars):
+                self._DiagnosticState.add_variable('p3_' + vn, long_name=diag_3d_long_names[vn][0], units=diag_3d_long_names[vn][1])
 
 
             return
@@ -184,11 +216,8 @@ class MicroP3(MicrophysicsBase):
         to_wrf_order(nhalo, qir1, qir1_wrf)
         to_wrf_order(nhalo, qib1, qib1_wrf)
 
-        for i in range(self._wrf_dims[0]):
-            for j in range(self._wrf_dims[1]):
-                for k in range(self._wrf_dims[2]):
-                    th_old[i,j,k] = T_wrf[i,j,k]
-                    qv_old[i,j,k] = qv_wrf[i,j,k]
+        np.copyto(th_old, T_wrf, casting='no')
+        np.copyto(qv_old, qv_wrf, casting='no')
 
         n_iceCat = 1
 
@@ -203,6 +232,7 @@ class MicroP3(MicrophysicsBase):
                     diag_effi_3d_wrf, diag_vmi, diag_di,
                     diag_rhopo, th_old, qv_old,
                     qi1_wrf, qni1_wrf, qir1_wrf, qib1_wrf,
+                    self._n_diag_3d, self._diag_3d,
                     liq_sed_wrf, ice_sed_wrf,
                     nc_wrf, exner_wrf, p0_wrf, dz_wrf, w_wrf,
                     self._RAINNC,self._RAINNCV,self._SR,self._SNOWNC,self._SNOWNCV,
@@ -217,12 +247,12 @@ class MicroP3(MicrophysicsBase):
                     diag_effi_3d_wrf, diag_vmi, diag_di,
                     diag_rhopo, th_old, qv_old,
                     qi1_wrf, qni1_wrf, qir1_wrf, qib1_wrf,
+                    self._n_diag_3d, self._diag_3d,
                     liq_sed_wrf, ice_sed_wrf,
                     exner_wrf, p0_wrf, dz_wrf, w_wrf,
                     self._RAINNC,self._RAINNCV,self._SR,self._SNOWNC,self._SNOWNCV,
                     dt, self._itimestep, n_iceCat
                     )
-
 
         #Update prognosed fields
         to_our_order(nhalo, qv_wrf, qv)
@@ -236,6 +266,13 @@ class MicroP3(MicrophysicsBase):
         #The accumulated liquid and ice sedimentation
         to_our_order(nhalo, liq_sed_wrf, liq_sed)
         to_our_order(nhalo, ice_sed_wrf, ice_sed)
+
+
+        # Reorder the diagnostic arrays
+        for i, vn in enumerate(self._diag_3d_vars):
+            dv = self._DiagnosticState.get_field('p3_' + vn)
+            to_our_order(nhalo, self._diag_3d[:,:,:,i], dv)
+
 
         #Update the energys (TODO Move this to numba)
         T_wrf *= self._Ref.exner[np.newaxis,nhalo[2]:-nhalo[2],np.newaxis]
