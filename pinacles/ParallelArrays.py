@@ -157,7 +157,7 @@ class GhostArray(GhostArrayBase):
                         comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
                         self.array[dof,:nh,:,:] = recv_buf
                     else:
-                        self.array[dof,:nh,:,:] = self.array[dof,:,-2*nh:-nh,:,:]
+                        self.array[dof,:nh,:,:] = self.array[dof,-2*nh:-nh,:,:]
 
                 if dim == 1:
                     if comm_size > 1:
