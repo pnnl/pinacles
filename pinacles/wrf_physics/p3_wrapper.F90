@@ -41,6 +41,7 @@ subroutine c_p3_main(ids, ide, jds, jde, kds, kde, &
     qnr_3d,diag_zdbz_3d,diag_effc_3d,diag_effi_3d,diag_vmi_3d,diag_di_3d,  &
     diag_rhopo_3d,th_old_3d,qv_old_3d, &
     qi1_3d,qni1_3d,qir1_3d, qib1_3d, &
+    n_diag_3d, diag_3d, &
     LIQUID_SEDIMENTATION, ICE_SEDIMENTATION, nc_3d, &
     pii, p, dz, w, &
     RAINNC,RAINNCV,SR,SNOWNC,SNOWNCV, &
@@ -71,6 +72,9 @@ real(c_double), value, intent(in)    :: dt
 integer(c_int), value, intent(in) :: itimestep
 integer(c_int), value, intent(in) :: n_iceCat
 
+integer(c_int), value, intent(in) :: n_diag_3d
+real(c_double), dimension(ims:ime, kms:kme, jms:jme, n_diag_3d), intent(inout) :: diag_3d
+
 call mp_p3_wrapper_wrf(th_3d,qv_3d,qc_3d,qr_3d,qnr_3d,                            &
                               th_old_3d,qv_old_3d,                                       &
                               pii,p,dz,w,dt,itimestep,                                   &
@@ -80,7 +84,8 @@ call mp_p3_wrapper_wrf(th_3d,qv_3d,qc_3d,qr_3d,qnr_3d,                          
                               its, ite, jts, jte, kts, kte ,                             &
                               diag_zdbz_3d,diag_effc_3d,diag_effi_3d,                    &
                               diag_vmi_3d,diag_di_3d,diag_rhopo_3d,                      &
-                              qi1_3d,qni1_3d,qir1_3d,qib1_3d,LIQUID_SEDIMENTATION, ICE_SEDIMENTATION, nc_3d)
+                              qi1_3d,qni1_3d,qir1_3d,qib1_3d,                            &
+                              n_diag_3d,diag_3d, LIQUID_SEDIMENTATION, ICE_SEDIMENTATION, nc_3d)
 
 end subroutine
 
@@ -92,6 +97,7 @@ subroutine c_p3_main_1mom(ids, ide, jds, jde, kds, kde, &
     qnr_3d,diag_zdbz_3d,diag_effc_3d,diag_effi_3d,diag_vmi_3d,diag_di_3d,  &
     diag_rhopo_3d,th_old_3d,qv_old_3d, &
     qi1_3d,qni1_3d,qir1_3d, qib1_3d, &
+    n_diag_3d, diag_3d, &
     LIQUID_SEDIMENTATION, ICE_SEDIMENTATION, &
     pii, p, dz, w, &
     RAINNC,RAINNCV,SR,SNOWNC,SNOWNCV, &
@@ -120,6 +126,10 @@ real(c_double), value, intent(in)    :: dt
 integer(c_int), value, intent(in) :: itimestep
 integer(c_int), value, intent(in) :: n_iceCat
 
+integer(c_int), value, intent(in) :: n_diag_3d
+real(c_double), dimension(ims:ime, kms:kme, jms:jme, n_diag_3d), intent(inout) :: diag_3d
+
+
 call mp_p3_wrapper_wrf(th_3d,qv_3d,qc_3d,qr_3d,qnr_3d,                            &
                               th_old_3d,qv_old_3d,                                       &
                               pii,p,dz,w,dt,itimestep,                                   &
@@ -130,6 +140,7 @@ call mp_p3_wrapper_wrf(th_3d,qv_3d,qc_3d,qr_3d,qnr_3d,                          
                               diag_zdbz_3d,diag_effc_3d,diag_effi_3d,                    &
                               diag_vmi_3d,diag_di_3d,diag_rhopo_3d,                      &
                               qi1_3d,qni1_3d,qir1_3d,qib1_3d,                            &
+                              n_diag_3d,diag_3d,                                         &
                               LIQUID_SEDIMENTATION, ICE_SEDIMENTATION)
 
 end subroutine
