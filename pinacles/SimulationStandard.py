@@ -214,14 +214,14 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
 
         # Instantiate particles
-        self.Parts = ParticlesGrid.ParticlesSimple(
-            self.ModelGrid,
-            self.Ref,
-            self.TimeSteppingController,
-            self.VelocityState,
-            self.ScalarState,
-            self.DiagnosticState,
-        )
+        #self.Parts = ParticlesGrid.ParticlesSimple(
+        #    self.ModelGrid,
+        #    self.Ref,
+        #    self.TimeSteppingController,
+        #    self.VelocityState,
+        #    self.ScalarState,
+        #    self.DiagnosticState,
+        #)
 
         # Instantiate surface
         self.Surf = SurfaceFactory.factory(
@@ -771,7 +771,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     # We call the microphysics update at the end of the RK steps.
                     self.Micro.update()
                     self.Dep.update()
-                    self.Parts.update()
+                    #self.Parts.update()
                     self.Rad.update(time_loop=True)
                     self.ScalarState.boundary_exchange()
                     self.ScalarState.update_all_bcs()
