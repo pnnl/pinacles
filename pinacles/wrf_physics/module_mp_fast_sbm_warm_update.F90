@@ -1274,7 +1274,7 @@ double precision ttdiffl, automass_ch, autonum_ch, nrautonum
     integer :: I,J,KR,IType,HUJISBM_UNIT1
     double precision :: dlnr,ax,deg01,CONCCCNIN,CONTCCNIN
 
- 	  character(len=256),parameter :: dir_43 = "SBM_input_43", dir_33 = "SBM_input_33"
+ 	  character(len=256),parameter :: dir_43 = "SBM_input_43", dir_33 = "pinacles_data_dependencies/FAST_SBM"
  	  character(len=256) :: input_dir,Fname
 
   ! Colleen: reset iLognormal_modes_Aerosol depending on contents of CCN_size_bin_dat
