@@ -9,3 +9,7 @@
 [submodule "pinacles/externals/wrf_kessler_wrapper"]
 	path = pinacles/externals/wrf_kessler_wrapper
 	url = https://gitlab.pnnl.gov/pinacles/wrf_kessler_wrapper.git
+	
+[submodule "pinacles/externals/rrtmg_wrapper"]
+	path = pinacles/externals/rrtmg_wrapper
+	url = https://gitlab.pnnl.gov/pinacles/rrtmg_wrapper.git
