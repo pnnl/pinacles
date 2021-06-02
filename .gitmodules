@@ -5,3 +5,7 @@
 [submodule "pinacles/externals/wrf_p3_wrapper"]
 	path = pinacles/externals/wrf_p3_wrapper
 	url = https://gitlab.pnnl.gov/pinacles/wrf_p3_wrapper.git
+	
+[submodule "pinacles/externals/wrf_kessler_wrapper"]
+	path = pinacles/externals/wrf_kessler_wrapper
+	url = https://gitlab.pnnl.gov/pinacles/wrf_kessler_wrapper.git
