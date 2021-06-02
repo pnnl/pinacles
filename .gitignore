@@ -115,4 +115,9 @@ venv.bak/
 *.mod
 
 # downloaded data
-*.dat-v4.1
+*.dat-v4.*
+
+*plist
+
+*.json
+*_started_*

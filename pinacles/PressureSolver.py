@@ -23,7 +23,7 @@ class PressureSolver:
         div = div.redistribute(0)
 
         try:
-            self._fft =  fft.PFFT(self._Grid.subcomms, darray=div, axes=(1,0), transforms={}, backend='mkl_fft')
+            self._fft =  fft.PFFT(self._Grid.subcomms, darray=div, axes=(1,0), transforms={}, backend='numpy')
         except:
             self._fft =  fft.PFFT(self._Grid.subcomms, darray=div, axes=(1,0), transforms={})
 
@@ -100,7 +100,7 @@ class PressureSolver:
         fill_pressure(n_halo, div, dynp)
 
         #TODO add single vairable exchange
-        self._DiagnosticState.boundary_exchange()
+        self._DiagnosticState.boundary_exchange('dynamic pressure')
         self._DiagnosticState._gradient_zero_bc('dynamic pressure')
 
         apply_pressure(dxs, dynp, x_edge_mask, y_edge_mask, z_edge_mask, u, v, w)

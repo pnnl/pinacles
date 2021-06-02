@@ -60,8 +60,30 @@ class MicrophysicsBase:
     def io_update(self, nc_grp):
         return
 
+    def io_fields2d_update(self, nc_grp):
+        return
+        
     def get_qc(self):
+        return np.zeros((self._Grid._ngrid_local), dtype=np.double)
+    
+
+    def get_qcloud(self):
         return np.zeros((self._Grid._ngrid_local), dtype=np.double)
     
     def get_qi(self):
         return np.zeros((self._Grid._ngrid_local), dtype=np.double)
+    
+    def get_reffc(self):
+        # make consistent with default effective radius values used by P3
+        return np.ones((self._Grid._ngrid_local), dtype=np.double) * 10.0e-6
+
+    def get_reffi(self):
+        # make consistent with default effective radius values used by P3
+        return np.ones((self._Grid._ngrid_local), dtype=np.double) * 25.0e-6
+        
+    def restart(self, data_dict):
+        return
+    
+    def dump_restart(self, data_dict):
+        return
+
