@@ -179,10 +179,9 @@ class RRTMG:
         self._toa_lw_up = 0.0
         self._toa_lw_dn = 0.0
 
-        self._toa_sw_dn_2d = np.zeros(
-            (self._Grid.ngrid_local[0], self._Grid.ngrid_local[1])
-        )
-        self._surf_sw_dn_2d = np.zeros_like(self._toa_sw_dn_2d)
+        self._toa_sw_dn_2d = None
+        self._surf_sw_dn_2d = None
+
         self._restart_attributes = [
             "time_elapsed",
             "_profile_o3",
