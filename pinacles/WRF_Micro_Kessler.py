@@ -1,5 +1,5 @@
 from pinacles.Microphysics import MicrophysicsBase, water_path, water_fraction, water_fraction_profile
-from pinacles.wrf_physics import kessler
+from pinacles.externals.wrf_kessler_wrapper import kessler
 from pinacles import UtilitiesParallel
 from pinacles.WRFUtil import to_wrf_order, wrf_tend_to_our_tend, wrf_theta_tend_to_our_tend, to_our_order
 from pinacles import parameters
