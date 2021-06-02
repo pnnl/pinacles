@@ -1,7 +1,3 @@
-[submodule "pinacles_data_dependencies"]
-	path = pinacles_data_dependencies
-	url = https://gitlab.pnnl.gov/pinacles/pinacles_data_dependencies.git
-	
 [submodule "pinacles/externals/wrf_p3_wrapper"]
 	path = pinacles/externals/wrf_p3_wrapper
 	url = https://gitlab.pnnl.gov/pinacles/wrf_p3_wrapper.git
@@ -13,3 +9,7 @@
 [submodule "pinacles/externals/rrtmg_wrapper"]
 	path = pinacles/externals/rrtmg_wrapper
 	url = https://gitlab.pnnl.gov/pinacles/rrtmg_wrapper.git
+
+[submodule "pinacles/externals/wrf_fast_sbm_wrapper"]
+	path = pinacles/externals/wrf_fast_sbm_wrapper
+	url = https://gitlab.pnnl.gov/pinacles/wrf_fast_sbm_wrapper.git

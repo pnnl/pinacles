@@ -2,6 +2,7 @@ import subprocess
 import os
 
 def main():
+    build_script('pinacles/externals/wrf_fast_sbm_wrapper', 'debug_compile.sh', 'fast_sbm')
     build_script('pinacles/externals/wrf_p3_wrapper', 'build_p3.sh', 'p3')
     f2py_file('pinacles/externals/wrf_kessler_wrapper', 'module_mp_kessler.f95', 'kessler')
 

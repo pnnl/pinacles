@@ -4,7 +4,7 @@ from mpi4py import MPI
 from pinacles import UtilitiesParallel
 import time
 from pinacles.Microphysics import MicrophysicsBase, water_path, water_fraction, water_fraction_profile
-from pinacles.wrf_physics import module_mp_fast_sbm_warm
+from pinacles.externals.wrf_fast_sbm_wrapper import module_mp_fast_sbm_warm
 from pinacles.WRFUtil import to_wrf_order, to_wrf_order_4d, to_our_order_4d, to_our_order
 from pinacles.WRFUtil import to_wrf_order_halo, to_wrf_order_4d_halo, to_our_order_4d_halo, to_our_order_halo
 module_mp_fast_sbm = module_mp_fast_sbm_warm
