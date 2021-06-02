@@ -2,7 +2,7 @@ import subprocess
 import os
 
 def main():
-    build_script('pinacles/wrf_physics', 'build_p3.sh', 'p3')
+    build_script('pinacles/externals/wrf_p3_wrapper', 'build_p3.sh', 'p3')
     f2py_file('pinacles/wrf_physics/', 'module_mp_kessler.f95', 'kessler')
 
     return 
