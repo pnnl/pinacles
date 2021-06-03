@@ -1,5 +1,6 @@
 import numpy as np
 from pinacles.PressureSolver_impl import divergence, fill_pressure, apply_pressure
+from pinacles.PressureSolverNonPeriodic import PressureSolverNonPeriodic
 from pinacles.TDMA import Thomas, PressureTDMA
 import mpi4py_fft as fft
 from mpi4py import MPI
@@ -109,4 +110,4 @@ class PressureSolver:
 
 
 def factory(namelist, Grid, Ref, VelocityState, DiagnosticState):
-    return PressureSolver(Grid, Ref, VelocityState, DiagnosticState)
+    return PressureSolverNonPeriodic(Grid, Ref, VelocityState, DiagnosticState)
