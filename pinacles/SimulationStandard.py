@@ -704,6 +704,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.ScalarTimeStepping.update()
                 self.VelocityTimeStepping.update()
 
+                # Call pressure solver
+                self.PSolver.update()
+        
                 self.ScalarState.apply_limiter()
 
                 # Update boundary conditions
@@ -712,8 +715,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.ScalarState.update_all_bcs()
                 self.VelocityState.update_all_bcs()
 
-                # Call pressure solver
-                self.PSolver.update()
 
                 if n == 1:
                     self.Thermo.update(apply_buoyancy=False)

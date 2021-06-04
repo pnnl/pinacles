@@ -53,15 +53,15 @@ class PressureSolverNonPeriodic:
     def update(self):
 
         # First get views in to the velocity components
-        u = self._VelocityState.get_field("u")
-        v = self._VelocityState.get_field("v")
-        w = self._VelocityState.get_field("w")
+        u = self._VelocityState.get_tend("u")
+        v = self._VelocityState.get_tend("v")
+        w = self._VelocityState.get_tend("w")
 
-        v.fill(0.0)
-        u.fill(0.0)
+        #v.fill(0.0)
+        #u.fill(0.0)
 
-        if MPI.COMM_WORLD.Get_rank() == 0:
-            u[32:48, 32:48, 10:20] = 1.0
+        #if MPI.COMM_WORLD.Get_rank() == 0:
+        #    u[32:48, 32:48, 10:20] = 1.0
 
         dynp = self._DiagnosticState.get_field("dynamic pressure")
 
@@ -73,7 +73,7 @@ class PressureSolverNonPeriodic:
 
         div = np.empty(
             self._Grid.local_shape, dtype=np.double
-        )  # mpi4py_fft.DistArray(self._Grid.n, self._Grid.subcomms, dtype=np.double)
+        )  
 
         # First compute divergence of wind field
         divergence(n_halo, dxs, rho0, rho0_edge, u, v, w, div)
