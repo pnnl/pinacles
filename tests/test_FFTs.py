@@ -1,2 +1,2 @@
-from pinacles import FFTs
+from pinacles import ParallelFFTs
 import mpi4py_fft

@@ -17,15 +17,15 @@ class ScalarAdvectionBase:
         self._TimeStepping = TimeStepping
 
         # Allocate work arrays for fluxes
-        self._fluxx = np.empty(self._Grid.ngrid_local, dtype=np.double)
-        self._fluxy = np.empty_like(self._fluxx)
-        self._fluxz = np.empty_like(self._fluxx)
+        self._fluxx = np.zeros(self._Grid.ngrid_local, dtype=np.double)
+        self._fluxy = np.zeros_like(self._fluxx)
+        self._fluxz = np.zeros_like(self._fluxx)
 
-        self._fluxx_low = np.empty_like(self._fluxx)
-        self._fluxy_low = np.empty_like(self._fluxx)
-        self._fluxz_low = np.empty_like(self._fluxx)
+        self._fluxx_low = np.zeros_like(self._fluxx)
+        self._fluxy_low = np.zeros_like(self._fluxx)
+        self._fluxz_low = np.zeros_like(self._fluxx)
 
-        self._phi_norm = np.empty_like(self._fluxx)
+        self._phi_norm = np.zeros_like(self._fluxx)
         return
 
     def update(self):
