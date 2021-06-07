@@ -50,6 +50,52 @@ class PressureSolverNonPeriodic:
 
         return
 
+
+    def _radiation_davies(self, u, v, w):
+
+        nh = self._Grid.n_halo
+        low_rank = self._Grid.low_rank
+        high_rank = self._Grid.high_rank
+
+        # Set boundary conditions on u
+        if low_rank[0]:
+            u[nh[0]-1,:,:] = 0.0
+
+        if high_rank[0]:
+            u[-nh[0]-1,:,:] = 0.0 
+
+        # Set boundary conditions on v
+        if low_rank[1]:
+            v[:,nh[1]-1,:] = 0.0
+
+        if high_rank[1]:
+            v[:,-nh[1]-1,:] = 0.0 
+
+
+        return
+
+    def _make_homogeneous(self, div ):
+        # Set boundary conditions on u
+
+        low_rank = self._Grid.low_rank
+        high_rank = self._Grid.high_rank
+        if low_rank[0]:
+            div[1,:,:] = 0.0
+
+        if high_rank[0]:
+            div[-1,:,:] = 0.0 
+
+        # Set boundary conditions on v
+        if low_rank[1]:
+            div[:,1,:] = 0.0
+
+        if high_rank[1]:
+            div[:,-1,:] = 0.0 
+
+
+        return
+
+
     def update(self):
 
         # First get views in to the velocity components
@@ -57,13 +103,13 @@ class PressureSolverNonPeriodic:
         v = self._VelocityState.get_tend("v")
         w = self._VelocityState.get_tend("w")
 
+        dynp = self._DiagnosticState.get_field("dynamic pressure")
+
         #v.fill(0.0)
         #u.fill(0.0)
 
         #if MPI.COMM_WORLD.Get_rank() == 0:
         #    u[32:48, 32:48, 10:20] = 1.0
-
-        dynp = self._DiagnosticState.get_field("dynamic pressure")
 
         rho0 = self._Ref.rho0
         rho0_edge = self._Ref.rho0_edge
@@ -75,8 +121,15 @@ class PressureSolverNonPeriodic:
             self._Grid.local_shape, dtype=np.double
         )  
 
+
+        # Set boundary conditions
+        self._radiation_davies(u, v, w)
+
         # First compute divergence of wind field
         divergence(n_halo, dxs, rho0, rho0_edge, u, v, w, div)
+
+
+        self._make_homogeneous(div)
         import time
 
         t0 = time.time()
@@ -101,7 +154,7 @@ class PressureSolverNonPeriodic:
         import pylab as plt
 
         plt.figure()
-        plt.contourf(div[4:-4, 4:-4, 16].T)
+        plt.contourf(div[3:-3, 3:-3, 16].T)
         plt.title(str(MPI.COMM_WORLD.Get_rank()))
         plt.colorbar()
         plt.show()

@@ -305,8 +305,8 @@ class GridBase:
         for i, comm in enumerate(self.subcomms):
             self._subcomm_size.append(comm.Get_size())
             self._subcomm_rank.append(comm.Get_rank())
-            self._low_rank.append(self._subcomm_size[-1] == 0)
-            self._high_rank.append(self._subcomm_size[-1] == self._subcomm_rank[-1] - 1)
+            self._low_rank.append(self._subcomm_rank[-1] == 0)
+            self._high_rank.append(self._subcomm_size[-1] -1 == self._subcomm_rank[-1] )
 
         self._subcomm_rank = tuple(self._subcomm_size)
         self._subcomm_size = tuple(self._subcomm_size)
