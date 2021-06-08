@@ -273,6 +273,42 @@ class MicroP3(MicrophysicsBase):
                 units=diag_3d_long_names[vn][1],
             )
 
+        # Allocate wrf arrays
+        for v in [
+            "s_wrf",
+            "rho_wrf",
+            "exner_wrf",
+            "p0_wrf",
+            "T_wrf",
+            "qv_wrf",
+            "qc_wrf",
+            "qr_wrf",
+            "qnr_wrf",
+            "nc_wrf",
+            "qi1_wrf",
+            "qni1_wrf",
+            "qir1_wrf",
+            "qib1_wrf",
+            "w_wrf",
+            "th_old",
+            "qv_old",
+            "ice_sed_wrf",
+            "liq_sed_wrf",
+            "reflectivity_wrf",
+            "diag_effc_3d_wrf",
+            "diag_effi_3d_wrf",
+            "diag_vmi",
+            "diag_di",
+            "diag_rhopo",
+            "dz_wrf",
+            "z",
+        ]:
+            setattr(
+                self,
+                "_" + v,
+                np.empty(tuple(self._wrf_dims), order="F", dtype=np.double),
+            )
+
         return
 
     def update(self):
@@ -306,35 +342,36 @@ class MicroP3(MicrophysicsBase):
         p0 = self._Ref.p0
         nhalo = self._Grid.n_halo
 
-        rho_wrf = np.empty(self._wrf_dims, order="F", dtype=np.double)
-        exner_wrf = np.empty_like(rho_wrf)
-        p0_wrf = np.empty_like(rho_wrf)
-        T_wrf = np.empty_like(rho_wrf)
-        qv_wrf = np.empty_like(rho_wrf)
-        qc_wrf = np.empty_like(rho_wrf)
-        qr_wrf = np.empty_like(rho_wrf)
-        qnr_wrf = np.empty_like(rho_wrf)
-        nc_wrf = np.empty_like(rho_wrf)
-        qi1_wrf = np.empty_like(rho_wrf)
-        qni1_wrf = np.empty_like(rho_wrf)
-        qir1_wrf = np.empty_like(rho_wrf)
-        qib1_wrf = np.empty_like(rho_wrf)
-        w_wrf = np.empty_like(rho_wrf)
-        th_old = np.empty_like(rho_wrf)
-        qv_old = np.empty_like(rho_wrf)
+        s_wrf = self._s_wrf
+        rho_wrf = self._rho_wrf
+        exner_wrf = self._exner_wrf
+        p0_wrf = self._p0_wrf
+        T_wrf = self._T_wrf
+        qv_wrf = self._qv_wrf
+        qc_wrf = self._qc_wrf
+        qr_wrf = self._qr_wrf
+        qnr_wrf = self._qnr_wrf
+        nc_wrf = self._nc_wrf
+        qi1_wrf = self._qi1_wrf
+        qni1_wrf = self._qni1_wrf
+        qir1_wrf = self._qir1_wrf
+        qib1_wrf = self._qib1_wrf
+        w_wrf = self._w_wrf
+        th_old = self._th_old
+        qv_old = self._qv_old
 
-        ice_sed_wrf = np.empty_like(rho_wrf)
-        liq_sed_wrf = np.empty_like(rho_wrf)
+        ice_sed_wrf = self._ice_sed_wrf
+        liq_sed_wrf = self._liq_sed_wrf
 
-        reflectivity_wrf = np.empty_like(rho_wrf)
-        diag_effc_3d_wrf = np.empty_like(rho_wrf)
-        diag_effi_3d_wrf = np.empty_like(rho_wrf)
-        diag_vmi = np.empty_like(rho_wrf)
-        diag_di = np.empty_like(rho_wrf)
-        diag_rhopo = np.empty_like(rho_wrf)
+        reflectivity_wrf = self._reflectivity_wrf
+        diag_effc_3d_wrf = self._diag_effc_3d_wrf
+        diag_effi_3d_wrf = self._diag_effi_3d_wrf
+        diag_vmi = self._diag_vmi
+        diag_di = self._diag_di
+        diag_rhopo = self._diag_rhopo
 
-        dz_wrf = np.empty_like(rho_wrf)
-        z = np.empty_like(rho_wrf)
+        dz_wrf = self._dz_wrf
+        z = self._z
 
         dz_wrf.fill(self._Grid.dx[2])
         z[:, :, :] = self._Grid.z_global[np.newaxis, nhalo[2] : -nhalo[2], np.newaxis]
@@ -510,16 +547,18 @@ class MicroP3(MicrophysicsBase):
             to_our_order(nhalo, self._diag_3d[:, :, :, i], dv)
 
         # Update the energys (TODO Move this to numba)
-        T_wrf *= self._Ref.exner[np.newaxis, nhalo[2] : -nhalo[2], np.newaxis]
-        s_wrf = (
-            T_wrf
-            + (
-                parameters.G * z
-                - parameters.LV * (qc_wrf + qr_wrf)
-                - parameters.LS * (qi1_wrf)
-            )
-            * parameters.ICPD
-        )
+        # T_wrf *= self._Ref.exner[np.newaxis, nhalo[2] : -nhalo[2], np.newaxis]
+        self._update_static_energy(exner_wrf, z, T_wrf, s_wrf, qc_wrf, qr_wrf, qi1_wrf)
+
+        # s_wrf = (
+        #    T_wrf
+        #    + (
+        #        parameters.G * z
+        #        - parameters.LV * (qc_wrf + qr_wrf)
+        #        - parameters.LS * (qi1_wrf)
+        #    )
+        #    * parameters.ICPD
+        # )
         to_our_order(nhalo, s_wrf, s)
 
         # Compute and apply sedimentation sources of static energy
@@ -654,6 +693,28 @@ class MicroP3(MicrophysicsBase):
 
             profiles_grp["CF"][-1, :] = cf_prof[n_halo[2] : -n_halo[2]]
             profiles_grp["RF"][-1, :] = rf_prof[n_halo[2] : -n_halo[2]]
+
+        return
+
+    @staticmethod
+    @numba.njit
+    def _update_static_energy(exner_wrf, z, T_wrf, s_wrf, qc_wrf, qr_wrf, qi1_wrf):
+        shape = T_wrf.shape
+        # Fortran ordered so we need to loop differently
+        for k in range(shape[2]):
+            for j in range(shape[1]):
+                for i in range(shape[0]):
+                    _T = T_wrf[i, j, k] * exner_wrf[i, j, k]
+                    T_wrf[i, j, k] = _T
+                    s_wrf[i, j, k] = (
+                        _T
+                        + (
+                            parameters.G * z[i, j, k]
+                            - parameters.LV * (qc_wrf[i, j, k] + qr_wrf[i, j, k])
+                            - parameters.LS * (qi1_wrf[i, j, k])
+                        )
+                        * parameters.ICPD
+                    )
 
         return
 
