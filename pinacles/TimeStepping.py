@@ -3,14 +3,14 @@ from pinacles import TimeStepping_impl as TS_impl
 from pinacles import UtilitiesParallel
 from mpi4py import MPI
 
-class RungeKuttaBase:
 
+class RungeKuttaBase:
     def __init__(self, namelist, Grid, PrognosticState):
         self._Grid = Grid
         self._PrognosticState = PrognosticState
         self.n_rk_step = 0
         self._rk_step = 0
-        self.cfl_target = namelist['time']['cfl']
+        self.cfl_target = namelist["time"]["cfl"]
         self._dt = 0.0
 
         return
@@ -22,6 +22,7 @@ class RungeKuttaBase:
     def update(self):
 
         return
+
 
 class RungeKutta2ndSSP(RungeKuttaBase):
     def __init__(self, namelist, Grid, PrognosticState):
@@ -33,7 +34,7 @@ class RungeKutta2ndSSP(RungeKuttaBase):
 
     def initialize(self):
         self._Tn = np.empty_like(self._PrognosticState.state_array)
-        self._Tn[:,:,:,:]=0.0
+        self._Tn[:, :, :, :] = 0.0
         return
 
     def update(self):
@@ -41,23 +42,24 @@ class RungeKutta2ndSSP(RungeKuttaBase):
         present_tend = self._PrognosticState.tend_array
 
         if self._rk_step == 0:
-            self._Tn = np.copy(present_state) #TODO: Replace this copy
-            TS_impl.rk2ssp_s0(present_state, present_tend, self._dt )
+            np.copyto(self._Tn, present_state)
+            TS_impl.rk2ssp_s0(present_state, present_tend, self._dt)
             self._rk_step = 1
 
         else:
-            TS_impl.rk2ssp_s1(self._Tn, present_state,
-                present_tend, self._dt)
+            TS_impl.rk2ssp_s1(self._Tn, present_state, present_tend, self._dt)
             self._rk_step = 0
 
         return
 
-    @property 
-    def dt(self): 
+    @property
+    def dt(self):
         return self._dt
+
 
 def factory(namelist, Grid, PrognosticState):
     return RungeKutta2ndSSP(namelist, Grid, PrognosticState)
+
 
 class TimeSteppingController:
     def __init__(self, namelist, Grid, VelocityState):
@@ -69,12 +71,12 @@ class TimeSteppingController:
         self._TimeStepper = []
         self._times_to_match = []
         self._dt = 0.0
-        self._restart_atts.append('_dt')
+        self._restart_atts.append("_dt")
         self._dt_max = 10.0
-        self._cfl_target = namelist['time']['cfl']
-        self._time_max = namelist['time']['time_max']
+        self._cfl_target = namelist["time"]["cfl"]
+        self._time_max = namelist["time"]["time_max"]
         self._time = 0.0
-        self._restart_atts.append('_time')
+        self._restart_atts.append("_time")
         return
 
     def add_timestepper(self, TimeStepper):
@@ -91,21 +93,24 @@ class TimeSteppingController:
             nhalo = self._Grid.n_halo
             dxi = self._Grid.dxi
 
-            #Get velocity components
-            u = self._VelocityState.get_field('u')
-            v = self._VelocityState.get_field('v')
-            w = self._VelocityState.get_field('w')
+            # Get velocity components
+            u = self._VelocityState.get_field("u")
+            v = self._VelocityState.get_field("v")
+            w = self._VelocityState.get_field("w")
 
             cfl_max = 0.0
-            cfl_max_local, umax, vmax, wmax = TS_impl.comput_local_cfl_max(nhalo, dxi, u, v, w)
-
+            cfl_max_local, umax, vmax, wmax = TS_impl.comput_local_cfl_max(
+                nhalo, dxi, u, v, w
+            )
 
             umax = UtilitiesParallel.ScalarAllReduce(umax, op=MPI.MAX)
             vmax = UtilitiesParallel.ScalarAllReduce(vmax, op=MPI.MAX)
             wmax = UtilitiesParallel.ScalarAllReduce(wmax, op=MPI.MAX)
 
             recv_buffer = np.zeros((1,), dtype=np.double)
-            MPI.COMM_WORLD.Allreduce(np.array([cfl_max_local], dtype=np.double), recv_buffer, op=MPI.MAX)
+            MPI.COMM_WORLD.Allreduce(
+                np.array([cfl_max_local], dtype=np.double), recv_buffer, op=MPI.MAX
+            )
             cfl_max = recv_buffer[0]
             self._cfl_current = self._dt * cfl_max
             self._dt = self._cfl_target / max(cfl_max, 0.001)
@@ -114,22 +119,31 @@ class TimeSteppingController:
             if self._time + self._dt > end_time:
                 self._dt = end_time - self._time
 
-            
             for Stepper in self._TimeStepper:
                 Stepper._dt = self._dt
 
             if MPI.COMM_WORLD.Get_rank() == 0:
-                print('Time:', self._time, 'CFL Before Adjustment:', self._cfl_current,
-                    'CFL After Adjustment:', cfl_max * self._dt, 'dt:', self._dt )
-                print('\t umax: ', umax, '\t vmax:', vmax, '\t wmax:', wmax)
+                print(
+                    "Time:",
+                    self._time,
+                    "CFL Before Adjustment:",
+                    self._cfl_current,
+                    "CFL After Adjustment:",
+                    cfl_max * self._dt,
+                    "dt:",
+                    self._dt,
+                )
+                print("\t umax: ", umax, "\t vmax:", vmax, "\t wmax:", wmax)
 
         return
 
     def match_time(self):
-        #Must be called after dt is computed
+        # Must be called after dt is computed
         for match in self._times_to_match:
-            if self._time//match < (self._time + self._dt)//match:
-                self._dt = min(match*(1.0+self._time//match) - self._time, self._dt)
+            if self._time // match < (self._time + self._dt) // match:
+                self._dt = min(
+                    match * (1.0 + self._time // match) - self._time, self._dt
+                )
 
         return
 
@@ -147,7 +161,7 @@ class TimeSteppingController:
 
     def restart(self, data_dict):
 
-        key = 'TimeStepManager'
+        key = "TimeStepManager"
 
         for atts in self._restart_atts:
             self.__dict__[atts] = data_dict[key][atts]
@@ -156,7 +170,7 @@ class TimeSteppingController:
 
     def dump_restart(self, data_dict):
 
-        key = 'TimeStepManager'
+        key = "TimeStepManager"
         data_dict[key] = {}
 
         for atts in self._restart_atts:
