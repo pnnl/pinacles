@@ -42,7 +42,12 @@ class RungeKutta2ndSSP(RungeKuttaBase):
         present_tend = self._PrognosticState.tend_array
 
         if self._rk_step == 0:
-            np.copyto(self._Tn, present_state)
+
+            # Swap arrays w/o copies
+            tmp = present_state
+            present_state = self._Tn
+            self._Tn = tmp
+
             TS_impl.rk2ssp_s0(present_state, present_tend, self._dt)
             self._rk_step = 1
 
