@@ -75,9 +75,9 @@ class MomentumWENO(MomentumAdvectionBase):
             self, namelist, Grid, Ref, ScalarState, VelocityState
         )
 
-        self._fluxx = np.zeros(self._Grid.ngrid_local, dtype=np.double)
-        self._fluxy = np.zeros_like(self._fluxx)
-        self._fluxz = np.zeros_like(self._fluxx)
+        self._fluxx = np.empty(self._Grid.ngrid_local, dtype=np.double)
+        self._fluxy = np.empty_like(self._fluxx)
+        self._fluxz = np.empty_like(self._fluxx)
 
         return
 
