@@ -11,6 +11,14 @@ from scipy.fft import dctn, idctn
 
 class PressureSolverNonPeriodic:
     def __init__(self, Grid, Ref, VelocityState, DiagnosticState):
+        """ Contructor for non-periodic pressure solver
+
+        Args:
+            Grid (class): PINACLES Grid class
+            Ref (class): PINACLES  Reference class
+            VelocityState (class): PINACLES Container class containing velocity state
+            DiagnosticState (class): PINACLES Container class containing diagnostic model state
+        """
 
         self._Grid = Grid
         self._Ref = Ref
@@ -30,15 +38,20 @@ class PressureSolverNonPeriodic:
 
         self.dct = dct_mpi4py(self._Grid.n, self._Grid.subcomms)
 
-        self.fft_local_starts()
+        self._fft_local_starts()
 
         return
 
-    def fft_local_starts(self):
+    def _fft_local_starts(self):
+        """ compute the number of global number of modified wave numbers and the starting point
+        in the global array
+        """
         div = mpi4py_fft.DistArray(self._Grid.n, self._Grid.subcomms, dtype=np.complex)
-        # div_hat =  mpi4py_fft.newDistArray(self._fft, forward_output=True)
 
-        self._wavenumber_n = div.shape  # div_hat2.shape
+        # Dimensions (global) of modified wave number array
+        self._wavenumber_n = div.shape 
+
+        # Starting points for this rank in the globa modified wave number array
         self._wavenumber_substarts = div.substart
 
         return
@@ -50,8 +63,14 @@ class PressureSolverNonPeriodic:
 
         return
 
-
     def _radiation_davies(self, u, v, w):
+        """[summary]
+
+        Args:
+            u (array): u component
+            v (array): v component
+            w (array): w component
+        """
 
         nh = self._Grid.n_halo
         low_rank = self._Grid.low_rank
@@ -59,38 +78,61 @@ class PressureSolverNonPeriodic:
 
         # Set boundary conditions on u
         if low_rank[0]:
-            u[nh[0]-1,:,:] = 0.0
+            u[nh[0] - 1, :, :] = 0.1
 
         if high_rank[0]:
-            u[-nh[0]-1,:,:] = 0.0 
+            u[-nh[0] - 1, :, :] = 0.0
 
         # Set boundary conditions on v
         if low_rank[1]:
-            v[:,nh[1]-1,:] = 0.0
+            v[:, nh[1] - 1, :] = 0.0
 
         if high_rank[1]:
-            v[:,-nh[1]-1,:] = 0.0 
-
+            v[:, -nh[1] - 1, :] = 0.0
 
         return
 
-    def _make_homogeneous(self, div ):
+    def _make_homogeneous(self, div, div_copy):
         # Set boundary conditions on u
 
         low_rank = self._Grid.low_rank
         high_rank = self._Grid.high_rank
+        nh = self._Grid.n_halo
+
         if low_rank[0]:
-            div[1,:,:] = 0.0
+            div_copy[nh[0], :, :] += div[nh[0]-1, :, :]
 
         if high_rank[0]:
-            div[-1,:,:] = 0.0 
+            div_copy[-1, :, :] = 0.0
 
         # Set boundary conditions on v
         if low_rank[1]:
-            div[:,1,:] = 0.0
+            div_copy[:, 1, :] = 0.0
 
         if high_rank[1]:
-            div[:,-1,:] = 0.0 
+            div_copy[:, -1, :] = 0.0
+
+        return
+
+
+    def _make_non_homogeneous(self, p):
+
+        low_rank = self._Grid.low_rank
+        high_rank = self._Grid.high_rank
+
+        if low_rank[0]:
+            div[0, :, :] = 0.0
+
+        if high_rank[0]:
+            div[-1, :, :] = 0.0
+
+        # Set boundary conditions on v
+        if low_rank[1]:
+            div[:, 1, :] = 0.0
+
+        if high_rank[1]:
+            div[:, -1, :] = 0.0
+
 
 
         return
@@ -105,11 +147,11 @@ class PressureSolverNonPeriodic:
 
         dynp = self._DiagnosticState.get_field("dynamic pressure")
 
-        #v.fill(0.0)
-        #u.fill(0.0)
-
-        #if MPI.COMM_WORLD.Get_rank() == 0:
-        #    u[32:48, 32:48, 10:20] = 1.0
+        v.fill(0.0)
+        u.fill(0.0)
+        
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            u[32:48, 32:48, 10:20] = 1.0
 
         rho0 = self._Ref.rho0
         rho0_edge = self._Ref.rho0_edge
@@ -117,24 +159,22 @@ class PressureSolverNonPeriodic:
         dxs = self._Grid.dx
         n_halo = self._Grid.n_halo
 
-        div = np.empty(
-            self._Grid.local_shape, dtype=np.double
-        )  
-
-
         # Set boundary conditions
         self._radiation_davies(u, v, w)
 
+        div = np.empty(self._Grid.local_shape, dtype=np.double)
+
+
+
         # First compute divergence of wind field
         divergence(n_halo, dxs, rho0, rho0_edge, u, v, w, div)
-
-
-        self._make_homogeneous(div)
+        div_copy = np.copy(div)
+        self._make_homogeneous(div, div_copy)
         import time
 
         t0 = time.time()
 
-        div_hat = self.dct.forward(div)
+        div_hat = self.dct.forward(div_copy)
         self._TMDA_solve.solve(div_hat)
         p = self.dct.backward(div_hat)
 
