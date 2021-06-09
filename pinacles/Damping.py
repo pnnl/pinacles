@@ -1,10 +1,11 @@
 import numpy as np
 from pinacles import Damping_impl
 
+
 class Damping:
     def __init__(self, namelist, Grid):
 
-        self._vars = namelist['damping']['vars']
+        self._vars = namelist["damping"]["vars"]
         self._states = []
         self._Grid = Grid
 
@@ -25,9 +26,9 @@ class Damping:
 
 class Rayleigh(Damping):
     def __init__(self, namelist, Grid):
-        Damping.__init__(self,namelist, Grid)
-        self._depth = namelist['damping']['depth']
-        self._timescale = namelist['damping']['timescale']
+        Damping.__init__(self, namelist, Grid)
+        self._depth = namelist["damping"]["depth"]
+        self._timescale = namelist["damping"]["timescale"]
 
         self._timescale_profile = None
         self._timescale_profile_edge = None
@@ -38,7 +39,7 @@ class Rayleigh(Damping):
 
     def update(self):
 
-        #First loop over all of the variables
+        # First loop over all of the variables
         for var in self._vars:
             for state in self._states:
                 if var in state.names:
@@ -48,10 +49,14 @@ class Rayleigh(Damping):
 
                     mean = state.mean(var)
 
-                    if loc == 'c':
-                        Damping_impl.rayleigh(self._timescale_profile, mean, field, tend)
-                    elif loc == 'z':
-                        Damping_impl.rayleigh(self._timescale_profile_edge, mean, field, tend)
+                    if loc == "c":
+                        Damping_impl.rayleigh(
+                            self._timescale_profile, mean, field, tend
+                        )
+                    elif loc == "z":
+                        Damping_impl.rayleigh(
+                            self._timescale_profile_edge, mean, field, tend
+                        )
 
         return
 
@@ -66,8 +71,12 @@ class Rayleigh(Damping):
         z_top = self._Grid.l[2]
         for k in range(self._Grid.ngrid[2]):
             if z[k] >= z_top - self._depth:
-                self._timescale_profile[k] = (1.0/self._timescale) * np.sin((np.pi / 2.0) * (1.0 - (z_top - z[k]) / self._depth))**2.0
-                self._timescale_profile_edge[k] = (1.0/self._timescale) * np.sin((np.pi / 2.0) * (1.0 - (z_top - z_edge[k]) / self._depth))**2.0
+                self._timescale_profile[k] = (1.0 / self._timescale) * np.sin(
+                    (np.pi / 2.0) * (1.0 - (z_top - z[k]) / self._depth)
+                ) ** 2.0
+                self._timescale_profile_edge[k] = (1.0 / self._timescale) * np.sin(
+                    (np.pi / 2.0) * (1.0 - (z_top - z_edge[k]) / self._depth)
+                ) ** 2.0
 
         return
 
@@ -75,11 +84,12 @@ class Rayleigh(Damping):
     def depth(self):
         return self._depth
 
+
 class RayleighInitial(Damping):
     def __init__(self, namelist, Grid):
-        Damping.__init__(self,namelist, Grid)
-        self._depth = namelist['damping']['depth']
-        self._timescale = namelist['damping']['timescale']
+        Damping.__init__(self, namelist, Grid)
+        self._depth = namelist["damping"]["depth"]
+        self._timescale = namelist["damping"]["timescale"]
 
         self._timescale_profile = None
         self._timescale_profile_edge = None
@@ -88,9 +98,8 @@ class RayleighInitial(Damping):
         self.means = {}
         return
 
-
     def init_means(self):
-        #First loop over all of the variables
+        # First loop over all of the variables
         for var in self._vars:
             for state in self._states:
                 if var in state.names:
@@ -99,10 +108,9 @@ class RayleighInitial(Damping):
 
         return
 
-
     def update(self):
 
-        #First loop over all of the variables
+        # First loop over all of the variables
         for var in self._vars:
             for state in self._states:
                 if var in state.names:
@@ -112,10 +120,14 @@ class RayleighInitial(Damping):
 
                     mean = self.means[var]
 
-                    if loc == 'c':
-                        Damping_impl.rayleigh(self._timescale_profile, mean, field, tend)
-                    elif loc == 'z':
-                        Damping_impl.rayleigh(self._timescale_profile_edge, mean, field, tend)
+                    if loc == "c":
+                        Damping_impl.rayleigh(
+                            self._timescale_profile, mean, field, tend
+                        )
+                    elif loc == "z":
+                        Damping_impl.rayleigh(
+                            self._timescale_profile_edge, mean, field, tend
+                        )
 
         return
 
@@ -130,8 +142,12 @@ class RayleighInitial(Damping):
         z_top = self._Grid.l[2]
         for k in range(self._Grid.ngrid[2]):
             if z[k] >= z_top - self._depth:
-                self._timescale_profile[k] = (1.0/self._timescale) * np.sin((np.pi / 2.0) * (1.0 - (z_top - z[k]) / self._depth))**2.0
-                self._timescale_profile_edge[k] = (1.0/self._timescale) * np.sin((np.pi / 2.0) * (1.0 - (z_top - z_edge[k]) / self._depth))**2.0
+                self._timescale_profile[k] = (1.0 / self._timescale) * np.sin(
+                    (np.pi / 2.0) * (1.0 - (z_top - z[k]) / self._depth)
+                ) ** 2.0
+                self._timescale_profile_edge[k] = (1.0 / self._timescale) * np.sin(
+                    (np.pi / 2.0) * (1.0 - (z_top - z_edge[k]) / self._depth)
+                ) ** 2.0
 
         return
 
