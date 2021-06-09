@@ -79,13 +79,13 @@ class GridBase:
         self._ibl_edge = tuple(np.array(self.n_halo) - 1)
 
         # High-index for edge array
-        self._ibu_edge = tuple(np.array(self._ibl_edge) + np.array(self.ngrid_local))
+        self._ibu_edge = tuple(np.array(self._ibl_edge) + np.array(self.local_shape))
 
         # Low-index for cell-center arrays
         self._ibl = tuple(self.n_halo)
 
         # High index for cell-center arrays
-        self._ibu = tuple(np.array(self._ibl) + np.array(self.ngrid_local) - 1)
+        self._ibu = tuple(np.array(self._ibl) + np.array(self.local_shape) - 1)
         return
 
     def restart(self):
@@ -95,6 +95,22 @@ class GridBase:
     def dump_restart(self, data_dict):
 
         return
+
+    @property
+    def subcomm_rank(self):
+        return self._subcomm_rank
+
+    @property
+    def subcomm_size(self):
+        return self._subcomm_size
+
+    @property
+    def low_rank(self):
+        return self._low_rank
+
+    @property
+    def high_rank(self):
+        return self._high_rank
 
     @property
     def ibl(self):
@@ -332,6 +348,24 @@ class GridBase:
 
     def _create_subcomms(self):
         self.subcomms = Subcomm(MPI.COMM_WORLD, dims=[0, 0, 1])
+
+        self._subcomm_size = []
+        self._subcomm_rank = []
+
+        self._low_rank = []
+        self._high_rank = []
+
+        for i, comm in enumerate(self.subcomms):
+            self._subcomm_size.append(comm.Get_size())
+            self._subcomm_rank.append(comm.Get_rank())
+            self._low_rank.append(self._subcomm_rank[-1] == 0)
+            self._high_rank.append(self._subcomm_size[-1]-1 == self._subcomm_rank[-1])
+
+        self._subcomm_rank = tuple(self._subcomm_size)
+        self._subcomm_size = tuple(self._subcomm_size)
+        self._low_rank = tuple(self._low_rank)
+        self._high_rank = tuple(self._high_rank)
+
         return
 
     def _get_local_grid_indicies(self):
