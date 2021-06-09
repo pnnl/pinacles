@@ -126,6 +126,40 @@ class PressureSolverNonPeriodic:
         return
 
 
+    def _correct_mass_leak(self, dx, u, v):
+
+        low_rank = self._Grid.low_rank
+        high_rank = self._Grid.high_rank
+        
+        ibl_edge = self._Grid.ibl_edge 
+        ibu_edge = self._Grid.ibu_edge
+
+        ibl = self._Grid.ibl 
+        ibu = self._Grid.ibu
+
+        leak = 0
+
+        # Set boundary conditions on u
+        if low_rank[0]:
+            leak -=  np.sum(u[ibl_edge[0], ibl[1]:ibu[1], ibl[2]:ibu[2]])/dx[0]
+
+        if high_rank[0]:
+            leak +=  np.sum(u[ibl_edge[0], ibl[1]:ibu[1], ibl[2]:ibu[2]])/dx[0]
+
+
+        
+
+
+        # Set boundary conditions on v
+        #if low_rank[1]:
+        #    leak += v[ibl[0]:ibu[0], ibl_edge[1], ibl[2]:ibu[2]]
+        #
+        #if high_rank[1]:
+        #    leak += v[ibl[0]:ibu[0], ibu_edge[1], ibl[2]:ibu[2]]
+
+        return
+
+
     def _make_non_homogeneous(self,rho0, div, p, dynp):
 
         low_rank = self._Grid.low_rank
