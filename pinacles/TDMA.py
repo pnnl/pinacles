@@ -1,6 +1,7 @@
 import numpy as np
 import numba
 
+
 @numba.njit(fastmath=True)
 def Thomas(x, a, b, c):
     """ a generic Thomas algorithm tridiagonal solver. 
@@ -15,20 +16,23 @@ def Thomas(x, a, b, c):
     scratch = np.empty(shape[2], dtype=np.double)
     for i in range(shape[0]):
         for j in range(shape[1]):
-            #Upward sweep
-            scratch[0] = c[0]/b[0]
-            x[i,j,0] = x[i,j,0]/b[0]
-            for k in range(1,shape[2]):
-                m = 1.0/(b[k] - a[k] * scratch[k-1])
+            # Upward sweep
+            scratch[0] = c[0] / b[0]
+            x[i, j, 0] = x[i, j, 0] / b[0]
+            for k in range(1, shape[2]):
+                m = 1.0 / (b[k] - a[k] * scratch[k - 1])
                 scratch[k] = c[k] * m
-                x[i,j,k] = (x[i,j,k] - a[k] * x[i,j,k-1])*m
-            #Downward sweep
-            for k in range(shape[2]-2,-1,-1):
-                x[i,j,k] = x[i,j,k] - scratch[k] * x[i,j,k+1]
+                x[i, j, k] = (x[i, j, k] - a[k] * x[i, j, k - 1]) * m
+            # Downward sweep
+            for k in range(shape[2] - 2, -1, -1):
+                x[i, j, k] = x[i, j, k] - scratch[k] * x[i, j, k + 1]
     return
 
+
 @numba.njit(fastmath=True)
-def PressureThomas(n_halo, dxs, rho0, rho0_edge, kx2, ky2, x, a, c, wavenumber_substarts):
+def PressureThomas(
+    n_halo, dxs, rho0, rho0_edge, kx2, ky2, x, a, c, wavenumber_substarts
+):
     shape = x.shape
     scratch = np.empty(shape[2], dtype=np.double)
     b = np.empty(shape[2], dtype=np.double)
@@ -54,13 +58,14 @@ def PressureThomas(n_halo, dxs, rho0, rho0_edge, kx2, ky2, x, a, c, wavenumber_s
                 for k in range(1,shape[2]):
                     m = 1.0/(b[k] - a[k] * scratch[k-1])
                     scratch[k] = c[k] * m
-                    x[i,j,k] = (x[i,j,k] - a[k] * x[i,j,k-1])*m
+                    x[i, j, k] = (x[i, j, k] - a[k] * x[i, j, k - 1]) * m
 
-                #Downward sweep
-                for k in range(shape[2]-2,-1,-1):
-                    x[i,j,k] = x[i,j,k] - scratch[k] * x[i,j,k+1]
+                # Downward sweep
+                for k in range(shape[2] - 2, -1, -1):
+                    x[i, j, k] = x[i, j, k] - scratch[k] * x[i, j, k + 1]
 
     return
+
 
 class PressureTDMA:
     def __init__(self, Grid, Ref, wavenumber_substarts, wavenumber_n):
@@ -71,11 +76,10 @@ class PressureTDMA:
         self._wavenumber_n = wavenumber_n
         self._is_origin = False
 
-        #Set up the diagonals for the solve
+        # Set up the diagonals for the solve
         self._a = None
         self._b = None
         self._c = None
-
 
         self._compute_modified_wavenumbers()
         self._set_upperlower_diagonals()
@@ -97,7 +101,7 @@ class PressureTDMA:
         self._a = np.zeros(self._Grid.n[2], dtype=np.double)
         self._c = np.zeros(self._Grid.n[2], dtype=np.double)
 
-        #First set the lower boundary condition
+        # First set the lower boundary condition
         self._a[0] = 0.0
         self._c[0] = (0.5 * dxi[2] * dxi[2]) * rho0_edge[n_halo[2]]
 
@@ -121,25 +125,29 @@ class PressureTDMA:
         self._kx2 = np.zeros(self._wavenumber_n[0], dtype=np.double)
         self._ky2 = np.zeros(self._wavenumber_n[1], dtype=np.double)
 
-        #TODO the code below feels a bit like boilerplate
+        # TODO the code below feels a bit like boilerplate
 
         for ii in range(self._wavenumber_n[0]):
             i = self._wavenumber_substarts[0] + ii
-            if i <= n[0]/2:
+            if i <= n[0] / 2:
                 xi = np.double(i)
             else:
                 xi = np.double(i - n[0])
-            self._kx2[ii] = (2.0 * np.cos((2.0 * np.pi/n[0]) * xi)-2.0)/dx[0]/dx[0]
+            self._kx2[ii] = (
+                (2.0 * np.cos((2.0 * np.pi / n[0]) * xi) - 2.0) / dx[0] / dx[0]
+            )
 
         for jj in range(self._wavenumber_n[1]):
             j = self._wavenumber_substarts[1] + jj
-            if j <= n[1]/2:
+            if j <= n[1] / 2:
                 yi = np.double(j)
             else:
                 yi = np.double(j - n[1])
-            self._ky2[jj] = (2.0 * np.cos((2.0 * np.pi/n[1]) * yi)-2.0)/dx[1]/dx[1]
+            self._ky2[jj] = (
+                (2.0 * np.cos((2.0 * np.pi / n[1]) * yi) - 2.0) / dx[1] / dx[1]
+            )
 
-        #Remove the odd-ball
+        # Remove the odd-ball
         if self._wavenumber_substarts[0] == 0:
             self._kx2[0] = 0.0
         if self._wavenumber_substarts[1] == 0:
@@ -152,7 +160,18 @@ class PressureTDMA:
         dxs = self._Grid.dx
         rho0 = self._Ref.rho0
         rho0_edge = self._Ref.rho0_edge
-        PressureThomas(n_halo, dxs, rho0, rho0_edge, self._kx2, self._ky2, x, self._a, self._c, self._wavenumber_substarts)
+        PressureThomas(
+            n_halo,
+            dxs,
+            rho0,
+            rho0_edge,
+            self._kx2,
+            self._ky2,
+            x,
+            self._a,
+            self._c,
+            self._wavenumber_substarts,
+        )
 
         return
 

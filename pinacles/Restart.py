@@ -3,7 +3,9 @@ import os
 from mpi4py import MPI
 import time
 from datetime import datetime as dt
-from pinacles import parameters 
+from pinacles import parameters
+
+
 class Restart:
     def __init__(self, namelist):
 
@@ -11,51 +13,57 @@ class Restart:
         self._namelist = namelist
 
         self._fequency = parameters.LARGE
-        if 'frequency' in self._namelist['restart']:
-            self._fequency = self._namelist['restart']['frequency']
+        if "frequency" in self._namelist["restart"]:
+            self._fequency = self._namelist["restart"]["frequency"]
 
         self._restart_simulation = False
-        if 'restart_simulation' in self._namelist['restart']:
-            self._restart_simulation = self._namelist['restart']['restart_simulation']
+        if "restart_simulation" in self._namelist["restart"]:
+            self._restart_simulation = self._namelist["restart"]["restart_simulation"]
 
         self._walltime_restart = parameters.LARGE
         self._do_walltime_restart = False
-        if 'walltime_restart' in self._namelist['restart']:
-            self._walltime_restart = self._namelist['restart']['walltime_restart']
+        if "walltime_restart" in self._namelist["restart"]:
+            self._walltime_restart = self._namelist["restart"]["walltime_restart"]
             self._do_walltime_restart = True
 
         self._infile = None
         if self._restart_simulation:
-            self._infile = self._namelist['restart']['infile']
+            self._infile = self._namelist["restart"]["infile"]
 
         sim_path = os.path.join(
-            namelist['meta']['output_directory'], 
-            namelist['meta']['simname'])
-        
+            namelist["meta"]["output_directory"], namelist["meta"]["simname"]
+        )
+
         # If the case already exits create a new directory and time and date it
         if MPI.COMM_WORLD.Get_rank() == 0:
             if os.path.exists(sim_path):
 
                 sim_path = os.path.join(
-                namelist['meta']['output_directory'], 
-                namelist['meta']['simname'])
-        
+                    namelist["meta"]["output_directory"], namelist["meta"]["simname"]
+                )
+
                 # If the simulation path exists, create another
-                sim_path = sim_path.split('_started_')            
-                namelist['meta']['simname'] =  sim_path[0] + '_started_' + dt.now().strftime("%Y_%m_%d-%I_%M_%S_%p")     
+                sim_path = sim_path.split("_started_")
+                namelist["meta"]["simname"] = (
+                    sim_path[0]
+                    + "_started_"
+                    + dt.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
+                )
 
-        #Broadcast the directory name that was just created on rank0
-        namelist['meta']['simname'] =  MPI.COMM_WORLD.bcast(namelist['meta']['simname'])
+        # Broadcast the directory name that was just created on rank0
+        namelist["meta"]["simname"] = MPI.COMM_WORLD.bcast(namelist["meta"]["simname"])
 
+        # Set-up reastart output path
+        self._path = os.path.join(
+            os.path.join(
+                namelist["meta"]["output_directory"], namelist["meta"]["simname"]
+            ),
+            "Restart",
+        )
 
-        #Set-up reastart output path
-        self._path = os.path.join(os.path.join(
-            namelist['meta']['output_directory'], 
-            namelist['meta']['simname']), 'Restart')
-
-        #Create the path if it doesn't exist
+        # Create the path if it doesn't exist
         self.create_path()
-        
+
         # This dictionary will store the data that is required for output
         self.data_dict = {}
 
@@ -68,7 +76,7 @@ class Restart:
         """ Function that check to see if the restart path exists, if it does not, 
         create it. 
         """
-        
+
         if MPI.COMM_WORLD.Get_rank() == 0:
             if not os.path.exists(self._path):
                 os.makedirs(self._path)
@@ -87,30 +95,29 @@ class Restart:
         # Create the path for this output time
         time_path = os.path.join(self._path, str(out_time))
         rank = MPI.COMM_WORLD.Get_rank()
-        
-        # We only need to create the directory on the file system once, so 
+
+        # We only need to create the directory on the file system once, so
         # do it on rank 0
         if rank == 0:
             # Announce that a restart file is being written
-            print('\t Writing restart files @ ' + str(out_time) + 's.')
-            
+            print("\t Writing restart files @ " + str(out_time) + "s.")
+
             # Create needed directory
             os.mkdir(time_path)
         MPI.COMM_WORLD.Barrier()
-        
-        self.data_dict['namelist'] = self._namelist
 
-        with open(os.path.join(time_path, str(rank) + '.pkl'), 'wb') as f:
+        self.data_dict["namelist"] = self._namelist
+
+        with open(os.path.join(time_path, str(rank) + ".pkl"), "wb") as f:
             pickle.dump(self.data_dict, f)
-        
+
         self.data_dict = {}
         MPI.COMM_WORLD.Barrier()
         t1 = time.perf_counter()
-        
-        #Print
-        if rank == 0:
-            print('\t Finished writing restart file in ' + str(t1 - t0) + 's.')
 
+        # Print
+        if rank == 0:
+            print("\t Finished writing restart file in " + str(t1 - t0) + "s.")
 
         return
 
@@ -118,9 +125,9 @@ class Restart:
 
         rank = MPI.COMM_WORLD.Get_rank()
 
-        with open(os.path.join(self._infile, str(rank) + '.pkl'), 'rb') as f:
+        with open(os.path.join(self._infile, str(rank) + ".pkl"), "rb") as f:
             self.data_dict = pickle.load(f)
-        
+
         return
 
     def add_class_to_restart(self, class_to_add):
@@ -132,9 +139,9 @@ class Restart:
             class_to_add {class}: a class to dump restarts or restart must have correct methods
         """
 
-        #Check to make sure that the class has a restart attribute
-        assert hasattr(class_to_add, 'restart')
-        assert hasattr(class_to_add, 'dump_restart')
+        # Check to make sure that the class has a restart attribute
+        assert hasattr(class_to_add, "restart")
+        assert hasattr(class_to_add, "dump_restart")
 
         # Add this class
         self._classes_to_restart.append(class_to_add)
@@ -149,7 +156,7 @@ class Restart:
         rank = MPI.COMM_WORLD.Get_rank()
 
         if rank == 0:
-            print('\t Restarting simulation from ' + self._infile + '.')
+            print("\t Restarting simulation from " + self._infile + ".")
         # First read the restart files from  disk
         self.read()
 
@@ -161,8 +168,7 @@ class Restart:
         t1 = time.perf_counter()
 
         if rank == 0:
-            print('\t Finished restarting simulation in ' + str(t1 - t0) + 's.')
-
+            print("\t Finished restarting simulation in " + str(t1 - t0) + "s.")
 
         return
 
