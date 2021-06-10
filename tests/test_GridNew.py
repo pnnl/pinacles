@@ -6,12 +6,11 @@ from pinacles import Grid
 def grid_fix():
     list_of_grids = []
 
-
     this_nml = {}
-    this_nml['grid'] = {}
-    this_nml['grid']['n'] = [10, 10, 10]
-    this_nml['grid']['n_halo'] = [3, 3, 3]
-    this_nml['grid']['l'] = [1000.0, 1000.0, 1000.0]
+    this_nml["grid"] = {}
+    this_nml["grid"]["n"] = [10, 10, 10]
+    this_nml["grid"]["n_halo"] = [3, 3, 3]
+    this_nml["grid"]["l"] = [1000.0, 1000.0, 1000.0]
 
     list_of_grids.append(Grid.RegularCartesian(this_nml))
 
@@ -20,7 +19,7 @@ def grid_fix():
 
 def test_point_on_rank(grid_fix):
 
-    assert all(hasattr(grid, 'point_on_rank') for grid in grid_fix)
+    assert all(hasattr(grid, "point_on_rank") for grid in grid_fix)
 
     for grid in grid_fix:
         on_rank = grid.point_on_rank(100.0, 100.0, 100.0)
@@ -34,13 +33,14 @@ def test_point_on_rank(grid_fix):
 
     return
 
+
 def test_point_indicies(grid_fix):
 
-    assert all(hasattr(grid, 'point_indicies') for grid in grid_fix)
+    assert all(hasattr(grid, "point_indicies") for grid in grid_fix)
 
     for grid in grid_fix:
         on_rank = grid.point_on_rank(100.0, 100.0, 100.0)
-        
+
         assert on_rank
 
         if on_rank:
