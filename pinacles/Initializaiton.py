@@ -17,6 +17,11 @@ CASENAMES = [
 
 
 def colliding_blocks(namelist, ModelGrid, Ref, ScalarState, VelocityState):
+    #  Optionally set a random seed as specified in the namelist
+    try:
+        np.random.seed(namelist["meta"]["random_seed"])
+    except:
+        pass
 
     # Integrate the reference profile.
     Ref.set_surface()
@@ -52,6 +57,12 @@ def colliding_blocks(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
 
 def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
+
+    #  Optionally set a random seed as specified in the namelist
+    try:
+        np.random.seed(namelist["meta"]["random_seed"])
+    except:
+        pass
 
     # Integrate the reference profile.
     Ref.set_surface(Tsfc=300.0, u0=0.0, v0=0.0)
@@ -102,6 +113,12 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
 
 def bomex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
+
+    #  Optionally set a random seed as specified in the namelist
+    try:
+        np.random.seed(namelist["meta"]["random_seed"])
+    except:
+        pass
 
     # Integrate the reference profile.
     Ref.set_surface(Psfc=1015e2, Tsfc=300.4, u0=-8.75, v0=0.0)
@@ -168,6 +185,13 @@ def bomex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
 
 def atex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
+    #  Optionally set a random seed as specified in the namelist
+    try:
+        np.random.seed(namelist["meta"]["random_seed"])
+    except:
+        pass
+
+    np.random.seed(namelist["meta"]["random_seed"])
 
     # Integrate the reference profile.
     Ref.set_surface(Psfc=1.0154e5, Tsfc=295.750, u0=-8.0, v0=-1.0)
@@ -251,6 +275,13 @@ def atex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
 
 def rico(namelist, ModelGrid, Ref, ScalarState, VelocityState):
+    #  Optionally set a random seed as specified in the namelist
+    try:
+        np.random.seed(namelist["meta"]["random_seed"])
+    except:
+        pass
+
+    np.random.seed(namelist["meta"]["random_seed"])
 
     # Integrate the reference profile.
     Ref.set_surface(Tsfc=299.8, Psfc=1.0154e5, u0=-9.9, v0=-3.8)
@@ -314,6 +345,11 @@ def rico(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
 
 def stable_bubble(namelist, ModelGrid, Ref, ScalarState, VelocityState):
+    #  Optionally set a random seed as specified in the namelist
+    try:
+        np.random.seed(namelist["meta"]["random_seed"])
+    except:
+        pass
 
     # Integrate the reference profile.
     Ref.set_surface(Tsfc=300.0)
@@ -364,6 +400,12 @@ def stable_bubble(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
 
 def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
+    #  Optionally set a random seed as specified in the namelist
+    try:
+        np.random.seed(namelist["meta"]["random_seed"])
+    except:
+        pass
+
     file = namelist["testbed"]["input_filepath"]
     try:
         micro_scheme = namelist["microphysics"]["scheme"]
