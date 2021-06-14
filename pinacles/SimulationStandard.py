@@ -266,6 +266,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.VelocityState,
         )
 
+        # Initialize any work arrays for the microphysics package
+        self.Micro.initialize()
+
         # Now that the initial profiles have been integrated, the pressure solver and be initialzied
         self.PSolver.initialize()
 
@@ -565,6 +568,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ScalarState,
             self.VelocityState,
         )
+
+        # Initialize any work arrays for the microphysics package
+        self.Micro.initialize()
 
         # Now that the initial profiles have been integrated, the pressure solver and be initialzied
         self.PSolver.initialize()

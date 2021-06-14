@@ -191,8 +191,6 @@ def atex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     except:
         pass
 
-    np.random.seed(namelist["meta"]["random_seed"])
-
     # Integrate the reference profile.
     Ref.set_surface(Psfc=1.0154e5, Tsfc=295.750, u0=-8.0, v0=-1.0)
     Ref.integrate()
@@ -280,8 +278,6 @@ def rico(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         np.random.seed(namelist["meta"]["random_seed"])
     except:
         pass
-
-    np.random.seed(namelist["meta"]["random_seed"])
 
     # Integrate the reference profile.
     Ref.set_surface(Tsfc=299.8, Psfc=1.0154e5, u0=-9.9, v0=-3.8)

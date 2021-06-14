@@ -63,6 +63,9 @@ class MicrophysicsBase:
 
         return
 
+    def initialize(self):
+        return
+
     def update(self):
         return
 

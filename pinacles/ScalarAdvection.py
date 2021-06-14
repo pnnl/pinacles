@@ -689,8 +689,6 @@ class ScalarWENO(ScalarAdvectionBase):
                 if phi_has_nonzero(
                     phi
                 ):  # If fields are zero everywhere no need to do any advection so skip-it!
-                    # TODO This could probably be made faster
-
                     phi_range = compute_phi_range(phi)
                     rescale_scalar(phi, phi_range, phi_norm)
                     # phi_norm = phi
