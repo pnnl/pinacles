@@ -9,6 +9,7 @@ import netCDF4 as nc
 from cffi import FFI
 import ctypes
 
+
 ffi = FFI()
 
 
@@ -1010,7 +1011,7 @@ class RadiationDycoms:
             z_edge = self._Grid.z_edge_global
             dt = self._TimeSteppingController.dt
             dycoms_rad_calc(
-                nh, self._Grid.dxi[2], z, z_edge, rho, rho_edge, qc, qv, dTdt_rad
+                nh, self._Grid.dxi[2], z, z_edge, rho, qc, qv, dTdt_rad
             )
 
             s[:, :, :] += dTdt_rad[:, :, :] * dt
@@ -1042,37 +1043,36 @@ class RadiationDycoms:
 
 
 @numba.njit()
-def dycoms_rad_calc(nh, dzi, z, z_edge, rho, rho_edge, qc, qv, dT):
+def dycoms_rad_calc(nh, dzi, z, z_edge, rho,  qc, qv, dT):
     F0 = 70.0  # W m^-2
     F1 = 22.0  # W m^-2
-    kappa = 85  # m^2 kg^-1
+    kappa = 85.0  # m^2 kg^-1
     a = 1.0  # K m^{-1/3}
     rho_zi = 1.12  # kg m^{-3} (air density at initial inversion zi = 795)
     qt_zi = 8.0e-3  # kg kg^-1 (total water threshold for diagnosing zi)
     D = 3.75e-6  # s^{-1} dive
     shape = qc.shape
     lw_flux = np.zeros(shape[2], dtype=np.double)
+    qtop = np.zeros_like(lw_flux)
+    qbot = np.zeros_like(lw_flux)
     kmin = nh[2] - 1
     kmax = shape[2] - nh[2]
     for i in range(nh[0], shape[0] - nh[0]):
         for j in range(nh[1], shape[1] - nh[1]):
-            index = np.amax(np.argwhere(qc[i, j, :] + qv[i, j, :] > qt_zi))
-            zi = z[index]
-            qc_edge = np.interp(z_edge, z, qc[i, j, :])
-            for k in range(kmin, kmax):
-                qtop = (
-                    np.trapz(
-                        rho_edge[k : kmax + 1] * qc_edge[k : kmax + 1], dx=1.0 / dzi
-                    )
-                    * kappa
-                )
-                qbot = (
-                    np.trapz(
-                        rho_edge[kmin : k + 1] * qc_edge[kmin : k + 1], dx=1.0 / dzi
-                    )
-                    * kappa
-                )
-                lw_flux[k] = F0 * np.exp(-qtop) + F1 * np.exp(-qbot)
+            qt_index = qc[i,j,nh[2]] + qc[i,j,nh[2]]
+            for k in range(kmin+1, kmax):
+                index = k
+                qt_indexm1 = qt_index
+                qt_index = qc[i,j,k] + qv[i,j,k]
+                if qt_index < qt_zi:
+                    break
+            zi = (qt_zi - qt_indexm1)/(qt_index-qt_indexm1)/dzi + z[index-1]
+            for k in range(kmax-1, kmin-1,-1):
+                qtop[k] = qtop[k+1] +  qc[i,j,k+1] * rho[k+1] /dzi * kappa
+            for k in range(kmin, kmax+1):
+                qbot[k] = qbot[k-1] + qc[i,j,k] * rho[k] / dzi * kappa
+               
+                lw_flux[k] = F0 * np.exp(-qtop[k]) + F1 * np.exp(-qbot[k])
                 if z_edge[k] > zi:
                     cbrt_z = (z_edge[k] - zi) ** (1.0 / 3.0)
                     lw_flux[k] += (
@@ -1080,4 +1080,5 @@ def dycoms_rad_calc(nh, dzi, z, z_edge, rho, rho_edge, qc, qv, dT):
                     )
 
                 dT[i, j, k] = -(lw_flux[k] - lw_flux[k - 1]) * dzi / 1004.0 / rho[k]
+ 
     return
