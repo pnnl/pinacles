@@ -22,6 +22,7 @@ class MicroP3(MicrophysicsBase):
     def __init__(
         self,
         namelist,
+        Timers,
         Grid,
         Ref,
         ScalarState,
@@ -32,6 +33,7 @@ class MicroP3(MicrophysicsBase):
 
         MicrophysicsBase.__init__(
             self,
+            Timers,
             Grid,
             Ref,
             ScalarState,
@@ -309,9 +311,11 @@ class MicroP3(MicrophysicsBase):
                 np.empty(tuple(self._wrf_dims), order="F", dtype=np.double),
             )
 
+        self._Timers.add_timer("MicroP3_update")
         return
 
     def update(self):
+        self._Timers.start_timer("MicroP3_update")
 
         # Get variables from the model state
         T = self._DiagnosticState.get_field("T")
@@ -582,6 +586,8 @@ class MicroP3(MicrophysicsBase):
         to_our_order(nhalo, reflectivity_wrf, reflectivity)
 
         self._itimestep += 1
+
+        self._Timers.end_timer("MicroP3_update")
         return
 
     def io_initialize(self, nc_grp):

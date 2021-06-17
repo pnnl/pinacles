@@ -4,7 +4,7 @@ from pinacles import SGSSmagorinsky
 from mpi4py import MPI
 
 
-def factory(namelist, Grid, Ref, VelocityState, DiagnosticState):
+def factory(namelist, Timers, Grid, Ref, VelocityState, DiagnosticState):
     try:
         sgs_model = namelist["sgs"]["model"]
     except:
@@ -13,8 +13,8 @@ def factory(namelist, Grid, Ref, VelocityState, DiagnosticState):
         sgs_model = None
 
     if sgs_model is None:
-        return SGS.SGSBase(namelist, Grid, Ref, VelocityState, DiagnosticState)
+        return SGS.SGSBase(namelist, Timers, Grid, Ref, VelocityState, DiagnosticState)
     elif sgs_model == "smagorinsky":
         return SGSSmagorinsky.Smagorinsky(
-            namelist, Grid, Ref, VelocityState, DiagnosticState
+            namelist, Timers, Grid, Ref, VelocityState, DiagnosticState
         )

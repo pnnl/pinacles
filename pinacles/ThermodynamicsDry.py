@@ -5,9 +5,9 @@ import numba
 
 
 class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
-    def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState):
+    def __init__(self, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState):
         Thermodynamics.ThermodynamicsBase.__init__(
-            self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, None
+            self, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState, None
         )
 
         ScalarState.add_variable(
@@ -31,9 +31,13 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
             units="K",
         )
 
+        self._Timers.add_timer("ThermoDynamicsDry_update")
+
         return
 
     def update(self, apply_buoyancy=True):
+
+        self._Timers.start_timer("ThermoDynamicsDry_update")
 
         n_halo = self._Grid.n_halo
         z = self._Grid.z_global
@@ -62,6 +66,8 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
 
         if apply_buoyancy:
             ThermodynamicsDry_impl.apply_buoyancy(buoyancy, w_t)
+
+        self._Timers.end_timer("ThermoDynamicsDry_update")
 
         return
 
