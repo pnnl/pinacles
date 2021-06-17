@@ -8,8 +8,9 @@ from pinacles import ParallelFFTs
 
 
 class PressureSolver:
-    def __init__(self, Grid, Ref, VelocityState, DiagnosticState):
+    def __init__(self, Timers, Grid, Ref, VelocityState, DiagnosticState):
 
+        self._Timers = Timers
         self._Grid = Grid
         self._Ref = Ref
         self._VelocityState = VelocityState
@@ -36,6 +37,7 @@ class PressureSolver:
 
         self._div_work = np.empty(self.FFT.p2.subshape, dtype=np.complex)
 
+        self._Timers.add_timer("PressureSolver_update")
         return
 
     def initialize(self):
@@ -55,6 +57,8 @@ class PressureSolver:
         return
 
     def update(self):
+
+        self._Timers.start_timer("PressureSolver_update")
 
         self._VelocityState.remove_mean("w")
 
@@ -99,8 +103,10 @@ class PressureSolver:
         self._VelocityState.boundary_exchange()
         self._VelocityState.update_all_bcs()
 
+        self._Timers.end_timer("PressureSolver_update")
+
         return
 
 
-def factory(namelist, Grid, Ref, VelocityState, DiagnosticState):
+def factory(namelist, Timer, Grid, Ref, VelocityState, DiagnosticState):
     return PressureSolverNonPeriodic(Grid, Ref, VelocityState, DiagnosticState)

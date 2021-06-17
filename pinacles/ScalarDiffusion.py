@@ -67,10 +67,11 @@ def compute_fluxes(
 
 
 class ScalarDiffusion:
-    def __init__(self, namelist, Grid, Ref, DiagnosticState, ScalarState):
+    def __init__(self, namelist, Timers, Grid, Ref, DiagnosticState, ScalarState):
 
         self._name = "ScalarDiffusion"
 
+        self._Timers = Timers
         self._Grid = Grid
         self._Ref = Ref
         self._DiagnosticState = DiagnosticState
@@ -81,6 +82,7 @@ class ScalarDiffusion:
         self._fluxy = np.zeros_like(self._fluxx)
         self._fluxz = np.zeros_like(self._fluxx)
 
+        self._Timers.add_timer("ScalarDiffusion_update")
         return
 
     def io_initialize(self, this_grp):
@@ -174,6 +176,8 @@ class ScalarDiffusion:
 
     def update(self):
 
+        self._Timers.start_timer("ScalarDiffusion_update")
+
         n_halo = self._Grid.n_halo
         dxi = self._Grid.dxi
         dx = self._Grid.dx
@@ -207,6 +211,8 @@ class ScalarDiffusion:
                 io_flux,
                 phi_t,
             )
+
+        self._Timers.end_timer("ScalarDiffusion_update")
 
         return
 

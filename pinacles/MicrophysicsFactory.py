@@ -6,6 +6,7 @@ from pinacles import WRF_Micro_SBM
 
 def factory(
     namelist,
+    Timers,
     Grid,
     Ref,
     ScalarState,
@@ -21,6 +22,7 @@ def factory(
 
     if scheme == "base":
         return Microphysics.MicrophysicsBase(
+            Timers,
             Grid,
             Ref,
             ScalarState,
@@ -30,6 +32,7 @@ def factory(
         )
     elif scheme == "kessler":
         return WRF_Micro_Kessler.MicroKessler(
+            Timers,
             Grid,
             Ref,
             ScalarState,
@@ -40,6 +43,7 @@ def factory(
     elif scheme == "p3":
         return WRF_Micro_P3.MicroP3(
             namelist,
+            Timers,
             Grid,
             Ref,
             ScalarState,
@@ -50,6 +54,7 @@ def factory(
     elif scheme == "sbm":
         return WRF_Micro_SBM.MicroSBM(
             namelist,
+            Timers,
             Grid,
             Ref,
             ScalarState,

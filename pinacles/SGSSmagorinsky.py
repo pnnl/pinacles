@@ -41,10 +41,12 @@ def compute_visc(
 
 
 class Smagorinsky(SGSBase):
-    def __init__(self, namelist, Grid, Ref, VelocityState, DiagnosticState):
+    def __init__(self, namelist, Timers, Grid, Ref, VelocityState, DiagnosticState):
 
         # Initialize the SGS baseclass
-        SGSBase.__init__(self, namelist, Grid, Ref, VelocityState, DiagnosticState)
+        SGSBase.__init__(
+            self, namelist, Timers, Grid, Ref, VelocityState, DiagnosticState
+        )
 
         # Add diagnostic fields
         self._DiagnosticState.add_variable(
@@ -77,9 +79,13 @@ class Smagorinsky(SGSBase):
         except BaseException:
             self._prt = 1.0 / 3.0
 
+        self._Timers.add_timer("SGSSmagorinsky_update")
+
         return
 
     def update(self):
+
+        self._Timers.start_timer("SGSSmagorinsky_update")
 
         # Get the grid spacing from the Grid class
         dx = self._Grid.dx
@@ -104,5 +110,7 @@ class Smagorinsky(SGSBase):
             eddy_diffusivity,
             tke_sgs,
         )
+
+        self._Timers.end_timer("SGSSmagorinsky_update")
 
         return

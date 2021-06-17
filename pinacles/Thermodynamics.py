@@ -1,6 +1,9 @@
 class ThermodynamicsBase:
-    def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro):
+    def __init__(
+        self, Timer, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro
+    ):
 
+        self._Timers = Timer
         self._Grid = Grid
         self._Ref = Ref
         self._ScalarState = ScalarState
@@ -40,7 +43,9 @@ from pinacles import ThermodynamicsDry
 from pinacles import ThermodynamicsMoist
 
 
-def factory(namelist, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro):
+def factory(
+    namelist, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro
+):
     try:
         thermo_type = namelist["Thermodynamics"]["type"]
     except:
@@ -48,9 +53,9 @@ def factory(namelist, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Mi
 
     if thermo_type == "moist":
         return ThermodynamicsMoist.ThermodynamicsMoist(
-            Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro
+            Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro
         )
     else:
         return ThermodynamicsDry.ThermodynamicsDry(
-            Grid, Ref, ScalarState, VelocityState, DiagnosticState
+            Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState
         )

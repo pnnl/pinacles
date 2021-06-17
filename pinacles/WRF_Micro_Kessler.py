@@ -39,6 +39,7 @@ def compute_rh(qv, temp, pressure):
 class MicroKessler(MicrophysicsBase):
     def __init__(
         self,
+        Timers,
         Grid,
         Ref,
         ScalarState,
@@ -49,6 +50,7 @@ class MicroKessler(MicrophysicsBase):
 
         MicrophysicsBase.__init__(
             self,
+            Timers,
             Grid,
             Ref,
             ScalarState,
@@ -102,9 +104,13 @@ class MicroKessler(MicrophysicsBase):
 
         self._rain_rate = 0.0
 
+        self._Timers.add_timer("MicroKessler_update")
+
         return
 
     def update(self):
+
+        self._Timers.start_timer("MicroKessler_update")
 
         # Get variables from the model state
         T = self._DiagnosticState.get_field("T")
@@ -241,6 +247,8 @@ class MicroKessler(MicrophysicsBase):
         # Convert sedimentation sources to units of tendency
         np.multiply(liq_sed, 1.0 / self._TimeSteppingController.dt, out=liq_sed)
         np.multiply(s_liq_sed, -1.0 / self._TimeSteppingController.dt, out=s_liq_sed)
+
+        self._Timers.end_timer("MicroKessler_update")
         return
 
     def io_initialize(self, nc_grp):

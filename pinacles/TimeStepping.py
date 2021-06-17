@@ -5,7 +5,8 @@ from mpi4py import MPI
 
 
 class RungeKuttaBase:
-    def __init__(self, namelist, Grid, PrognosticState):
+    def __init__(self, namelist, Timers, Grid, PrognosticState):
+        self._Timers = Timers
         self._Grid = Grid
         self._PrognosticState = PrognosticState
         self.n_rk_step = 0
@@ -25,11 +26,14 @@ class RungeKuttaBase:
 
 
 class RungeKutta2ndSSP(RungeKuttaBase):
-    def __init__(self, namelist, Grid, PrognosticState):
-        RungeKuttaBase.__init__(self, namelist, Grid, PrognosticState)
+    def __init__(self, namelist, Timers, Grid, PrognosticState):
+        RungeKuttaBase.__init__(self, namelist, Timers, Grid, PrognosticState)
         self.Tn = None
         self.n_rk_step = 2
         self._rk_step = 0
+
+        self._Timers.add_timer("RungeKutta2ndSSP_update")
+
         return
 
     def initialize(self):
@@ -38,6 +42,8 @@ class RungeKutta2ndSSP(RungeKuttaBase):
         return
 
     def update(self):
+        self._Timers.start_timer("RungeKutta2ndSSP_update")
+
         present_state = self._PrognosticState.state_array
         present_tend = self._PrognosticState.tend_array
 
@@ -50,6 +56,7 @@ class RungeKutta2ndSSP(RungeKuttaBase):
             TS_impl.rk2ssp_s1(self._Tn, present_state, present_tend, self._dt)
             self._rk_step = 0
 
+        self._Timers.end_timer("RungeKutta2ndSSP_update")
         return
 
     @property
@@ -57,8 +64,8 @@ class RungeKutta2ndSSP(RungeKuttaBase):
         return self._dt
 
 
-def factory(namelist, Grid, PrognosticState):
-    return RungeKutta2ndSSP(namelist, Grid, PrognosticState)
+def factory(namelist, Timers, Grid, PrognosticState):
+    return RungeKutta2ndSSP(namelist, Timers, Grid, PrognosticState)
 
 
 class TimeSteppingController:

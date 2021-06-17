@@ -164,8 +164,10 @@ class Plume:
 
 
 class Plumes:
-    def __init__(self, namelist, Grid, Ref, ScalarState, TimeSteppingController):
-
+    def __init__(
+        self, namelist, Timers, Grid, Ref, ScalarState, TimeSteppingController
+    ):
+        self._Timers = Timers
         self._Grid = Grid
         self._Ref = Ref
         self._TimeSteppingController = TimeSteppingController
@@ -252,18 +254,21 @@ class Plumes:
             # set the treatment of the plume scalars on the boundary
             plume.set_boundary_outflow(self._boundary_outflow[i])
 
+        self._Timers.add_timer("Plumes_update")
         return
 
     def update(self):
-
         if self._n == 0:
             # If there ae no plumes, just return
             return
+
+        self._Timers.start_timer("Plumes_update")
 
         # Iterate over the list of plumes and update them
         for plume_i in self._list_of_plumes:
             plume_i.update()
 
+        self._Timers.end_timer("Plumes_update")
         return
 
     @property
