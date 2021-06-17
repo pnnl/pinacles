@@ -827,7 +827,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
     def walltime_restart(self):
         t1 = time.perf_counter()
-        time_from_start = np.array([t1 - self.t_init], dtype=np.double)
+        time_from_start = np.array([t1 - self.t_init], dtype=np.single)
         MPI.COMM_WORLD.Bcast(time_from_start)
 
         if (

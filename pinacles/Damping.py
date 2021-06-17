@@ -70,7 +70,7 @@ class Rayleigh(Damping):
 
     def _compute_timescale_profile(self):
 
-        self._timescale_profile = np.zeros(self._Grid.ngrid[2], dtype=np.double)
+        self._timescale_profile = np.zeros(self._Grid.ngrid[2], dtype=np.single)
         self._timescale_profile_edge = np.zeros_like(self._timescale_profile)
 
         z = self._Grid.z_global
@@ -148,7 +148,7 @@ class RayleighInitial(Damping):
 
     def _compute_timescale_profile(self):
 
-        self._timescale_profile = np.zeros(self._Grid.ngrid[2], dtype=np.double)
+        self._timescale_profile = np.zeros(self._Grid.ngrid[2], dtype=np.single)
         self._timescale_profile_edge = np.zeros_like(self._timescale_profile)
 
         z = self._Grid.z_global

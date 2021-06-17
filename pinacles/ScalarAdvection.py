@@ -527,7 +527,7 @@ class ScalarWENO(ScalarAdvectionBase):
         self.flux_function_factory(namelist)
 
         # Allocate work arrays for fluxes
-        self._fluxx = np.zeros(self._Grid.ngrid_local, dtype=np.double)
+        self._fluxx = np.zeros(self._Grid.ngrid_local, dtype=np.single)
         self._fluxy = np.zeros_like(self._fluxx)
         self._fluxz = np.zeros_like(self._fluxx)
 
@@ -563,7 +563,7 @@ class ScalarWENO(ScalarAdvectionBase):
             if "ff" in var:
                 continue
             v = profiles_grp.createVariable(
-                "w" + var + "_resolved", np.double, dimensions=("time", "z",)
+                "w" + var + "_resolved", np.single, dimensions=("time", "z",)
             )
             v.long_name = "Resolved flux of " + var
             v.units = "m s^{-1} " + self._ScalarState.get_units(var)
@@ -571,14 +571,14 @@ class ScalarWENO(ScalarAdvectionBase):
 
         # Add the thetali flux
         v = profiles_grp.createVariable(
-            "w" + "T" + "_resolved", np.double, dimensions=("time", "z",)
+            "w" + "T" + "_resolved", np.single, dimensions=("time", "z",)
         )
         v.long_name = "Resolved flux of temperature"
         v.units = "m s^{-1} K"
         v.standard_name = "wT"
 
         v = profiles_grp.createVariable(
-            "w" + "thetali" + "_resolved", np.double, dimensions=("time", "z",)
+            "w" + "thetali" + "_resolved", np.single, dimensions=("time", "z",)
         )
         v.long_name = "Resolved flux of liquid-ice potential temperature"
         v.units = "m s^{-1} K"
@@ -645,7 +645,7 @@ class ScalarWENO(ScalarAdvectionBase):
 
     def initialize_io_arrays(self):
         for var in self._ScalarState.names:
-            self._flux_profiles[var] = np.zeros(self._Grid.ngrid[2], dtype=np.double)
+            self._flux_profiles[var] = np.zeros(self._Grid.ngrid[2], dtype=np.single)
 
         return
 

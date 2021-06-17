@@ -11,12 +11,12 @@ class GhostArrayBase:
 
 
 class GhostArray(GhostArrayBase):
-    def __init__(self, _Grid, dtype=np.double, ndof=1):
+    def __init__(self, _Grid, dtype=np.single, ndof=1):
 
         GhostArrayBase.__init__(self, _Grid)
         self._shape = tuple(np.append(ndof, self._Grid.ngrid_local))
         self._n_halo = self._Grid.n_halo
-        self.array = np.empty(self._shape, dtype=np.double)
+        self.array = np.empty(self._shape, dtype=np.single)
 
         return
 
@@ -50,11 +50,11 @@ class GhostArray(GhostArrayBase):
                         self._n_halo[2] : -self._n_halo[2],
                     ]
                 ),
-                dtype=np.double,
+                dtype=np.single,
             )
 
         if halo:
-            local_max = np.array(np.amax(self.array[dof, :, :, :]), dtype=np.double)
+            local_max = np.array(np.amax(self.array[dof, :, :, :]), dtype=np.single)
 
         global_max = np.empty_like(local_max)
         MPI.COMM_WORLD.Allreduce(local_max, global_max, op=MPI.MAX)
@@ -72,10 +72,10 @@ class GhostArray(GhostArrayBase):
                         self._n_halo[2] : -self._n_halo[2],
                     ]
                 ),
-                dtype=np.double,
+                dtype=np.single,
             )
         if halo:
-            local_min = np.array(np.amin(self.array[dof, :, :, :]), dtype=np.double)
+            local_min = np.array(np.amin(self.array[dof, :, :, :]), dtype=np.single)
 
         global_min = np.empty_like(local_min)
         MPI.COMM_WORLD.Allreduce(local_min, global_min, op=MPI.MIN)

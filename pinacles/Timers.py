@@ -33,27 +33,27 @@ class Timer:
             rt_grp = nc.Dataset(self._stats_file, "w")
 
             time_dim = rt_grp.createDimension("time")
-            time = rt_grp.createVariable("time", np.double, ("time",))
+            time = rt_grp.createVariable("time", np.single, ("time",))
             time.units = "s"
 
             for timer_name in self._timer_data:
                 timer_nc = rt_grp.createVariable(
-                    timer_name + "_max", np.double, ("time",)
+                    timer_name + "_max", np.single, ("time",)
                 )
                 timer_nc.units = "s"
 
                 timer_nc = rt_grp.createVariable(
-                    timer_name + "_min", np.double, ("time",)
+                    timer_name + "_min", np.single, ("time",)
                 )
                 timer_nc.units = "s"
 
                 timer_nc = rt_grp.createVariable(
-                    timer_name + "_pertimestep_max", np.double, ("time",)
+                    timer_name + "_pertimestep_max", np.single, ("time",)
                 )
                 timer_nc.units = "s"
 
                 timer_nc = rt_grp.createVariable(
-                    timer_name + "_pertimestep_min", np.double, ("time",)
+                    timer_name + "_pertimestep_min", np.single, ("time",)
                 )
                 timer_nc.units = "s"
 
@@ -72,20 +72,20 @@ class Timer:
             time[time.shape[0]] = self._TimeSteppingController._time
 
         # Do communications to compute statistics
-        max_value = np.empty((1,), dtype=np.double)
-        min_value = np.empty((1,), dtype=np.double)
+        max_value = np.empty((1,), dtype=np.single)
+        min_value = np.empty((1,), dtype=np.single)
 
         for var in self._timer_data:
 
             MPI.COMM_WORLD.Reduce(
-                np.array([self._timer_data[var]], dtype=np.double), max_value, MPI.MAX
+                np.array([self._timer_data[var]], dtype=np.single), max_value, MPI.MAX
             )
             if MPI.COMM_WORLD.Get_rank() == 0:
                 var_nc = rt_grp[var + "_max"]
                 var_nc[-1] = max_value
 
             MPI.COMM_WORLD.Reduce(
-                np.array([self._timer_data[var]], dtype=np.double), min_value, MPI.MIN
+                np.array([self._timer_data[var]], dtype=np.single), min_value, MPI.MIN
             )
 
             if MPI.COMM_WORLD.Get_rank() == 0:
@@ -97,7 +97,7 @@ class Timer:
             else:
                 MPI.COMM_WORLD.Reduce(
                     np.array(
-                        [self._timer_data[var] / self._n_timesteps], dtype=np.double
+                        [self._timer_data[var] / self._n_timesteps], dtype=np.single
                     ),
                     max_value,
                     MPI.MAX,
@@ -112,7 +112,7 @@ class Timer:
             else:
                 MPI.COMM_WORLD.Reduce(
                     np.array(
-                        [self._timer_data[var] / self._n_timesteps], dtype=np.double
+                        [self._timer_data[var] / self._n_timesteps], dtype=np.single
                     ),
                     min_value,
                     MPI.MIN,

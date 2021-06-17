@@ -8,9 +8,9 @@ from pinacles import ScalarAdvection
 def compute_coeff_tensor(u, v, w, dxi, dt, coeff_tensor):
 
     # Set up some local storage
-    alpha = np.empty((3), dtype=np.double)
-    beta = np.empty((3,), dtype=np.double)
-    gamma = np.empty((3,), dtype=np.double)
+    alpha = np.empty((3), dtype=np.single)
+    beta = np.empty((3,), dtype=np.single)
+    gamma = np.empty((3,), dtype=np.single)
 
     shape = coeff_tensor.shape
 
@@ -80,9 +80,9 @@ def compute_coeff_tensor_biquad(u, v, w, dxi, dt, x_quad, y_quad, z_quad, coeff_
     shape = coeff_tensor.shape
 
     # Set up some local storage
-    alpha = np.empty((3), dtype=np.double)
-    beta = np.empty((3,), dtype=np.double)
-    gamma = np.empty((3,), dtype=np.double)
+    alpha = np.empty((3), dtype=np.single)
+    beta = np.empty((3,), dtype=np.single)
+    gamma = np.empty((3,), dtype=np.single)
 
     # Compute for u
     for i in range(1, shape[0] - 1):
@@ -288,8 +288,8 @@ class CTU(ScalarAdvection.ScalarAdvectionBase):
             self._gamma = 0.5
 
         # Initialze two tensors for storing the coefficients
-        self._coeff_tensor2 = np.zeros(coeff_shape, dtype=np.double, order="C")
-        self._coeff_tensor1 = np.zeros(coeff_shape, dtype=np.double, order="C")
+        self._coeff_tensor2 = np.zeros(coeff_shape, dtype=np.single, order="C")
+        self._coeff_tensor1 = np.zeros(coeff_shape, dtype=np.single, order="C")
 
         return
 

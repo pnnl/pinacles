@@ -17,7 +17,7 @@ class MomentumAdvectionBase:
         self._fz = None  # Function for computing z-fluxes
         self.flux_function_factory(namelist)
 
-        self._fluxx = np.zeros(self._Grid.ngrid_local, dtype=np.double)
+        self._fluxx = np.zeros(self._Grid.ngrid_local, dtype=np.single)
         self._fluxy = np.zeros_like(self._fluxx)
         self._fluxz = np.zeros_like(self._fluxx)
 

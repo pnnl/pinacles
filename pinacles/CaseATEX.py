@@ -35,7 +35,7 @@ class SurfaceATEX(Surface.SurfaceBase):
 
         nl = self._Grid.ngrid_local
 
-        self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
+        self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.single)
         self._taux_sfc = np.zeros_like(self._windspeed_sfc)
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
         self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
@@ -120,8 +120,8 @@ def radiative_transfer(dz, rho0, qc, st):
 
     shape = qc.shape
 
-    lwp = np.zeros(shape, dtype=np.double)
-    lw_flux = np.zeros(shape, dtype=np.double)
+    lwp = np.zeros(shape, dtype=np.single)
+    lw_flux = np.zeros(shape, dtype=np.single)
 
     for i in range(shape[0]):
         for j in range(shape[1]):

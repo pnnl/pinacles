@@ -48,7 +48,7 @@ class HorizontalSlice:
         local_start = self._Sim.ModelGrid.local_start
         local_end = self._Sim.ModelGrid.local_end
 
-        local_array = np.zeros((n[0], n[1]), dtype=np.double, order="C")
+        local_array = np.zeros((n[0], n[1]), dtype=np.single, order="C")
         global_array = np.empty_like(local_array)
 
         state = self._Sim.__dict__[self._state].get_field(self._var)[:, :, self._level]
@@ -102,7 +102,7 @@ class Albedo:
 
         rho = self._Sim.Ref.rho0
 
-        local_array = np.zeros((n[0], n[1]), dtype=np.double, order="C")
+        local_array = np.zeros((n[0], n[1]), dtype=np.single, order="C")
         global_array = np.empty_like(local_array)
 
         state = self._Sim.ScalarState.get_field("qc")[:, :, :]

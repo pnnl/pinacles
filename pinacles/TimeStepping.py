@@ -114,9 +114,9 @@ class TimeSteppingController:
             vmax = UtilitiesParallel.ScalarAllReduce(vmax, op=MPI.MAX)
             wmax = UtilitiesParallel.ScalarAllReduce(wmax, op=MPI.MAX)
 
-            recv_buffer = np.zeros((1,), dtype=np.double)
+            recv_buffer = np.zeros((1,), dtype=np.single)
             MPI.COMM_WORLD.Allreduce(
-                np.array([cfl_max_local], dtype=np.double), recv_buffer, op=MPI.MAX
+                np.array([cfl_max_local], dtype=np.single), recv_buffer, op=MPI.MAX
             )
             cfl_max = recv_buffer[0]
             self._cfl_current = self._dt * cfl_max

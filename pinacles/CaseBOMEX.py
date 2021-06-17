@@ -30,7 +30,7 @@ class SurfaceBOMEX(Surface.SurfaceBase):
 
         nl = self._Grid.ngrid_local
 
-        self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
+        self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.single)
         self._taux_sfc = np.zeros_like(self._windspeed_sfc)
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
         self._bflx_sfc = np.zeros_like(self._windspeed_sfc) + self._buoyancy_flux
@@ -46,40 +46,40 @@ class SurfaceBOMEX(Surface.SurfaceBase):
 
         # Add surface windspeed
         v = timeseries_grp.createVariable(
-            "wind_horizontal", np.double, dimensions=("time",)
+            "wind_horizontal", np.single, dimensions=("time",)
         )
         v.long_name = "Surface layer wind speed"
         v.unts = "m s^{-1}"
         v.standard_name = "surface wind"
 
         # Add surface stresses
-        v = timeseries_grp.createVariable("ustar", np.double, dimensions=("time",))
+        v = timeseries_grp.createVariable("ustar", np.single, dimensions=("time",))
         v.long_name = "friction velocity"
         v.units = "m s^{-1}"
         v.standard_name = "u^{\star}"
 
-        v = timeseries_grp.createVariable("taux", np.double, dimensions=("time",))
+        v = timeseries_grp.createVariable("taux", np.single, dimensions=("time",))
         v.long_name = "surface shear stress x-component"
         v.unts = "m^2 s^{-2}"
         v.standard_name = "\tau{13}"
 
-        v = timeseries_grp.createVariable("tauy", np.double, dimensions=("time",))
+        v = timeseries_grp.createVariable("tauy", np.single, dimensions=("time",))
         v.long_name = "surface shear stress y-component"
         v.units = "m^2 s^{-2}"
         v.standard_name = "\tau{23}"
 
         # Add thermodynamic fluxes
-        v = timeseries_grp.createVariable("tflx", np.double, dimensions=("time",))
+        v = timeseries_grp.createVariable("tflx", np.single, dimensions=("time",))
         v.long_name = "surface temperature flux"
         v.units = "K m s^{-2}"
         v.standard_name = "surface temperature flux"
 
-        v = timeseries_grp.createVariable("shf", np.double, dimensions=("time",))
+        v = timeseries_grp.createVariable("shf", np.single, dimensions=("time",))
         v.long_name = "surface sensible heat flux"
         v.units = "W m^{-2}"
         v.standard_name = "shf"
 
-        v = timeseries_grp.createVariable("lhf", np.double, dimensions=("time",))
+        v = timeseries_grp.createVariable("lhf", np.single, dimensions=("time",))
         v.long_name = "surface latent heat flux"
         v.units = "W m^{-2}"
         v.standard_name = "lhf"

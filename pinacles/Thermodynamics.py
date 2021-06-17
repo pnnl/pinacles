@@ -33,10 +33,10 @@ class ThermodynamicsBase:
         return
 
     def get_qc(self):
-        return np.zeros((self._Grid.ngrid_local), dtype=np.double)
+        return np.zeros((self._Grid.ngrid_local), dtype=np.single)
 
     def get_qi(self):
-        return np.zeros((self._Grid.ngrid_local), dtype=np.double)
+        return np.zeros((self._Grid.ngrid_local), dtype=np.single)
 
 
 from pinacles import ThermodynamicsDry

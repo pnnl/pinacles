@@ -78,7 +78,7 @@ class ScalarDiffusion:
         self._ScalarState = ScalarState
         self._flux_profiles = {}
 
-        self._fluxx = np.zeros(self._Grid.ngrid_local, dtype=np.double)
+        self._fluxx = np.zeros(self._Grid.ngrid_local, dtype=np.single)
         self._fluxy = np.zeros_like(self._fluxx)
         self._fluxz = np.zeros_like(self._fluxx)
 
@@ -92,21 +92,21 @@ class ScalarDiffusion:
                 continue
 
             v = profiles_grp.createVariable(
-                "w" + var + "_sgs", np.double, dimensions=("time", "z",)
+                "w" + var + "_sgs", np.single, dimensions=("time", "z",)
             )
             v.long_name = "SGS flux of " + var
             v.units = "m s^{-1} " + self._ScalarState.get_units(var)
             v.standard_name = "w " + self._ScalarState._latex_names[var] + " sgs"
         # Add the thetali flux
         v = profiles_grp.createVariable(
-            "w" + "T" + "_sgs", np.double, dimensions=("time", "z",)
+            "w" + "T" + "_sgs", np.single, dimensions=("time", "z",)
         )
         v.long_name = "SGS flux of temperature"
         v.units = "m s^{-1} K"
         v.standard_name = "wT sgs"
 
         v = profiles_grp.createVariable(
-            "w" + "thetali" + "_sgs", np.double, dimensions=("time", "z",)
+            "w" + "thetali" + "_sgs", np.single, dimensions=("time", "z",)
         )
         v.long_name = "SGS flux of liquid-ice potential temperature"
         v.units = "m s^{-1} K"
@@ -170,7 +170,7 @@ class ScalarDiffusion:
     def initialize_io_arrays(self):
 
         for var in self._ScalarState.names:
-            self._flux_profiles[var] = np.zeros(self._Grid.ngrid[2], dtype=np.double)
+            self._flux_profiles[var] = np.zeros(self._Grid.ngrid[2], dtype=np.single)
 
         return
 

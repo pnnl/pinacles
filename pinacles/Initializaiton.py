@@ -65,7 +65,7 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         pass
 
     # Integrate the reference profile.
-    Ref.set_surface(Tsfc=300.0, u0=0.0, v0=0.0)
+    Ref.set_surface(Tsfc=300.0, u0=1.0, v0=0.0)
     Ref.integrate()
 
     u = VelocityState.get_field("u")
@@ -82,7 +82,7 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     exner = Ref.exner
 
     # Wind is uniform initiall
-    u.fill(5.0)
+    u.fill(1.0)
     v.fill(0.0)
     w.fill(0.0)
 
@@ -215,7 +215,7 @@ def atex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     w.fill(0.0)
 
     shape = s.shape
-    temp = np.empty(shape[2], dtype=np.double)
+    temp = np.empty(shape[2], dtype=np.single)
     perts = np.random.uniform(-0.01, 0.01, (shape[0], shape[1], shape[2]))
     for i in range(shape[0]):
         for j in range(shape[1]):
@@ -574,7 +574,7 @@ def init_var_from_sounding(profile_data, profile_z, grid_z, var3d):
 def get_lognormal_dist(nbins, qc, nc_m3, sig1):
     # SMALLEST BIN SIZE IN SBM FOR 33 BINS
     xl0 = 3.35e-8 * 1e-6
-    xl = np.zeros(nbins, dtype=np.double)
+    xl = np.zeros(nbins, dtype=np.single)
     xl[0] = xl0
     for i in np.arange(1, nbins):
         xl[i] = 2 * xl[i - 1]

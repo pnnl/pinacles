@@ -37,7 +37,7 @@ class GridBase:
         self._restart_attributes.append("_local_end")
 
         # Lenght of each CRM domain side
-        self._l = np.array(namelist["grid"]["l"], dtype=np.double)
+        self._l = np.array(namelist["grid"]["l"], dtype=np.single)
         self._restart_attributes.append("_l")
         assert len(self._l) == 3
 

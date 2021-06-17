@@ -289,7 +289,7 @@ class MomentumDiffusion:
         self._VelocityState = VelocityState
         self._Kine = Kine
 
-        self._fluxx = np.zeros(self._Grid.ngrid_local, dtype=np.double)
+        self._fluxx = np.zeros(self._Grid.ngrid_local, dtype=np.single)
         self._fluxy = np.zeros_like(self._fluxx)
         self._fluxz = np.zeros_like(self._fluxx)
 

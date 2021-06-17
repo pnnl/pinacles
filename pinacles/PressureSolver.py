@@ -27,14 +27,14 @@ class PressureSolver:
         )
 
         # Setup the Fourier Transform
-        div = fft.DistArray(self._Grid.n, self._Grid.subcomms, dtype=np.complex)
+        div = fft.DistArray(self._Grid.n, self._Grid.subcomms, dtype=np.csingle)
         div = div.redistribute(0)
 
         self.FFT = ParallelFFTs.fft_mpi4py(self._Grid.n, self._Grid.subcomms)
 
         self.fft_local_starts()
 
-        self._div_work = np.empty(self.FFT.p2.subshape, dtype=np.complex)
+        self._div_work = np.empty(self.FFT.p2.subshape, dtype=np.csingle)
 
         self._Timers.add_timer("PressureSolver_update")
         return
@@ -46,7 +46,7 @@ class PressureSolver:
         return
 
     def fft_local_starts(self):
-        div = fft.DistArray(self._Grid.n, self._Grid.subcomms, dtype=np.complex)
+        div = fft.DistArray(self._Grid.n, self._Grid.subcomms, dtype=np.csingle)
         # div_hat =  fft.newDistArray(self._fft, forward_output=True)
         # div_hat2 = div_hat.redistribute(2)
 

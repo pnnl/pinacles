@@ -13,7 +13,7 @@ def Thomas(x, a, b, c):
         c {[type]} -- [description]
     """
     shape = x.shape
-    scratch = np.empty(shape[2], dtype=np.double)
+    scratch = np.empty(shape[2], dtype=np.single)
     for i in range(shape[0]):
         for j in range(shape[1]):
             # Upward sweep
@@ -34,8 +34,8 @@ def PressureThomas(
     n_halo, dxs, rho0, rho0_edge, kx2, ky2, x, a, c, wavenumber_substarts
 ):
     shape = x.shape
-    scratch = np.empty(shape[2], dtype=np.double)
-    b = np.empty(shape[2], dtype=np.double)
+    scratch = np.empty(shape[2], dtype=np.single)
+    b = np.empty(shape[2], dtype=np.single)
 
     for i in range(shape[0]):
         for j in range(shape[1]):
@@ -106,8 +106,8 @@ class PressureTDMA:
         rho0 = self._Ref.rho0
         rho0_edge = self._Ref.rho0_edge
 
-        self._a = np.zeros(self._Grid.n[2], dtype=np.double)
-        self._c = np.zeros(self._Grid.n[2], dtype=np.double)
+        self._a = np.zeros(self._Grid.n[2], dtype=np.single)
+        self._c = np.zeros(self._Grid.n[2], dtype=np.single)
 
         # First set the lower boundary condition
         self._a[0] = 0.0
@@ -130,17 +130,17 @@ class PressureTDMA:
         dx = self._Grid.dx
         n = self._Grid.n
 
-        self._kx2 = np.zeros(self._wavenumber_n[0], dtype=np.double)
-        self._ky2 = np.zeros(self._wavenumber_n[1], dtype=np.double)
+        self._kx2 = np.zeros(self._wavenumber_n[0], dtype=np.single)
+        self._ky2 = np.zeros(self._wavenumber_n[1], dtype=np.single)
 
         # TODO the code below feels a bit like boilerplate
 
         for ii in range(self._wavenumber_n[0]):
             i = self._wavenumber_substarts[0] + ii
             if i <= n[0] / 2:
-                xi = np.double(i)
+                xi = np.single(i)
             else:
-                xi = np.double(i - n[0])
+                xi = np.single(i - n[0])
             self._kx2[ii] = (
                 (2.0 * np.cos((2.0 * np.pi / n[0]) * xi) - 2.0) / dx[0] / dx[0]
             )
@@ -148,9 +148,9 @@ class PressureTDMA:
         for jj in range(self._wavenumber_n[1]):
             j = self._wavenumber_substarts[1] + jj
             if j <= n[1] / 2:
-                yi = np.double(j)
+                yi = np.single(j)
             else:
-                yi = np.double(j - n[1])
+                yi = np.single(j - n[1])
             self._ky2[jj] = (
                 (2.0 * np.cos((2.0 * np.pi / n[1]) * yi) - 2.0) / dx[1] / dx[1]
             )

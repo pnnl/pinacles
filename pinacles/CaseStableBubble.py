@@ -25,7 +25,7 @@ class SurfaceStableBubble(Surface.SurfaceBase):
 
         nl = self._Grid.ngrid_local
 
-        self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
+        self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.single)
         self._taux_sfc = np.zeros_like(self._windspeed_sfc)
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
         self._bflx_sfc = np.zeros_like(self._windspeed_sfc) + self._buoyancy_flux

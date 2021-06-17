@@ -77,7 +77,7 @@ class SurfaceTestbed(Surface.SurfaceBase):
 
         nl = self._Grid.ngrid_local
 
-        self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
+        self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.single)
         self._taux_sfc = np.zeros_like(self._windspeed_sfc)
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
         self._bflx_sfc = np.zeros_like(self._windspeed_sfc)
@@ -98,10 +98,10 @@ class SurfaceTestbed(Surface.SurfaceBase):
         timeseries_grp = rt_grp["timeseries"]
 
         # Add thermodynamic fluxes
-        timeseries_grp.createVariable("shf", np.double, dimensions=("time",))
-        timeseries_grp.createVariable("lhf", np.double, dimensions=("time",))
-        timeseries_grp.createVariable("ustar", np.double, dimensions=("time",))
-        timeseries_grp.createVariable("z0", np.double, dimensions=("time",))
+        timeseries_grp.createVariable("shf", np.single, dimensions=("time",))
+        timeseries_grp.createVariable("lhf", np.single, dimensions=("time",))
+        timeseries_grp.createVariable("ustar", np.single, dimensions=("time",))
+        timeseries_grp.createVariable("z0", np.single, dimensions=("time",))
         return
 
     def io_update(self, rt_grp):
@@ -563,7 +563,7 @@ class ForcingTestbed(Forcing.ForcingBase):
 
     def _compute_relaxation_coefficient(self, znudge, timescale):
 
-        self._relaxation_coefficient = np.zeros(self._Grid.ngrid[2], dtype=np.double)
+        self._relaxation_coefficient = np.zeros(self._Grid.ngrid[2], dtype=np.single)
 
         z = self._Grid.z_global
 

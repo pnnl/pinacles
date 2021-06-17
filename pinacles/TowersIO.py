@@ -61,24 +61,24 @@ class Tower:
         nh = self._Grid.n_halo
 
         rt_grp.createDimension("z", self._Grid.n[2])
-        vh = rt_grp.createVariable("z", np.double, dimensions=("z",))
+        vh = rt_grp.createVariable("z", np.single, dimensions=("z",))
         vh[:] = self._Grid.z_global[nh[2] : -nh[2]]
 
         rt_grp.createDimension("z_edge", self._Grid.n[2] + 1)
-        vh = rt_grp.createVariable("z_edge", np.double, dimensions=("z_edge",))
+        vh = rt_grp.createVariable("z_edge", np.single, dimensions=("z_edge",))
         vh[:] = self._Grid.z_edge_global[nh[2] - 1 : -nh[2]]
 
         rt_grp.createDimension("time")
         rt_grp.createVariable(
-            "time", np.double, dimensions=("time"),
+            "time", np.single, dimensions=("time"),
         )
 
         for con in self._containers:
             for var in con._dofs.keys():
                 if con._loc[var] != "z":
-                    rt_grp.createVariable(var, np.double, dimensions=("time", "z"))
+                    rt_grp.createVariable(var, np.single, dimensions=("time", "z"))
                 else:
-                    rt_grp.createVariable(var, np.double, dimensions=("time", "z_edge"))
+                    rt_grp.createVariable(var, np.single, dimensions=("time", "z_edge"))
 
         rt_grp.close()
         return

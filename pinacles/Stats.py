@@ -68,14 +68,14 @@ class Stats:
         # Create group for reference class
         ref_grp = self._rt_grp.createGroup("reference")
         ref_grp.createDimension("z", size=self._Grid.n[2])
-        vh = ref_grp.createVariable("z", np.double, dimensions=("z",))
+        vh = ref_grp.createVariable("z", np.single, dimensions=("z",))
         vh[:] = self._Grid.z_global[nh[2] : -nh[2]]
         vh.long_name = "height of cell-center above surface"
         vh.units = "m"
         vh.standard_name = "cell-center height"
 
         ref_grp.createDimension("z_edge", size=self._Grid.n[2] + 1)
-        vh = ref_grp.createVariable("z_edge", np.double, dimensions=("z_edge",))
+        vh = ref_grp.createVariable("z_edge", np.single, dimensions=("z_edge",))
         vh[:] = self._Grid.z_edge_global[nh[2] - 1 : -nh[2]]
         vh.long_name = "height of cell-edge above surface"
         vh.units = "m"
@@ -95,7 +95,7 @@ class Stats:
             # Create dimensions for timeseries
             timeseries_grp.createDimension("time")
             time = timeseries_grp.createVariable(
-                "time", np.double, dimensions=("time",)
+                "time", np.single, dimensions=("time",)
             )
             time.long_name = "time since beginning of simulation"
             time.units = "s"
@@ -103,9 +103,9 @@ class Stats:
 
             # Create dimensions for profiles
             profiles_grp.createDimension("time")
-            profiles_grp.createVariable("time", np.double, dimensions=("time",))
+            profiles_grp.createVariable("time", np.single, dimensions=("time",))
             profiles_grp.createDimension("z", size=self._Grid.n[2])
-            vh = profiles_grp.createVariable("z", np.double, dimensions=("z",))
+            vh = profiles_grp.createVariable("z", np.single, dimensions=("z",))
             vh[:] = self._Grid.z_global[nh[2] : -nh[2]]
             vh.long_name = "height of cell-center above surface"
             vh.units = "m"
@@ -113,7 +113,7 @@ class Stats:
 
             profiles_grp.createDimension("z_edge", size=self._Grid.n[2] + 1)
             vh = profiles_grp.createVariable(
-                "z_edge", np.double, dimensions=("z_edge",)
+                "z_edge", np.single, dimensions=("z_edge",)
             )
             vh[:] = self._Grid.z_edge_global[nh[2] - 1 : -nh[2]]
             vh.long_name = "height of cell-edge above surface"

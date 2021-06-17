@@ -104,19 +104,19 @@ class Fields2D:
 
         nhalo = self._Grid.n_halo
 
-        T = rt_grp.createVariable("time", np.double, dimensions=("time"))
+        T = rt_grp.createVariable("time", np.single, dimensions=("time"))
         T[0] = self._TimeSteppingController.time
         T.units = "s"
         T.long_name = "time"
         T.standard_name = "t"
 
-        X = rt_grp.createVariable("X", np.double, dimensions=("X"))
+        X = rt_grp.createVariable("X", np.single, dimensions=("X"))
         X.units = "m"
         X.long_name = "x-coordinate"
         X.standard_name = "x"
         X[:] = self._Grid.x_local[nhalo[0] : -nhalo[0]]
 
-        Y = rt_grp.createVariable("Y", np.double, dimensions=("Y"))
+        Y = rt_grp.createVariable("Y", np.single, dimensions=("Y"))
         Y.units = "m"
         Y.long_name = "y-coordinate"
         Y.standard_name = "y"

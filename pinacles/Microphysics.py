@@ -31,7 +31,7 @@ def water_fraction(n_halo, npts, q, threshold=1e-8):
 def water_fraction_profile(n_halo, npts, q, threshold=1e-8):
     frac = 0.0
     shape = q.shape
-    frac = np.zeros((shape[2],), dtype=np.double)
+    frac = np.zeros((shape[2],), dtype=np.single)
     for i in range(n_halo[0], shape[0] - n_halo[0]):
         for j in range(n_halo[1], shape[1] - n_halo[1]):
             for k in range(n_halo[2], shape[2] - n_halo[2]):
@@ -81,21 +81,21 @@ class MicrophysicsBase:
         return
 
     def get_qc(self):
-        return np.zeros((self._Grid._ngrid_local), dtype=np.double)
+        return np.zeros((self._Grid._ngrid_local), dtype=np.single)
 
     def get_qcloud(self):
-        return np.zeros((self._Grid._ngrid_local), dtype=np.double)
+        return np.zeros((self._Grid._ngrid_local), dtype=np.single)
 
     def get_qi(self):
-        return np.zeros((self._Grid._ngrid_local), dtype=np.double)
+        return np.zeros((self._Grid._ngrid_local), dtype=np.single)
 
     def get_reffc(self):
         # make consistent with default effective radius values used by P3
-        return np.ones((self._Grid._ngrid_local), dtype=np.double) * 10.0e-6
+        return np.ones((self._Grid._ngrid_local), dtype=np.single) * 10.0e-6
 
     def get_reffi(self):
         # make consistent with default effective radius values used by P3
-        return np.ones((self._Grid._ngrid_local), dtype=np.double) * 25.0e-6
+        return np.ones((self._Grid._ngrid_local), dtype=np.single) * 25.0e-6
 
     def restart(self, data_dict):
         return

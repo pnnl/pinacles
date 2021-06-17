@@ -16,15 +16,15 @@ class dct_mpi4py:
         self.p0 = self.p1.pencil(0)  # x-pencil
 
         self.transfer21 = self.p2.transfer(
-            self.p1, np.double
+            self.p1, np.single
         )  # transfer function z to y
         self.transfer10 = self.p1.transfer(
-            self.p0, np.double
+            self.p0, np.single
         )  # transfer funtion y to x
 
-        self.a2 = np.zeros(self.p2.subshape, dtype=np.double)  # z pencil work array
-        self.a1 = np.zeros(self.p1.subshape, dtype=np.double)  # y pencil work array
-        self.a0 = np.zeros(self.p0.subshape, dtype=np.double)  # x pencil work array
+        self.a2 = np.zeros(self.p2.subshape, dtype=np.single)  # z pencil work array
+        self.a1 = np.zeros(self.p1.subshape, dtype=np.single)  # y pencil work array
+        self.a0 = np.zeros(self.p0.subshape, dtype=np.single)  # x pencil work array
 
         return
 
@@ -84,15 +84,15 @@ class fft_mpi4py:
         self.p0 = self.p1.pencil(0)  # x-pencil
 
         self.transfer21 = self.p2.transfer(
-            self.p1, np.complex
+            self.p1, np.csingle
         )  # transfer function z to y
         self.transfer10 = self.p1.transfer(
-            self.p0, np.complex
+            self.p0, np.csingle
         )  # transfer funtion y to x
 
-        self.a2 = np.zeros(self.p2.subshape, dtype=np.complex)  # z pencil work array
-        self.a1 = np.zeros(self.p1.subshape, dtype=np.complex)  # y pencil work array
-        self.a0 = np.zeros(self.p0.subshape, dtype=np.complex)  # x pencil work array
+        self.a2 = np.zeros(self.p2.subshape, dtype=np.csingle)  # z pencil work array
+        self.a1 = np.zeros(self.p1.subshape, dtype=np.csingle)  # y pencil work array
+        self.a0 = np.zeros(self.p0.subshape, dtype=np.csingle)  # x pencil work array
 
         return
 

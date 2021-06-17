@@ -215,11 +215,11 @@ class MicroSBM(MicrophysicsBase):
         )
         # self._wrf_dims = (self._our_dims[0],self._our_dims[2], self._our_dims[1])
 
-        self._th_old = np.zeros(self._wrf_dims, order="F", dtype=np.double)
-        self._qv_old = np.zeros(self._wrf_dims, order="F", dtype=np.double)
+        self._th_old = np.zeros(self._wrf_dims, order="F", dtype=np.single)
+        self._qv_old = np.zeros(self._wrf_dims, order="F", dtype=np.single)
 
         self._RAINNC = np.zeros(
-            (self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order="F"
+            (self._wrf_dims[0], self._wrf_dims[2]), dtype=np.single, order="F"
         )
         self._RAINNCV = np.zeros_like(self._RAINNC)
 
@@ -289,7 +289,7 @@ class MicroSBM(MicrophysicsBase):
 
         # Read in the aerosol file here which previously was read in the fortran code
         # and assumed to be named 'CCN_size_33bin.dat'
-        ccn_size_bin_dat = np.ones((33, 3), dtype=np.double, order="F") * -9999
+        ccn_size_bin_dat = np.ones((33, 3), dtype=np.single, order="F") * -9999
         try:
             aerosol_file = namelist["microphysics"]["aerosol_file"]
             UtilitiesParallel.print_root("Trying to read a specified aerosol file")
@@ -395,37 +395,37 @@ class MicroSBM(MicrophysicsBase):
 
         self._wrf_vars = {}
 
-        self._wrf_vars["qv"] = np.zeros(self._wrf_dims, order="F", dtype=np.double)
+        self._wrf_vars["qv"] = np.zeros(self._wrf_dims, order="F", dtype=np.single)
         for v in ["w", "u", "v"]:
-            self._wrf_vars[v] = np.zeros(self._wrf_dims, order="F", dtype=np.double)
+            self._wrf_vars[v] = np.zeros(self._wrf_dims, order="F", dtype=np.single)
 
         for v in self._list_of_ScalarStatevars:
-            self._wrf_vars[v] = np.zeros(self._wrf_dims, order="F", dtype=np.double)
+            self._wrf_vars[v] = np.zeros(self._wrf_dims, order="F", dtype=np.single)
 
-        self._wrf_vars["th_phy"] = np.zeros(self._wrf_dims, order="F", dtype=np.double)
+        self._wrf_vars["th_phy"] = np.zeros(self._wrf_dims, order="F", dtype=np.single)
 
         self._wrf_vars["chem_new"] = np.zeros(
             (self._wrf_dims[0], self._wrf_dims[1], self._wrf_dims[2], 99),
             order="F",
-            dtype=np.double,
+            dtype=np.single,
         )
 
         # Vertical grid spacing and fill
-        self._wrf_vars["dz8w"] = np.zeros(self._wrf_dims, order="F", dtype=np.double)
+        self._wrf_vars["dz8w"] = np.zeros(self._wrf_dims, order="F", dtype=np.single)
         self._wrf_vars["dz8w"].fill(self._Grid.dx[2])
 
         # Allocate and fill reference profiles
-        self._wrf_vars["rho_phy"] = np.zeros(self._wrf_dims, order="F", dtype=np.double)
+        self._wrf_vars["rho_phy"] = np.zeros(self._wrf_dims, order="F", dtype=np.single)
         self._wrf_vars["rho_phy"][:, :, :] = self._Ref.rho0[
             np.newaxis, nhalo[2] : -nhalo[2], np.newaxis
         ]
 
-        self._wrf_vars["p_phy"] = np.zeros(self._wrf_dims, order="F", dtype=np.double)
+        self._wrf_vars["p_phy"] = np.zeros(self._wrf_dims, order="F", dtype=np.single)
         self._wrf_vars["p_phy"][:, :, :] = self._Ref.p0[
             np.newaxis, nhalo[2] : -nhalo[2], np.newaxis
         ]
 
-        self._wrf_vars["pi_phy"] = np.zeros(self._wrf_dims, order="F", dtype=np.double)
+        self._wrf_vars["pi_phy"] = np.zeros(self._wrf_dims, order="F", dtype=np.single)
         self._wrf_vars["pi_phy"][:, :, :] = exner[
             np.newaxis, nhalo[2] : -nhalo[2], np.newaxis
         ]
@@ -440,91 +440,91 @@ class MicroSBM(MicrophysicsBase):
                 self._wrf_vars["num_sbmradar"],
             ),
             order="f",
-            dtype=np.double,
+            dtype=np.single,
         )
 
         self._wrf_vars["RAINNC"] = np.zeros(
-            (self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order="F"
+            (self._wrf_dims[0], self._wrf_dims[2]), dtype=np.single, order="F"
         )
         self._wrf_vars["RAINNCV"] = np.zeros(
-            (self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order="F"
+            (self._wrf_dims[0], self._wrf_dims[2]), dtype=np.single, order="F"
         )
         self._wrf_vars["SNOWNC"] = np.zeros(
-            (self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order="F"
+            (self._wrf_dims[0], self._wrf_dims[2]), dtype=np.single, order="F"
         )
         self._wrf_vars["SNOWNCV"] = np.zeros(
-            (self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order="F"
+            (self._wrf_dims[0], self._wrf_dims[2]), dtype=np.single, order="F"
         )
         self._wrf_vars["GRAUPELNC"] = np.zeros(
-            (self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order="F"
+            (self._wrf_dims[0], self._wrf_dims[2]), dtype=np.single, order="F"
         )
         self._wrf_vars["GRAUPELNCV"] = np.zeros(
-            (self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order="F"
+            (self._wrf_dims[0], self._wrf_dims[2]), dtype=np.single, order="F"
         )
         self._wrf_vars["SR"] = np.zeros(
-            (self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order="F"
+            (self._wrf_dims[0], self._wrf_dims[2]), dtype=np.single, order="F"
         )
         self._wrf_vars["xland"] = np.zeros(
-            (self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order="F"
+            (self._wrf_dims[0], self._wrf_dims[2]), dtype=np.single, order="F"
         )
 
         self._wrf_vars["domain_id"] = 1
-        self._wrf_vars["MA"] = np.zeros(self._wrf_dims, order="F", dtype=np.double)
-        self._wrf_vars["LH_rate"] = np.zeros(self._wrf_dims, order="F", dtype=np.double)
-        self._wrf_vars["CE_rate"] = np.zeros(self._wrf_dims, order="F", dtype=np.double)
-        self._wrf_vars["DS_rate"] = np.zeros(self._wrf_dims, order="F", dtype=np.double)
+        self._wrf_vars["MA"] = np.zeros(self._wrf_dims, order="F", dtype=np.single)
+        self._wrf_vars["LH_rate"] = np.zeros(self._wrf_dims, order="F", dtype=np.single)
+        self._wrf_vars["CE_rate"] = np.zeros(self._wrf_dims, order="F", dtype=np.single)
+        self._wrf_vars["DS_rate"] = np.zeros(self._wrf_dims, order="F", dtype=np.single)
         self._wrf_vars["Melt_rate"] = np.zeros(
-            self._wrf_dims, order="F", dtype=np.double
+            self._wrf_dims, order="F", dtype=np.single
         )
         self._wrf_vars["Frz_rate"] = np.zeros(
-            self._wrf_dims, order="F", dtype=np.double
+            self._wrf_dims, order="F", dtype=np.single
         )
         self._wrf_vars["CldNucl_rate"] = np.zeros(
-            self._wrf_dims, order="F", dtype=np.double
+            self._wrf_dims, order="F", dtype=np.single
         )
         self._wrf_vars["n_reg_ccn"] = np.zeros(
-            self._wrf_dims, order="F", dtype=np.double
+            self._wrf_dims, order="F", dtype=np.single
         )
         self._wrf_vars["IceNucl_rate"] = np.zeros(
-            self._wrf_dims, order="F", dtype=np.double
+            self._wrf_dims, order="F", dtype=np.single
         )
         self._wrf_vars["difful_tend"] = np.zeros(
-            self._wrf_dims, order="F", dtype=np.double
+            self._wrf_dims, order="F", dtype=np.single
         )
         self._wrf_vars["diffur_tend"] = np.zeros(
-            self._wrf_dims, order="F", dtype=np.double
+            self._wrf_dims, order="F", dtype=np.single
         )
         self._wrf_vars["tempdiffl"] = np.zeros(
-            self._wrf_dims, order="F", dtype=np.double
+            self._wrf_dims, order="F", dtype=np.single
         )
         self._wrf_vars["automass_tend"] = np.zeros(
-            self._wrf_dims, order="F", dtype=np.double
+            self._wrf_dims, order="F", dtype=np.single
         )
         self._wrf_vars["autonum_tend"] = np.zeros(
-            self._wrf_dims, order="F", dtype=np.double
+            self._wrf_dims, order="F", dtype=np.single
         )
         self._wrf_vars["nprc_tend"] = np.zeros(
-            self._wrf_dims, order="F", dtype=np.double
+            self._wrf_dims, order="F", dtype=np.single
         )
         self._wrf_vars["saturation"] = np.zeros(
-            self._wrf_dims, order="F", dtype=np.double
+            self._wrf_dims, order="F", dtype=np.single
         )
 
         self._wrf_vars["LIQUID_SEDIMENTATION"] = np.zeros(
-            self._wrf_dims, order="F", dtype=np.double
+            self._wrf_dims, order="F", dtype=np.single
         )
-        self._wrf_vars["EFFR"] = np.zeros(self._wrf_dims, order="F", dtype=np.double)
+        self._wrf_vars["EFFR"] = np.zeros(self._wrf_dims, order="F", dtype=np.single)
 
-        self._wrf_vars["s_wrf"] = np.zeros(self._wrf_dims, order="F", dtype=np.double)
+        self._wrf_vars["s_wrf"] = np.zeros(self._wrf_dims, order="F", dtype=np.single)
 
-        self._wrf_vars["z"] = np.zeros(self._wrf_dims, order="F", dtype=np.double)
+        self._wrf_vars["z"] = np.zeros(self._wrf_dims, order="F", dtype=np.single)
         self._wrf_vars["z"][:, :, :] = self._Grid.z_global[
             np.newaxis, nhalo[2] : -nhalo[2], np.newaxis
         ]
 
         self._sbm_output_container = np.zeros(
             (self._wrf_dims[0], self._wrf_dims[1], self._wrf_dims[2], 45),
-            dtype=np.double,
+            dtype=np.single,
             order="F",
         )
 
@@ -774,50 +774,50 @@ class MicroSBM(MicrophysicsBase):
         profiles_grp = nc_grp["profiles"]
 
         # Cloud fractions
-        v = timeseries_grp.createVariable("CF", np.double, dimensions=("time",))
+        v = timeseries_grp.createVariable("CF", np.single, dimensions=("time",))
         v.long_name = "Cloud Fraction"
         v.standard_name = "CF"
         v.units = ""
 
-        v = timeseries_grp.createVariable("RF", np.double, dimensions=("time",))
+        v = timeseries_grp.createVariable("RF", np.single, dimensions=("time",))
         v.long_name = "Rain Fraction"
         v.standard_name = "RF"
         v.units = ""
 
-        v = timeseries_grp.createVariable("LWP", np.double, dimensions=("time",))
+        v = timeseries_grp.createVariable("LWP", np.single, dimensions=("time",))
         v.long_name = "Liquid Water Path"
         v.standard_name = "LWP"
         v.units = "kg/m^2"
 
-        v = timeseries_grp.createVariable("RWP", np.double, dimensions=("time",))
+        v = timeseries_grp.createVariable("RWP", np.single, dimensions=("time",))
         v.long_name = "Rain Water Path"
         v.standard_name = "RWP"
         v.units = "kg/m^2"
 
-        v = timeseries_grp.createVariable("VWP", np.double, dimensions=("time",))
+        v = timeseries_grp.createVariable("VWP", np.single, dimensions=("time",))
         v.long_name = "Water Vapor Path"
         v.standard_name = "VWP"
         v.units = "kg/m^2"
 
         # Precipitation
-        v = timeseries_grp.createVariable("RAINNC", np.double, dimensions=("time",))
+        v = timeseries_grp.createVariable("RAINNC", np.single, dimensions=("time",))
         v.long_name = "accumulated surface precip"
         v.units = "mm"
         v.latex_name = "rainnc"
 
-        timeseries_grp.createVariable("RAINNCV", np.double, dimensions=("time",))
+        timeseries_grp.createVariable("RAINNCV", np.single, dimensions=("time",))
         v.long_name = "one time step accumulated surface precip"
         v.units = "mm"
         v.latex_name = "rainncv"
 
-        timeseries_grp.createVariable("rain_rate", np.double, dimensions=("time",))
+        timeseries_grp.createVariable("rain_rate", np.single, dimensions=("time",))
         # Now add cloud fraction and rain fraction profiles
-        v = profiles_grp.createVariable("CF", np.double, dimensions=("time", "z",))
+        v = profiles_grp.createVariable("CF", np.single, dimensions=("time", "z",))
         v.long_name = "Cloud Fraction"
         v.standard_name = "CF"
         v.units = ""
 
-        profiles_grp.createVariable("RF", np.double, dimensions=("time", "z",))
+        profiles_grp.createVariable("RF", np.single, dimensions=("time", "z",))
         v.long_name = "Rain Fraction"
         v.standard_name = "RF"
         v.units = ""
@@ -885,10 +885,10 @@ class MicroSBM(MicrophysicsBase):
 
     def io_fields2d_update(self, nc_grp):
 
-        rainnc = nc_grp.createVariable("RAINNC", np.double, dimensions=("X", "Y",))
+        rainnc = nc_grp.createVariable("RAINNC", np.single, dimensions=("X", "Y",))
         rainnc[:, :] = self._RAINNC
 
-        rainncv = nc_grp.createVariable("RAINNCV", np.double, dimensions=("X", "Y"))
+        rainncv = nc_grp.createVariable("RAINNCV", np.single, dimensions=("X", "Y"))
         rainncv[:, :] = self._RAINNCV
 
         nc_grp.sync()

@@ -26,7 +26,7 @@ class Kinematics:
         nl = self._Grid.ngrid_local
 
         # Gradients of u
-        self._dudx = np.zeros((nl[0], nl[1], nl[2]), dtype=np.double)
+        self._dudx = np.zeros((nl[0], nl[1], nl[2]), dtype=np.single)
         self._dudy = np.zeros_like(self._dudx)
         self._dudz = np.zeros_like(self._dudx)
 

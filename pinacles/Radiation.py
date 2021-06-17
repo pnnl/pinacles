@@ -342,66 +342,66 @@ class RRTMG:
                 + np.shape(self.p_buffer)[0]
             )
             # inputs to RRTMG
-            play = np.zeros((_ncol, _nlay), dtype=np.double, order="F")  # hPA !!!
-            plev = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")  # hPA !!!
-            tlay = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
-            tlev = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")
-            tsfc = np.ones((_ncol), dtype=np.double, order="F") * self._Surf.T_surface
-            h2ovmr = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
-            o3vmr = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
-            co2vmr = np.ones((_ncol, _nlay), dtype=np.double, order="F") * self._vmr_co2
-            ch4vmr = np.ones((_ncol, _nlay), dtype=np.double, order="F") * self._vmr_ch4
-            n2ovmr = np.ones((_ncol, _nlay), dtype=np.double, order="F") * self._vmr_n2o
-            o2vmr = np.ones((_ncol, _nlay), dtype=np.double, order="F") * self._vmr_o2
+            play = np.zeros((_ncol, _nlay), dtype=np.single, order="F")  # hPA !!!
+            plev = np.zeros((_ncol, _nlay + 1), dtype=np.single, order="F")  # hPA !!!
+            tlay = np.zeros((_ncol, _nlay), dtype=np.single, order="F")
+            tlev = np.zeros((_ncol, _nlay + 1), dtype=np.single, order="F")
+            tsfc = np.ones((_ncol), dtype=np.single, order="F") * self._Surf.T_surface
+            h2ovmr = np.zeros((_ncol, _nlay), dtype=np.single, order="F")
+            o3vmr = np.zeros((_ncol, _nlay), dtype=np.single, order="F")
+            co2vmr = np.ones((_ncol, _nlay), dtype=np.single, order="F") * self._vmr_co2
+            ch4vmr = np.ones((_ncol, _nlay), dtype=np.single, order="F") * self._vmr_ch4
+            n2ovmr = np.ones((_ncol, _nlay), dtype=np.single, order="F") * self._vmr_n2o
+            o2vmr = np.ones((_ncol, _nlay), dtype=np.single, order="F") * self._vmr_o2
             cfc11vmr = (
-                np.ones((_ncol, _nlay), dtype=np.double, order="F") * self._vmr_cfc11
+                np.ones((_ncol, _nlay), dtype=np.single, order="F") * self._vmr_cfc11
             )
             cfc12vmr = (
-                np.ones((_ncol, _nlay), dtype=np.double, order="F") * self._vmr_cfc12
+                np.ones((_ncol, _nlay), dtype=np.single, order="F") * self._vmr_cfc12
             )
             cfc22vmr = (
-                np.ones((_ncol, _nlay), dtype=np.double, order="F") * self._vmr_cfc22
+                np.ones((_ncol, _nlay), dtype=np.single, order="F") * self._vmr_cfc22
             )
             ccl4vmr = (
-                np.ones((_ncol, _nlay), dtype=np.double, order="F") * self._vmr_ccl4
+                np.ones((_ncol, _nlay), dtype=np.single, order="F") * self._vmr_ccl4
             )
-            emis = np.ones((_ncol, _nbndlw), dtype=np.double, order="F") * self._emis
-            cldfr = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
-            cicewp = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
-            cliqwp = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
-            reice = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
-            reliq = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
-            coszen = np.ones((_ncol), dtype=np.double, order="F") * self.coszen
-            asdir = np.ones((_ncol), dtype=np.double, order="F") * self._adir
-            asdif = np.ones((_ncol), dtype=np.double, order="F") * self._adif
-            aldir = np.ones((_ncol), dtype=np.double, order="F") * self._adir
-            aldif = np.ones((_ncol), dtype=np.double, order="F") * self._adif
-            taucld_lw = np.zeros((_nbndlw, _ncol, _nlay), dtype=np.double, order="F")
-            tauaer_lw = np.zeros((_ncol, _nlay, _nbndlw), dtype=np.double, order="F")
-            taucld_sw = np.zeros((_nbndsw, _ncol, _nlay), dtype=np.double, order="F")
-            ssacld_sw = np.zeros((_nbndsw, _ncol, _nlay), dtype=np.double, order="F")
-            asmcld_sw = np.zeros((_nbndsw, _ncol, _nlay), dtype=np.double, order="F")
-            fsfcld_sw = np.zeros((_nbndsw, _ncol, _nlay), dtype=np.double, order="F")
-            tauaer_sw = np.zeros((_ncol, _nlay, _nbndsw), dtype=np.double, order="F")
-            ssaaer_sw = np.zeros((_ncol, _nlay, _nbndsw), dtype=np.double, order="F")
-            asmaer_sw = np.zeros((_ncol, _nlay, _nbndsw), dtype=np.double, order="F")
-            ecaer_sw = np.zeros((_ncol, _nlay, 6), dtype=np.double, order="F")
+            emis = np.ones((_ncol, _nbndlw), dtype=np.single, order="F") * self._emis
+            cldfr = np.zeros((_ncol, _nlay), dtype=np.single, order="F")
+            cicewp = np.zeros((_ncol, _nlay), dtype=np.single, order="F")
+            cliqwp = np.zeros((_ncol, _nlay), dtype=np.single, order="F")
+            reice = np.zeros((_ncol, _nlay), dtype=np.single, order="F")
+            reliq = np.zeros((_ncol, _nlay), dtype=np.single, order="F")
+            coszen = np.ones((_ncol), dtype=np.single, order="F") * self.coszen
+            asdir = np.ones((_ncol), dtype=np.single, order="F") * self._adir
+            asdif = np.ones((_ncol), dtype=np.single, order="F") * self._adif
+            aldir = np.ones((_ncol), dtype=np.single, order="F") * self._adir
+            aldif = np.ones((_ncol), dtype=np.single, order="F") * self._adif
+            taucld_lw = np.zeros((_nbndlw, _ncol, _nlay), dtype=np.single, order="F")
+            tauaer_lw = np.zeros((_ncol, _nlay, _nbndlw), dtype=np.single, order="F")
+            taucld_sw = np.zeros((_nbndsw, _ncol, _nlay), dtype=np.single, order="F")
+            ssacld_sw = np.zeros((_nbndsw, _ncol, _nlay), dtype=np.single, order="F")
+            asmcld_sw = np.zeros((_nbndsw, _ncol, _nlay), dtype=np.single, order="F")
+            fsfcld_sw = np.zeros((_nbndsw, _ncol, _nlay), dtype=np.single, order="F")
+            tauaer_sw = np.zeros((_ncol, _nlay, _nbndsw), dtype=np.single, order="F")
+            ssaaer_sw = np.zeros((_ncol, _nlay, _nbndsw), dtype=np.single, order="F")
+            asmaer_sw = np.zeros((_ncol, _nlay, _nbndsw), dtype=np.single, order="F")
+            ecaer_sw = np.zeros((_ncol, _nlay, 6), dtype=np.single, order="F")
 
             # Output
-            uflx_lw = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")
-            dflx_lw = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")
-            hr_lw = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
-            uflxc_lw = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")
-            dflxc_lw = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")
-            hrc_lw = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
-            duflx_dt = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")
-            duflxc_dt = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")
-            uflx_sw = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")
-            dflx_sw = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")
-            hr_sw = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
-            uflxc_sw = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")
-            dflxc_sw = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")
-            hrc_sw = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
+            uflx_lw = np.zeros((_ncol, _nlay + 1), dtype=np.single, order="F")
+            dflx_lw = np.zeros((_ncol, _nlay + 1), dtype=np.single, order="F")
+            hr_lw = np.zeros((_ncol, _nlay), dtype=np.single, order="F")
+            uflxc_lw = np.zeros((_ncol, _nlay + 1), dtype=np.single, order="F")
+            dflxc_lw = np.zeros((_ncol, _nlay + 1), dtype=np.single, order="F")
+            hrc_lw = np.zeros((_ncol, _nlay), dtype=np.single, order="F")
+            duflx_dt = np.zeros((_ncol, _nlay + 1), dtype=np.single, order="F")
+            duflxc_dt = np.zeros((_ncol, _nlay + 1), dtype=np.single, order="F")
+            uflx_sw = np.zeros((_ncol, _nlay + 1), dtype=np.single, order="F")
+            dflx_sw = np.zeros((_ncol, _nlay + 1), dtype=np.single, order="F")
+            hr_sw = np.zeros((_ncol, _nlay), dtype=np.single, order="F")
+            uflxc_sw = np.zeros((_ncol, _nlay + 1), dtype=np.single, order="F")
+            dflxc_sw = np.zeros((_ncol, _nlay + 1), dtype=np.single, order="F")
+            hrc_sw = np.zeros((_ncol, _nlay), dtype=np.single, order="F")
 
             # Set play, plev
             play_col = np.concatenate(
@@ -672,60 +672,60 @@ class RRTMG:
         profiles_grp = nc_grp["profiles"]
 
         v = timeseries_grp.createVariable(
-            "surface_sw_down", np.double, dimensions=("time",)
+            "surface_sw_down", np.single, dimensions=("time",)
         )
         v.long_name = "surface shortwave down"
         v.standard_name = "surface_sw_down"
         v.units = "W/m^2"
 
         v = timeseries_grp.createVariable(
-            "surface_sw_up", np.double, dimensions=("time",)
+            "surface_sw_up", np.single, dimensions=("time",)
         )
         v.long_name = "surface shortwave up"
         v.standard_name = "surface_sw_up"
         v.units = "W/m^2"
 
         v = timeseries_grp.createVariable(
-            "surface_lw_down", np.double, dimensions=("time",)
+            "surface_lw_down", np.single, dimensions=("time",)
         )
         v.long_name = "surface longwave down"
         v.standard_name = "surface_lw_down"
         v.units = "W/m^2"
 
         v = timeseries_grp.createVariable(
-            "surface_lw_up", np.double, dimensions=("time",)
+            "surface_lw_up", np.single, dimensions=("time",)
         )
         v.long_name = "surface longwave up"
         v.standard_name = "surface_lw_up"
         v.units = "W/m^2"
 
         v = timeseries_grp.createVariable(
-            "toa_sw_down", np.double, dimensions=("time",)
+            "toa_sw_down", np.single, dimensions=("time",)
         )
         v.long_name = "TOA shortwave down"
         v.standard_name = "toa_sw_down"
         v.units = "W/m^2"
 
-        v = timeseries_grp.createVariable("toa_sw_up", np.double, dimensions=("time",))
+        v = timeseries_grp.createVariable("toa_sw_up", np.single, dimensions=("time",))
         v.long_name = "TOA shortwave up"
         v.standard_name = "toa_sw_up"
         v.units = "W/m^2"
 
         v = timeseries_grp.createVariable(
-            "toa_lw_down", np.double, dimensions=("time",)
+            "toa_lw_down", np.single, dimensions=("time",)
         )
         v.long_name = "toa longwave down"
         v.standard_name = "surface_lw_down"
         v.units = "W/m^2"
 
-        v = timeseries_grp.createVariable("toa_lw_up", np.double, dimensions=("time",))
+        v = timeseries_grp.createVariable("toa_lw_up", np.single, dimensions=("time",))
         v.long_name = "toa longwave up"
         v.standard_name = "toa_lw_up"
         v.units = "W/m^2"
 
         # Now add profile of effective radius
         v = profiles_grp.createVariable(
-            "r_eff_cloud", np.double, dimensions=("time", "z",)
+            "r_eff_cloud", np.single, dimensions=("time", "z",)
         )
         v.long_name = "Effective droplet radius"
         v.standard_name = "r_eff_cloud"
@@ -785,7 +785,7 @@ class RRTMG:
 
         alb = -(self._surf_sw_dn_2d - self._toa_sw_dn_2d) / self._toa_sw_dn_2d
 
-        albedo = nc_grp.createVariable("albedo", np.double, dimensions=("X", "Y",))
+        albedo = nc_grp.createVariable("albedo", np.single, dimensions=("X", "Y",))
         albedo[:, :] = alb.reshape((self._Grid.nl[0], self._Grid.nl[1]))
 
         nc_grp.sync()
@@ -1064,7 +1064,7 @@ def dycoms_rad_calc(nh, dzi, z, z_edge, rho, rho_edge, qc, qv, dT):
     qt_zi = 8.0e-3  # kg kg^-1 (total water threshold for diagnosing zi)
     D = 3.75e-6  # s^{-1} dive
     shape = qc.shape
-    lw_flux = np.zeros(shape[2], dtype=np.double)
+    lw_flux = np.zeros(shape[2], dtype=np.single)
     kmin = nh[2] - 1
     kmax = shape[2] - nh[2]
     for i in range(nh[0], shape[0] - nh[0]):
