@@ -5,9 +5,11 @@ import numba
 
 
 class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
-    def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro):
+    def __init__(
+        self, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro
+    ):
         Thermodynamics.ThermodynamicsBase.__init__(
-            self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro
+            self, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro
         )
 
         DiagnosticState.add_variable(
@@ -23,9 +25,13 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
             units="K",
         )
 
+        self._Timers.add_timer("ThermoDynamicsMoist_update")
+
         return
 
     def update(self, apply_buoyancy=True):
+
+        self._Timers.start_timer("ThermoDynamicsMoist_update")
 
         n_halo = self._Grid.n_halo
         z = self._Grid.z_global
@@ -37,9 +43,6 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         theta_ref = self._Ref.T0 / self._Ref.exner
 
         s = self._ScalarState.get_field("s")
-        # qc = self._ScalarState.get_field('qc')
-        # qr = self._ScalarState.get_field('qr')
-        # ql = np.add(qc, qr)
         qv = self._ScalarState.get_field("qv")
         ql = self._Micro.get_qc()
         qi = self._Micro.get_qi()
@@ -51,13 +54,11 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         bvf = self._DiagnosticState.get_field("bvf")
         w_t = self._VelocityState.get_tend("w")
 
-        # ThermodynamicsMoist_impl.eos(z, p0, alpha0, s, ql, qi, T, alpha, buoyancy)
         ThermodynamicsMoist_impl.eos_sam(
             z, p0, alpha0, s, qv, ql, qi, T, tref, alpha, buoyancy
         )
 
         # Compute the buoyancy frequency
-        # ThermodynamicsMoist_impl.compute_bvf_s(theta_ref, exner, s, T, qv, ql, dz, thetav, bvf)
         ThermodynamicsMoist_impl.compute_bvf(
             n_halo, theta_ref, exner, T, qv, ql, dz, thetav, bvf
         )
@@ -65,6 +66,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         if apply_buoyancy:
             ThermodynamicsMoist_impl.apply_buoyancy(buoyancy, w_t)
 
+        self._Timers.end_timer("ThermoDynamicsMoist_update")
         return
 
     @staticmethod

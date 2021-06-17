@@ -1,5 +1,6 @@
 import numpy as np
 
+
 # Store model parameter here
 G = np.double(9.80665)  #  Gravitational Acceleration
 P00 = np.double(1.0e5)  #  Set the reference pressure (used in Exner function)
@@ -16,4 +17,4 @@ OMEGA = np.double(7.2921151467064e-5)  # Earth's Rotation Rate
 LV = np.double(2.5014e6)
 LS = np.double(2.8440e6)
 LF = np.double(0.336e6)
-LARGE = 1e11  # A very large number
+LARGE = np.double(1e11)  # A very large number

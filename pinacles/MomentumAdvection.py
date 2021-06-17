@@ -5,7 +5,8 @@ from pinacles import UtilitiesParallel
 
 
 class MomentumAdvectionBase:
-    def __init__(self, namelist, Grid, Ref, ScalarState, VelocityState):
+    def __init__(self, namelist, Timers, Grid, Ref, ScalarState, VelocityState):
+        self._Timers = Timers
         self._Grid = Grid
         self._Ref = Ref
         self._ScalarState = ScalarState
@@ -74,14 +75,16 @@ class MomentumAdvectionBase:
 
 
 class MomentumWENO(MomentumAdvectionBase):
-    def __init__(self, namelist, Grid, Ref, ScalarState, VelocityState):
+    def __init__(self, namelist, Timers, Grid, Ref, ScalarState, VelocityState):
         MomentumAdvectionBase.__init__(
-            self, namelist, Grid, Ref, ScalarState, VelocityState
+            self, namelist, Timers, Grid, Ref, ScalarState, VelocityState
         )
 
+        self._Timers.add_timer("MomentumWENO_update")
         return
 
     def update(self):
+        self._Timers.start_timer("MomentumWENO_update")
 
         # Get values from thermodynmic reference state
         rho0 = self._Ref.rho0
@@ -128,8 +131,9 @@ class MomentumWENO(MomentumAdvectionBase):
             dxi[0], dxi[1], dxi[2], alpha0_edge, fluxx, fluxy, fluxz, w_t
         )
 
+        self._Timers.end_timer("MomentumWENO_update")
         return
 
 
-def factory(namelist, Grid, Ref, ScalarState, VelocityState):
-    return MomentumWENO(namelist, Grid, Ref, ScalarState, VelocityState)
+def factory(namelist, Timers, Grid, Ref, ScalarState, VelocityState):
+    return MomentumWENO(namelist, Timers, Grid, Ref, ScalarState, VelocityState)

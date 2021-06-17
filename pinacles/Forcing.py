@@ -1,8 +1,9 @@
 class ForcingBase:
     def __init__(
-        self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+        self, namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
     ):
 
+        self._Timers = Timers
         self._Grid = Grid
         self._Ref = Ref
         self._VelocityState = VelocityState

@@ -16,6 +16,7 @@ class RRTMG:
     def __init__(
         self,
         namelist,
+        Timers,
         Grid,
         Ref,
         ScalarState,
@@ -25,6 +26,7 @@ class RRTMG:
         TimeSteppingController,
     ):
         self._name = "RRTMG"
+        self._Timers = Timers
         self._Grid = Grid
         self._Ref = Ref
         self._ScalarState = ScalarState
@@ -193,6 +195,7 @@ class RRTMG:
             "qi_extension",
         ]
 
+        self._Timers.add_timer("RRTMG")
         return
 
     def init_profiles(self):
@@ -276,6 +279,7 @@ class RRTMG:
         return
 
     def update(self, force=False, time_loop=False):
+        self._Timers.start_timer("RRTMG")
 
         if time_loop and self.time_synced and not force:
             return
@@ -658,6 +662,7 @@ class RRTMG:
 
         s[:, :, :] += ds_dTdt_rad[:, :, :] * dt
 
+        self._Timers.end_timer("RRTMG")
         return
 
     def io_initialize(self, nc_grp):
@@ -948,6 +953,7 @@ class RadiationDycoms:
     def __init__(
         self,
         namelist,
+        Timers,
         Grid,
         Ref,
         ScalarState,
@@ -957,6 +963,7 @@ class RadiationDycoms:
     ):
 
         self._name = "RadiationDycoms"
+        self._Timers = Timers
         self._Grid = Grid
         self._Ref = Ref
         self._ScalarState = ScalarState
@@ -976,6 +983,8 @@ class RadiationDycoms:
         self.time_elapsed = parameters.LARGE
 
         self._restart_attributes = ["time_elapsed"]
+
+        self._Timers.add_timer("RadiationDycoms")
         return
 
     def init_profiles(self):
@@ -983,6 +992,7 @@ class RadiationDycoms:
         return
 
     def update(self, force=False, time_loop=False):
+        self._Timers.start_timer("RadiationDycoms")
 
         if time_loop and self.time_synced and not force:
             return
@@ -1014,6 +1024,9 @@ class RadiationDycoms:
             )
 
             s[:, :, :] += dTdt_rad[:, :, :] * dt
+
+        self._Timers.end_timer("RadiationDycoms")
+        return
 
     def io_initialize(self, nc_grp):
         # add zi to the output?

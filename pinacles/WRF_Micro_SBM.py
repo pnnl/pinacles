@@ -31,6 +31,7 @@ class MicroSBM(MicrophysicsBase):
     def __init__(
         self,
         namelist,
+        Timers,
         Grid,
         Ref,
         ScalarState,
@@ -40,6 +41,7 @@ class MicroSBM(MicrophysicsBase):
     ):
         MicrophysicsBase.__init__(
             self,
+            Timers,
             Grid,
             Ref,
             ScalarState,
@@ -322,6 +324,9 @@ class MicroSBM(MicrophysicsBase):
             ro_solute_in,
         )
 
+        self._Timers.add_timer("FastSBM_update")
+        self._Timers.add_timer("FastSBMfortran")
+
         return
 
     def add_output_container_diags(self):
@@ -526,6 +531,8 @@ class MicroSBM(MicrophysicsBase):
         return
 
     def update(self):
+        self._Timers.start_timer("FastSBM_update")
+
         # Get grid information
         nhalo = self._Grid.n_halo
 
@@ -622,6 +629,7 @@ class MicroSBM(MicrophysicsBase):
 
         rain_accum_old = np.sum(self._RAINNC)
 
+        self._Timers.start_timer("FastSBMfortran")
         module_mp_fast_sbm.module_mp_warm_sbm.warm_sbm(
             self._wrf_vars["w"],
             self._wrf_vars["u"],
@@ -683,6 +691,7 @@ class MicroSBM(MicrophysicsBase):
             rainncv=self._wrf_vars["RAINNCV"],
             sr=self._wrf_vars["SR"],
         )
+        self._Timers.end_timer("FastSBMfortran")
 
         self._RAINNC[:, :] = self._wrf_vars["RAINNC"][:, :]
         self._RAINNCV[:, :] = self._wrf_vars["RAINNCV"][:, :]
@@ -730,6 +739,7 @@ class MicroSBM(MicrophysicsBase):
         self._call_count += 1
         self._itimestep += 1
 
+        self._Timers.end_timer("FastSBM_update")
         return
 
     @staticmethod

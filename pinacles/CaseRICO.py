@@ -8,11 +8,18 @@ from pinacles import UtilitiesParallel
 
 class SurfaceRICO(Surface.SurfaceBase):
     def __init__(
-        self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+        self, namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
     ):
 
         Surface.SurfaceBase.__init__(
-            self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            self,
+            namelist,
+            Timers,
+            Grid,
+            Ref,
+            VelocityState,
+            ScalarState,
+            DiagnosticState,
         )
 
         self._cm = 0.001229
@@ -30,6 +37,8 @@ class SurfaceRICO(Surface.SurfaceBase):
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
         self._qvflx = np.zeros_like(self._windspeed_sfc)
         self._tflx = np.zeros_like(self._windspeed_sfc)
+
+        self._Timers.add_timer("SurfaceRICO_update")
 
         return
 
@@ -134,6 +143,8 @@ class SurfaceRICO(Surface.SurfaceBase):
 
     def update(self):
 
+        self._Timers.start_timer("SurfaceRICO_update")
+
         nh = self._Grid.n_halo
         dxi2 = self._Grid.dxi[2]
         z_edge = self._Grid.z_edge_global
@@ -198,15 +209,24 @@ class SurfaceRICO(Surface.SurfaceBase):
             10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._qvflx, qvt
         )
 
+        self._Timers.end_timer("SurfaceRICO_update")
+
         return
 
 
 class ForcingRICO(Forcing.ForcingBase):
     def __init__(
-        self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+        self, namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
     ):
         Forcing.ForcingBase.__init__(
-            self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            self,
+            namelist,
+            Timers,
+            Grid,
+            Ref,
+            VelocityState,
+            ScalarState,
+            DiagnosticState,
         )
 
         self._f = 0.376e-4
@@ -236,9 +256,12 @@ class ForcingRICO(Forcing.ForcingBase):
         # Set heating rate
         self._heating_rate = np.zeros_like(self._Grid.z_global) - 2.5 / 86400.0
 
+        self._Timers.add_timer("ForcingRico_update")
         return
 
     def update(self):
+
+        self._Timers.start_timer("ForcingRico_update")
 
         exner = self._Ref.exner
 
@@ -262,4 +285,6 @@ class ForcingRICO(Forcing.ForcingBase):
         # Now ad large scale subsidence
         Forcing_impl.apply_subsidence(self._subsidence, self._Grid.dxi[2], s, st)
         Forcing_impl.apply_subsidence(self._subsidence, self._Grid.dxi[2], qv, qvt)
+
+        self._Timers.end_timer("ForcingRico_update")
         return

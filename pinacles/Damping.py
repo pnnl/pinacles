@@ -3,10 +3,11 @@ from pinacles import Damping_impl
 
 
 class Damping:
-    def __init__(self, namelist, Grid):
+    def __init__(self, namelist, Timers, Grid):
 
         self._vars = namelist["damping"]["vars"]
         self._states = []
+        self._Timers = Timers
         self._Grid = Grid
 
         return
@@ -25,8 +26,9 @@ class Damping:
 
 
 class Rayleigh(Damping):
-    def __init__(self, namelist, Grid):
-        Damping.__init__(self, namelist, Grid)
+    def __init__(self, namelist, Timers, Grid):
+        Damping.__init__(self, namelist, Timers, Grid)
+
         self._depth = namelist["damping"]["depth"]
         self._timescale = namelist["damping"]["timescale"]
 
@@ -35,9 +37,13 @@ class Rayleigh(Damping):
 
         self._compute_timescale_profile()
 
+        self._Timers.add_timer("Rayleigh_update")
+
         return
 
     def update(self):
+
+        self._Timers.start_timer("Rayleigh_update")
 
         # First loop over all of the variables
         for var in self._vars:
@@ -57,6 +63,8 @@ class Rayleigh(Damping):
                         Damping_impl.rayleigh(
                             self._timescale_profile_edge, mean, field, tend
                         )
+
+        self._Timers.end_timer("Rayleigh_update")
 
         return
 
@@ -86,8 +94,8 @@ class Rayleigh(Damping):
 
 
 class RayleighInitial(Damping):
-    def __init__(self, namelist, Grid):
-        Damping.__init__(self, namelist, Grid)
+    def __init__(self, namelist, Timers, Grid):
+        Damping.__init__(self, namelist, Timers, Grid)
         self._depth = namelist["damping"]["depth"]
         self._timescale = namelist["damping"]["timescale"]
 
@@ -96,6 +104,9 @@ class RayleighInitial(Damping):
 
         self._compute_timescale_profile()
         self.means = {}
+
+        self._Timers.add_timer("RayleighInitial_update")
+
         return
 
     def init_means(self):
@@ -109,6 +120,8 @@ class RayleighInitial(Damping):
         return
 
     def update(self):
+
+        self._Timers.start_timer("RayleighInitial_update")
 
         # First loop over all of the variables
         for var in self._vars:
@@ -128,6 +141,8 @@ class RayleighInitial(Damping):
                         Damping_impl.rayleigh(
                             self._timescale_profile_edge, mean, field, tend
                         )
+
+        self._Timers.end_timer("RayleighInitial_update")
 
         return
 
