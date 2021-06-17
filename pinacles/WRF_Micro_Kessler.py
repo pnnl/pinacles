@@ -4,7 +4,8 @@ from pinacles.Microphysics import (
     water_fraction,
     water_fraction_profile,
 )
-from pinacles.externals.wrf_kessler_wrapper import kessler
+from pinacles.externals.wrf_kessler_wrapper import kessler_single
+kessler = kessler_single
 from pinacles import UtilitiesParallel
 from pinacles.WRFUtil import (
     to_wrf_order,

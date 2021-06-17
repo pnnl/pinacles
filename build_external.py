@@ -17,6 +17,10 @@ def main():
         "pinacles/externals/wrf_kessler_wrapper", "module_mp_kessler.f95", "kessler"
     )
 
+    f2py_file(
+        "pinacles/externals/wrf_kessler_wrapper", "module_mp_kessler_single.f95", "kessler_single"
+    )
+    
     # Now optionall build rrtmg
     rrtmg_path = "pinacles/externals/rrtmg_wrapper"
     rrtmg_lw_exists = os.path.exists(os.path.join(rrtmg_path, "librrtmglw.so"))
