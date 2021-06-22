@@ -355,7 +355,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Update thermo this is mostly for IO at time 0
         self.Thermo.update(apply_buoyancy=False)
-        self.Rad.update(force=True)
+        self.Rad.update(force=True,time_loop=False)
         self.PSolver.update()
 
         return
@@ -655,7 +655,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             prog_state.update_all_bcs()
 
         self.Thermo.update(apply_buoyancy=False)
-        self.Rad.update(force=True)
+        self.Rad.update(force=True,time_loop=False)
         # self.PSolver.update()
 
         return

@@ -656,8 +656,8 @@ class RRTMG:
             ds_hr_sw[:, :, :] *= (
                 rho0[np.newaxis, np.newaxis, :] * parameters.CPD / 86400.0
             )
-
-        s[:, :, :] += ds_dTdt_rad[:, :, :] * dt
+        if time_loop:
+            s[:, :, :] += ds_dTdt_rad[:, :, :] * dt
 
         return
 
@@ -1019,8 +1019,8 @@ class RadiationDycoms:
             self.zi_mean, self.zi_min, self.zi_max = dycoms_rad_calc(
                 nh, self._Grid.dxi[2], z, z_edge, rho, qc, qv, dTdt_rad
             )
-           
-        s[:, :, :] += dTdt_rad[:, :, :] * dt
+        if time_loop:
+            s[:, :, :] += dTdt_rad[:, :, :] * dt
         return
 
     def io_initialize(self, nc_grp):
