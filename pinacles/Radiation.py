@@ -278,8 +278,8 @@ class RRTMG:
 
     def update(self, force=False, time_loop=False):
 
-        if time_loop and self.time_synced and not force:
-            return
+        # if time_loop and self.time_synced and not force:
+        #     return
 
         if not self._compute_radiation:
             return
@@ -989,9 +989,11 @@ class RadiationDycoms:
 
     def update(self, force=False, time_loop=False):
 
-        if time_loop and self.time_synced and not force:
-            return
+        # if time_loop and self.time_synced and not force:
+        #     return
         self.time_elapsed += self._TimeSteppingController.dt
+        dTdt_rad = self._DiagnosticState.get_field("dTdt_rad")
+        s = self._ScalarState.get_field("s")
         if (
             (self.time_elapsed > self._radiation_frequency and not self.time_synced)
             or (
@@ -1002,9 +1004,9 @@ class RadiationDycoms:
             )
             or force
         ):
-            dTdt_rad = self._DiagnosticState.get_field("dTdt_rad")
+            
             # heating_rate_lw = self._DiagnosticState.get_field('heating_rate_lw')
-            s = self._ScalarState.get_field("s")
+            
             qc = self._Micro.get_qc()
             qv = self._ScalarState.get_field("qv")
             rho = self._Ref._rho0
@@ -1015,10 +1017,11 @@ class RadiationDycoms:
             z_edge = self._Grid.z_edge_global
             dt = self._TimeSteppingController.dt
             self.zi_mean, self.zi_min, self.zi_max = dycoms_rad_calc(
-                nh, self._Grid.dxi[2], z, z_edge, rho, qc, qv, dTdt_rad,
+                nh, self._Grid.dxi[2], z, z_edge, rho, qc, qv, dTdt_rad
             )
            
-            s[:, :, :] += dTdt_rad[:, :, :] * dt
+        s[:, :, :] += dTdt_rad[:, :, :] * dt
+        return
 
     def io_initialize(self, nc_grp):
         # add zi to the output?
