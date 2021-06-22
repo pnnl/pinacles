@@ -90,10 +90,10 @@ class PressureSolverNonPeriodic:
 
         # Set boundary conditions on v
         if low_rank[1]:
-            v[:, ibl_edge[1], :] = 0.1
+            v[:, ibl_edge[1], :] = 0.0
 
         if high_rank[1]:
-            v[:, ibu_edge[1], :] = 0.1
+            v[:, ibu_edge[1], :] = 0.0
 
         return
 
@@ -207,7 +207,7 @@ class PressureSolverNonPeriodic:
         u.fill(0.0)
         w.fill(0.0)
         if MPI.COMM_WORLD.Get_rank() == 0:
-            v[32:48, 32:48, 10:20] = 1.0
+            v[32:48, 32:48, 10:20] = 0.0
 
 
 
@@ -258,6 +258,9 @@ class PressureSolverNonPeriodic:
         self._make_non_homogeneous(self._Ref.rho0, div, p, dynp)
         apply_pressure(dxs, dynp, u, v, w) 
 
+        w[:,:,:ibl_edge[2]+1] = 0.0
+        w[:,:,ibu_edge[2]-1:] = 0.0
+
         #self._VelocityState.boundary_exchange()
         #self._VelocityState.update_all_bcs()
 
@@ -266,9 +269,10 @@ class PressureSolverNonPeriodic:
 
         divergence_ghost(n_halo, dxs, rho0, rho0_edge, u, v, w, div)
 
-
+        print(np.amax(w[3:-3,10,2:-2]),np.amax(w[3:-3,10,2:-2]))
         plt.subplot(2,1,2)
-        plt.contourf(u[2:-3,3:-3,16].T)
+        plt.contourf(w[3:-3,10,2:-3].T)
+  
 
         print(np.amax(div[3:-3,3:-3,16]))
 
@@ -276,7 +280,8 @@ class PressureSolverNonPeriodic:
         plt.colorbar()
         plt.show()
 
-        import sys
 
-        sys.exit()
+        #import sys
+
+        #sys.exit()
         return

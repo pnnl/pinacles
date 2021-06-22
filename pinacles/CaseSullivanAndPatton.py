@@ -235,7 +235,7 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
         u0 = self._Ref.u0
         v0 = self._Ref.v0
 
-        Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, u0, v0, vt, ut)
+        #Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, u0, v0, vt, ut)
 
         self._Timers.end_timer("ForcingSullivanAndPatton_update")
         return

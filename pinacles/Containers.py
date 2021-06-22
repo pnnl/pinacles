@@ -132,6 +132,7 @@ class ModelState:
 
         return
 
+
     def update_all_bcs(self):
         # TODO add other BC types. For now only assume everything is cell center and gradient zero
         # TODO PERFORMANCE. May want to use numba here.
