@@ -967,6 +967,10 @@ class RadiationDycoms:
 
         self._DiagnosticState.add_variable("dTdt_rad")
 
+        self.zi_mean = 0.0
+        self.zi_min = 0.0
+        self.zi_max = 0.0
+
         try:
             self._radiation_frequency = namelist["radiation"]["update_frequency"]
         except:
@@ -1004,23 +1008,53 @@ class RadiationDycoms:
             qc = self._Micro.get_qc()
             qv = self._ScalarState.get_field("qv")
             rho = self._Ref._rho0
-            rho_edge = self._Ref._rho0_edge
+            
             nh = self._Grid.n_halo
 
             z = self._Grid.z_global
             z_edge = self._Grid.z_edge_global
             dt = self._TimeSteppingController.dt
-            dycoms_rad_calc(
-                nh, self._Grid.dxi[2], z, z_edge, rho, qc, qv, dTdt_rad
+            self.zi_mean, self.zi_min, self.zi_max = dycoms_rad_calc(
+                nh, self._Grid.dxi[2], z, z_edge, rho, qc, qv, dTdt_rad,
             )
-
+           
             s[:, :, :] += dTdt_rad[:, :, :] * dt
 
     def io_initialize(self, nc_grp):
         # add zi to the output?
+        timeseries_grp = nc_grp["timeseries"]
+        v = timeseries_grp.createVariable("zi_mean", np.double, dimensions=("time",))
+        v.long_name = "Mean DYCOMS inversion"
+        v.standard_name = "zi_mean"
+        v.units = "m"
+
+        v = timeseries_grp.createVariable("zi_min", np.double, dimensions=("time",))
+        v.long_name = "Minimum DYCOMS inversion"
+        v.standard_name = "zi_min"
+        v.units = "m"
+
+        v = timeseries_grp.createVariable("zi_max", np.double, dimensions=("time",))
+        v.long_name = "Maximum DYCOMS inversion"
+        v.standard_name = "zi_max"
+        v.units = "m"
+
         return
 
     def io_update(self, nc_grp):
+        my_rank = MPI.COMM_WORLD.Get_rank()
+
+        npts = self._Grid.n[0] * self._Grid.n[1]
+        zi_mean = UtilitiesParallel.ScalarAllReduce(self.zi_mean/npts)
+        zi_min = UtilitiesParallel.ScalarAllReduce(self.zi_min, op=MPI.MIN)
+        zi_max = UtilitiesParallel.ScalarAllReduce(self.zi_max,op=MPI.MAX)
+
+        if my_rank == 0:
+            timeseries_grp = nc_grp["timeseries"]
+        
+            timeseries_grp["zi_mean"][-1] = zi_mean
+            timeseries_grp["zi_max"][-1] = zi_max
+            timeseries_grp["zi_min"][-1] = zi_min
+  
         return
 
     def io_fields2d_update(self, nc_grp):
@@ -1057,9 +1091,12 @@ def dycoms_rad_calc(nh, dzi, z, z_edge, rho,  qc, qv, dT):
     qbot = np.zeros_like(lw_flux)
     kmin = nh[2] - 1
     kmax = shape[2] - nh[2]
+    zi_mean = 0.0
+    zi_max = -9999.0
+    zi_min = 9999.0
     for i in range(nh[0], shape[0] - nh[0]):
         for j in range(nh[1], shape[1] - nh[1]):
-            qt_index = qc[i,j,nh[2]] + qc[i,j,nh[2]]
+            qt_index = qc[i,j,kmin] + qv[i,j,kmin]
             for k in range(kmin+1, kmax):
                 index = k
                 qt_indexm1 = qt_index
@@ -1067,6 +1104,12 @@ def dycoms_rad_calc(nh, dzi, z, z_edge, rho,  qc, qv, dT):
                 if qt_index < qt_zi:
                     break
             zi = (qt_zi - qt_indexm1)/(qt_index-qt_indexm1)/dzi + z[index-1]
+            zi_mean+=zi
+            if zi > zi_max:
+                zi_max = zi
+            elif zi < zi_min:
+                zi_min = zi
+          
             for k in range(kmax-1, kmin-1,-1):
                 qtop[k] = qtop[k+1] +  qc[i,j,k+1] * rho[k+1] /dzi * kappa
             for k in range(kmin, kmax+1):
@@ -1076,9 +1119,9 @@ def dycoms_rad_calc(nh, dzi, z, z_edge, rho,  qc, qv, dT):
                 if z_edge[k] > zi:
                     cbrt_z = (z_edge[k] - zi) ** (1.0 / 3.0)
                     lw_flux[k] += (
-                        a * rho_zi * D * 1004.0 * (0.25 * cbrt_z ** 4.0 + zi * cbrt_z)
+                        a * rho_zi * D * parameters.CPD * (0.25 * cbrt_z ** 4.0 + zi * cbrt_z)
                     )
 
-                dT[i, j, k] = -(lw_flux[k] - lw_flux[k - 1]) * dzi / 1004.0 / rho[k]
- 
-    return
+                dT[i, j, k] = -(lw_flux[k] - lw_flux[k - 1]) * dzi / parameters.CPD / rho[k]
+    
+    return zi_mean, zi_min, zi_max
