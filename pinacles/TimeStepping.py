@@ -69,11 +69,12 @@ def factory(namelist, Timers, Grid, PrognosticState):
 
 
 class TimeSteppingController:
-    def __init__(self, namelist, Grid, VelocityState):
+    def __init__(self, namelist, Grid, DiagnosticState, VelocityState):
 
         self._restart_atts = []
 
         self._Grid = Grid
+        self._DiagnosticState = DiagnosticState
         self._VelocityState = VelocityState
         self._TimeStepper = []
         self._times_to_match = []
@@ -81,6 +82,12 @@ class TimeSteppingController:
         self._restart_atts.append("_dt")
         self._dt_max = 10.0
         self._cfl_target = namelist["time"]["cfl"]
+
+        try:
+            self.diff_num_target = namelist["time"]["diff_num"]
+        except:
+            self.diff_num_target = 0.8
+
         self._time_max = namelist["time"]["time_max"]
         self._time = 0.0
         self._restart_atts.append("_time")
@@ -105,6 +112,8 @@ class TimeSteppingController:
             v = self._VelocityState.get_field("v")
             w = self._VelocityState.get_field("w")
 
+            eddy_diffusivity = self._DiagnosticState.get_field("eddy_diffusivity")
+
             cfl_max = 0.0
             cfl_max_local, umax, vmax, wmax = TS_impl.comput_local_cfl_max(
                 nhalo, dxi, u, v, w
@@ -120,9 +129,21 @@ class TimeSteppingController:
             )
             cfl_max = recv_buffer[0]
             self._cfl_current = self._dt * cfl_max
-            self._dt = self._cfl_target / max(cfl_max, 0.001)
+            dt_from_cfl = self._cfl_target / max(cfl_max, 0.001)
+
+            diff_num_max_local = TS_impl.compute_local_diff_num_max(
+                nhalo, dxi, self._dt, eddy_diffusivity
+            )
+            MPI.COMM_WORLD.Allreduce(
+                np.array([diff_num_max_local], dtype=np.double), recv_buffer, op=MPI.MAX
+            )
+            diff_num_max_time_div_dt = recv_buffer[0] / max(self._dt, 0.001)
+            self._diff_num_current = recv_buffer[0]
+            self._dt = self.diff_num_target / max(diff_num_max_time_div_dt, 0.0001)
 
             self._dt = min(self._dt, self._dt_max)
+            self._dt = min(self._dt, dt_from_cfl)
+
             if self._time + self._dt > end_time:
                 self._dt = end_time - self._time
 
@@ -130,17 +151,30 @@ class TimeSteppingController:
                 Stepper._dt = self._dt
 
             if MPI.COMM_WORLD.Get_rank() == 0:
+                print("Time:", self._time)
                 print(
-                    "Time:",
-                    self._time,
-                    "CFL Before Adjustment:",
-                    self._cfl_current,
+                    "\tCFL Before Adjustment:",
+                    np.round(self._cfl_current, 5),
                     "CFL After Adjustment:",
-                    cfl_max * self._dt,
-                    "dt:",
-                    self._dt,
+                    np.round(cfl_max * self._dt, 5),
                 )
-                print("\t umax: ", umax, "\t vmax:", vmax, "\t wmax:", wmax)
+                print(
+                    "\tDiffusion Number Before Adjustment:",
+                    np.round(self._diff_num_current, 5),
+                    "Diffusion Number After Adjustment:",
+                    np.round(diff_num_max_time_div_dt * self._dt, 5),
+                )
+                print(
+                    "\tdt:", self._dt,
+                )
+                print(
+                    "\tumax: ",
+                    np.round(umax, 5),
+                    "\t vmax:",
+                    np.round(vmax, 5),
+                    "\t wmax:",
+                    np.round(wmax, 5),
+                )
 
         return
 
