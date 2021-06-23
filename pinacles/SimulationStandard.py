@@ -81,7 +81,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
 
         self.TimeSteppingController = TimeStepping.TimeSteppingController(
-            self._namelist, self.ModelGrid, self.VelocityState
+            self._namelist, self.ModelGrid, self.DiagnosticState, self.VelocityState
         )
 
         self.Timers = Timers.Timer(self._namelist, self.TimeSteppingController)
@@ -420,7 +420,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
 
         self.TimeSteppingController = TimeStepping.TimeSteppingController(
-            self._namelist, self.ModelGrid, self.VelocityState
+            self._namelist, self.ModelGrid, self.DiagnosticState, self.VelocityState
         )
 
         self.Timers = Timers.Timer(self._namelist, self.TimeSteppingController)
