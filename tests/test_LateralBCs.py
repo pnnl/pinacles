@@ -25,11 +25,8 @@ def test_LateralBCs():
 
     VelocityState.allocate()
     ScalarState.allocate()
-
-    print('Hello')
-    print('VelocityState')
     
-    LBC = LateralBCs.LateralBCs(Grid, VelocityState, ScalarState)
+    LBC = LateralBCs.LateralBCs(ModelGrid, ScalarState, VelocityState)
 
 
     u = VelocityState.get_field('u')
