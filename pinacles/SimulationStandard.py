@@ -778,19 +778,18 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 # Call pressure solver
                 self.PSolver.update()
-        
+
                 self.Timers.start_timer("ScalarLimiter")
                 self.ScalarState.apply_limiter()
                 self.Timers.end_timer("ScalarLimiter")
 
                 # Update boundary conditions
                 self.Timers.start_timer("BoundaryUpdate")
-                #self.ScalarState.boundary_exchange()
+                # self.ScalarState.boundary_exchange()
                 self.VelocityState.boundary_exchange()
-                #self.ScalarState.update_all_bcs()
+                # self.ScalarState.update_all_bcs()
                 self.VelocityState.update_all_bcs()
                 self.Timers.end_timer("BoundaryUpdate")
-
 
                 if n == 1:
                     self.Thermo.update(apply_buoyancy=False)
