@@ -49,3 +49,29 @@ def comput_local_cfl_max(nhalo, dxi, u, v, w):
                 wmax = max(wmax, np.abs(w[i, j, k]))
 
     return cfl_max, umax, vmax, wmax
+
+
+@numba.njit(fastmath=True)
+def compute_local_diff_num_max(nhalo, dxi, dt, Km):
+    """ Retyrbs number diffusion number following 
+    Heus et al. (2010) for this MPI rank.
+
+    Args:
+        nhalo (tuple): number of halo points
+        dxi ([type]): grid spacing
+        dt ([type]): model time step
+        Km ([type]): eddy diffusion coefficient 
+
+    Returns:
+        double: 
+    """
+    shape = Km.shape
+
+    idx2_sum = (dxi[0] * dxi[0]) + (dxi[1] * dxi[1]) + (dxi[2] * dxi[2])
+    diff_max = -1e-8
+    for i in range(nhalo[0], shape[0] - nhalo[0]):
+        for j in range(nhalo[1], shape[1] - nhalo[1]):
+            for k in range(nhalo[2], shape[2] - nhalo[2]):
+                diff_max = max(diff_max, Km[i, j, k] * idx2_sum)
+
+    return diff_max * dt
