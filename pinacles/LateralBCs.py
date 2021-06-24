@@ -84,7 +84,8 @@ class LateralBCs:
                     ibl, ibl_edge, u, self._var_on_boundary[var_name]["x_low"], var
                 )
             else:
-                self.open_x_impl_low(
+                # Set the lbc on the normal velocity component
+                self.normal_x_impl_low(
                     ibl_edge, u, self._var_on_boundary[var_name]["x_low"],
                 )
 
@@ -97,8 +98,9 @@ class LateralBCs:
                     ibu, ibu_edge, u, self._var_on_boundary[var_name]["x_high"], var
                 )
             else:
-                self.open_x_impl_high(
-                    ibl_edge, u, self._var_on_boundary[var_name]["x_high"]
+                # Set the lbc on the normal velocity component
+                self.normal_x_impl_high(
+                    ibu_edge, u, self._var_on_boundary[var_name]["x_high"]
                 )
 
         return
@@ -154,6 +156,25 @@ class LateralBCs:
 
         return
 
+    @staticmethod
+    @numba.njit()
+    def normal_y_impl_low(ibl_edge, v, var_on_boundary):
+        shape = v.shape
+        for i in range(shape[0]):
+            for k in range(shape[2]):
+                v[i, : ibl_edge + 1, k] = var_on_boundary[i, k]
+
+        return
+
+    @staticmethod
+    @numba.njit()
+    def normal_y_impl_high(ibu_edge, v, var_on_boundary):
+        shape = v.shape
+        for i in range(shape[0]):
+            for k in range(shape[2]):
+                v[i, ibu_edge:, k] = var_on_boundary[i, k]
+        return
+
     def open_y(self, var_name):
 
         # v is the normal velocity component on a lateral boundary in y
@@ -169,7 +190,10 @@ class LateralBCs:
                     ibl, ibl_edge, v, self._var_on_boundary[var_name]["y_low"], var
                 )
             else:
-                pass
+                # Set the lbc on the normal velocity component
+                self.normal_y_impl_low(
+                    ibl_edge, v, self._var_on_boundary[var_name]["y_low"],
+                )
 
         ibu = self._Grid.ibu[1]
         ibu_edge = self._Grid.ibu_edge[1]
@@ -180,7 +204,10 @@ class LateralBCs:
                     ibu, ibu_edge, v, self._var_on_boundary[var_name]["y_high"], var
                 )
             else:
-                pass
+                # Set the lbc on the normal velocity component
+                self.normal_y_impl_high(
+                    ibu_edge, v, self._var_on_boundary[var_name]["y_high"]
+                )
         return
 
     @staticmethod
