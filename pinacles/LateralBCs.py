@@ -79,14 +79,47 @@ class LateralBCs:
         ibl_edge = self._Grid.ibl_edge[0]
 
         if self._Grid.low_rank[0]:
-            self.open_x_impl_low(ibl, ibl_edge, u, self._var_on_boundary[var_name]['x_low'],var)
+            if var_name != "u":
+                self.open_x_impl_low(
+                    ibl, ibl_edge, u, self._var_on_boundary[var_name]["x_low"], var
+                )
+            else:
+                self.open_x_impl_low(
+                    ibl_edge, u, self._var_on_boundary[var_name]["x_low"],
+                )
 
         ibu = self._Grid.ibu[0]
         ibu_edge = self._Grid.ibu_edge[0]
 
         if self._Grid.high_rank[0]:
-            self.open_x_impl_high(ibu, ibu_edge, u, self._var_on_boundary[var_name]['x_high'], var)
+            if var_name != "u":
+                self.open_x_impl_high(
+                    ibu, ibu_edge, u, self._var_on_boundary[var_name]["x_high"], var
+                )
+            else:
+                self.open_x_impl_high(
+                    ibl_edge, u, self._var_on_boundary[var_name]["x_high"]
+                )
 
+        return
+
+    @staticmethod
+    @numba.njit()
+    def normal_x_impl_low(ibl_edge, u, var_on_boundary):
+        shape = u.shape
+        for j in range(shape[1]):
+            for k in range(shape[2]):
+                u[: ibl_edge + 1, j, k] = var_on_boundary[j, k]
+
+        return
+
+    @staticmethod
+    @numba.njit()
+    def normal_x_impl_high(ibu_edge, u, var_on_boundary):
+        shape = u.shape
+        for j in range(shape[1]):
+            for k in range(shape[2]):
+                u[ibu_edge:, j, k] = var_on_boundary[j, k]
         return
 
     @staticmethod
@@ -99,9 +132,9 @@ class LateralBCs:
                 ul = u[ibl_edge, j, k]
 
                 if ul < 0:  # Outflow condition:
-                    var[: ibl, j, k] = 2.0 * var[ibl, j, k] - var[ibl + 1, j, k]
+                    var[:ibl, j, k] = 2.0 * var[ibl, j, k] - var[ibl + 1, j, k]
                 else:  # Inflow condition
-                    var[: ibl, j, k] = var_on_boundary[j, k]
+                    var[:ibl, j, k] = var_on_boundary[j, k]
 
         return
 
@@ -114,12 +147,10 @@ class LateralBCs:
             for k in range(shape[2]):
                 ul = u[ibu_edge, j, k]
 
-                if ul > 0: # Outflow condition
-                    var[ibu+1:, j, k] = 2.0 * var[ibu,j,k] - var[ibu-1, j, k]
-                else:      # Inflow condition
-                    var[ibu+1:, j, k] = var_on_boundary[j,k]
-
-
+                if ul > 0:  # Outflow condition
+                    var[ibu + 1 :, j, k] = 2.0 * var[ibu, j, k] - var[ibu - 1, j, k]
+                else:  # Inflow condition
+                    var[ibu + 1 :, j, k] = var_on_boundary[j, k]
 
         return
 
@@ -133,14 +164,23 @@ class LateralBCs:
         ibl_edge = self._Grid.ibl_edge[1]
 
         if self._Grid.low_rank[1]:
-            self.open_y_impl_low(ibl, ibl_edge, v, self._var_on_boundary[var_name]['y_low'],var)
+            if var_name != "v":
+                self.open_y_impl_low(
+                    ibl, ibl_edge, v, self._var_on_boundary[var_name]["y_low"], var
+                )
+            else:
+                pass
 
         ibu = self._Grid.ibu[1]
         ibu_edge = self._Grid.ibu_edge[1]
 
         if self._Grid.high_rank[1]:
-            self.open_y_impl_high(ibu, ibu_edge, v, self._var_on_boundary[var_name]['y_high'], var)
-
+            if var_name != "v":
+                self.open_y_impl_high(
+                    ibu, ibu_edge, v, self._var_on_boundary[var_name]["y_high"], var
+                )
+            else:
+                pass
         return
 
     @staticmethod
@@ -153,10 +193,9 @@ class LateralBCs:
                 vl = v[i, ibl_edge, k]
 
                 if vl < 0:  # Outflow condition:
-                    var[i, : ibl, k] = 2.0 * var[i, ibl, k] - var[i, ibl + 1, k]
+                    var[i, :ibl, k] = 2.0 * var[i, ibl, k] - var[i, ibl + 1, k]
                 else:  # Inflow condition
-                    var[i, : ibl, k] = var_on_boundary[i, k]
-
+                    var[i, :ibl, k] = var_on_boundary[i, k]
 
         return
 
@@ -170,10 +209,9 @@ class LateralBCs:
             for k in range(shape[2]):
                 vl = v[i, ibu_edge, k]
 
-                if vl > 0: # Outflow condition
-                    var[i, ibu+1:, k] = 2.0 * var[i, ibu,k] - var[i, ibu-1, k]
-                else:      # Inflow condition
-                    var[i, ibu+1:, k] = var_on_boundary[i,k]
-
+                if vl > 0:  # Outflow condition
+                    var[i, ibu + 1 :, k] = 2.0 * var[i, ibu, k] - var[i, ibu - 1, k]
+                else:  # Inflow condition
+                    var[i, ibu + 1 :, k] = var_on_boundary[i, k]
 
         return
