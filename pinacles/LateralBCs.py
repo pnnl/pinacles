@@ -111,7 +111,7 @@ class LateralBCs:
         shape = u.shape
         for j in range(shape[1]):
             for k in range(shape[2]):
-                u[: ibl_edge + 1, j, k] = var_on_boundary[j, k]
+                u[: ibl_edge + 1, j, k] = var_on_boundary[j, k] 
 
         return
 

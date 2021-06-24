@@ -6,6 +6,7 @@ from pinacles.PressureSolver_impl import (
     divergence_ghost,
     fill_pressure,
     apply_pressure,
+    apply_pressure_open
 )
 from pinacles.TDMA import Thomas, PressureTDMA, PressureNonPeriodicTDMA
 from pinacles.ParallelFFTs import dct_mpi4py
@@ -203,18 +204,21 @@ class PressureSolverNonPeriodic:
         ibl = self._Grid.ibl
         ibu = self._Grid.ibu
 
+
+
         # First get views in to the velocity components
-        u = self._VelocityState.get_tend("u")
-        v = self._VelocityState.get_tend("v")
-        w = self._VelocityState.get_tend("w")
+        u = self._VelocityState.get_field("u")
+        v = self._VelocityState.get_field("v")
+        w = self._VelocityState.get_field("w")
+
+        #if MPI.COMM_WORLD.Get_rank() == 0:
+        #    u[32:48, 32:48, 10:20] = 1.0
+
+        self._VelocityState.remove_mean("w")
 
         dynp = self._DiagnosticState.get_field("dynamic pressure")
 
-        v.fill(0.0)
-        u.fill(0.0)
-        w.fill(0.0)
-        if MPI.COMM_WORLD.Get_rank() == 0:
-            v[32:48, 32:48, 10:20] = 0.0
+
 
         rho0 = self._Ref.rho0
         rho0_edge = self._Ref.rho0_edge
@@ -223,12 +227,15 @@ class PressureSolverNonPeriodic:
         n_halo = self._Grid.n_halo
 
         # Set boundary conditions
-        self._radiation_davies(u, v, w)
+        #self._radiation_davies(u, v, w)
 
         div = np.zeros(self._Grid.ngrid_local, dtype=np.double)
 
         # First compute divergence of wind field
         divergence_ghost(n_halo, dxs, rho0, rho0_edge, u, v, w, div)
+
+
+        print(np.max(np.abs(div)))
 
         # Make the BCS Homogeneous
         div[ibl[0] - 1, :, :] = 0.0
@@ -237,16 +244,19 @@ class PressureSolverNonPeriodic:
         div[:, ibu[1] + 1, :] = 0.0
 
         div_copy = np.copy(div)
-        self._make_homogeneous(div, div_copy)
+        #self._make_homogeneous(div, div_copy)
+        
+
+        #import pylab as plt
+
+        #plt.figure()
+        #plt.subplot(2, 1, 1)
+        #plt.contourf(div_copy[3:-3, 3:-3, 16].T)
+        #plt.colorbar()
+        #plt.title('div')
+        #plt.show()
         import time
-
-        import pylab as plt
-
-        plt.figure()
-        plt.subplot(2, 1, 1)
-        plt.contourf(div_copy[3:-3, 3:-3, 16].T)
-        plt.colorbar()
-
+        #time.sleep(2.0)
         t0 = time.time()
 
         div_hat = self.dct.forward(
@@ -264,30 +274,37 @@ class PressureSolverNonPeriodic:
         fill_pressure(n_halo, p, dynp)
         # self._DiagnosticState.boundary_exchange("dynamic pressure")
         # self._DiagnosticState._gradient_zero_bc("dynamic pressure")
+        
+        #import pylab as plt
+        #plt.figure(1)
+        #plt.contourf(u[:,:,10].T)
 
         self._make_non_homogeneous(self._Ref.rho0, div, p, dynp)
-        apply_pressure(dxs, dynp, u, v, w)
+        apply_pressure_open(n_halo, dxs, dynp, u, v, w)
 
-        w[:, :, : ibl_edge[2] + 1] = 0.0
-        w[:, :, ibu_edge[2] - 1 :] = 0.0
+
+        #plt.figure(2)
+        #plt.contourf(u[:,:,10].T)
+        #plt.show()
+
 
         # self._VelocityState.boundary_exchange()
         # self._VelocityState.update_all_bcs()
 
-        t1 = time.time()
-        print(t1 - t0)
+        #t1 = time.time()
+        #print(t1 - t0)
 
         divergence_ghost(n_halo, dxs, rho0, rho0_edge, u, v, w, div)
 
-        print(np.amax(w[3:-3, 10, 2:-2]), np.amax(w[3:-3, 10, 2:-2]))
-        plt.subplot(2, 1, 2)
-        plt.contourf(w[3:-3, 10, 2:-3].T)
+        #print(np.amax(w[3:-3, 10, 2:-2]), np.amax(w[3:-3, 10, 2:-2]))
+        #plt.subplot(2, 1, 2)
+        #plt.contourf(w[3:-3, 10, 2:-3].T)
 
-        print(np.amax(div[3:-3, 3:-3, 16]))
+        print('Divergence', np.amax(np.abs(div[3:-3, 3:-3, 16])))
 
-        plt.title(str(MPI.COMM_WORLD.Get_rank()))
-        plt.colorbar()
-        plt.show()
+        #plt.title(str(MPI.COMM_WORLD.Get_rank()))
+        #plt.colorbar()
+        #plt.show()
 
         # import sys
 
