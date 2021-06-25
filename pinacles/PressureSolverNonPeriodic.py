@@ -203,13 +203,15 @@ class PressureSolverNonPeriodic:
 
         ibl = self._Grid.ibl
         ibu = self._Grid.ibu
-
+        n_halo = self._Grid.n_halo
 
 
         # First get views in to the velocity components
         u = self._VelocityState.get_field("u")
         v = self._VelocityState.get_field("v")
         w = self._VelocityState.get_field("w")
+
+        w[:,:,n_halo[2]-1]=0.0
 
         #if MPI.COMM_WORLD.Get_rank() == 0:
         #    u[32:48, 32:48, 10:20] = 1.0
@@ -224,7 +226,7 @@ class PressureSolverNonPeriodic:
         rho0_edge = self._Ref.rho0_edge
 
         dxs = self._Grid.dx
-        n_halo = self._Grid.n_halo
+
 
         # Set boundary conditions
         #self._radiation_davies(u, v, w)
@@ -242,6 +244,13 @@ class PressureSolverNonPeriodic:
         div[ibu[0] + 1, :, :] = 0.0
         div[:, ibl[1] - 1, :] = 0.0
         div[:, ibu[1] + 1, :] = 0.0
+
+
+        #div = div - np.mean(np.mean(div[
+        #            n_halo[0] : -n_halo[0],
+        #            n_halo[1] : -n_halo[1],
+        #            :,
+        #        ],axis=0),axis=0)[np.newaxis, np.newaxis, :]
 
         div_copy = np.copy(div)
         #self._make_homogeneous(div, div_copy)
@@ -281,6 +290,9 @@ class PressureSolverNonPeriodic:
 
         self._make_non_homogeneous(self._Ref.rho0, div, p, dynp)
         apply_pressure_open(n_halo, dxs, dynp, u, v, w)
+
+
+        w[:,:,n_halo[2]-1]=0.0
 
 
         #plt.figure(2)

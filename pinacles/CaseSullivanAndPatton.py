@@ -103,7 +103,7 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
             1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tauy_sfc, vt
         )
         Surface_impl.iles_surface_flux_application(
-            1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tflx, st
+           1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tflx, st
         )
 
         self._Timers.end_timer("SurfaceSullivanAndPatton_update")

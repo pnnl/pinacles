@@ -394,11 +394,19 @@ class SimulationStandard(SimulationBase.SimulationBase):
         s_y_high[:,:] = s_mean[np.newaxis,:]
         
         u_x_low, u_x_high, u_y_low, u_y_high = self.LBCVel.get_vars_on_boundary('u')
-        u_x_low[:,:] = 0.1
-        u_x_high[:,:] = 0.1
+        u_x_low[:, :] = 5.0
+        u_x_high[:,:] = 5.0
 
-        u_y_low[:,:] = 0.1
-        u_y_high[:,:] = 0.1
+        u_y_low[:,:] = 5.0
+        u_y_high[:,:] = 5.0
+
+
+        v_x_low, v_x_high, v_y_low, v_y_high = self.LBCVel.get_vars_on_boundary('v')
+        v_x_low[:, :] = 0.0
+        v_x_high[:,:] = 0.0
+
+        v_y_low[:,:] = 0.0
+        v_y_high[:,:] = 0.0
 
         for prog_state in [self.ScalarState, self.VelocityState]:
             prog_state.boundary_exchange()
@@ -409,6 +417,11 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         u = self.VelocityState.get_field('u')
         v = self.VelocityState.get_field('v')
+
+        s =  self.ScalarState.get_field('s')
+
+        #s[32-8:32+8,32-8:32+8,10:20] -= 2.5
+
         import pylab as plt
         #plt.figure(1)
         #plt.subplot(211)
@@ -496,7 +509,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self._namelist, self.Timers, self.ModelGrid, self.VelocityState
         )
 
-        self.RayleighDamping = Damping.RayleighInitial(
+        self.RayleighDamping = Damping.Rayleigh(
             self._namelist, self.Timers, self.ModelGrid
         )
         self.RayleighDamping.add_state(self.VelocityState)
