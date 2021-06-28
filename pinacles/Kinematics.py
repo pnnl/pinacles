@@ -5,8 +5,9 @@ from pinacles import Kinematics_impl
 
 
 class Kinematics:
-    def __init__(self, Grid, Ref, VelocityState, DiagnosticState):
+    def __init__(self, Timers, Grid, Ref, VelocityState, DiagnosticState):
 
+        self._Timers = Timers
         self._Grid = Grid
         self._Ref = Ref
         self._VelocityState = VelocityState
@@ -39,10 +40,13 @@ class Kinematics:
         self._dwdy = np.zeros_like(self._dudx)
         self._dwdz = np.zeros_like(self._dudx)
 
+        self._Timers.add_timer("Kinematics_update")
+
         return
 
     def update(self):
 
+        self._Timers.start_timer("Kinematics_update")
         # Get the velocity components
         u = self._VelocityState.get_field("u")
         v = self._VelocityState.get_field("v")
@@ -85,3 +89,7 @@ class Kinematics:
             self._dwdz,
             Q_mag,
         )
+
+        self._Timers.end_timer("Kinematics_update")
+
+        return

@@ -31,6 +31,7 @@ from pinacles import TowersIO
 from pinacles import Plumes
 from pinacles import Restart
 from pinacles import UtilitiesParallel
+from pinacles import Timers
 from mpi4py import MPI
 import numpy as np
 import pylab as plt
@@ -74,23 +75,29 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.VelocityState = Containers.ModelState(
             self.ModelGrid, container_name="VelocityState", prognostic=True
         )
+
         self.DiagnosticState = Containers.ModelState(
             self.ModelGrid, container_name="DiagnosticState"
         )
 
+        self.TimeSteppingController = TimeStepping.TimeSteppingController(
+            self._namelist, self.ModelGrid, self.DiagnosticState, self.VelocityState
+        )
+
+        self.Timers = Timers.Timer(self._namelist, self.TimeSteppingController)
+
         # Instantiate the time stepping
         self.ScalarTimeStepping = TimeStepping.factory(
-            self._namelist, self.ModelGrid, self.ScalarState
+            self._namelist, self.Timers, self.ModelGrid, self.ScalarState
         )
         self.VelocityTimeStepping = TimeStepping.factory(
-            self._namelist, self.ModelGrid, self.VelocityState
-        )
-        self.TimeSteppingController = TimeStepping.TimeSteppingController(
-            self._namelist, self.ModelGrid, self.VelocityState
+            self._namelist, self.Timers, self.ModelGrid, self.VelocityState
         )
 
         # Instantiate Raleigh Damping
-        self.RayleighDamping = Damping.RayleighInitial(self._namelist, self.ModelGrid)
+        self.RayleighDamping = Damping.RayleighInitial(
+            self._namelist, self.Timers, self.ModelGrid
+        )
         self.RayleighDamping.add_state(self.VelocityState)
         self.RayleighDamping.add_state(self.ScalarState)
 
@@ -119,10 +126,15 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Instantiate kinematics and the SGS model
         self.Kine = Kinematics.Kinematics(
-            self.ModelGrid, self.Ref, self.VelocityState, self.DiagnosticState
+            self.Timers,
+            self.ModelGrid,
+            self.Ref,
+            self.VelocityState,
+            self.DiagnosticState,
         )
         self.SGS = SGSFactory.factory(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.VelocityState,
@@ -132,6 +144,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instantiate microphysics and thermodynamics
         self.Micro = MicrophysicsFactory.factory(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
@@ -141,6 +154,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
         self.Thermo = Thermodynamics.factory(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
@@ -152,14 +166,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instantiate scalar advection
         self.ScalarAdv = ScalarAdvectionFactory.factory(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
             self.VelocityState,
             self.ScalarTimeStepping,
         )
+
         self.MomAdv = MomentumAdvection.factory(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
@@ -169,6 +186,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instantiate scalar diffusion
         self.ScalarDiff = ScalarDiffusion.ScalarDiffusion(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.DiagnosticState,
@@ -176,6 +194,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
         self.MomDiff = MomentumDiffusion.MomentumDiffusion(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.DiagnosticState,
@@ -186,6 +205,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instantiate the pressure solver
         self.PSolver = PressureSolver.factory(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.VelocityState,
@@ -195,6 +215,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instantiate forcing
         self.Force = ForcingFactory.factory(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.Micro,
@@ -207,6 +228,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instantiate surface
         self.Surf = SurfaceFactory.factory(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.VelocityState,
@@ -218,6 +240,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instatiate plumes if there are any
         self.Plumes = Plumes.Plumes(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
@@ -227,6 +250,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instantiate radiation
         self.Rad = RadiationFactory.factory(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
@@ -280,7 +304,11 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Intialize statistical output
         self.StatsIO = Stats(
-            self._namelist, self.ModelGrid, self.Ref, self.TimeSteppingController
+            self._namelist,
+            self.Timers,
+            self.ModelGrid,
+            self.Ref,
+            self.TimeSteppingController,
         )
         self.Fields2d = Fields2D.Fields2D(
             self._namelist, self.ModelGrid, self.Ref, self.TimeSteppingController
@@ -290,7 +318,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Instantiate optional TowerIO
         self.IOTower = TowersIO.Towers(
-            self._namelist, self.ModelGrid, self.TimeSteppingController
+            self._namelist, self.Timers, self.ModelGrid, self.TimeSteppingController
         )
         # Add state container to TowerIO
         # Todo move this inside of TowerIO class instantiation
@@ -339,7 +367,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Now initialze for the output of 3D fields
         self.FieldsIO = DumpFields.DumpFields(
-            self._namelist, self.ModelGrid, self.TimeSteppingController
+            self._namelist, self.Timers, self.ModelGrid, self.TimeSteppingController
         )
         # Add container classes that will dump 3D fields
         self.FieldsIO.add_class(self.ScalarState)
@@ -357,6 +385,13 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Thermo.update(apply_buoyancy=False)
         self.Rad.update(force=True)
         self.PSolver.update()
+
+        # Initialize timers
+        self.Timers.add_timer("Restart")
+        self.Timers.add_timer("ScalarLimiter")
+        self.Timers.add_timer("BoundaryUpdate")
+        self.Timers.add_timer("main")
+        self.Timers.initialize()
 
         return
 
@@ -384,18 +419,23 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ModelGrid, container_name="DiagnosticState"
         )
 
-        # Instantiate the time stepping
-        self.ScalarTimeStepping = TimeStepping.factory(
-            self._namelist, self.ModelGrid, self.ScalarState
-        )
-        self.VelocityTimeStepping = TimeStepping.factory(
-            self._namelist, self.ModelGrid, self.VelocityState
-        )
         self.TimeSteppingController = TimeStepping.TimeSteppingController(
-            self._namelist, self.ModelGrid, self.VelocityState
+            self._namelist, self.ModelGrid, self.DiagnosticState, self.VelocityState
         )
 
-        self.RayleighDamping = Damping.RayleighInitial(self._namelist, self.ModelGrid)
+        self.Timers = Timers.Timer(self._namelist, self.TimeSteppingController)
+
+        # Instantiate the time stepping
+        self.ScalarTimeStepping = TimeStepping.factory(
+            self._namelist, self.Timers, self.ModelGrid, self.ScalarState
+        )
+        self.VelocityTimeStepping = TimeStepping.factory(
+            self._namelist, self.Timers, self.ModelGrid, self.VelocityState
+        )
+
+        self.RayleighDamping = Damping.RayleighInitial(
+            self._namelist, self.Timers, self.ModelGrid
+        )
         self.RayleighDamping.add_state(self.VelocityState)
         self.RayleighDamping.add_state(self.ScalarState)
 
@@ -422,10 +462,15 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Instantiate kinematics and the SGS model
         self.Kine = Kinematics.Kinematics(
-            self.ModelGrid, self.Ref, self.VelocityState, self.DiagnosticState
+            self.Timers,
+            self.ModelGrid,
+            self.Ref,
+            self.VelocityState,
+            self.DiagnosticState,
         )
         self.SGS = SGSFactory.factory(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.VelocityState,
@@ -435,6 +480,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instantiate microphysics and thermodynamics
         self.Micro = MicrophysicsFactory.factory(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
@@ -444,6 +490,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
         self.Thermo = Thermodynamics.factory(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
@@ -455,6 +502,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instantiate scalar advection
         self.ScalarAdv = ScalarAdvectionFactory.factory(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
@@ -463,6 +511,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
         self.MomAdv = MomentumAdvection.factory(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
@@ -472,13 +521,16 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instantiate scalar diffusion
         self.ScalarDiff = ScalarDiffusion.ScalarDiffusion(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.DiagnosticState,
             self.ScalarState,
         )
+
         self.MomDiff = MomentumDiffusion.MomentumDiffusion(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.DiagnosticState,
@@ -489,6 +541,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instantiate the pressure solver
         self.PSolver = PressureSolver.factory(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.VelocityState,
@@ -498,6 +551,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instantiate forcing
         self.Force = ForcingFactory.factory(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.Micro,
@@ -510,6 +564,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instantiate surface
         self.Surf = SurfaceFactory.factory(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.VelocityState,
@@ -521,6 +576,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instatiate plumes if there are any
         self.Plumes = Plumes.Plumes(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
@@ -530,6 +586,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instantiate radiation
         self.Rad = RadiationFactory.factory(
             self._namelist,
+            self.Timers,
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
@@ -583,12 +640,16 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Intialize statistical output
         self.StatsIO = Stats(
-            self._namelist, self.ModelGrid, self.Ref, self.TimeSteppingController
+            self._namelist,
+            self.Timers,
+            self.ModelGrid,
+            self.Ref,
+            self.TimeSteppingController,
         )
 
         # Instantiate optional TowerIO
         self.IOTower = TowersIO.Towers(
-            self._namelist, self.ModelGrid, self.TimeSteppingController
+            self._namelist, self.Timers, self.ModelGrid, self.TimeSteppingController
         )
         # Add state container to TowerIO
         # Todo move this inside of TowerIO class instantiation
@@ -636,7 +697,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Now initialze for the output of 3D fields
         self.FieldsIO = DumpFields.DumpFields(
-            self._namelist, self.ModelGrid, self.TimeSteppingController
+            self._namelist, self.Timers, self.ModelGrid, self.TimeSteppingController
         )
         # Add container classes that will dump 3D fields
         self.FieldsIO.add_class(self.ScalarState)
@@ -658,18 +719,23 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Rad.update(force=True)
         # self.PSolver.update()
 
+        self.Timers.add_timer("Restart")
+        self.Timers.add_timer("ScalarLimiter")
+        self.Timers.add_timer("BoundaryUpdate")
+        self.Timers.add_timer("main")
+        self.Timers.initialize()
+
         return
 
     def update(self, integrate_by_dt=0.0):
 
         """ This function integrates the model forward by integrate_by_dt seconds. """
-
         # Compute the startime and endtime for this integration
         start_time = self.TimeSteppingController.time
         end_time = start_time + integrate_by_dt
 
         while self.TimeSteppingController.time < end_time:
-
+            self.Timers.start_timer("main")
             #  Start wall time for this time step
             t0 = time.perf_counter()
 
@@ -710,13 +776,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.ScalarTimeStepping.update()
                 self.VelocityTimeStepping.update()
 
+                self.Timers.start_timer("ScalarLimiter")
                 self.ScalarState.apply_limiter()
+                self.Timers.end_timer("ScalarLimiter")
 
                 # Update boundary conditions
+                self.Timers.start_timer("BoundaryUpdate")
                 self.ScalarState.boundary_exchange()
                 self.VelocityState.boundary_exchange()
                 self.ScalarState.update_all_bcs()
                 self.VelocityState.update_all_bcs()
+                self.Timers.end_timer("BoundaryUpdate")
 
                 # Call pressure solver
                 self.PSolver.update()
@@ -726,15 +796,21 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     # We call the microphysics update at the end of the RK steps.
                     self.Micro.update()
                     self.Rad.update(time_loop=True)
+
+                    self.Timers.start_timer("BoundaryUpdate")
                     self.ScalarState.boundary_exchange()
                     self.ScalarState.update_all_bcs()
+                    self.Timers.end_timer("BoundaryUpdate")
 
+            self.Timers.finish_timestep()
             self.TimeSteppingController._time += self.TimeSteppingController._dt
 
             # End wall time for
             #  this timestep
             MPI.COMM_WORLD.Barrier()
             t1 = time.perf_counter()
+            self.Timers.end_timer("main")
+
             # Here we dump a restart file if we are getting close to a walltime limit
             if self.Restart.do_walltime_restart and not self._walltime_restart_dumped:
                 self.walltime_restart()

@@ -8,11 +8,18 @@ from pinacles import parameters
 
 class SurfaceATEX(Surface.SurfaceBase):
     def __init__(
-        self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+        self, namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
     ):
 
         Surface.SurfaceBase.__init__(
-            self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            self,
+            namelist,
+            Timers,
+            Grid,
+            Ref,
+            VelocityState,
+            ScalarState,
+            DiagnosticState,
         )
 
         self._ustar = 0.30
@@ -32,9 +39,13 @@ class SurfaceATEX(Surface.SurfaceBase):
         self._taux_sfc = np.zeros_like(self._windspeed_sfc)
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
         self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
+
+        self._Timers.add_timer("SurfaceATEX_update")
         return
 
     def update(self):
+
+        self._Timers.start_timer("SurfaceATEX_update")
 
         nh = self._Grid.n_halo
         dxi2 = self._Grid.dxi[2]
@@ -99,6 +110,8 @@ class SurfaceATEX(Surface.SurfaceBase):
             10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, qv_flx_sfc, qvt
         )
 
+        self._Timers.end_timer("SurfaceATEX_update")
+
         return
 
 
@@ -132,6 +145,7 @@ class ForcingATEX(Forcing.ForcingBase):
     def __init__(
         self,
         namelist,
+        Timers,
         Grid,
         Ref,
         Microphysics,
@@ -142,7 +156,14 @@ class ForcingATEX(Forcing.ForcingBase):
     ):
 
         Forcing.ForcingBase.__init__(
-            self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            self,
+            namelist,
+            Timers,
+            Grid,
+            Ref,
+            VelocityState,
+            ScalarState,
+            DiagnosticState,
         )
 
         self._TimeSteppingController = TimeSteppingController
@@ -186,9 +207,12 @@ class ForcingATEX(Forcing.ForcingBase):
                 self._ug[k] = max(-5.75 + (z - 1650.0) * (1.00 - -5.75) / dz, -8.0)
                 self._vg[k] = 0.18 + (z - 1650.0) * (2.75 - 0.18) / dz
 
+        self._Timers.add_timer("ForcingATEX_update")
         return
 
     def update(self):
+
+        self._Timers.start_timer("ForcingATEX_update")
 
         # Get grid and reference information
         zl = self._Grid.z_local
@@ -261,5 +285,7 @@ class ForcingATEX(Forcing.ForcingBase):
 
         radiative_transfer(dz, rho, qc, st)
         radiation_temp_tend[:, :, :] = st[:, :, :] - st_old[:, :, :]
+
+        self._Timers.end_timer("ForcingATEX_update")
 
         return

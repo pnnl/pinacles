@@ -8,10 +8,17 @@ from pinacles import parameters
 
 class SurfaceSullivanAndPatton(Surface.SurfaceBase):
     def __init__(
-        self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+        self, namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
     ):
         Surface.SurfaceBase.__init__(
-            self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            self,
+            namelist,
+            Timers,
+            Grid,
+            Ref,
+            VelocityState,
+            ScalarState,
+            DiagnosticState,
         )
 
         self._theta_flux = 0.24
@@ -26,9 +33,12 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
         self._ustar_sfc = np.zeros_like(self._windspeed_sfc)
         self._tflx = np.zeros_like(self._windspeed_sfc)
 
+        self._Timers.add_timer("SurfaceSullivanAndPatton_update")
         return
 
     def update(self):
+
+        self._Timers.start_timer("SurfaceSullivanAndPatton_update")
         self.bflux_from_thflux()
 
         self._bflx_sfc[:, :] = self._buoyancy_flux
@@ -96,6 +106,7 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
             1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tflx, st
         )
 
+        self._Timers.end_timer("SurfaceSullivanAndPatton_update")
         return
 
     def io_initialize(self, rt_grp):
@@ -189,10 +200,17 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
 
 class ForcingSullivanAndPatton(Forcing.ForcingBase):
     def __init__(
-        self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+        self, namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
     ):
         Forcing.ForcingBase.__init__(
-            self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            self,
+            namelist,
+            Timers,
+            Grid,
+            Ref,
+            VelocityState,
+            ScalarState,
+            DiagnosticState,
         )
 
         self._f = 1.0e-4
@@ -200,9 +218,13 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
         self._ug = np.zeros_like(self._Grid.z_global) + 1.0
         self._vg = np.zeros_like(self._ug)
 
+        self._Timers.add_timer("ForcingSullivanAndPatton_update")
+
         return
 
     def update(self):
+
+        self._Timers.start_timer("ForcingSullivanAndPatton_update")
 
         u = self._VelocityState.get_field("u")
         v = self._VelocityState.get_field("v")
@@ -214,4 +236,6 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
         v0 = self._Ref.v0
 
         Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, u0, v0, vt, ut)
+
+        self._Timers.end_timer("ForcingSullivanAndPatton_update")
         return

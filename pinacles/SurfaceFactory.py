@@ -9,6 +9,7 @@ from pinacles import Surface
 
 def factory(
     namelist,
+    Timers,
     Grid,
     Ref,
     VelocityState,
@@ -19,27 +20,28 @@ def factory(
     casename = namelist["meta"]["casename"]
     if casename == "sullivan_and_patton":
         return CaseSullivanAndPatton.SurfaceSullivanAndPatton(
-            namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
     elif casename == "stable_bubble":
         return CaseStableBubble.SurfaceStableBubble(
-            namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
     elif casename == "bomex":
         return CaseBOMEX.SurfaceBOMEX(
-            namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
     elif casename == "rico":
         return CaseRICO.SurfaceRICO(
-            namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
     elif casename == "atex":
         return CaseATEX.SurfaceATEX(
-            namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
     elif casename == "testbed":
         return CaseTestbed.SurfaceTestbed(
             namelist,
+            Timers,
             Grid,
             Ref,
             VelocityState,
@@ -49,5 +51,5 @@ def factory(
         )
     else:
         return Surface.SurfaceBase(
-            namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )

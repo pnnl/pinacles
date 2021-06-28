@@ -20,6 +20,7 @@ class SurfaceTestbed(Surface.SurfaceBase):
     def __init__(
         self,
         namelist,
+        Timers,
         Grid,
         Ref,
         VelocityState,
@@ -29,7 +30,14 @@ class SurfaceTestbed(Surface.SurfaceBase):
     ):
 
         Surface.SurfaceBase.__init__(
-            self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            self,
+            namelist,
+            Timers,
+            Grid,
+            Ref,
+            VelocityState,
+            ScalarState,
+            DiagnosticState,
         )
 
         self._TimeSteppingController = TimeSteppingController
@@ -81,6 +89,8 @@ class SurfaceTestbed(Surface.SurfaceBase):
         self._ustar = self._forcing_ustar[0]
 
         self._z0 = 0.0
+
+        self._Timers.add_timer("SurfaceTestbed_update")
         return
 
     def io_initialize(self, rt_grp):
@@ -239,6 +249,7 @@ class ForcingTestbed(Forcing.ForcingBase):
     def __init__(
         self,
         namelist,
+        Timers,
         Grid,
         Ref,
         VelocityState,
@@ -248,7 +259,14 @@ class ForcingTestbed(Forcing.ForcingBase):
     ):
 
         Forcing.ForcingBase.__init__(
-            self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            self,
+            namelist,
+            Timers,
+            Grid,
+            Ref,
+            VelocityState,
+            ScalarState,
+            DiagnosticState,
         )
         self._TimeSteppingController = TimeSteppingController
 
@@ -381,9 +399,14 @@ class ForcingTestbed(Forcing.ForcingBase):
         # Assume nudging timescale of 1 hour, again this is an assumption that could be revisited
         self._compute_relaxation_coefficient(znudge, 3600.0)
 
+        self._Timers.add_timer("ForcingTestBed_update")
+
         return
 
     def update(self):
+
+        self._Timers.start_timer("ForcingTestBed_update")
+
         current_time = self._TimeSteppingController.time
 
         # interpolate in time
@@ -533,6 +556,8 @@ class ForcingTestbed(Forcing.ForcingBase):
             Forcing_impl.apply_subsidence(
                 current_subsidence, self._Grid.dxi[2], qv, qvt
             )
+
+        self._Timers.end_timer("ForcingTestBed_update")
 
         return
 
