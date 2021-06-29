@@ -39,6 +39,7 @@ class ThermodynamicsBase:
         return np.zeros((self._Grid.ngrid_local), dtype=np.double)
 
 
+from pinacles import ThermodynamicsDry_Thetav
 from pinacles import ThermodynamicsDry
 from pinacles import ThermodynamicsMoist
 
@@ -54,6 +55,10 @@ def factory(
     if thermo_type == "moist":
         return ThermodynamicsMoist.ThermodynamicsMoist(
             Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro
+        )
+    elif thermo_type == 'dry_thetav':
+        return ThermodynamicsDry_Thetav.ThermodynamicsDry_Thetav(
+            Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState
         )
     else:
         return ThermodynamicsDry.ThermodynamicsDry(

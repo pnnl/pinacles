@@ -13,6 +13,7 @@ CASENAMES = [
     "rico",
     "atex",
     "testbed",
+    "testbed_dry"
 ]
 
 
@@ -558,6 +559,117 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                     if zl[k] < pert_max_height:
                         t += perts[i, j, k]
                     s[i, j, k] = MoistThermo.s(zl[k], t, qc[i, j, k], 0.0)
+
+    return
+
+
+def testbed_dry(namelist, ModelGrid, Ref, ScalarState, VelocityState):
+    #  Optionally set a random seed as specified in the namelist
+    try:
+        np.random.seed(namelist["meta"]["random_seed"])
+    except:
+        pass
+
+    file = namelist["testbed"]["input_filepath"]
+    try:
+        micro_scheme = namelist["microphysics"]["scheme"]
+    except:
+        micro_scheme = "base"
+
+    data = nc.Dataset(file, "r")
+    try:
+        init_data = data.groups["initialization_sonde"]
+        UtilitiesParallel.print_root("\t \t Initializing from the sonde profile.")
+        # init_data = data.groups['initialization_varanal]
+        # print('Initializing from the analysis profile')
+    except:
+        init_data = data.groups["initialization"]
+
+    psfc = init_data.variables["surface_pressure"][0]
+    if psfc < 1.0e4:
+        psfc *= 100.0  # Convert from hPa to Pa
+    tsfc = init_data.variables["surface_temperature"][0]
+    u0 = init_data.variables["reference_u0"][0]
+    v0 = init_data.variables["reference_v0"][0]
+
+    Ref.set_surface(Psfc=psfc, Tsfc=tsfc, u0=u0, v0=v0)
+    Ref.integrate()
+
+    u = VelocityState.get_field("u")
+    v = VelocityState.get_field("v")
+    w = VelocityState.get_field("w")
+    s = ScalarState.get_field("s")
+    qv = ScalarState.get_field("qv")
+    qc = ScalarState.get_field("qc")
+    qc.fill(0.0)
+
+    zl = ModelGrid.z_local
+
+    init_z = init_data.variables["z"][:]
+
+    raw_qv = init_data.variables["vapor_mixing_ratio"][:]
+    raw_u = init_data.variables["u"][:]
+    raw_v = init_data.variables["v"][:]
+
+    init_var_from_sounding(raw_u, init_z, zl, u)
+    init_var_from_sounding(raw_v, init_z, zl, v)
+    init_var_from_sounding(raw_qv, init_z, zl, qv)
+
+    u -= Ref.u0
+    v -= Ref.v0
+
+    try:
+        raw_clwc = init_data.variables["cloud_water_content"][:]
+        init_qc = True
+        UtilitiesParallel.print_root("\t \t Initialization of qc is true")
+    except:
+        init_qc = False
+        qc.fill(0.0)
+        UtilitiesParallel.print_root("\t \t Initialization of qc is false")
+
+    if init_qc:
+        init_var_from_sounding(raw_clwc, init_z, zl, qc)
+        shape = qc.shape
+       
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                for k in range(shape[2]):
+                    qc[i, j, k] = qc[i, j, k] / Ref.rho0[k]
+
+    try:
+        raw_temperature = init_data.variables["temperature"][:]
+        init_var_from_sounding(raw_temperature, init_z, zl, s)
+        # hardwire for now, could make inputs in namelist or data file
+        pert_amp = 0.1
+        pert_max_height = 200.0
+        shape = s.shape
+        perts = np.random.uniform(
+            pert_amp * -1.0, pert_amp, (shape[0], shape[1], shape[2])
+        )
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                for k in range(shape[2]):
+                    t = s[i, j, k]
+                    if zl[k] < pert_max_height:
+                        t += perts[i, j, k]
+                    s[i, j, k] = t /Ref.exner[k] * (1.0 + 0.61 *qv[i,j,k] - qc[i,j,k])
+    except:
+        raw_theta = init_data.variables["potential_temperature"][:]
+        init_var_from_sounding(raw_theta, init_z, zl, s)
+        # hardwire for now, could make inputs in namelist or data file
+        pert_amp = 0.1
+        pert_max_height = 200.0
+        shape = s.shape
+        perts = np.random.uniform(
+            pert_amp * -1.0, pert_amp, (shape[0], shape[1], shape[2])
+        )
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                for k in range(shape[2]):
+                    t = s[i, j, k] * Ref.exner[k]
+                    if zl[k] < pert_max_height:
+                        t += perts[i, j, k]
+                    s[i, j, k] = t /Ref.exner[k] * (1.0 + 0.61 *qv[i,j,k] - qc[i,j,k])
 
     return
 
