@@ -394,11 +394,11 @@ class SimulationStandard(SimulationBase.SimulationBase):
         s_y_high[:,:] = s_mean[np.newaxis,:]
         
         u_x_low, u_x_high, u_y_low, u_y_high = self.LBCVel.get_vars_on_boundary('u')
-        u_x_low[:, :] = 5.0
-        u_x_high[:,:] = 5.0
+        u_x_low[:, :] = 0.0
+        u_x_high[:,:] = 0.0
 
-        u_y_low[:,:] = 5.0
-        u_y_high[:,:] = 5.0
+        u_y_low[:,:] = 0.0
+        u_y_high[:,:] = 0.0
 
 
         v_x_low, v_x_high, v_y_low, v_y_high = self.LBCVel.get_vars_on_boundary('v')
