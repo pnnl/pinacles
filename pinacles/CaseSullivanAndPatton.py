@@ -1,4 +1,5 @@
 import numpy as np
+import numpy as np
 import numba
 from mpi4py import MPI
 from pinacles import Surface, Surface_impl, Forcing_impl, Forcing
@@ -34,6 +35,8 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
         self._tflx = np.zeros_like(self._windspeed_sfc)
 
         self._Timers.add_timer("SurfaceSullivanAndPatton_update")
+
+
         return
 
     def update(self):
@@ -95,6 +98,9 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
 
         # Compute the surface temperature flux
         self._tflx[:, :] = self._theta_flux * exner_edge[nh[2] - 1]
+
+
+        #self._taux_sfc[10,:] = self._taux_sfc[10,:] * np.random.randn(len(self._taux_sfc[10,:]))
 
         Surface_impl.iles_surface_flux_application(
             1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._taux_sfc, ut

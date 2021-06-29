@@ -37,6 +37,21 @@ class LateralBCs:
             )
         return
 
+    def set_vars_on_boundary_to_mean(self):
+
+        for var_name in self._State._dofs:
+            # Compute the domain mean of the variables
+            var_mean = self._State.mean(var_name)
+
+            x_low, x_high, y_low, y_high = self.get_vars_on_boundary(var_name)
+            
+            x_low[:,:] = var_mean[np.newaxis,:]
+            x_high[:,:] = var_mean[np.newaxis,:]
+            y_low[:,:] = var_mean[np.newaxis,:]
+            y_high[:,:] = var_mean[np.newaxis,:]
+
+        return
+
     def get_vars_on_boundary(self, var_name):
         """ Return arrays pointing to the externally prescribed boundary data
 

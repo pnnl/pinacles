@@ -386,53 +386,21 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # At this point the model is basically initalized, however we should also do boundary exchanges to insure
         # the halo regions are set and the to a pressure solver to insure that the velocity field is initially satifies
         # the anelastic continuity equation
-        s_mean = self.ScalarState.mean('s')
-        s_x_low, s_x_high, s_y_low, s_y_high = self.LBC.get_vars_on_boundary('s')
-        s_x_low[:,:] = s_mean[np.newaxis,:]
-        s_x_high[:,:] = s_mean[np.newaxis,:]
-        s_y_low[:,:] = s_mean[np.newaxis,:]
-        s_y_high[:,:] = s_mean[np.newaxis,:]
-        
-        u_x_low, u_x_high, u_y_low, u_y_high = self.LBCVel.get_vars_on_boundary('u')
-        u_x_low[:, :] = 5.0
-        u_x_high[:,:] = 5.0
-
-        u_y_low[:,:] = 5.0
-        u_y_high[:,:] = 5.0
-
-
-        v_x_low, v_x_high, v_y_low, v_y_high = self.LBCVel.get_vars_on_boundary('v')
-        v_x_low[:, :] = 0.0
-        v_x_high[:,:] = 0.0
-
-        v_y_low[:,:] = 0.0
-        v_y_high[:,:] = 0.0
+        for lbc in [self.LBC, self.LBCVel]:
+            lbc.set_vars_on_boundary_to_mean()
 
         for prog_state in [self.ScalarState, self.VelocityState]:
             prog_state.boundary_exchange()
             prog_state.update_all_bcs()
 
-        self.LBC.update()
-        self.LBCVel.update()
+
+
+        for lbc in [self.LBC, self.LBCVel]:
+            lbc.update()
 
         u = self.VelocityState.get_field('u')
         v = self.VelocityState.get_field('v')
-
         s =  self.ScalarState.get_field('s')
-
-        #s[32-8:32+8,32-8:32+8,10:20] -= 2.5
-
-        import pylab as plt
-        #plt.figure(1)
-        #plt.subplot(211)
-        #plt.contourf(u[:,:,10].T)
-        #plt.colorbar()
-        #plt.subplot(212)
-        #plt.contourf(v[:,:,10].T)
-        #plt.colorbar()
-        #plt.show()
-
-
 
         # Update thermo this is mostly for IO at time 0
         self.Thermo.update(apply_buoyancy=False)
@@ -445,20 +413,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             prog_state.update_all_bcs()
 
 
-        self.LBC.update()
-        self.LBCVel.update()
+        for lbc in [self.LBC, self.LBCVel]:
+            lbc.update()
 
-        u = self.VelocityState.get_field('u')
-        v = self.VelocityState.get_field('v')
-        #import pylab as plt
-        #plt.figure(1)
-        #plt.subplot(211)
-        #plt.contourf(u[:,:,10].T)
-        #plt.colorbar()
-        #plt.subplot(212)
-        #plt.contourf(v[:,:,10].T)
-        #plt.colorbar()
-        #plt.show()
 
         # Initialize timers
         self.Timers.add_timer("Restart")
@@ -852,12 +809,16 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 # Do time stepping
                 self.ScalarTimeStepping.update()
                 self.VelocityTimeStepping.update()
+
+                self.VelocityState.boundary_exchange()
+
                 self.LBC.update()
                 self.LBCVel.update()
-
+        
 
                 # Call pressure solver
                 self.PSolver.update()
+
 
                 self.Timers.start_timer("ScalarLimiter")
                 self.ScalarState.apply_limiter()
@@ -866,23 +827,16 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 # Update boundary conditions
                 self.Timers.start_timer("BoundaryUpdate")
                 # self.ScalarState.boundary_exchange()
-                self.VelocityState.boundary_exchange()
                 self.ScalarState.update_all_bcs()
-                #self.LBC.update()
+
+
+                for lbcs in [self.LBC, self.LBCVel]:
+                    lbcs.set_vars_on_boundary_to_mean()
+
+
                 self.LBCVel.update()
 
-                u = self.VelocityState.get_field('u')
-                v = self.VelocityState.get_field('v')
-                #import pylab as plt
-                #plt.figure(1)
-                #plt.subplot(211)
-                #plt.contourf(u[:,:,10].T)
-                #plt.colorbar()
-                #plt.subplot(212)
-                #plt.contourf(v[:,:,10].T)
-                #plt.colorbar()
-                #plt.show()
-                #time.sleep(2.0)
+
 
                 #import sys; sys.exit()
                 #self.VelocityState.update_all_bcs()

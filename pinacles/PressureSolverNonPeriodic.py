@@ -6,7 +6,8 @@ from pinacles.PressureSolver_impl import (
     divergence_ghost,
     fill_pressure,
     apply_pressure,
-    apply_pressure_open
+    apply_pressure_open,
+    apply_pressure_open_new
 )
 from pinacles.TDMA import Thomas, PressureTDMA, PressureNonPeriodicTDMA
 from pinacles.ParallelFFTs import dct_mpi4py
@@ -46,6 +47,26 @@ class PressureSolverNonPeriodic:
 
         self._fft_local_starts()
 
+
+        #Compute vel_bounds vel_starts
+        self._vel_starts = []
+        self._vel_ends = []
+        n_halo = self._Grid.n_halo
+        ngrid_local = self._Grid.ngrid_local
+        for i in range(3):
+            if self._Grid.low_rank[i]:
+                self._vel_starts.append(n_halo[i])
+            else:
+                self._vel_starts.append(0)
+
+
+            if self._Grid.high_rank[i]:
+                self._vel_ends.append(ngrid_local[i] - n_halo[i]-1)
+            else:
+                self._vel_ends.append(ngrid_local[i]-1)
+        self._vel_ends = tuple(self._vel_ends)
+        self._vel_starts =tuple(self._vel_starts)
+
         return
 
     def _fft_local_starts(self):
@@ -77,6 +98,8 @@ class PressureSolverNonPeriodic:
             v (array): v component
             w (array): w component
         """
+
+
 
         ibl = self._Grid.ibl
         ibu = self._Grid.ibu
@@ -188,7 +211,7 @@ class PressureSolverNonPeriodic:
                 - dx[1] * dx[1] * div[:, ibl[1] - 1, :] / rho0[np.newaxis, :]
             )
 
-        if high_rank[0]:
+        if high_rank[1]:
             dynp[:, ibu[1] + 1, :] = (
                 dynp[:, ibu[1], :]
                 + dx[1] * dx[1] * div[:, ibu[1] + 1, :] / rho0[np.newaxis, :]
@@ -240,11 +263,18 @@ class PressureSolverNonPeriodic:
         print(np.max(np.abs(div)))
 
         # Make the BCS Homogeneous
-        div[ibl[0] - 1, :, :] = 0.0
-        div[ibu[0] + 1, :, :] = 0.0
-        div[:, ibl[1] - 1, :] = 0.0
-        div[:, ibu[1] + 1, :] = 0.0
+        if self._Grid.low_rank[0]:
+            div[ibl[0] - 1, :, :] = 0.0
+        if self._Grid.high_rank[0]:
+            div[ibu[0] + 1, :, :] = 0.0
+        
+        if self._Grid.low_rank[1]:
+            div[:, ibl[1] - 1, :] = 0.0
+        if self._Grid.high_rank[1]:
+            div[:, ibu[1] + 1, :] = 0.0
 
+
+        print(self._Grid.low_rank, self._Grid.high_rank)
 
         #div = div - np.mean(np.mean(div[
         #            n_halo[0] : -n_halo[0],
@@ -253,7 +283,7 @@ class PressureSolverNonPeriodic:
         #        ],axis=0),axis=0)[np.newaxis, np.newaxis, :]
 
         div_copy = np.copy(div)
-        #self._make_homogeneous(div, div_copy)
+        self._make_homogeneous(div, div_copy)
         
 
         #import pylab as plt
@@ -281,8 +311,8 @@ class PressureSolverNonPeriodic:
         p = self.dct.backward(div_hat)
 
         fill_pressure(n_halo, p, dynp)
-        # self._DiagnosticState.boundary_exchange("dynamic pressure")
-        # self._DiagnosticState._gradient_zero_bc("dynamic pressure")
+        #self._DiagnosticState.boundary_exchange("dynamic pressure")
+        #self._DiagnosticState._gradient_zero_bc("dynamic pressure")
         
         #import pylab as plt
         #plt.figure(1)
@@ -290,17 +320,15 @@ class PressureSolverNonPeriodic:
 
         self._make_non_homogeneous(self._Ref.rho0, div, p, dynp)
         apply_pressure_open(n_halo, dxs, dynp, u, v, w)
-
-
+        #apply_pressure(dxs, dynp, u, v, w)
+        #apply_pressure_open_new(n_halo, self._vel_starts, self._vel_ends, dxs, dynp, u, v, w)
         w[:,:,n_halo[2]-1]=0.0
 
 
         #plt.figure(2)
         #plt.contourf(u[:,:,10].T)
         #plt.show()
-
-
-        # self._VelocityState.boundary_exchange()
+        self._VelocityState.boundary_exchange()
         # self._VelocityState.update_all_bcs()
 
         #t1 = time.time()
@@ -313,6 +341,11 @@ class PressureSolverNonPeriodic:
         #plt.contourf(w[3:-3, 10, 2:-3].T)
 
         print('Divergence', np.amax(np.abs(div[3:-3, 3:-3, 16])))
+        #import pylab as plt
+        #plt.contourf(u[:,:,5])
+        #plt.show()
+
+
 
         #plt.title(str(MPI.COMM_WORLD.Get_rank()))
         #plt.colorbar()
