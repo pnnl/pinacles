@@ -37,7 +37,7 @@ class ThermodynamicsDry_Thetav(Thermodynamics.ThermodynamicsBase):
 
     def update(self, apply_buoyancy=True):
 
-        self._Timers.start_timer("ThermoDynamicsDry_update")
+        self._Timers.start_timer("ThermoDynamicsDry_Thetav_update")
 
         n_halo = self._Grid.n_halo
         z = self._Grid.z_global
@@ -66,7 +66,7 @@ class ThermodynamicsDry_Thetav(Thermodynamics.ThermodynamicsBase):
         if apply_buoyancy:
             ThermodynamicsDry_Thetav_impl.apply_buoyancy(buoyancy, thetav, theta_ref, w_t)
 
-        self._Timers.end_timer("ThermoDynamicsDry_update")
+        self._Timers.end_timer("ThermoDynamicsDry_Thetav_update")
 
         return
 

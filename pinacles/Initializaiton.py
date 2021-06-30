@@ -597,11 +597,9 @@ def testbed_dry(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     u = VelocityState.get_field("u")
     v = VelocityState.get_field("v")
-    w = VelocityState.get_field("w")
+    
     s = ScalarState.get_field("s")
-    qv = ScalarState.get_field("qv")
-    qc = ScalarState.get_field("qc")
-    qc.fill(0.0)
+    
 
     zl = ModelGrid.z_local
 
@@ -613,7 +611,7 @@ def testbed_dry(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     init_var_from_sounding(raw_u, init_z, zl, u)
     init_var_from_sounding(raw_v, init_z, zl, v)
-    init_var_from_sounding(raw_qv, init_z, zl, qv)
+    qvprof = init_var_from_sounding_1d(raw_qv, init_z, zl)
 
     u -= Ref.u0
     v -= Ref.v0
@@ -624,17 +622,13 @@ def testbed_dry(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         UtilitiesParallel.print_root("\t \t Initialization of qc is true")
     except:
         init_qc = False
-        qc.fill(0.0)
+        qcprof = np.zeros_like(qvprof)
         UtilitiesParallel.print_root("\t \t Initialization of qc is false")
 
     if init_qc:
-        init_var_from_sounding(raw_clwc, init_z, zl, qc)
-        shape = qc.shape
+        qcprof = init_var_from_sounding_1d(raw_clwc, init_z, zl)
+        
        
-        for i in range(shape[0]):
-            for j in range(shape[1]):
-                for k in range(shape[2]):
-                    qc[i, j, k] = qc[i, j, k] / Ref.rho0[k]
 
     try:
         raw_temperature = init_data.variables["temperature"][:]
@@ -652,7 +646,7 @@ def testbed_dry(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                     t = s[i, j, k]
                     if zl[k] < pert_max_height:
                         t += perts[i, j, k]
-                    s[i, j, k] = t /Ref.exner[k] * (1.0 + 0.61 *qv[i,j,k] - qc[i,j,k])
+                    s[i, j, k] = t /Ref.exner[k] * (1.0 + 0.61 *qvprof[k] - qcprof[k]/Ref.rho0[k])
     except:
         raw_theta = init_data.variables["potential_temperature"][:]
         init_var_from_sounding(raw_theta, init_z, zl, s)
@@ -669,7 +663,7 @@ def testbed_dry(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                     t = s[i, j, k] * Ref.exner[k]
                     if zl[k] < pert_max_height:
                         t += perts[i, j, k]
-                    s[i, j, k] = t /Ref.exner[k] * (1.0 + 0.61 *qv[i,j,k] - qc[i,j,k])
+                    s[i, j, k] = t /Ref.exner[k] * (1.0 + 0.61 *qvprof[k] - qcprof[k]/Ref.rho0[k])
 
     return
 
@@ -682,6 +676,11 @@ def init_var_from_sounding(profile_data, profile_z, grid_z, var3d):
     var3d += grid_profile[np.newaxis, np.newaxis, :]
     return
 
+def init_var_from_sounding_1d(profile_data, profile_z, grid_z):
+    grid_profile = interpolate.interp1d(
+        profile_z, profile_data, fill_value="extrapolate", assume_sorted=True
+    )(grid_z)
+    return grid_profile
 
 def get_lognormal_dist(nbins, qc, nc_m3, sig1):
     # SMALLEST BIN SIZE IN SBM FOR 33 BINS
@@ -727,6 +726,8 @@ def factory(namelist):
         return atex
     elif namelist["meta"]["casename"] == "testbed":
         return testbed
+    elif namelist["meta"]["casename"] == "testbed_dry":
+        return testbed_dry
 
 
 def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
