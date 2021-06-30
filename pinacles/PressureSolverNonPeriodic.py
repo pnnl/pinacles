@@ -311,7 +311,7 @@ class PressureSolverNonPeriodic:
         p = self.dct.backward(div_hat)
 
         fill_pressure(n_halo, p, dynp)
-        #self._DiagnosticState.boundary_exchange("dynamic pressure")
+        self._DiagnosticState.boundary_exchange("dynamic pressure")
         #self._DiagnosticState._gradient_zero_bc("dynamic pressure")
         
         #import pylab as plt
@@ -319,9 +319,9 @@ class PressureSolverNonPeriodic:
         #plt.contourf(u[:,:,10].T)
 
         self._make_non_homogeneous(self._Ref.rho0, div, p, dynp)
-        apply_pressure_open(n_halo, dxs, dynp, u, v, w)
-        #apply_pressure(dxs, dynp, u, v, w)
-        #apply_pressure_open_new(n_halo, self._vel_starts, self._vel_ends, dxs, dynp, u, v, w)
+        #apply_pressure_open(n_halo, dxs, dynp, u, v, w)
+        ##apply_pressure(dxs, dynp, u, v, w)
+        apply_pressure_open_new(n_halo, self._vel_starts, self._vel_ends, dxs, dynp, u, v, w)
         w[:,:,n_halo[2]-1]=0.0
 
 
