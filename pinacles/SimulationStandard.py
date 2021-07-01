@@ -324,6 +324,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
         self.Fields2d.add_class(self.Micro)
         self.Fields2d.add_class(self.Rad)
+        self.Fields2d.add_class(self.ScalarState)
+        self.Fields2d.add_class(self.VelocityState)
 
         # Instantiate optional TowerIO
         self.IOTower = TowersIO.Towers(

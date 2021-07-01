@@ -411,6 +411,18 @@ class ModelState:
 
         return
 
+    def io_fields2d_update(self, nc_grp):
+    
+        nh = self._Grid.n_halo
+
+
+        for var in self._dofs:
+            var_h = nc_grp.createVariable(var, np.double, dimensions=("X", "Y",))
+            var_h[:,:] = self.get_field(var)[nh[0]:-nh[0], nh[1]:-nh[1], nh[2]+1] 
+
+
+        return
+
     def restart(self, data_dict):
 
         # Do consistency checks
