@@ -16,7 +16,7 @@ Assume heat fluxes are given
 """
 
 
-class SurfaceTestbed(Surface.SurfaceBase):
+class SurfaceTestbed_Dry(Surface.SurfaceBase):
     def __init__(
         self,
         namelist,
@@ -246,7 +246,7 @@ large-scale forcing group of input file
 """
 
 
-class ForcingTestbed(Forcing.ForcingBase):
+class ForcingTestbed_Dry(Forcing.ForcingBase):
     def __init__(
         self,
         namelist,

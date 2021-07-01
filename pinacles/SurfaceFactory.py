@@ -4,6 +4,7 @@ from pinacles import CaseStableBubble
 from pinacles import CaseRICO
 from pinacles import CaseATEX
 from pinacles import CaseTestbed
+from pinacles import CaseTestbed_Dry
 from pinacles import Surface
 
 
@@ -40,6 +41,17 @@ def factory(
         )
     elif casename == "testbed":
         return CaseTestbed.SurfaceTestbed(
+            namelist,
+            Timers,
+            Grid,
+            Ref,
+            VelocityState,
+            ScalarState,
+            DiagnosticState,
+            TimeSteppingController,
+        )
+    elif casename == "testbed_dry":
+        return CaseTestbed_Dry.SurfaceTestbed_Dry(
             namelist,
             Timers,
             Grid,
