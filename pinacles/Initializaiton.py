@@ -463,6 +463,8 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     u -= Ref.u0
     v -= Ref.v0
 
+
+
     try:
         raw_clwc = init_data.variables["cloud_water_content"][:]
         init_qc = True
@@ -615,7 +617,30 @@ def testbed_dry(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     u -= Ref.u0
     v -= Ref.v0
+    
 
+    try:
+        
+        raw_thetav = init_data.variables["thetav"][:]
+        init_var_from_sounding(raw_thetav, init_z, zl, s)
+        pert_amp = 0.1
+        pert_max_height = 200.0
+        shape = s.shape
+        perts = np.random.uniform(
+            pert_amp * -1.0, pert_amp, (shape[0], shape[1], shape[2])
+        )
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                for k in range(shape[2]):
+                   
+                    if zl[k] < pert_max_height:
+                        s[i, j, k]  += perts[i, j, k]
+        
+        return
+
+    except:
+        pass
+ 
     try:
         raw_clwc = init_data.variables["cloud_water_content"][:]
         init_qc = True

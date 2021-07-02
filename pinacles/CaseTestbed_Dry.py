@@ -273,6 +273,11 @@ class ForcingTestbed_Dry(Forcing.ForcingBase):
 
         file = namelist["testbed"]["input_filepath"]
         self._momentum_forcing_method = namelist["testbed"]["momentum_forcing"]
+        try:
+            self._temperature_forcing_method = namelist["testbed"]["temperature_forcing"]
+        except:
+            self._temperature_forcing_method = 'tendency'
+
         # Options: relaxation, mean_relaxation, geostrophic, none
         # self._subsidence_forcing_method = namelist["testbed"]["subsidence_forcing"]
         # # Options: vertical tendency, subsidence, fixed_subsidence
@@ -305,9 +310,12 @@ class ForcingTestbed_Dry(Forcing.ForcingBase):
         # raw_adv_qt = forcing_data.variables["qt_advection"][:, :]
         # If both theta and temperature advection are provided, take temperature
         # Otherwise, take theta
+        
         # try:
         raw_adv_temperature = forcing_data.variables["temperature_advection"][:, :]
-        self._use_temperature_advection = True
+       
+        raw_relax_temperature = forcing_data.variables["temperature_relaxation"][:, :]
+          
         # except:
         #     raw_adv_theta = forcing_data.variables["theta_advection"][:, :]
         #     self._use_temperature_advection = False
@@ -368,6 +376,14 @@ class ForcingTestbed_Dry(Forcing.ForcingBase):
             fill_value="extrapolate",
             assume_sorted=True,
             )(zl)
+        
+        self._relax_temperature = interpolate.interp1d(
+            forcing_z,
+            raw_relax_temperature,
+            axis=1,
+            fill_value="extrapolate",
+            assume_sorted=True,
+            )(zl)
         # else:
         #     self._adv_theta = interpolate.interp1d(
         #         forcing_z,
@@ -396,9 +412,13 @@ class ForcingTestbed_Dry(Forcing.ForcingBase):
         z_top = self._Grid.l[2]
         # Performing relaxation nudging over the same depth as damping, this is an assumption to revisit
         _depth = namelist["damping"]["depth"]
-        znudge = z_top - _depth
+        znudge =  1.0 #z_top - _depth
         # Assume nudging timescale of 1 hour, again this is an assumption that could be revisited
-        self._compute_relaxation_coefficient(znudge, 3600.0)
+        try:
+            timescale = namelist["testbed"]["relaxation_timescale"]
+        except:
+            timescale = 3600.0
+        self._compute_relaxation_coefficient(znudge, timescale)
 
         self._Timers.add_timer("ForcingTestBed_update")
 
@@ -466,6 +486,13 @@ class ForcingTestbed_Dry(Forcing.ForcingBase):
             fill_value="extrapolate",
             assume_sorted=True,
         )(current_time)
+        current_relax_temperature = interpolate.interp1d(
+            self._forcing_times,
+            self._relax_temperature,
+            axis=0,
+            fill_value="extrapolate",
+            assume_sorted=True,
+        )(current_time)
         # else:
         #     current_adv_theta = interpolate.interp1d(
         #         self._forcing_times,
@@ -502,8 +529,19 @@ class ForcingTestbed_Dry(Forcing.ForcingBase):
         st = self._ScalarState.get_tend("s")
         # qvt = self._ScalarState.get_tend("qv")
 
-        # if self._use_temperature_advection:
-        st += (current_adv_temperature)[np.newaxis, np.newaxis, :]
+        if self._temperature_forcing_method == 'tendency':
+            st += (current_adv_temperature)[np.newaxis, np.newaxis, :]
+        elif self._temperature_forcing_method == 'mean_relaxation':
+            smean = self._ScalarState.mean("s")
+            Forcing_impl.relax_mean_scalar(
+                current_relax_temperature,
+                smean,
+                st,
+                self._relaxation_coefficient,
+            )
+        else:
+            UtilitiesParallel.print_root('No temperature forcing is being applied')
+
         # else:
         #     st += (current_adv_theta * exner)[np.newaxis, np.newaxis, :]
         # qvt += (current_adv_qt)[np.newaxis, np.newaxis, :]
