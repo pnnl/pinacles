@@ -84,7 +84,7 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     exner = Ref.exner
 
     # Wind is uniform initiall
-    u.fill(0.0)
+    u.fill(5.0)
     v.fill(0.0)
     w.fill(0.0)
 
@@ -282,6 +282,7 @@ def rico(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         pass
 
     # Integrate the reference profile.
+    #Ref.set_surface(Tsfc=299.8, Psfc=1.0154e5, u0=-9.9, v0=-3.8)
     Ref.set_surface(Tsfc=299.8, Psfc=1.0154e5, u0=-9.9, v0=-3.8)
     Ref.integrate()
 

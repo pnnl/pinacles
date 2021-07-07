@@ -154,7 +154,10 @@ class PressureSolverNonPeriodic:
 
         return
 
-    def _correct_mass_leak(self, dx, u, v):
+    def _correct_mass_leak(self, u, v):
+        
+        nh = self._Grid.n_halo
+        n = self._Grid.n
 
         low_rank = self._Grid.low_rank
         high_rank = self._Grid.high_rank
@@ -165,21 +168,64 @@ class PressureSolverNonPeriodic:
         ibl = self._Grid.ibl
         ibu = self._Grid.ibu
 
+        rho0 = self._Ref.rho0
+        dx = self._Grid.dx
+
+        #rho0[:] = 1.0
+
         leak = 0
 
-        # Set boundary conditions on u
+        #Compute the amount of mass entering the system
         if low_rank[0]:
-            leak -= np.sum(u[ibl_edge[0], ibl[1] : ibu[1], ibl[2] : ibu[2]]) / dx[0]
+            leak += np.sum(u[ibl_edge[0], nh[1]:-nh[1], nh[2]:-nh[2]] * rho0[np.newaxis,nh[2]:-nh[2]]) * dx[1] * dx[2]
 
         if high_rank[0]:
-            leak += np.sum(u[ibl_edge[0], ibl[1] : ibu[1], ibl[2] : ibu[2]]) / dx[0]
+            leak -= np.sum(u[ibu_edge[0], nh[1]:-nh[1], nh[2]:-nh[2]]* rho0[np.newaxis,nh[2]:-nh[2]]) * dx[1] * dx[2]
 
-        # Set boundary conditions on v
-        # if low_rank[1]:
-        #    leak += v[ibl[0]:ibu[0], ibl_edge[1], ibl[2]:ibu[2]]
-        #
-        # if high_rank[1]:
-        #    leak += v[ibl[0]:ibu[0], ibu_edge[1], ibl[2]:ibu[2]]
+
+        if low_rank[1]:
+            leak += np.sum(v[nh[0]:-nh[0], ibl_edge[1], nh[2]:-nh[2]]* rho0[np.newaxis,nh[2]:-nh[2]])* dx[0] * dx[2]
+        
+        if high_rank[1]:
+            leak -= np.sum(v[nh[0]:-nh[0], ibu_edge[1], nh[2]:-nh[2]]* rho0[np.newaxis,nh[2]:-nh[2]])* dx[0] * dx[2]
+
+    
+        linear_mass = 2 * n[1] * np.sum(rho0[nh[2]:-nh[2]]  * dx[1] * dx[2]) + 2 *  n[0] * np.sum(rho0[nh[2]:-nh[2]] * dx[0] * dx[2])
+
+    
+        u_fix_leak_local = np.array([leak/linear_mass])
+        u_fix_leak_global = np.empty_like(u_fix_leak_local)
+        MPI.COMM_WORLD.Allreduce(u_fix_leak_local, u_fix_leak_global, MPI.SUM), 
+        u_fix_leak = u_fix_leak_global[0]
+
+    
+    
+        #print(leak,  linear_mass, u_fix_leak)
+        
+        #import sys; sys.exit()
+
+        if low_rank[0]:
+            u[:ibl_edge[0]+1, :, :] -= u_fix_leak #/ rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
+        if high_rank[0]:
+            u[ibu_edge[0]:, :, :] += u_fix_leak #/ rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
+
+        if low_rank[1]:
+            v[:, :ibl_edge[1]+1, :] -= u_fix_leak #/  rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]] 
+        if high_rank[1]:
+            v[:, ibu_edge[1]:, :] += u_fix_leak #/  rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
+
+        #if low_rank[0]:
+        #   np.add(u[:ibl_edge[0]+1, ibl[1] : ibu[1], nh[2]:-nh[2]],  u_fix_leak,out=u[:ibl_edge[0]+1, ibl[1] : ibu[1], nh[2]:-nh[2]])
+        
+       # if high_rank[0]:
+        #    np.add(u[ibu_edge[0]:, ibl[1] : ibu[1], nh[2]:-nh[2]], -u_fix_leak, out = u[ibu_edge[0]:, ibl[1] : ibu[1], nh[2]:-nh[2]])
+
+        #if low_rank[1]:
+        #    np.add(v[ibl[0]:ibu[0], :ibl_edge[1]+1, nh[2]:-nh[2]], u_fix_leak, out=  v[ibl[0]:ibu[0], :ibl_edge[1]+1, nh[2]:-nh[2]])
+        
+        #if high_rank[1]:
+        #   np.add(v[ibl[0]:ibu[0], ibu_edge[1]:, nh[2]:-nh[2]],-u_fix_leak, v[ibl[0]:ibu[0], ibu_edge[1]:, nh[2]:-nh[2]])
+
 
         return
 
@@ -233,8 +279,15 @@ class PressureSolverNonPeriodic:
         u = self._VelocityState.get_field("u")
         v = self._VelocityState.get_field("v")
         w = self._VelocityState.get_field("w")
+ 
+
+       # self._correct_mass_leak(u, v)
+        #print(np.max(u0 - u))
+        self._correct_mass_leak(u, v)
+
 
         w[:,:,n_halo[2]-1]=0.0
+        w[:,:,ibu_edge[2]] = 0.0
 
         #if MPI.COMM_WORLD.Get_rank() == 0:
         #    u[32:48, 32:48, 10:20] = 1.0
@@ -259,8 +312,11 @@ class PressureSolverNonPeriodic:
         # First compute divergence of wind field
         divergence_ghost(n_halo, dxs, rho0, rho0_edge, u, v, w, div)
 
-
-        print(np.max(np.abs(div)))
+        #div = div - np.mean(div[
+        #            n_halo[0] : -n_halo[0],
+        #            n_halo[1] : -n_halo[1],
+        #            n_halo[2] : -n_halo[1]])#
+                #],axis=0),axis=0)[np.newaxis, np.newaxis, :]
 
         # Make the BCS Homogeneous
         if self._Grid.low_rank[0]:
@@ -274,13 +330,7 @@ class PressureSolverNonPeriodic:
             div[:, ibu[1] + 1, :] = 0.0
 
 
-        print(self._Grid.low_rank, self._Grid.high_rank)
 
-        #div = div - np.mean(np.mean(div[
-        #            n_halo[0] : -n_halo[0],
-        #            n_halo[1] : -n_halo[1],
-        #            :,
-        #        ],axis=0),axis=0)[np.newaxis, np.newaxis, :]
 
         div_copy = np.copy(div)
         self._make_homogeneous(div, div_copy)
@@ -322,36 +372,15 @@ class PressureSolverNonPeriodic:
         #apply_pressure_open(n_halo, dxs, dynp, u, v, w)
         ##apply_pressure(dxs, dynp, u, v, w)
         apply_pressure_open_new(n_halo, self._vel_starts, self._vel_ends, dxs, dynp, u, v, w)
-        w[:,:,n_halo[2]-1]=0.0
 
 
-        #plt.figure(2)
-        #plt.contourf(u[:,:,10].T)
-        #plt.show()
         self._VelocityState.boundary_exchange()
-        # self._VelocityState.update_all_bcs()
-
-        #t1 = time.time()
-        #print(t1 - t0)
-
-        divergence_ghost(n_halo, dxs, rho0, rho0_edge, u, v, w, div)
-
-        #print(np.amax(w[3:-3, 10, 2:-2]), np.amax(w[3:-3, 10, 2:-2]))
-        #plt.subplot(2, 1, 2)
-        #plt.contourf(w[3:-3, 10, 2:-3].T)
-
-        print('Divergence', np.amax(np.abs(div[3:-3, 3:-3, 16])))
-        #import pylab as plt
-        #plt.contourf(u[:,:,5])
-        #plt.show()
+        self._VelocityState.update_all_bcs()
 
 
+        #w[:,:,n_halo[2]-1]=0.0
+        #w[:,:,ibu_edge[2]] = 0.0
+        #divergence_ghost(n_halo, dxs, rho0, rho0_edge, u, v, w, div)
+        #print('Divergence', np.amax(np.abs(div[3:-3, 3:-3, 16])))
 
-        #plt.title(str(MPI.COMM_WORLD.Get_rank()))
-        #plt.colorbar()
-        #plt.show()
-
-        # import sys
-
-        # sys.exit()
         return

@@ -245,6 +245,53 @@ class ModelState:
 
         return recv_buf
 
+    def get_slab_x(self, name, indx_range):
+
+        ls = self._Grid.local_start
+        le = self._Grid.local_end
+        nl = self._Grid.nl 
+        nh = self._Grid.n_halo
+        n = self._Grid.n
+
+
+        local_data = self.get_field(name)
+        local_copy_of_global = np.zeros((indx_range[1]-indx_range[0], n[1], n[2]), dtype=np.double)
+
+        si = 0
+        for i in range(indx_range[0], indx_range[1]):
+            if i >= ls[0] and i < le[0]:
+                local_copy_of_global[si,ls[1]:le[1],:] = local_data[i-ls[0],nh[1]:-nh[1],nh[2]:-nh[2]]
+            si += 1
+
+        recv_buf = np.empty_like(local_copy_of_global)
+        MPI.COMM_WORLD.Allreduce(local_copy_of_global, recv_buf, op=MPI.SUM)
+        
+        return recv_buf
+
+
+    def get_slab_y(self, name, indx_range):
+
+        ls = self._Grid.local_start
+        le = self._Grid.local_end
+        nl = self._Grid.nl 
+        nh = self._Grid.n_halo
+        n = self._Grid.n
+
+        local_data = self.get_field(name)
+        local_copy_of_global = np.zeros((n[0], indx_range[1]-indx_range[0], n[2]), dtype=np.double)
+
+        si = 0
+        for i in range(indx_range[0], indx_range[1]):
+            if i >= ls[1] and i < le[1]:
+                local_copy_of_global[ls[0]:le[0],si,:] = local_data[nh[0]:-nh[0],i-ls[1],nh[2]:-nh[2]]
+            si += 1
+
+        recv_buf = np.empty_like(local_copy_of_global)
+        MPI.COMM_WORLD.Allreduce(local_copy_of_global, recv_buf, op=MPI.SUM)
+
+        return recv_buf
+
+
     def get_loc(self, var):
         return self._loc[var]
 
@@ -418,7 +465,7 @@ class ModelState:
 
         for var in self._dofs:
             var_h = nc_grp.createVariable(var, np.double, dimensions=("X", "Y",))
-            var_h[:,:] = self.get_field(var)[nh[0]:-nh[0], nh[1]:-nh[1], nh[2]+1] 
+            var_h[:,:] = self.get_field(var)[nh[0]:-nh[0], nh[1]:-nh[1], nh[2]+3] 
 
 
         return

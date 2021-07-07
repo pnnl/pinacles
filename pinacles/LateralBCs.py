@@ -52,6 +52,38 @@ class LateralBCs:
 
         return
 
+
+    def set_vars_on_boundary_recycle(self):
+
+        nh = self._Grid.n_halo
+        ls = self._Grid._local_start
+        le = self._Grid._local_end
+
+        for var_name in self._State._dofs:
+            # Compute the domain mean of the variables
+            x_low, x_high, y_low, y_high = self.get_vars_on_boundary(var_name)
+
+            slab_x = self._State.get_slab_x(var_name,(48,49))
+            
+            #if var_name == 's':
+            #    slab_x[0,:,:5] += np.random.randn(slab_x.shape[1],5) * 0.1
+            
+            #print(x_low.shape ,slab_x.shape )
+            x_low[nh[1]:-nh[1],nh[2]:-nh[2]] = slab_x[0,:,:]
+            x_high[nh[1]:-nh[1],nh[2]:-nh[2]] = slab_x[0,:,:]
+
+            slab_y = self._State.get_slab_y(var_name,(32,33))   
+            #if var_name == 's':
+            #    slab_y[:,0,:5] += np.random.randn(slab_y.shape[0],5) * 0.1
+
+
+            y_low[nh[0]:-nh[0],nh[2]:-nh[2]] = slab_y[:,0,:]
+            y_high[nh[0]:-nh[0],nh[2]:-nh[2]] = slab_y[:,0,:]
+
+
+
+        return
+
     def get_vars_on_boundary(self, var_name):
         """ Return arrays pointing to the externally prescribed boundary data
 
@@ -69,22 +101,22 @@ class LateralBCs:
             self._var_on_boundary[var_name]["y_high"],
         )
 
-    def update(self):
+    def update(self, normal=True):
 
-        self.all_scalars()
+        self.all_scalars(normal)
 
         return
 
-    def all_scalars(self):
+    def all_scalars(self, normal):
 
         for var_name in self._State._dofs:
 
-            self.open_x(var_name)
-            self.open_y(var_name)
+            self.open_x(var_name, normal)
+            self.open_y(var_name, normal)
 
         return
 
-    def open_x(self, var_name):
+    def open_x(self, var_name, normal):
 
         # u is the normal velocity component on a lateral boundary in x
         u = self._VelocityState.get_field("u")
@@ -98,7 +130,7 @@ class LateralBCs:
                 self.open_x_impl_low(
                     ibl, ibl_edge, u, self._var_on_boundary[var_name]["x_low"], var
                 )
-            else:
+            elif normal:
                 # Set the lbc on the normal velocity component
                 self.normal_x_impl_low(
                     ibl_edge, u, self._var_on_boundary[var_name]["x_low"],
@@ -112,7 +144,7 @@ class LateralBCs:
                 self.open_x_impl_high(
                     ibu, ibu_edge, u, self._var_on_boundary[var_name]["x_high"], var
                 )
-            else:
+            elif normal:
                 # Set the lbc on the normal velocity component
                 self.normal_x_impl_high(
                     ibu_edge, u, self._var_on_boundary[var_name]["x_high"]
@@ -190,7 +222,7 @@ class LateralBCs:
                 v[i, ibu_edge:, k] = var_on_boundary[i, k]
         return
 
-    def open_y(self, var_name):
+    def open_y(self, var_name, normal):
 
         # v is the normal velocity component on a lateral boundary in y
         v = self._VelocityState.get_field("v")
@@ -204,7 +236,7 @@ class LateralBCs:
                 self.open_y_impl_low(
                     ibl, ibl_edge, v, self._var_on_boundary[var_name]["y_low"], var
                 )
-            else:
+            elif normal:
                 # Set the lbc on the normal velocity component
                 self.normal_y_impl_low(
                     ibl_edge, v, self._var_on_boundary[var_name]["y_low"],
@@ -218,7 +250,7 @@ class LateralBCs:
                 self.open_y_impl_high(
                     ibu, ibu_edge, v, self._var_on_boundary[var_name]["y_high"], var
                 )
-            else:
+            elif normal:
                 # Set the lbc on the normal velocity component
                 self.normal_y_impl_high(
                     ibu_edge, v, self._var_on_boundary[var_name]["y_high"]

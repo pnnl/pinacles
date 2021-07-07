@@ -101,7 +101,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
 
         # Instantiate Raleigh Damping
-        self.RayleighDamping = Damping.RayleighInitial(
+        self.RayleighDamping = Damping.Rayleigh(
             self._namelist, self.Timers, self.ModelGrid
         )
         self.RayleighDamping.add_state(self.VelocityState)
@@ -309,7 +309,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Rad.init_profiles()
 
         # Initialize mean profiles for top of domain damping
-        self.RayleighDamping.init_means()
+        #self.RayleighDamping.init_means()
 
         # Intialize statistical output
         self.StatsIO = Stats(
@@ -389,8 +389,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # the halo regions are set and the to a pressure solver to insure that the velocity field is initially satifies
         # the anelastic continuity equation
         for lbc in [self.LBC, self.LBCVel]:
-            lbc.set_vars_on_boundary_to_mean()
-
+            #lbc.set_vars_on_boundary_to_mean()
+            lbc.set_vars_on_boundary_recycle()
         for prog_state in [self.ScalarState, self.VelocityState]:
             prog_state.boundary_exchange()
             prog_state.update_all_bcs()
@@ -806,7 +806,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.MomDiff.update()
 
                 # Do Damping
-                self.RayleighDamping.update()
+                #self.RayleighDamping.update()
 
                 # Do time stepping
                 self.ScalarTimeStepping.update()
@@ -814,12 +814,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 self.VelocityState.boundary_exchange()
 
-                self.LBC.update()
+                    #lbcs.set_vars_on_boundary_recycle()
+                #self.LBC.update()
                 self.LBCVel.update()
-        
-
+    
                 # Call pressure solver
                 self.PSolver.update()
+    
+                for lbcs in [self.LBC, self.LBCVel]:
+                    #lbcs.set_vars_on_boundary_to_mean()
+                    lbcs.set_vars_on_boundary_recycle()
+                self.LBCVel.update(normal=False)
 
 
                 self.Timers.start_timer("ScalarLimiter")
@@ -831,17 +836,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 # self.ScalarState.boundary_exchange()
                 self.ScalarState.update_all_bcs()
 
-
-                for lbcs in [self.LBC, self.LBCVel]:
-                    lbcs.set_vars_on_boundary_to_mean()
-
-
-                self.LBCVel.update()
-
-
-
-                #import sys; sys.exit()
-                #self.VelocityState.update_all_bcs()
                 self.Timers.end_timer("BoundaryUpdate")
 
                 if n == 1:
