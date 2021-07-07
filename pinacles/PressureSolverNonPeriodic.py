@@ -7,7 +7,7 @@ from pinacles.PressureSolver_impl import (
     fill_pressure,
     apply_pressure,
     apply_pressure_open,
-    apply_pressure_open_new
+    apply_pressure_open_new,
 )
 from pinacles.TDMA import Thomas, PressureTDMA, PressureNonPeriodicTDMA
 from pinacles.ParallelFFTs import dct_mpi4py
@@ -47,8 +47,7 @@ class PressureSolverNonPeriodic:
 
         self._fft_local_starts()
 
-
-        #Compute vel_bounds vel_starts
+        # Compute vel_bounds vel_starts
         self._vel_starts = []
         self._vel_ends = []
         n_halo = self._Grid.n_halo
@@ -59,13 +58,12 @@ class PressureSolverNonPeriodic:
             else:
                 self._vel_starts.append(0)
 
-
             if self._Grid.high_rank[i]:
-                self._vel_ends.append(ngrid_local[i] - n_halo[i]-1)
+                self._vel_ends.append(ngrid_local[i] - n_halo[i] - 1)
             else:
-                self._vel_ends.append(ngrid_local[i]-1)
+                self._vel_ends.append(ngrid_local[i] - 1)
         self._vel_ends = tuple(self._vel_ends)
-        self._vel_starts =tuple(self._vel_starts)
+        self._vel_starts = tuple(self._vel_starts)
 
         return
 
@@ -98,8 +96,6 @@ class PressureSolverNonPeriodic:
             v (array): v component
             w (array): w component
         """
-
-
 
         ibl = self._Grid.ibl
         ibu = self._Grid.ibu
@@ -155,7 +151,7 @@ class PressureSolverNonPeriodic:
         return
 
     def _correct_mass_leak(self, u, v):
-        
+
         nh = self._Grid.n_halo
         n = self._Grid.n
 
@@ -171,61 +167,93 @@ class PressureSolverNonPeriodic:
         rho0 = self._Ref.rho0
         dx = self._Grid.dx
 
-        #rho0[:] = 1.0
+        # rho0[:] = 1.0
 
         leak = 0
 
-        #Compute the amount of mass entering the system
+        # Compute the amount of mass entering the system
         if low_rank[0]:
-            leak += np.sum(u[ibl_edge[0], nh[1]:-nh[1], nh[2]:-nh[2]] * rho0[np.newaxis,nh[2]:-nh[2]]) * dx[1] * dx[2]
+            leak += (
+                np.sum(
+                    u[ibl_edge[0], nh[1] : -nh[1], nh[2] : -nh[2]]
+                    * rho0[np.newaxis, nh[2] : -nh[2]]
+                )
+                * dx[1]
+                * dx[2]
+            )
 
         if high_rank[0]:
-            leak -= np.sum(u[ibu_edge[0], nh[1]:-nh[1], nh[2]:-nh[2]]* rho0[np.newaxis,nh[2]:-nh[2]]) * dx[1] * dx[2]
-
+            leak -= (
+                np.sum(
+                    u[ibu_edge[0], nh[1] : -nh[1], nh[2] : -nh[2]]
+                    * rho0[np.newaxis, nh[2] : -nh[2]]
+                )
+                * dx[1]
+                * dx[2]
+            )
 
         if low_rank[1]:
-            leak += np.sum(v[nh[0]:-nh[0], ibl_edge[1], nh[2]:-nh[2]]* rho0[np.newaxis,nh[2]:-nh[2]])* dx[0] * dx[2]
-        
+            leak += (
+                np.sum(
+                    v[nh[0] : -nh[0], ibl_edge[1], nh[2] : -nh[2]]
+                    * rho0[np.newaxis, nh[2] : -nh[2]]
+                )
+                * dx[0]
+                * dx[2]
+            )
+
         if high_rank[1]:
-            leak -= np.sum(v[nh[0]:-nh[0], ibu_edge[1], nh[2]:-nh[2]]* rho0[np.newaxis,nh[2]:-nh[2]])* dx[0] * dx[2]
+            leak -= (
+                np.sum(
+                    v[nh[0] : -nh[0], ibu_edge[1], nh[2] : -nh[2]]
+                    * rho0[np.newaxis, nh[2] : -nh[2]]
+                )
+                * dx[0]
+                * dx[2]
+            )
 
-    
-        linear_mass = 2 * n[1] * np.sum(rho0[nh[2]:-nh[2]]  * dx[1] * dx[2]) + 2 *  n[0] * np.sum(rho0[nh[2]:-nh[2]] * dx[0] * dx[2])
+        linear_mass = 2 * n[1] * np.sum(rho0[nh[2] : -nh[2]] * dx[1] * dx[2]) + 2 * n[
+            0
+        ] * np.sum(rho0[nh[2] : -nh[2]] * dx[0] * dx[2])
 
-    
-        u_fix_leak_local = np.array([leak/linear_mass])
+        u_fix_leak_local = np.array([leak / linear_mass])
         u_fix_leak_global = np.empty_like(u_fix_leak_local)
-        MPI.COMM_WORLD.Allreduce(u_fix_leak_local, u_fix_leak_global, MPI.SUM), 
+        MPI.COMM_WORLD.Allreduce(u_fix_leak_local, u_fix_leak_global, MPI.SUM),
         u_fix_leak = u_fix_leak_global[0]
 
-    
-    
-        #print(leak,  linear_mass, u_fix_leak)
-        
-        #import sys; sys.exit()
+        # print(leak,  linear_mass, u_fix_leak)
+
+        # import sys; sys.exit()
 
         if low_rank[0]:
-            u[:ibl_edge[0]+1, :, :] -= u_fix_leak #/ rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
+            u[
+                : ibl_edge[0] + 1, :, :
+            ] -= u_fix_leak  # / rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
         if high_rank[0]:
-            u[ibu_edge[0]:, :, :] += u_fix_leak #/ rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
+            u[
+                ibu_edge[0] :, :, :
+            ] += u_fix_leak  # / rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
 
         if low_rank[1]:
-            v[:, :ibl_edge[1]+1, :] -= u_fix_leak #/  rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]] 
+            v[
+                :, : ibl_edge[1] + 1, :
+            ] -= u_fix_leak  # /  rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
         if high_rank[1]:
-            v[:, ibu_edge[1]:, :] += u_fix_leak #/  rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
+            v[
+                :, ibu_edge[1] :, :
+            ] += u_fix_leak  # /  rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
 
-        #if low_rank[0]:
+        # if low_rank[0]:
         #   np.add(u[:ibl_edge[0]+1, ibl[1] : ibu[1], nh[2]:-nh[2]],  u_fix_leak,out=u[:ibl_edge[0]+1, ibl[1] : ibu[1], nh[2]:-nh[2]])
-        
-       # if high_rank[0]:
+
+        # if high_rank[0]:
         #    np.add(u[ibu_edge[0]:, ibl[1] : ibu[1], nh[2]:-nh[2]], -u_fix_leak, out = u[ibu_edge[0]:, ibl[1] : ibu[1], nh[2]:-nh[2]])
 
-        #if low_rank[1]:
+        # if low_rank[1]:
         #    np.add(v[ibl[0]:ibu[0], :ibl_edge[1]+1, nh[2]:-nh[2]], u_fix_leak, out=  v[ibl[0]:ibu[0], :ibl_edge[1]+1, nh[2]:-nh[2]])
-        
-        #if high_rank[1]:
-        #   np.add(v[ibl[0]:ibu[0], ibu_edge[1]:, nh[2]:-nh[2]],-u_fix_leak, v[ibl[0]:ibu[0], ibu_edge[1]:, nh[2]:-nh[2]])
 
+        # if high_rank[1]:
+        #   np.add(v[ibl[0]:ibu[0], ibu_edge[1]:, nh[2]:-nh[2]],-u_fix_leak, v[ibl[0]:ibu[0], ibu_edge[1]:, nh[2]:-nh[2]])
 
         return
 
@@ -274,78 +302,69 @@ class PressureSolverNonPeriodic:
         ibu = self._Grid.ibu
         n_halo = self._Grid.n_halo
 
-
         # First get views in to the velocity components
         u = self._VelocityState.get_field("u")
         v = self._VelocityState.get_field("v")
         w = self._VelocityState.get_field("w")
- 
 
-       # self._correct_mass_leak(u, v)
-        #print(np.max(u0 - u))
+        # self._correct_mass_leak(u, v)
+        # print(np.max(u0 - u))
         self._correct_mass_leak(u, v)
 
+        w[:, :, n_halo[2] - 1] = 0.0
+        w[:, :, ibu_edge[2]] = 0.0
 
-        w[:,:,n_halo[2]-1]=0.0
-        w[:,:,ibu_edge[2]] = 0.0
-
-        #if MPI.COMM_WORLD.Get_rank() == 0:
+        # if MPI.COMM_WORLD.Get_rank() == 0:
         #    u[32:48, 32:48, 10:20] = 1.0
 
         self._VelocityState.remove_mean("w")
 
         dynp = self._DiagnosticState.get_field("dynamic pressure")
 
-
-
         rho0 = self._Ref.rho0
         rho0_edge = self._Ref.rho0_edge
 
         dxs = self._Grid.dx
 
-
         # Set boundary conditions
-        #self._radiation_davies(u, v, w)
+        # self._radiation_davies(u, v, w)
 
         div = np.zeros(self._Grid.ngrid_local, dtype=np.double)
 
         # First compute divergence of wind field
         divergence_ghost(n_halo, dxs, rho0, rho0_edge, u, v, w, div)
 
-        #div = div - np.mean(div[
+        # div = div - np.mean(div[
         #            n_halo[0] : -n_halo[0],
         #            n_halo[1] : -n_halo[1],
         #            n_halo[2] : -n_halo[1]])#
-                #],axis=0),axis=0)[np.newaxis, np.newaxis, :]
+        # ],axis=0),axis=0)[np.newaxis, np.newaxis, :]
 
         # Make the BCS Homogeneous
         if self._Grid.low_rank[0]:
             div[ibl[0] - 1, :, :] = 0.0
         if self._Grid.high_rank[0]:
             div[ibu[0] + 1, :, :] = 0.0
-        
+
         if self._Grid.low_rank[1]:
             div[:, ibl[1] - 1, :] = 0.0
         if self._Grid.high_rank[1]:
             div[:, ibu[1] + 1, :] = 0.0
 
-
-
-
         div_copy = np.copy(div)
         self._make_homogeneous(div, div_copy)
-        
 
-        #import pylab as plt
+        # import pylab as plt
 
-        #plt.figure()
-        #plt.subplot(2, 1, 1)
-        #plt.contourf(div_copy[3:-3, 3:-3, 16].T)
-        #plt.colorbar()
-        #plt.title('div')
-        #plt.show()
+        # plt.figure()
+        # plt.subplot(2, 1, 1)
+        # plt.contourf(div_copy[3:-3, 3:-3, 16].T)
+        # plt.colorbar()
+        # plt.title('div')
+        # plt.show()
         import time
-        #time.sleep(2.0)
+
+        # time.sleep(2.0)
         t0 = time.time()
 
         div_hat = self.dct.forward(
@@ -362,25 +381,25 @@ class PressureSolverNonPeriodic:
 
         fill_pressure(n_halo, p, dynp)
         self._DiagnosticState.boundary_exchange("dynamic pressure")
-        #self._DiagnosticState._gradient_zero_bc("dynamic pressure")
-        
-        #import pylab as plt
-        #plt.figure(1)
-        #plt.contourf(u[:,:,10].T)
+        # self._DiagnosticState._gradient_zero_bc("dynamic pressure")
+
+        # import pylab as plt
+        # plt.figure(1)
+        # plt.contourf(u[:,:,10].T)
 
         self._make_non_homogeneous(self._Ref.rho0, div, p, dynp)
-        #apply_pressure_open(n_halo, dxs, dynp, u, v, w)
+        # apply_pressure_open(n_halo, dxs, dynp, u, v, w)
         ##apply_pressure(dxs, dynp, u, v, w)
-        apply_pressure_open_new(n_halo, self._vel_starts, self._vel_ends, dxs, dynp, u, v, w)
-
+        apply_pressure_open_new(
+            n_halo, self._vel_starts, self._vel_ends, dxs, dynp, u, v, w
+        )
 
         self._VelocityState.boundary_exchange()
         self._VelocityState.update_all_bcs()
 
-
-        #w[:,:,n_halo[2]-1]=0.0
-        #w[:,:,ibu_edge[2]] = 0.0
-        #divergence_ghost(n_halo, dxs, rho0, rho0_edge, u, v, w, div)
-        #print('Divergence', np.amax(np.abs(div[3:-3, 3:-3, 16])))
+        # w[:,:,n_halo[2]-1]=0.0
+        # w[:,:,ibu_edge[2]] = 0.0
+        # divergence_ghost(n_halo, dxs, rho0, rho0_edge, u, v, w, div)
+        # print('Divergence', np.amax(np.abs(div[3:-3, 3:-3, 16])))
 
         return

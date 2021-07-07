@@ -62,43 +62,45 @@ def apply_pressure(dxs, dynp, u, v, w):
 
     return
 
+
 @numba.njit(fastmath=True)
 def apply_pressure_open(n_halo, dxs, dynp, u, v, w):
-    
+
     shape = dynp.shape
-    for i in range(n_halo[0],shape[0]-n_halo[0]-1):
+    for i in range(n_halo[0], shape[0] - n_halo[0] - 1):
         for j in range(shape[1]):
             for k in range(shape[2]):
                 u[i, j, k] -= (dynp[i + 1, j, k] - dynp[i, j, k]) / dxs[0]
 
     for i in range(shape[0]):
-        for j in range(n_halo[1],shape[1]-n_halo[1]-1):
+        for j in range(n_halo[1], shape[1] - n_halo[1] - 1):
             for k in range(shape[2]):
                 v[i, j, k] -= (dynp[i, j + 1, k] - dynp[i, j, k]) / dxs[1]
 
-    for i in range(n_halo[0],shape[0]-n_halo[0]):
-        for j in range(n_halo[1],shape[1]-n_halo[1]):
-            for k in range(n_halo[2],shape[2]-n_halo[2]-1):
+    for i in range(n_halo[0], shape[0] - n_halo[0]):
+        for j in range(n_halo[1], shape[1] - n_halo[1]):
+            for k in range(n_halo[2], shape[2] - n_halo[2] - 1):
                 w[i, j, k] -= (dynp[i, j, k + 1] - dynp[i, j, k]) / dxs[2]
     return
 
+
 @numba.njit(fastmath=True)
 def apply_pressure_open_new(n_halo, vel_starts, vel_ends, dxs, dynp, u, v, w):
-    
+
     shape = dynp.shape
-    for i in range(vel_starts[0],vel_ends[0]):
+    for i in range(vel_starts[0], vel_ends[0]):
         for j in range(shape[1]):
-            for k in range(n_halo[2],shape[2]-n_halo[2]):
+            for k in range(n_halo[2], shape[2] - n_halo[2]):
                 u[i, j, k] -= (dynp[i + 1, j, k] - dynp[i, j, k]) / dxs[0]
 
     for i in range(shape[0]):
         for j in range(vel_starts[1], vel_ends[1]):
-            for k in range(n_halo[2],shape[2]-n_halo[2]):
+            for k in range(n_halo[2], shape[2] - n_halo[2]):
                 v[i, j, k] -= (dynp[i, j + 1, k] - dynp[i, j, k]) / dxs[1]
 
-    for i in range(n_halo[0],shape[0]-n_halo[0]):
-        for j in range(n_halo[1],shape[1]-n_halo[1]):
-            for k in range(n_halo[2],shape[2]-n_halo[2]-1):
+    for i in range(n_halo[0], shape[0] - n_halo[0]):
+        for j in range(n_halo[1], shape[1] - n_halo[1]):
+            for k in range(n_halo[2], shape[2] - n_halo[2] - 1):
                 w[i, j, k] -= (dynp[i, j, k + 1] - dynp[i, j, k]) / dxs[2]
 
     return

@@ -36,7 +36,6 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
 
         self._Timers.add_timer("SurfaceSullivanAndPatton_update")
 
-
         return
 
     def update(self):
@@ -106,7 +105,7 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
             1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tauy_sfc, vt
         )
         Surface_impl.iles_surface_flux_application(
-           1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tflx, st
+            1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tflx, st
         )
 
         self._Timers.end_timer("SurfaceSullivanAndPatton_update")
@@ -219,7 +218,7 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
         self._f = 1.0e-4
 
         self._ug = np.zeros_like(self._Grid.z_global) + 5.0
-        self._vg = np.zeros_like(self._ug) 
+        self._vg = np.zeros_like(self._ug)
 
         self._Timers.add_timer("ForcingSullivanAndPatton_update")
 

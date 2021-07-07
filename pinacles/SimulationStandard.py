@@ -77,10 +77,12 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ModelGrid, container_name="VelocityState", prognostic=True
         )
 
-
-        self.LBC = LateralBCs.LateralBCs(self.ModelGrid, self.ScalarState, self.VelocityState)
-        self.LBCVel = LateralBCs.LateralBCs(self.ModelGrid, self.VelocityState, self.VelocityState)
-
+        self.LBC = LateralBCs.LateralBCs(
+            self.ModelGrid, self.ScalarState, self.VelocityState
+        )
+        self.LBCVel = LateralBCs.LateralBCs(
+            self.ModelGrid, self.VelocityState, self.VelocityState
+        )
 
         self.DiagnosticState = Containers.ModelState(
             self.ModelGrid, container_name="DiagnosticState"
@@ -309,7 +311,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Rad.init_profiles()
 
         # Initialize mean profiles for top of domain damping
-        #self.RayleighDamping.init_means()
+        # self.RayleighDamping.init_means()
 
         # Intialize statistical output
         self.StatsIO = Stats(
@@ -389,35 +391,30 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # the halo regions are set and the to a pressure solver to insure that the velocity field is initially satifies
         # the anelastic continuity equation
         for lbc in [self.LBC, self.LBCVel]:
-            #lbc.set_vars_on_boundary_to_mean()
+            # lbc.set_vars_on_boundary_to_mean()
             lbc.set_vars_on_boundary_recycle()
         for prog_state in [self.ScalarState, self.VelocityState]:
             prog_state.boundary_exchange()
             prog_state.update_all_bcs()
 
-
-
         for lbc in [self.LBC, self.LBCVel]:
             lbc.update()
 
-        u = self.VelocityState.get_field('u')
-        v = self.VelocityState.get_field('v')
-        s =  self.ScalarState.get_field('s')
+        u = self.VelocityState.get_field("u")
+        v = self.VelocityState.get_field("v")
+        s = self.ScalarState.get_field("s")
 
         # Update thermo this is mostly for IO at time 0
         self.Thermo.update(apply_buoyancy=False)
         self.Rad.update(force=True)
         self.PSolver.update()
 
-
         for prog_state in [self.ScalarState, self.VelocityState]:
             prog_state.boundary_exchange()
             prog_state.update_all_bcs()
 
-
         for lbc in [self.LBC, self.LBCVel]:
             lbc.update()
-
 
         # Initialize timers
         self.Timers.add_timer("Restart")
@@ -425,8 +422,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Timers.add_timer("BoundaryUpdate")
         self.Timers.add_timer("main")
         self.Timers.initialize()
-
-
 
         return
 
@@ -774,7 +769,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
             #  Start wall time for this time step
             t0 = time.perf_counter()
 
-
             # Loop over the Runge-Kutta steps
             for n in range(self.ScalarTimeStepping.n_rk_step):
 
@@ -814,18 +808,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 self.VelocityState.boundary_exchange()
 
-                    #lbcs.set_vars_on_boundary_recycle()
-                #self.LBC.update()
+                # lbcs.set_vars_on_boundary_recycle()
+                # self.LBC.update()
                 self.LBCVel.update()
-    
+
                 # Call pressure solver
                 self.PSolver.update()
-    
+
                 for lbcs in [self.LBC, self.LBCVel]:
-                    #lbcs.set_vars_on_boundary_to_mean()
+                    # lbcs.set_vars_on_boundary_to_mean()
                     lbcs.set_vars_on_boundary_recycle()
                 self.LBCVel.update(normal=False)
-
 
                 self.Timers.start_timer("ScalarLimiter")
                 self.ScalarState.apply_limiter()
@@ -846,7 +839,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 self.Timers.start_timer("BoundaryUpdate")
                 self.ScalarState.boundary_exchange()
-                #self.ScalarState.update_all_bcs()
+                # self.ScalarState.update_all_bcs()
                 self.LBC.update()
 
                 self.Timers.end_timer("BoundaryUpdate")
