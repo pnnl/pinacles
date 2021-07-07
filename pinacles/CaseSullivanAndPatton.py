@@ -99,9 +99,6 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
         # Compute the surface temperature flux
         self._tflx[:, :] = self._theta_flux * exner_edge[nh[2] - 1]
 
-
-        #self._taux_sfc[10,:] = self._taux_sfc[10,:] * np.random.randn(len(self._taux_sfc[10,:]))
-
         Surface_impl.iles_surface_flux_application(
             1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._taux_sfc, ut
         )
@@ -221,8 +218,8 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
 
         self._f = 1.0e-4
 
-        self._ug = np.zeros_like(self._Grid.z_global) + 1.0
-        self._vg = np.zeros_like(self._ug)
+        self._ug = np.zeros_like(self._Grid.z_global) + 5.0
+        self._vg = np.zeros_like(self._ug) 
 
         self._Timers.add_timer("ForcingSullivanAndPatton_update")
 
@@ -241,7 +238,7 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
         u0 = self._Ref.u0
         v0 = self._Ref.v0
 
-        # Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, u0, v0, vt, ut)
+        Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, u0, v0, vt, ut)
 
         self._Timers.end_timer("ForcingSullivanAndPatton_update")
         return

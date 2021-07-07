@@ -64,18 +64,18 @@ class LateralBCs:
             # Compute the domain mean of the variables
             x_low, x_high, y_low, y_high = self.get_vars_on_boundary(var_name)
 
-            slab_x = self._State.get_slab_x(var_name,(32,33))
+            slab_x = self._State.get_slab_x(var_name,(64,65))
             
             if var_name == 's':
-                slab_x[0,ls[1]:le[1],:5] += np.random.randn(nl[1],5) * 0.1
+                slab_x[0,ls[1]:le[1],:6] += np.random.randn(nl[1],6) * 0.5
             
             #print(x_low.shape ,slab_x.shape )
             x_low[nh[1]:-nh[1],nh[2]:-nh[2]] = slab_x[0,ls[1]:le[1],:]
             x_high[nh[1]:-nh[1],nh[2]:-nh[2]] = slab_x[0,ls[1]:le[1],:]
 
-            slab_y = self._State.get_slab_y(var_name,(32,33))   
+            slab_y = self._State.get_slab_y(var_name,(64,65))   
             if var_name == 's':
-                slab_y[ls[0]:le[0],0,:5] += np.random.randn(nl[1],5) * 0.1
+                slab_y[ls[0]:le[0],0,:6] += np.random.randn(nl[1],6) * 0.5
 
             y_low[nh[0]:-nh[0],nh[2]:-nh[2]] = slab_y[ls[0]:le[0],0,:]
             y_high[nh[0]:-nh[0],nh[2]:-nh[2]] = slab_y[ls[0]:le[0],0,:]

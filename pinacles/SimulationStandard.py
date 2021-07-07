@@ -806,7 +806,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.MomDiff.update()
 
                 # Do Damping
-                #self.RayleighDamping.update()
+                self.RayleighDamping.update()
 
                 # Do time stepping
                 self.ScalarTimeStepping.update()
