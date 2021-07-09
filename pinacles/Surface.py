@@ -1,12 +1,9 @@
 from pinacles import parameters
-
-
 class SurfaceBase:
-    def __init__(
-        self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
-    ):
 
-        self._name = "Surface"
+    def __init__(self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState):
+
+        self._name = 'Surface'
 
         self._Grid = Grid
         self._Ref = Ref
@@ -23,9 +20,10 @@ class SurfaceBase:
         self._tauy_sfc = None
         self._windspeed_sfc = None
         self.gustiness = 0.1
-        self.T_surface = 300.0
+        self.T_surface = 300.
 
         self._z0 = None
+
 
         return
 
@@ -34,13 +32,11 @@ class SurfaceBase:
         return
 
     def bflux_from_thflux(self):
-        assert self._theta_flux is not None
+        assert(self._theta_flux is not None)
 
         nh = self._Grid.n_halo
         nh2 = nh[2]
-        self._buoyancy_flux = (
-            self._theta_flux * parameters.G / self._Ref.T0_edge[nh2 - 1]
-        )
+        self._buoyancy_flux = self._theta_flux  * parameters.G/self._Ref.T0_edge[nh2-1]
 
         return
 
