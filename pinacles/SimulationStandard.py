@@ -77,10 +77,12 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ModelGrid, container_name="VelocityState", prognostic=True
         )
 
-
-        self.LBC = LateralBCs.LateralBCs(self.ModelGrid, self.ScalarState, self.VelocityState)
-        self.LBCVel = LateralBCs.LateralBCs(self.ModelGrid, self.VelocityState, self.VelocityState)
-
+        self.LBC = LateralBCs.LateralBCs(
+            self.ModelGrid, self.ScalarState, self.VelocityState
+        )
+        self.LBCVel = LateralBCs.LateralBCs(
+            self.ModelGrid, self.VelocityState, self.VelocityState
+        )
 
         self.DiagnosticState = Containers.ModelState(
             self.ModelGrid, container_name="DiagnosticState"
@@ -101,7 +103,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
 
         # Instantiate Raleigh Damping
-        self.RayleighDamping = Damping.RayleighInitial(
+        self.RayleighDamping = Damping.Rayleigh(
             self._namelist, self.Timers, self.ModelGrid
         )
         self.RayleighDamping.add_state(self.VelocityState)
@@ -309,7 +311,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Rad.init_profiles()
 
         # Initialize mean profiles for top of domain damping
-        self.RayleighDamping.init_means()
+        # self.RayleighDamping.init_means()
 
         # Intialize statistical output
         self.StatsIO = Stats(
@@ -324,6 +326,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
         self.Fields2d.add_class(self.Micro)
         self.Fields2d.add_class(self.Rad)
+        self.Fields2d.add_class(self.ScalarState)
+        self.Fields2d.add_class(self.VelocityState)
 
         # Instantiate optional TowerIO
         self.IOTower = TowersIO.Towers(
@@ -386,79 +390,31 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # At this point the model is basically initalized, however we should also do boundary exchanges to insure
         # the halo regions are set and the to a pressure solver to insure that the velocity field is initially satifies
         # the anelastic continuity equation
-        s_mean = self.ScalarState.mean('s')
-        s_x_low, s_x_high, s_y_low, s_y_high = self.LBC.get_vars_on_boundary('s')
-        s_x_low[:,:] = s_mean[np.newaxis,:]
-        s_x_high[:,:] = s_mean[np.newaxis,:]
-        s_y_low[:,:] = s_mean[np.newaxis,:]
-        s_y_high[:,:] = s_mean[np.newaxis,:]
-        
-        u_x_low, u_x_high, u_y_low, u_y_high = self.LBCVel.get_vars_on_boundary('u')
-        u_x_low[:, :] = 0.0
-        u_x_high[:,:] = 0.0
-
-        u_y_low[:,:] = 0.0
-        u_y_high[:,:] = 0.0
-
-
-        v_x_low, v_x_high, v_y_low, v_y_high = self.LBCVel.get_vars_on_boundary('v')
-        v_x_low[:, :] = 0.0
-        v_x_high[:,:] = 0.0
-
-        v_y_low[:,:] = 0.0
-        v_y_high[:,:] = 0.0
-
+        for lbc in [self.LBC, self.LBCVel]:
+            # lbc.set_vars_on_boundary_to_mean()
+            lbc.set_vars_on_boundary_recycle()
         for prog_state in [self.ScalarState, self.VelocityState]:
             prog_state.boundary_exchange()
             prog_state.update_all_bcs()
 
-        self.LBC.update()
-        self.LBCVel.update()
+        for lbc in [self.LBC, self.LBCVel]:
+            lbc.update()
 
-        u = self.VelocityState.get_field('u')
-        v = self.VelocityState.get_field('v')
-
-        s =  self.ScalarState.get_field('s')
-
-        #s[32-8:32+8,32-8:32+8,10:20] -= 2.5
-
-        import pylab as plt
-        #plt.figure(1)
-        #plt.subplot(211)
-        #plt.contourf(u[:,:,10].T)
-        #plt.colorbar()
-        #plt.subplot(212)
-        #plt.contourf(v[:,:,10].T)
-        #plt.colorbar()
-        #plt.show()
-
-
+        u = self.VelocityState.get_field("u")
+        v = self.VelocityState.get_field("v")
+        s = self.ScalarState.get_field("s")
 
         # Update thermo this is mostly for IO at time 0
         self.Thermo.update(apply_buoyancy=False)
         self.Rad.update(force=True)
         self.PSolver.update()
 
-
         for prog_state in [self.ScalarState, self.VelocityState]:
             prog_state.boundary_exchange()
             prog_state.update_all_bcs()
 
-
-        self.LBC.update()
-        self.LBCVel.update()
-
-        u = self.VelocityState.get_field('u')
-        v = self.VelocityState.get_field('v')
-        #import pylab as plt
-        #plt.figure(1)
-        #plt.subplot(211)
-        #plt.contourf(u[:,:,10].T)
-        #plt.colorbar()
-        #plt.subplot(212)
-        #plt.contourf(v[:,:,10].T)
-        #plt.colorbar()
-        #plt.show()
+        for lbc in [self.LBC, self.LBCVel]:
+            lbc.update()
 
         # Initialize timers
         self.Timers.add_timer("Restart")
@@ -466,8 +422,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Timers.add_timer("BoundaryUpdate")
         self.Timers.add_timer("main")
         self.Timers.initialize()
-
-
 
         return
 
@@ -815,7 +769,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
             #  Start wall time for this time step
             t0 = time.perf_counter()
 
-
             # Loop over the Runge-Kutta steps
             for n in range(self.ScalarTimeStepping.n_rk_step):
 
@@ -852,12 +805,20 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 # Do time stepping
                 self.ScalarTimeStepping.update()
                 self.VelocityTimeStepping.update()
-                self.LBC.update()
-                self.LBCVel.update()
 
+                self.VelocityState.boundary_exchange()
+
+                # lbcs.set_vars_on_boundary_recycle()
+                # self.LBC.update()
+                self.LBCVel.update()
 
                 # Call pressure solver
                 self.PSolver.update()
+
+                for lbcs in [self.LBC, self.LBCVel]:
+                    # lbcs.set_vars_on_boundary_to_mean()
+                    lbcs.set_vars_on_boundary_recycle()
+                self.LBCVel.update(normal=False)
 
                 self.Timers.start_timer("ScalarLimiter")
                 self.ScalarState.apply_limiter()
@@ -866,26 +827,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 # Update boundary conditions
                 self.Timers.start_timer("BoundaryUpdate")
                 # self.ScalarState.boundary_exchange()
-                self.VelocityState.boundary_exchange()
                 self.ScalarState.update_all_bcs()
-                #self.LBC.update()
-                self.LBCVel.update()
 
-                u = self.VelocityState.get_field('u')
-                v = self.VelocityState.get_field('v')
-                #import pylab as plt
-                #plt.figure(1)
-                #plt.subplot(211)
-                #plt.contourf(u[:,:,10].T)
-                #plt.colorbar()
-                #plt.subplot(212)
-                #plt.contourf(v[:,:,10].T)
-                #plt.colorbar()
-                #plt.show()
-                #time.sleep(2.0)
-
-                #import sys; sys.exit()
-                #self.VelocityState.update_all_bcs()
                 self.Timers.end_timer("BoundaryUpdate")
 
                 if n == 1:
@@ -896,7 +839,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 self.Timers.start_timer("BoundaryUpdate")
                 self.ScalarState.boundary_exchange()
-                #self.ScalarState.update_all_bcs()
+                # self.ScalarState.update_all_bcs()
                 self.LBC.update()
 
                 self.Timers.end_timer("BoundaryUpdate")

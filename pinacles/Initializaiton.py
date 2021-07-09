@@ -94,7 +94,9 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     v -= Ref.v0
 
     shape = s.shape
-    perts = np.random.uniform(-0.001, 0.001, (shape[0], shape[1], shape[2]))  #* 0.0 #*1.0
+    perts = np.random.uniform(
+        -0.01, 0.01, (shape[0], shape[1], shape[2])
+    )  # * 0.0 #*1.0
 
     for i in range(shape[0]):
         for j in range(shape[1]):
@@ -287,6 +289,7 @@ def rico(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         pass
 
     # Integrate the reference profile.
+    # Ref.set_surface(Tsfc=299.8, Psfc=1.0154e5, u0=-9.9, v0=-3.8)
     Ref.set_surface(Tsfc=299.8, Psfc=1.0154e5, u0=-9.9, v0=-3.8)
     Ref.integrate()
 

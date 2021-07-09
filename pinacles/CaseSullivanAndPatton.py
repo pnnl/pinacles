@@ -1,4 +1,5 @@
 import numpy as np
+import numpy as np
 import numba
 from mpi4py import MPI
 from pinacles import Surface, Surface_impl, Forcing_impl, Forcing
@@ -34,6 +35,7 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
         self._tflx = np.zeros_like(self._windspeed_sfc)
 
         self._Timers.add_timer("SurfaceSullivanAndPatton_update")
+
         return
 
     def update(self):
@@ -103,7 +105,7 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
             1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tauy_sfc, vt
         )
         Surface_impl.iles_surface_flux_application(
-           1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tflx, st
+            1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tflx, st
         )
 
         self._Timers.end_timer("SurfaceSullivanAndPatton_update")
@@ -215,7 +217,7 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
 
         self._f = 1.0e-4
 
-        self._ug = np.zeros_like(self._Grid.z_global) + 1.0
+        self._ug = np.zeros_like(self._Grid.z_global) + 5.0
         self._vg = np.zeros_like(self._ug)
 
         self._Timers.add_timer("ForcingSullivanAndPatton_update")
@@ -235,7 +237,7 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
         u0 = self._Ref.u0
         v0 = self._Ref.v0
 
-        # Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, u0, v0, vt, ut)
+        Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, u0, v0, vt, ut)
 
         self._Timers.end_timer("ForcingSullivanAndPatton_update")
         return
