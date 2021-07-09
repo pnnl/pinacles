@@ -16,6 +16,7 @@ class RRTMG:
     def __init__(
         self,
         namelist,
+        Timers,
         Grid,
         Ref,
         ScalarState,
@@ -25,6 +26,7 @@ class RRTMG:
         TimeSteppingController,
     ):
         self._name = "RRTMG"
+        self._Timers = Timers
         self._Grid = Grid
         self._Ref = Ref
         self._ScalarState = ScalarState
@@ -46,7 +48,9 @@ class RRTMG:
                 UtilitiesParallel.print_root(
                     "\t \t Assuming RRTMG should not be used for this case."
                 )
-
+        self.frequency = 1e20
+        self.time_synced = True
+        self._restart_attributes = []
         if not self._compute_radiation:
             return
 
@@ -177,6 +181,9 @@ class RRTMG:
         self._toa_lw_up = 0.0
         self._toa_lw_dn = 0.0
 
+        self._toa_sw_dn_2d = None
+        self._surf_sw_dn_2d = None
+
         self._restart_attributes = [
             "time_elapsed",
             "_profile_o3",
@@ -188,6 +195,7 @@ class RRTMG:
             "qi_extension",
         ]
 
+        self._Timers.add_timer("RRTMG")
         return
 
     def init_profiles(self):
@@ -271,6 +279,7 @@ class RRTMG:
         return
 
     def update(self, force=False, time_loop=False):
+        self._Timers.start_timer("RRTMG")
 
         if time_loop and self.time_synced and not force:
             return
@@ -618,6 +627,9 @@ class RRTMG:
             self._toa_lw_dn = np.sum(dflx_lw[:, -1]) / npts
             self._toa_lw_up = np.sum(uflx_lw[:, -1]) / npts
 
+            self._toa_sw_dn_2d = dflx_sw[:, -1]
+            self._surf_sw_dn_2d = dflx_sw[:, 0]
+
             # ds_uflux_lw = self._DiagnosticState.get_field('uflux_lw')
             # ds_dflux_lw = self._DiagnosticState.get_field('dflux_lw')
             # ds_uflux_sw = self._DiagnosticState.get_field('uflux_sw')
@@ -650,6 +662,7 @@ class RRTMG:
 
         s[:, :, :] += ds_dTdt_rad[:, :, :] * dt
 
+        self._Timers.end_timer("RRTMG")
         return
 
     def io_initialize(self, nc_grp):
@@ -766,6 +779,17 @@ class RRTMG:
             timeseries_grp["toa_lw_down"][-1] = toa_lw_down
 
             profiles_grp["r_eff_cloud"][-1, :] = re_prof[:]
+        return
+
+    def io_fields2d_update(self, nc_grp):
+
+        alb = -(self._surf_sw_dn_2d - self._toa_sw_dn_2d) / self._toa_sw_dn_2d
+
+        albedo = nc_grp.createVariable("albedo", np.double, dimensions=("X", "Y",))
+        albedo[:, :] = alb.reshape((self._Grid.nl[0], self._Grid.nl[1]))
+
+        nc_grp.sync()
+
         return
 
     @property
@@ -929,6 +953,7 @@ class RadiationDycoms:
     def __init__(
         self,
         namelist,
+        Timers,
         Grid,
         Ref,
         ScalarState,
@@ -938,6 +963,7 @@ class RadiationDycoms:
     ):
 
         self._name = "RadiationDycoms"
+        self._Timers = Timers
         self._Grid = Grid
         self._Ref = Ref
         self._ScalarState = ScalarState
@@ -957,6 +983,8 @@ class RadiationDycoms:
         self.time_elapsed = parameters.LARGE
 
         self._restart_attributes = ["time_elapsed"]
+
+        self._Timers.add_timer("RadiationDycoms")
         return
 
     def init_profiles(self):
@@ -964,6 +992,7 @@ class RadiationDycoms:
         return
 
     def update(self, force=False, time_loop=False):
+        self._Timers.start_timer("RadiationDycoms")
 
         if time_loop and self.time_synced and not force:
             return
@@ -996,6 +1025,9 @@ class RadiationDycoms:
 
             s[:, :, :] += dTdt_rad[:, :, :] * dt
 
+        self._Timers.end_timer("RadiationDycoms")
+        return
+
     def io_initialize(self, nc_grp):
         # add zi to the output?
         return
@@ -1003,17 +1035,10 @@ class RadiationDycoms:
     def io_update(self, nc_grp):
         return
 
+    def io_fields2d_update(self, nc_grp):
+        return
+
     def restart(self, data_dict):
-        """ 
-        Here we just do checks for domain decomposition consistency with the namelist file
-        # currently, we require that a restarted simulation have exactly the same domain 
-        # as the simulation from which it is being restarted.
-        """
-
-        key = "Radiation"
-        for item in self._restart_attributes:
-            self.__dict__[item] = data_dict[key][item]
-
         return
 
     def dump_restart(self, data_dict):

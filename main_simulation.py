@@ -17,7 +17,15 @@ def main(namelist):
     # Albedo = SimulationUtilities.Albedo(20.0, Sim)
 
     # Put all of the output classes into a list (these are just references)
-    io_classes = [Sim.StatsIO, Sim.FieldsIO, Sim.IOTower, Sim.Restart, Sim.Rad]
+    io_classes = [
+        Sim.StatsIO,
+        Sim.FieldsIO,
+        Sim.Fields2d,
+        Sim.IOTower,
+        Sim.Restart,
+        Sim.Rad,
+        Sim.Timers,
+    ]
 
     # Determine all of the output frequencies
     io_frequencies = []
@@ -31,7 +39,9 @@ def main(namelist):
         if hasattr(item, "update"):
             item.update()
         elif hasattr(item, "dump_restart"):
+            Sim.Timers.start_timer("Restart")
             item.dump_restart(Sim.TimeSteppingController.time)
+            Sim.Timers.start_timer("Restart")
 
     # Compute how long the first integration step should be
     last_io_time = np.zeros_like(io_frequencies) + Sim.TimeSteppingController.time

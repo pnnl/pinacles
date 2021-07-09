@@ -3,28 +3,41 @@ from pinacles import parameters
 import numpy as np
 import numba
 
+
 class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
-    def __init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState):
-        Thermodynamics.ThermodynamicsBase.__init__(self, Grid, Ref, ScalarState, VelocityState, DiagnosticState, None)
+    def __init__(self, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState):
+        Thermodynamics.ThermodynamicsBase.__init__(
+            self, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState, None
+        )
 
-        ScalarState.add_variable('qv', 
-            long_name = 'Water vapor mixing ratio',
-            latex_name = 'q_v',
-            units='kg kg^{-1}')
+        ScalarState.add_variable(
+            "qv",
+            long_name="Water vapor mixing ratio",
+            latex_name="q_v",
+            units="kg kg^{-1}",
+        )
 
-        DiagnosticState.add_variable('bvf', 
-            long_name = 'Brunt–Väisälä frequency squared', 
-            latex_name = 'N^2',
-            units='s^-2')
+        DiagnosticState.add_variable(
+            "bvf",
+            long_name="Brunt–Väisälä frequency squared",
+            latex_name="N^2",
+            units="s^-2",
+        )
 
-        DiagnosticState.add_variable('thetav',
-            long_name = 'Virtual Potential Temperature',
-            latex_name = '\theta_v',
-            units = 'K')
+        DiagnosticState.add_variable(
+            "thetav",
+            long_name="Virtual Potential Temperature",
+            latex_name="\theta_v",
+            units="K",
+        )
+
+        self._Timers.add_timer("ThermoDynamicsDry_update")
 
         return
 
     def update(self, apply_buoyancy=True):
+
+        self._Timers.start_timer("ThermoDynamicsDry_update")
 
         n_halo = self._Grid.n_halo
         z = self._Grid.z_global
@@ -35,22 +48,26 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         exner = self._Ref.exner
         tref = self._Ref.T0
 
-        theta_ref = T0/exner
+        theta_ref = T0 / exner
 
-        s = self._ScalarState.get_field('s')
-        qv = self._ScalarState.get_field('qv')
-        T = self._DiagnosticState.get_field('T')
-        alpha = self._DiagnosticState.get_field('alpha')
-        buoyancy = self._DiagnosticState.get_field('buoyancy')
-        thetav = self._DiagnosticState.get_field('thetav')
-        bvf = self._DiagnosticState.get_field('bvf')
-        w_t = self._VelocityState.get_tend('w')
+        s = self._ScalarState.get_field("s")
+        qv = self._ScalarState.get_field("qv")
+        T = self._DiagnosticState.get_field("T")
+        alpha = self._DiagnosticState.get_field("alpha")
+        buoyancy = self._DiagnosticState.get_field("buoyancy")
+        thetav = self._DiagnosticState.get_field("thetav")
+        bvf = self._DiagnosticState.get_field("bvf")
+        w_t = self._VelocityState.get_tend("w")
 
         ThermodynamicsDry_impl.eos_sam(z, p0, alpha0, s, qv, T, tref, alpha, buoyancy)
-        ThermodynamicsDry_impl.compute_bvf(n_halo,theta_ref, exner, T, qv, dz, thetav, bvf)
+        ThermodynamicsDry_impl.compute_bvf(
+            n_halo, theta_ref, exner, T, qv, dz, thetav, bvf
+        )
 
         if apply_buoyancy:
             ThermodynamicsDry_impl.apply_buoyancy(buoyancy, w_t)
+
+        self._Timers.end_timer("ThermoDynamicsDry_update")
 
         return
 
@@ -61,17 +78,17 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         for i in range(shape[0]):
             for j in range(shape[1]):
                 for k in range(shape[2]):
-                    thetali[i,j,k] = T[i,j,k]/exner[k]
+                    thetali[i, j, k] = T[i, j, k] / exner[k]
         return
 
     def get_thetali(self):
         exner = self._Ref.exner
-        T = self._DiagnosticState.get_field('T')
+        T = self._DiagnosticState.get_field("T")
         thetali = np.empty_like(T)
         self.compute_thetali(exner, T, thetali)
         return thetali
 
     def get_qt(self):
-        #Todo this gets a copy. So modifying it does nothing!
-        qv = self._ScalarState.get_field('qv')
+        # Todo this gets a copy. So modifying it does nothing!
+        qv = self._ScalarState.get_field("qv")
         return np.copy(qv)

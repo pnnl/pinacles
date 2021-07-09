@@ -6,7 +6,7 @@ from mpi4py import MPI
 
 comm_size = MPI.COMM_WORLD.Get_size()
 
-#For now these are just serial tests
+# For now these are just serial tests
 def check_axes(n, l, n_halo, TestGrid):
     # Local Coordiante
     x_local = TestGrid.x_local
@@ -51,27 +51,39 @@ def check_axes(n, l, n_halo, TestGrid):
         TestGrid.z_edge_global = None
 
     # Check that the axes are monotone and that dx is correct
-    assert(np.all(np.isclose(np.diff(x_local),l[0]/n[0])))
-    assert(np.all(np.isclose(np.diff(x_global),l[0]/n[0])))
-    assert(np.all(np.isclose(np.diff(x_edge_global),l[0]/n[0])))
+    assert np.all(np.isclose(np.diff(x_local), l[0] / n[0]))
+    assert np.all(np.isclose(np.diff(x_global), l[0] / n[0]))
+    assert np.all(np.isclose(np.diff(x_edge_global), l[0] / n[0]))
 
-    assert(np.all(np.isclose(np.diff(y_local),l[1]/n[1])))
-    assert(np.all(np.isclose(np.diff(y_global),l[1]/n[1])))
-    assert(np.all(np.isclose(np.diff(y_edge_global),l[1]/n[1])))
+    assert np.all(np.isclose(np.diff(y_local), l[1] / n[1]))
+    assert np.all(np.isclose(np.diff(y_global), l[1] / n[1]))
+    assert np.all(np.isclose(np.diff(y_edge_global), l[1] / n[1]))
 
-    assert(np.all(np.isclose(np.diff(z_local),l[2]/n[2])))
-    assert(np.all(np.isclose(np.diff(z_global),l[2]/n[2])))
-    assert(np.all(np.isclose(np.diff(z_edge_global),l[2]/n[2])))
+    assert np.all(np.isclose(np.diff(z_local), l[2] / n[2]))
+    assert np.all(np.isclose(np.diff(z_global), l[2] / n[2]))
+    assert np.all(np.isclose(np.diff(z_edge_global), l[2] / n[2]))
 
     return
 
 
 def test_muiltiple_namelist():
 
-
     # Set numer of grid potins to test
-    ns = [(4,4,4), (8,8,8), (16, 8, 8), (8, 16, 8), (8, 8, 16), (8, 7, 8), (32, 32, 32)]
-    ls = [(1000.0, 1000.0, 1000.0), (1000.0, 1000.0, 3000.0), (1000.0, 3000.0, 1000.0), (3000.0, 1000.0, 1000.0)]
+    ns = [
+        (4, 4, 4),
+        (8, 8, 8),
+        (16, 8, 8),
+        (8, 16, 8),
+        (8, 8, 16),
+        (8, 7, 8),
+        (32, 32, 32),
+    ]
+    ls = [
+        (1000.0, 1000.0, 1000.0),
+        (1000.0, 1000.0, 3000.0),
+        (1000.0, 3000.0, 1000.0),
+        (3000.0, 1000.0, 1000.0),
+    ]
     n_halos = [(1, 1, 1), (2, 2, 2), (3, 3, 3), (1, 2, 3), (8, 8, 8)]
 
     # Loop over various options for the inputs
@@ -79,10 +91,10 @@ def test_muiltiple_namelist():
         for l in ls:
             for n_halo in n_halos:
                 namelist = {}
-                namelist['grid'] = {}
-                namelist['grid']['n'] = n
-                namelist['grid']['l'] = l
-                namelist['grid']['n_halo'] = n_halo
+                namelist["grid"] = {}
+                namelist["grid"]["n"] = n
+                namelist["grid"]["l"] = l
+                namelist["grid"]["n_halo"] = n_halo
 
                 # The grid class returns arrays
                 n = np.array(n)
@@ -94,86 +106,85 @@ def test_muiltiple_namelist():
 
                 # Test that properties are correctly set  and the correct errors are thrown
                 # when they are attempted to be overwritten
-                assert(np.all(n == TestGrid.n))
+                assert np.all(n == TestGrid.n)
                 with pytest.raises(AttributeError):
                     TestGrid.n = n
 
-                assert(np.all(l == TestGrid.l))
+                assert np.all(l == TestGrid.l)
                 with pytest.raises(AttributeError):
                     TestGrid.l = l
 
-                assert(np.all(n_halo == n_halo))
+                assert np.all(n_halo == n_halo)
                 with pytest.raises(AttributeError):
                     TestGrid.n_halo = n_halo
 
                 # Total number of points in the global grid including ghost points
                 correct_ngrid = n + 2 * n_halo
-                assert(np.all(TestGrid.ngrid == correct_ngrid))
+                assert np.all(TestGrid.ngrid == correct_ngrid)
                 with pytest.raises(AttributeError):
                     TestGrid.ngrid = correct_ngrid
 
                 # Local grid spacing and inverse grid spacing
-                dx = l/n
-                assert(np.all(dx == TestGrid.dx))
+                dx = l / n
+                assert np.all(dx == TestGrid.dx)
                 with pytest.raises(AttributeError):
                     TestGrid.dx = dx
 
-                dxi = 1.0/dx
-                assert(np.all(dxi == TestGrid.dxi))
+                dxi = 1.0 / dx
+                assert np.all(dxi == TestGrid.dxi)
                 with pytest.raises(AttributeError):
                     TestGrid.dxi = dxi
 
                 # These are tests that should only be run serially
                 # TODO implement these in parallel
                 if comm_size == 1:
-                    assert(np.all(correct_ngrid == TestGrid.ngrid_local))
+                    assert np.all(correct_ngrid == TestGrid.ngrid_local)
                     with pytest.raises(AttributeError):
                         TestGrid.ngrid_local = correct_ngrid
 
-                    assert(np.all(n == TestGrid.nl))
+                    assert np.all(n == TestGrid.nl)
                     with pytest.raises(AttributeError):
                         TestGrid.nl = n
 
                     # Check the domain x-range
                     x_range = TestGrid.x_range
-                    assert(np.isclose(x_range[0],0.0))
-                    assert(np.isclose(x_range[1],l[0]))
+                    assert np.isclose(x_range[0], 0.0)
+                    assert np.isclose(x_range[1], l[0])
                     with pytest.raises(AttributeError):
                         TestGrid.x_range = (0.0, 0.0)
 
                     # Check the domain y-range
                     y_range = TestGrid.y_range
-                    assert(np.isclose(y_range[0],0.0))
-                    assert(np.isclose(y_range[1],l[1]))
+                    assert np.isclose(y_range[0], 0.0)
+                    assert np.isclose(y_range[1], l[1])
                     with pytest.raises(AttributeError):
                         TestGrid.y_range = (0.0, 0.0)
 
                     # Check the domain y-range
                     z_range = TestGrid.z_range
-                    assert(np.isclose(z_range[0],0.0))
-                    assert(np.isclose(z_range[1],l[2]))
+                    assert np.isclose(z_range[0], 0.0)
+                    assert np.isclose(z_range[1], l[2])
                     with pytest.raises(AttributeError):
                         TestGrid.z_range = (0.0, 0.0)
 
-                    #Check the local ranges
+                    # Check the local ranges
                     x_range_local = TestGrid.x_range_local
-                    assert(np.isclose(x_range_local[0],0.0))
-                    assert(np.isclose(x_range_local[1],l[0]))
+                    assert np.isclose(x_range_local[0], 0.0)
+                    assert np.isclose(x_range_local[1], l[0])
                     with pytest.raises(AttributeError):
-                        TestGrid.x_range_local = (10.0,10.0)
+                        TestGrid.x_range_local = (10.0, 10.0)
 
                     y_range_local = TestGrid.y_range_local
-                    assert(np.isclose(y_range_local[0],0.0))
-                    assert(np.isclose(y_range_local[1],l[1]))
+                    assert np.isclose(y_range_local[0], 0.0)
+                    assert np.isclose(y_range_local[1], l[1])
                     with pytest.raises(AttributeError):
-                        TestGrid.y_range_local = (10.0,10.0)
+                        TestGrid.y_range_local = (10.0, 10.0)
 
                     z_range_local = TestGrid.z_range_local
-                    assert(np.isclose(z_range_local[0],0.0))
-                    assert(np.isclose(z_range_local[1],l[2]))
+                    assert np.isclose(z_range_local[0], 0.0)
+                    assert np.isclose(z_range_local[1], l[2])
                     with pytest.raises(AttributeError):
-                        TestGrid.z_range_local = (10.0,10.0)
-
+                        TestGrid.z_range_local = (10.0, 10.0)
 
                 check_axes(n, l, n_halo, TestGrid)
 

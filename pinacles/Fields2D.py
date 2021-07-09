@@ -2,36 +2,39 @@ import numpy as np
 import netCDF4 as nc
 import os
 from mpi4py import MPI
+import json
+
+os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
 
-class DumpFields:
-    def __init__(self, namelist, Timers, Grid, TimeSteppingController):
+class Fields2D:
+    def __init__(self, namelist, Grid, Ref, TimeSteppingController):
 
-        self._Timers = Timers
         self._Grid = Grid
-        self._TimeSteppingController = TimeSteppingController
+        self._Ref = Ref
 
-        self._this_rank = MPI.COMM_WORLD.Get_rank()
-        self._output_root = str(namelist["meta"]["output_directory"])
+        self._frequency = namelist["stats"]["frequency"]
+        self._ouput_root = str(namelist["meta"]["output_directory"])
         self._casename = str(namelist["meta"]["simname"])
-        self._output_path = self._output_path = os.path.join(
-            self._output_root, self._casename
-        )
-        self._output_path = os.path.join(self._output_path, "fields")
-
-        try:
-            self._frequency = namelist["fields"]["frequency"]
-        except:
-            self._frequency = 1e9
-
-        if self._this_rank == 0:
-            if not os.path.exists(self._output_path):
-                os.makedirs(self._output_path)
 
         self._classes = {}
+
+        self._output_path = os.path.join(self._ouput_root, self._casename)
+        self._output_path = os.path.join(self._output_path, "fields2d")
+
+        self._TimeSteppingController = TimeSteppingController
+
+        self._rt_grp = None
+
+        self.setup_directories()
+        MPI.COMM_WORLD.Barrier()
+        self._TimeSteppingController.add_timematch(self._frequency)
+        self._last_io_time = 0
+
+        self._this_rank = MPI.COMM_WORLD.Get_rank()
+
         self._namelist = namelist
 
-        self._Timers.add_timer("DumpFields")
         return
 
     @property
@@ -43,8 +46,14 @@ class DumpFields:
         self._classes[aclass.name] = aclass
         return
 
+    def initialize(self):
+
+        return
+
     def update(self):
-        self._Timers.start_timer("DumpFields")
+
+        if not np.allclose(self._TimeSteppingController._time % self._frequency, 0.0):
+            return
 
         output_here = os.path.join(
             self._output_path, str(np.round(self._TimeSteppingController.time))
@@ -53,8 +62,8 @@ class DumpFields:
         if self._this_rank == 0:
             if not os.path.exists(output_here):
                 os.makedirs(output_here)
-
         MPI.COMM_WORLD.barrier()
+
         rt_grp = nc.Dataset(
             os.path.join(output_here, str(self._this_rank) + ".nc"),
             "w",
@@ -64,32 +73,26 @@ class DumpFields:
         # Add some metadata
         rt_grp.unique_id = self._namelist["meta"]["unique_id"]
         rt_grp.wall_time = self._namelist["meta"]["wall_time"]
+        rt_grp.fequency = self.frequency
 
         self.setup_nc_dims(rt_grp)
 
-        nhalo = self._Grid.n_halo
-        for ac in self._classes:
-            # Loop over all variables
-            ac = self._classes[ac]
-            for v in ac._dofs:
+        for aclass in self._classes:
+            self._classes[aclass].io_fields2d_update(rt_grp)
 
-                if (
-                    "ff" not in v
-                ):  # Exclude the bins from the 3D fields for the same of storage
-                    v_nc = rt_grp.createVariable(
-                        v, np.double, dimensions=("time", "X", "Y", "Z")
-                    )
-                    v_nc.units = ac.get_units(v)
-                    v_nc.long_names = ac.get_long_name(v)
-                    v_nc.standard_name = ac.get_standard_name(v)
-                    v_nc[0, :, :, :] = ac.get_field(v)[
-                        nhalo[0] : -nhalo[0], nhalo[1] : -nhalo[1], nhalo[2] : -nhalo[2]
-                    ]
-
-            rt_grp.sync()
-
+        # Sync and closue netcdf file
+        rt_grp.sync()
         rt_grp.close()
-        self._Timers.end_timer("DumpFields")
+
+        self._last_io_time = self._TimeSteppingController._time
+        return
+
+    def setup_directories(self):
+
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            if not os.path.exists(self._output_path):
+                os.makedirs(self._output_path)
+
         return
 
     def setup_nc_dims(self, rt_grp):
@@ -118,12 +121,5 @@ class DumpFields:
         Y.long_name = "y-coordinate"
         Y.standard_name = "y"
         Y[:] = self._Grid.y_local[nhalo[1] : -nhalo[1]]
-
-        Z = rt_grp.createVariable("Z", np.double, dimensions=("Z"))
-        Z.units = "m"
-        Z.long_name = "z-coordinate"
-        Z.standard_name = "z"
-        Z[:] = self._Grid.z_local[nhalo[2] : -nhalo[2]]
-        rt_grp.sync()
 
         return

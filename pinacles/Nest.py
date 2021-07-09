@@ -97,7 +97,7 @@ class Nest:
         local_end = self._Grid._local_end
 
 
-        for v in ['qv', 's', 'qc', 'qr']: #self._ScalarState._dofs:
+        for v in ['qv', 's']: #self._ScalarState._dofs:
             
             #This is the location of the lower corenr of the nest in the parent's index
             center_point_x = parent_nhalo[0] + self.root_point[0] 
@@ -267,7 +267,7 @@ class Nest:
         nest_x_left_bdy = np.amin(self._Grid._global_axes_edge[0]) ==  np.amin(self._Grid._local_axes_edge[0])
         nest_x_right_bdy = np.max(self._Grid._global_axes_edge[0]) ==  np.max(self._Grid._local_axes_edge[0])
 
-        for v in ['s', 'qv', 'qr', 'qc']:
+        for v in ['s', 'qv']:
 
 
             var = self._ScalarState.get_field(v)

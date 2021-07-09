@@ -5,10 +5,19 @@ from pinacles import parameters
 
 
 class SurfaceStableBubble(Surface.SurfaceBase):
-
-    def __init__(self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState):
-        Surface.SurfaceBase.__init__(self, namelist, Grid, Ref, VelocityState,
-            ScalarState, DiagnosticState)
+    def __init__(
+        self, namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+    ):
+        Surface.SurfaceBase.__init__(
+            self,
+            namelist,
+            Timers,
+            Grid,
+            Ref,
+            VelocityState,
+            ScalarState,
+            DiagnosticState,
+        )
 
         self._theta_flux = 0.0
         self._z0 = 0.0
@@ -22,9 +31,11 @@ class SurfaceStableBubble(Surface.SurfaceBase):
         self._bflx_sfc = np.zeros_like(self._windspeed_sfc) + self._buoyancy_flux
         self._ustar_sfc = np.zeros_like(self._windspeed_sfc)
 
+        self._Timers.add_timer("SurfaceStableBubble_update")
+
         return
 
     def update(self):
-	#No surface implementation for this case
+        # No surface implementation for this case
 
         return

@@ -1,0 +1,15 @@
+[submodule "pinacles/externals/wrf_p3_wrapper"]
+	path = pinacles/externals/wrf_p3_wrapper
+	url = ssh://git@gitlab.pnnl.gov:2222/pinacles/wrf_p3_wrapper.git 
+	
+[submodule "pinacles/externals/wrf_kessler_wrapper"]
+	path = pinacles/externals/wrf_kessler_wrapper
+	url = ssh://git@gitlab.pnnl.gov:2222/pinacles/wrf_kessler_wrapper.git 
+	
+[submodule "pinacles/externals/rrtmg_wrapper"]
+	path = pinacles/externals/rrtmg_wrapper
+	url = ssh://git@gitlab.pnnl.gov:2222/pinacles/rrtmg_wrapper.git 
+
+[submodule "pinacles/externals/wrf_fast_sbm_wrapper"]
+	path = pinacles/externals/wrf_fast_sbm_wrapper
+	url = ssh://git@gitlab.pnnl.gov:2222/pinacles/wrf_fast_sbm_wrapper.git 
