@@ -1,24 +1,32 @@
 from pinacles import UtilitiesParallel
 from pinacles import parameters
 import numpy as np
+
+
 class Plume:
+    def __init__(
+        self,
+        location,
+        start_time,
+        n,
+        Grid,
+        Ref,
+        ScalarState,
+        VelocityState,
+        TimeSteppingController,
+    ):
 
-    def __init__(self, location, start_time, n, 
-        Grid, Ref, ScalarState, VelocityState, TimeSteppingController):
-
-        
         self._Grid = Grid
         self._Ref = Ref
         self._TimeSteppingController = TimeSteppingController
         self._ScalarState = ScalarState
         self._VelocityState = VelocityState
 
-
         # These are the plume properties
         self._location = location
         self._start_time = start_time
         self._plume_number = n
-        self._scalar_name = 'plume_' + str(self._plume_number)
+        self._scalar_name = "plume_" + str(self._plume_number)
         self._boundary_outflow = True
 
         self._plume_flux = 0.0
@@ -26,101 +34,112 @@ class Plume:
         self._plume_heat_flux = 0.0
         self._plume_ql_flux = 0.0
 
-
         # Determine if plume is emitted on this rank
-        self._plume_on_rank = self._Grid.point_on_rank(self._location[0], self._location[1], self._location[2])
+        self._plume_on_rank = self._Grid.point_on_rank(
+            self._location[0], self._location[1], self._location[2]
+        )
         self._indicies = None
         if self._plume_on_rank:
-            self._indicies = self._Grid.point_indicies(self._location[0], self._location[1], self._location[2])
-
+            self._indicies = self._Grid.point_indicies(
+                self._location[0], self._location[1], self._location[2]
+            )
 
         # Add a new scalar variable associated with this plume
         self._ScalarState.add_variable(self._scalar_name, limit=True)
 
         return
-        
+
     def update(self):
 
         # If it is not time to start the plume just return w/o doing anything
-        if  self._TimeSteppingController.time  < self._start_time or not self._plume_on_rank :
-            
+        if (
+            self._TimeSteppingController.time < self._start_time
+            or not self._plume_on_rank
+        ):
 
-            #TODO Move this.boundary setting into a function 
+            # TODO Move this.boundary setting into a function
 
-            # If needed, zero the plume scalar on the boundaries 
+            # If needed, zero the plume scalar on the boundaries
             if self._boundary_outflow:
                 plume_value = self._ScalarState.get_field(self._scalar_name)
 
                 n_halo = self._Grid.n_halo
 
-                x_local = self._Grid.x_local 
+                x_local = self._Grid.x_local
                 x_global = self._Grid.x_global
 
                 if np.amin(x_local) == np.amin(x_global):
-                    plume_value[:n_halo[0],:,:] = 0
-                
-                if np.max(x_local) == np.amax(x_global):
-                    plume_value[-n_halo[0]:,:,:] = 0
+                    plume_value[: n_halo[0], :, :] = 0
 
-                y_local = self._Grid.y_local 
+                if np.max(x_local) == np.amax(x_global):
+                    plume_value[-n_halo[0] :, :, :] = 0
+
+                y_local = self._Grid.y_local
                 y_global = self._Grid.y_global
 
                 if np.amin(y_local) == np.amin(y_global):
-                    plume_value[:,:n_halo[1],:] = 0
-                
+                    plume_value[:, : n_halo[1], :] = 0
+
                 if np.max(y_local) == np.amax(y_global):
-                    plume_value[:,-n_halo[1]:,:] = 0
+                    plume_value[:, -n_halo[1] :, :] = 0
 
                 return
         dxs = self._Grid.dx
 
         grid_cell_volume = dxs[0] * dxs[1] * dxs[2]
-        grid_cell_mass = grid_cell_volume * self._Ref.rho0[self._indicies[0]] 
+        grid_cell_mass = grid_cell_volume * self._Ref.rho0[self._indicies[0]]
 
         # Add the plume scalar flux
         plume_tend = self._ScalarState.get_tend(self._scalar_name)
-        plume_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = self._plume_flux/grid_cell_mass
+        plume_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
+            self._plume_flux / grid_cell_mass
+        )
 
         # Add the plume heat flux
-        s_tend = self._ScalarState.get_tend('s')
-        s_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = self._plume_heat_flux/grid_cell_mass*parameters.ICPD
+        s_tend = self._ScalarState.get_tend("s")
+        s_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
+            self._plume_heat_flux / grid_cell_mass * parameters.ICPD
+        )
 
         # Add the plume liquid flux
-        if 'qv' in self._ScalarState._dofs:
-            qv_tend = self._ScalarState.get_tend('qv')
-            qv_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = self._plume_qv_flux/grid_cell_mass
+        if "qv" in self._ScalarState._dofs:
+            qv_tend = self._ScalarState.get_tend("qv")
+            qv_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
+                self._plume_qv_flux / grid_cell_mass
+            )
 
         # Add the plume liquid flux
-        if 'ql' in self._ScalarState._dofs:
-            ql_tend = self._ScalarState.get_tend('ql')
-            ql_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = self._plume_ql_flux/grid_cell_mass
+        if "ql" in self._ScalarState._dofs:
+            ql_tend = self._ScalarState.get_tend("ql")
+            ql_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
+                self._plume_ql_flux / grid_cell_mass
+            )
 
-        # If needed, zero the plume scalar on the boundaries 
+        # If needed, zero the plume scalar on the boundaries
         if self._boundary_outflow:
             plume_value = self._ScalarState.get_field(self._scalar_name)
 
             n_halo = self._Grid.n_halo
 
-            x_local = self._Grid.x_local 
+            x_local = self._Grid.x_local
             x_global = self._Grid.x_global
 
             if np.amin(x_local) == np.amin(x_global):
-                plume_value[:n_halo[0],:,:] = 0
-            
-            if np.max(x_local) == np.amax(x_global):
-                plume_value[-n_halo[0]:,:,:] = 0
+                plume_value[: n_halo[0], :, :] = 0
 
-            y_local = self._Grid.y_local 
+            if np.max(x_local) == np.amax(x_global):
+                plume_value[-n_halo[0] :, :, :] = 0
+
+            y_local = self._Grid.y_local
             y_global = self._Grid.y_global
 
             if np.amin(y_local) == np.amin(y_global):
-                plume_value[:,:n_halo[1],:] = 0
-            
+                plume_value[:, : n_halo[1], :] = 0
+
             if np.max(y_local) == np.amax(y_global):
-                plume_value[:,-n_halo[1]:,:] = 0
+                plume_value[:, -n_halo[1] :, :] = 0
 
         return
-    
 
     @property
     def boundary_outflow(self):
@@ -160,7 +179,7 @@ class Plume:
 
     def set_plume_flux(self, flux):
         self._plume_flux = flux
-        return 
+        return
 
     def set_plume_qv_flux(self, flux):
         self._plume_qv_flux = flux
@@ -178,13 +197,22 @@ class Plume:
         self._boundary_outflow = boundary_outflow
         return
 
-class Plumes:
 
-    def __init__(self, namelist, Grid, Ref, ScalarState, VelocityState, TimeSteppingController, nest_level):
+class Plumes:
+    def __init__(
+        self,
+        namelist,
+        Grid,
+        Ref,
+        ScalarState,
+        VelocityState,
+        TimeSteppingController,
+        nest_level,
+    ):
 
         self._n = 0
-        
-        #if namelist['plumes']['nest_level'] != nest_level:
+
+        # if namelist['plumes']['nest_level'] != nest_level:
         #    return
 
         self._Grid = Grid
@@ -195,32 +223,31 @@ class Plumes:
         self._locations = None
         self._startimes = None
 
-
-        if 'plumes' in namelist:
+        if "plumes" in namelist:
 
             # Store the plume locations
-            self._locations  = namelist['plumes']['locations']
+            self._locations = namelist["plumes"]["locations"]
 
             # Store when the plumes start
-            self._startimes = namelist['plumes']['starttimes']
+            self._startimes = namelist["plumes"]["starttimes"]
 
             # Store the scalar flux of the plumes
-            self._plume_flux = namelist['plumes']['plume_flux']
+            self._plume_flux = namelist["plumes"]["plume_flux"]
 
-            # Store the water vapor flux fo the plumes 
-            self._plume_qv_flux = namelist['plumes']['qv_flux']
+            # Store the water vapor flux fo the plumes
+            self._plume_qv_flux = namelist["plumes"]["qv_flux"]
 
             # Store the sensible heat flux of the plumes
-            self._plume_heat_flux = namelist['plumes']['heat_flux']
+            self._plume_heat_flux = namelist["plumes"]["heat_flux"]
 
             # Store the liquid water flux of the plumes
-            self._plume_ql_flux = namelist['plumes']['ql_flux']
+            self._plume_ql_flux = namelist["plumes"]["ql_flux"]
 
             # Store the boundary treatment
-            self._boundary_outflow = namelist['plumes']['boundary_outflow']
+            self._boundary_outflow = namelist["plumes"]["boundary_outflow"]
 
-        else: 
-            # If plumes are not in namelist return since there is nothing 
+        else:
+            # If plumes are not in namelist return since there is nothing
             # to do.
             return
 
@@ -231,22 +258,38 @@ class Plumes:
         self._list_of_plumes = []
 
         # Initialize the plumes and update them and print to terminal
-        UtilitiesParallel.print_root('Adding, ' + str(self._n) + ' plumes.' )
-        
+        UtilitiesParallel.print_root("Adding, " + str(self._n) + " plumes.")
+
         count = 0
         for loc, start in zip(self._locations, self._startimes):
 
-            UtilitiesParallel.print_root('\t Plume added at: ' + str(loc) + ' starting @ ' + str(start) + ' seconds.')
-            
+            UtilitiesParallel.print_root(
+                "\t Plume added at: "
+                + str(loc)
+                + " starting @ "
+                + str(start)
+                + " seconds."
+            )
+
             # Add plume classes to the list of plumes
-            self._list_of_plumes.append(Plume(loc, start, count,
-                self._Grid, self._Ref, self._ScalarState, self._VelocityState, self._TimeSteppingController))
-            count += 1 
+            self._list_of_plumes.append(
+                Plume(
+                    loc,
+                    start,
+                    count,
+                    self._Grid,
+                    self._Ref,
+                    self._ScalarState,
+                    self._VelocityState,
+                    self._TimeSteppingController,
+                )
+            )
+            count += 1
 
         # Now set the plume fluxes for each plume and how the boundaries are treated
         for i, plume in enumerate(self._list_of_plumes):
 
-            # The plume scalar flux    # Todo set units 
+            # The plume scalar flux    # Todo set units
             plume.set_plume_flux(self._plume_flux[i])
 
             # The plume water vapor flux  # Todo set units
