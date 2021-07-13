@@ -841,7 +841,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.PSolver.update()
 
                 for lbcs in [self.LBC, self.LBCVel]:
-                    # lbcs.set_vars_on_boundary_to_mean()
                     lbcs.set_vars_on_boundary()
                 self.LBCVel.update(normal=False)
 
@@ -851,7 +850,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 # Update boundary conditions
                 self.Timers.start_timer("BoundaryUpdate")
-                # self.ScalarState.boundary_exchange()
+
                 self.ScalarState.update_all_bcs()
 
                 self.Timers.end_timer("BoundaryUpdate")
@@ -902,10 +901,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     integrate_by_dt=self.TimeSteppingController._dt,
                     ParentNest=ListOfSims[self._nest_num],
                 )
-
-        # if ParentNest is not None:
-        #    self.Nest.update_parent(ParentNest)
-
+                
         return
 
     def walltime_restart(self):
