@@ -14,7 +14,7 @@ from pinacles import ScalarAdvectionFactory
 from pinacles import ScalarAdvection, TimeStepping, ReferenceState
 from pinacles import ScalarDiffusion, MomentumDiffusion
 from pinacles import MomentumAdvection
-from pinacles import PressureSolver
+from pinacles import PressureSolverFactory
 from pinacles import Damping
 from pinacles import SurfaceFactory
 from pinacles import ForcingFactory
@@ -77,11 +77,11 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ModelGrid, container_name="VelocityState", prognostic=True
         )
 
-        self.LBC = LateralBCs.LateralBCs(
-            self.ModelGrid, self.ScalarState, self.VelocityState
+        self.LBC = LateralBCs.LateralBCsFactory(
+            self._namelist, self.ModelGrid, self.ScalarState, self.VelocityState
         )
-        self.LBCVel = LateralBCs.LateralBCs(
-            self.ModelGrid, self.VelocityState, self.VelocityState
+        self.LBCVel = LateralBCs.LateralBCsFactory(
+            self._namelist, self.ModelGrid, self.VelocityState, self.VelocityState
         )
 
         self.DiagnosticState = Containers.ModelState(
@@ -211,7 +211,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
 
         # Instantiate the pressure solver
-        self.PSolver = PressureSolver.factory(
+        self.PSolver = PressureSolverFactory.factory(
             self._namelist,
             self.Timers,
             self.ModelGrid,
@@ -392,7 +392,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # the anelastic continuity equation
         for lbc in [self.LBC, self.LBCVel]:
             # lbc.set_vars_on_boundary_to_mean()
-            lbc.set_vars_on_boundary_recycle()
+            lbc.set_vars_on_boundary()
         for prog_state in [self.ScalarState, self.VelocityState]:
             prog_state.boundary_exchange()
             prog_state.update_all_bcs()
@@ -808,8 +808,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 self.VelocityState.boundary_exchange()
 
-                # lbcs.set_vars_on_boundary_recycle()
-                # self.LBC.update()
                 self.LBCVel.update()
 
                 # Call pressure solver
@@ -817,7 +815,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 for lbcs in [self.LBC, self.LBCVel]:
                     # lbcs.set_vars_on_boundary_to_mean()
-                    lbcs.set_vars_on_boundary_recycle()
+                    lbcs.set_vars_on_boundary()
                 self.LBCVel.update(normal=False)
 
                 self.Timers.start_timer("ScalarLimiter")
@@ -839,7 +837,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 self.Timers.start_timer("BoundaryUpdate")
                 self.ScalarState.boundary_exchange()
-                # self.ScalarState.update_all_bcs()
+
                 self.LBC.update()
 
                 self.Timers.end_timer("BoundaryUpdate")

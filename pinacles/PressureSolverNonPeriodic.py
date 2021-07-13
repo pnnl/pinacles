@@ -1,7 +1,7 @@
 import numpy as np
 import mpi4py_fft
 from mpi4py import MPI
-from pinacles.PressureSolver_impl import (
+from pinacles.PressureSolverNonPeriodic_impl import (
     divergence,
     divergence_ghost,
     fill_pressure,
@@ -9,7 +9,7 @@ from pinacles.PressureSolver_impl import (
     apply_pressure_open,
     apply_pressure_open_new,
 )
-from pinacles.TDMA import Thomas, PressureTDMA, PressureNonPeriodicTDMA
+from pinacles.TDMA_NonPeriodic import Thomas, PressureNonPeriodicTDMA
 from pinacles.ParallelFFTs import dct_mpi4py
 
 import functools

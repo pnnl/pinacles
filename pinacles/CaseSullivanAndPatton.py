@@ -217,7 +217,7 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
 
         self._f = 1.0e-4
 
-        self._ug = np.zeros_like(self._Grid.z_global) + 5.0
+        self._ug = np.zeros_like(self._Grid.z_global)
         self._vg = np.zeros_like(self._ug)
 
         self._Timers.add_timer("ForcingSullivanAndPatton_update")
