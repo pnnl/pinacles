@@ -1,6 +1,5 @@
 import numpy as np
 from pinacles.PressureSolver_impl import divergence, fill_pressure, apply_pressure
-from pinacles.PressureSolverNonPeriodic import PressureSolverNonPeriodic
 from pinacles.TDMA import Thomas, PressureTDMA
 import mpi4py_fft as fft
 from mpi4py import MPI
@@ -60,6 +59,7 @@ class PressureSolver:
 
         self._Timers.start_timer("PressureSolver_update")
 
+        self._VelocityState.update_all_bcs()
         self._VelocityState.remove_mean("w")
 
         # First get views in to the velocity components
@@ -81,14 +81,8 @@ class PressureSolver:
         div_hat_2 = self.FFT.forward(self._div_work)
 
         # The TDM solver goes here
-        # divh2_real = div_hat_2.real
-        # divh2_img = div_hat_2.imag
-
-        # Place the pressure solve here
-        # self._TMDA_solve.solve(divh2_real)
         self._TMDA_solve.solve(div_hat_2)
 
-        # div_hat_2 = divh2_real + divh2_img * 1j
         if self._wavenumber_substarts[0] == 0 and self._wavenumber_substarts[1] == 0:
             div_hat_2[0, 0, :] = 0.0 + 0j
 
@@ -109,4 +103,4 @@ class PressureSolver:
 
 
 def factory(namelist, Timer, Grid, Ref, VelocityState, DiagnosticState):
-    return PressureSolverNonPeriodic(Grid, Ref, VelocityState, DiagnosticState)
+    return PressureSolver(Timer, Grid, Ref, VelocityState, DiagnosticState)
