@@ -13,27 +13,26 @@ def LateralBCsFactory(namelist, Grid, State, VelocityState):
     if lbc["type"].lower() == "periodic":
         return LateralBCsDummy()
     elif lbc["type"].lower() == "open":
-        
+
         lbc_class = LateralBCs(Grid, State, VelocityState)
-        
+
         try:
-            boundary_treatment = lbc['open_boundary_treatment']
-            if boundary_treatment.lower() == 'mean':
-                UtilitiesParallel.print_root('Using mean boundary treatment.')
+            boundary_treatment = lbc["open_boundary_treatment"]
+            if boundary_treatment.lower() == "mean":
+                UtilitiesParallel.print_root("Using mean boundary treatment.")
                 lbc_class._LBC_set_function = lbc_class.set_vars_on_boundary_to_mean
-            if boundary_treatment.lower()  == 'recycle':
-                UtilitiesParallel.print_root('Using recycle boundary conditions.')
-                
+            if boundary_treatment.lower() == "recycle":
+                UtilitiesParallel.print_root("Using recycle boundary conditions.")
+
                 lbc_class._LBC_set_function = lbc_class.set_vars_on_boundary_recycle
-                assert('recycle_plane_pct' in lbc)
-                recycle_plane_loc = lbc['recycle_plane_pct'] # Units are %
+                assert "recycle_plane_pct" in lbc
+                recycle_plane_loc = lbc["recycle_plane_pct"]  # Units are %
                 lbc_class.set_recycle_plane(recycle_plane_loc[0], recycle_plane_loc[1])
-                
 
         except:
-            UtilitiesParallel.print_root('Usinge mean boundary treatment.')
+            UtilitiesParallel.print_root("Usinge mean boundary treatment.")
             lbc_class._LBC_set_function = lbc_class.set_vars_on_boundary_to_mean
-        
+
         return lbc_class
 
 
@@ -69,9 +68,8 @@ class LateralBCs:
         # Variables used only for recycling condiitons
         self._ix_recycle_plane = None
         self._iy_recycle_plane = None
-         
-        return
 
+        return
 
     def init_vars_on_boundary(self):
         """ Allocate memory to store large scale conditions to set lateral boundary conditions under inflow conditions. 
@@ -133,17 +131,21 @@ class LateralBCs:
             # Compute the domain mean of the variables
             x_low, x_high, y_low, y_high = self.get_vars_on_boundary(var_name)
 
-            slab_x = self._State.get_slab_x(var_name, (self._ix_recycle_plane, self._ix_recycle_plane+1))
+            slab_x = self._State.get_slab_x(
+                var_name, (self._ix_recycle_plane, self._ix_recycle_plane + 1)
+            )
 
-            #if var_name == "s":
+            # if var_name == "s":
             #    slab_x[0, ls[1] : le[1], :6] += np.random.randn(nl[1], 6) * 0.5
 
             # print(x_low.shape ,slab_x.shape )
             x_low[nh[1] : -nh[1], nh[2] : -nh[2]] = slab_x[0, ls[1] : le[1], :]
             x_high[nh[1] : -nh[1], nh[2] : -nh[2]] = slab_x[0, ls[1] : le[1], :]
 
-            slab_y = self._State.get_slab_y(var_name, (self._iy_recycle_plane, self._iy_recycle_plane+1))
-            #if var_name == "s":
+            slab_y = self._State.get_slab_y(
+                var_name, (self._iy_recycle_plane, self._iy_recycle_plane + 1)
+            )
+            # if var_name == "s":
             #    slab_y[ls[0] : le[0], 0, :6] += np.random.randn(nl[0], 6) * 0.5
 
             y_low[nh[0] : -nh[0], nh[2] : -nh[2]] = slab_y[ls[0] : le[0], 0, :]

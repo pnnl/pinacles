@@ -83,6 +83,8 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     xg = ModelGrid.x_global
     yg = ModelGrid.y_global
 
+    # print(xl[35])
+
     exner = Ref.exner
 
     # Wind is uniform initiall
