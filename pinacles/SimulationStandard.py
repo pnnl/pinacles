@@ -833,7 +833,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.ScalarTimeStepping.update()
                 self.VelocityTimeStepping.update()
 
-                self.VelocityState.boundary_exchange()
+               # self.VelocityState.boundary_exchange()
 
                 self.LBCVel.update()
 

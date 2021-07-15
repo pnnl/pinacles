@@ -17,7 +17,7 @@ def factory(namelist, Timers, Grid, Ref, VelocityState, DiagnosticState):
         )
 
     elif solver_type == "open":
-        return PressureSolver.PressureSolverNonPeriodic(
+        return PressureSolverNonPeriodic.PressureSolverNonPeriodic(
             Grid, Ref, VelocityState, DiagnosticState
         )
     else:

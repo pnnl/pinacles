@@ -140,6 +140,11 @@ class LateralBCs:
 
             # print(x_low.shape ,slab_x.shape )
             x_low[nh[1] : -nh[1], nh[2] : -nh[2]] = slab_x[0, ls[1] : le[1], :]
+
+            slab_x = self._State.get_slab_x(
+                var_name, (self._ix_recycle_plane+100, self._ix_recycle_plane+100 + 1)
+            )
+
             x_high[nh[1] : -nh[1], nh[2] : -nh[2]] = slab_x[0, ls[1] : le[1], :]
 
             slab_y = self._State.get_slab_y(

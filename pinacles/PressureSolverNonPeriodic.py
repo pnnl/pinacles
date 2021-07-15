@@ -394,7 +394,7 @@ class PressureSolverNonPeriodic:
             n_halo, self._vel_starts, self._vel_ends, dxs, dynp, u, v, w
         )
 
-        self._VelocityState.boundary_exchange()
+        #self._VelocityState.boundary_exchange()
         self._VelocityState.update_all_bcs()
 
         # w[:,:,n_halo[2]-1]=0.0
