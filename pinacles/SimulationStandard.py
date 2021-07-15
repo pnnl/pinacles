@@ -31,7 +31,7 @@ from pinacles import TowersIO
 from pinacles import Plumes
 from pinacles import Restart
 from pinacles import UtilitiesParallel
-from pinacles import Nest
+#from pinacles import Nest
 from pinacles import Timers
 from pinacles import LateralBCs
 from mpi4py import MPI
@@ -43,7 +43,7 @@ from termcolor import colored
 
 
 class SimulationStandard(SimulationBase.SimulationBase):
-    def __init__(self, namelist, llx=0.0, lly=0.0, llz=0.0, nest_num=0):
+    def __init__(self, namelist, llx=0.0, lly=0.0, llz=0.0, nest_num=0, ParentNest=None):
 
         self._ll_corner = (llx, lly, llz)
 
@@ -62,13 +62,13 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Initialize differently if this is a restart simulation
         if not self.Restart.restart_simulation:
-            self.initialize()
+            self.initialize(ParentNest = ParentNest)
         else:
             self.initialize_from_restart()
 
         return
 
-    def initialize(self):
+    def initialize(self, ParentNest=None):
 
         # Instantiate the model grid
         self.ModelGrid = Grid.RegularCartesian(
@@ -89,6 +89,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.LBC = LateralBCs.LateralBCsFactory(
             self._namelist, self.ModelGrid, self.ScalarState, self.VelocityState
         )
+
         self.LBCVel = LateralBCs.LateralBCsFactory(
             self._namelist, self.ModelGrid, self.VelocityState, self.VelocityState
         )
@@ -280,13 +281,13 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
 
         # Instantiate nest
-        self.Nest = Nest.Nest(
-            self._namelist,
-            self.TimeSteppingController,
-            self.ModelGrid,
-            self.ScalarState,
-            self.VelocityState,
-        )
+        #self.Nest = Nest.Nest(
+        #    self._namelist,
+        #    self.TimeSteppingController,
+        #    self.ModelGrid,
+        #    self.ScalarState,
+        #    self.VelocityState,
+        #)
 
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
@@ -429,12 +430,21 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Rad.update(force=True)
         self.PSolver.update()
 
-        for prog_state in [self.ScalarState, self.VelocityState]:
-            prog_state.boundary_exchange()
-            prog_state.update_all_bcs()
+        #for prog_state in [self.ScalarState, self.VelocityState]:
+        #    prog_state.boundary_exchange()
+        #    prog_state.update_all_bcs()
 
-        for lbc in [self.LBC, self.LBCVel]:
-            lbc.update()
+        self.ScalarState.boundary_exchange()
+        self.VelocityState.update_all_bcs()
+        self.ScalarState.update_all_bcs()
+
+        #for lbc in [self.LBC, self.LBCVel]:
+        self.LBC.update()
+
+        for lbcs in [self.LBC, self.LBCVel]:
+            lbcs.set_vars_on_boundary()
+
+        self.LBCVel.update(normal=False)
 
         # Initialize timers
         self.Timers.add_timer("Restart")
@@ -442,6 +452,15 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Timers.add_timer("BoundaryUpdate")
         self.Timers.add_timer("main")
         self.Timers.initialize()
+
+
+
+        #import pylab as plt
+        #plt.contourf(u[:,:,5].T)
+        #plt.plot(u[:,5,5],'*')
+        #plt.plot(v[5,:,5],'*')
+        #plt.show()
+        #time.sleep(5.0)
 
         return
 
@@ -779,14 +798,22 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
     def update(self, ParentNest=None, ListOfSims=[], integrate_by_dt=0.0):
 
+
+
+
         """ This function integrates the model forward by integrate_by_dt seconds. """
         # Compute the startime and endtime for this integration
         start_time = self.TimeSteppingController.time
         end_time = start_time + integrate_by_dt
 
         # Update boundaries for nest if this is Simulation is a nest
-        if ParentNest is not None:
-            self.Nest.update_boundaries(ParentNest)
+        #if ParentNest is not None:
+        #    self.Nest.update_boundaries(ParentNest)
+
+
+        u = self.VelocityState.get_field('u')
+        v = self.VelocityState.get_field('v')
+
 
         while self.TimeSteppingController.time < end_time:
             self.Timers.start_timer("main")
@@ -826,23 +853,45 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 # Do Damping
                 self.RayleighDamping.update()
 
-                if ParentNest is not None:
-                    self.Nest.update(ParentNest)
+                #if ParentNest is not None:
+                #    self.Nest.update(ParentNest)
 
                 # Do time stepping
                 self.ScalarTimeStepping.update()
                 self.VelocityTimeStepping.update()
 
+                import pylab as plt
+                #plt.contourf(u[:,:,5])
+                #plt.figure(1)
+                #plt.plot(u[:,5,5],'*')
+                #plt.plot(v[5,:,5],'*')
+
+
                 self.VelocityState.boundary_exchange()
 
                 self.LBCVel.update()
 
+                #plt.figure(2)
+                #plt.plot(u[:,5,5],'*')
+                #plt.plot(v[5,:,5],'*')
+
+
+
                 # Call pressure solver
                 self.PSolver.update()
 
+                #import pylab as plt
+                #plt.figure(3)
+                #plt.contourf(u[:,:,5])
+                #plt.plot(u[:,5,5],'*')
+                #plt.plot(v[5,:,5],'*')
+                #plt.show()
+                #time.sleep(5.0)
+
                 for lbcs in [self.LBC, self.LBCVel]:
                     lbcs.set_vars_on_boundary()
-                self.LBCVel.update(normal=False)
+
+                self.LBCVel.update(normal=False)                
 
                 self.Timers.start_timer("ScalarLimiter")
                 self.ScalarState.apply_limiter()
@@ -867,6 +916,14 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.LBC.update()
 
                 self.Timers.end_timer("BoundaryUpdate")
+
+
+                #import pylab as plt
+                #plt.contourf(u[:,:,5])
+                #plt.plot(u[:,5,5],'*')
+                #plt.plot(v[5,:,5],'*')
+                #plt.show()
+                #time.sleep(5.0)
 
             self.Timers.finish_timestep()
             self.TimeSteppingController._time += self.TimeSteppingController._dt
@@ -901,7 +958,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     integrate_by_dt=self.TimeSteppingController._dt,
                     ParentNest=ListOfSims[self._nest_num],
                 )
-                
+
         return
 
     def walltime_restart(self):

@@ -88,7 +88,7 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     exner = Ref.exner
 
     # Wind is uniform initiall
-    u.fill(5.0)
+    u.fill(0.0)
     v.fill(0.0)
     w.fill(0.0)
 
@@ -98,7 +98,7 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     shape = s.shape
     perts = np.random.uniform(
         -0.01, 0.01, (shape[0], shape[1], shape[2])
-    )  # * 0.0 #*1.0
+    )#* 0.0  # * 0.0 #*1.0
 
     for i in range(shape[0]):
         for j in range(shape[1]):

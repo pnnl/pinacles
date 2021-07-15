@@ -1,4 +1,4 @@
-import numpy as np
+
 import numpy as np
 import numba
 from mpi4py import MPI
@@ -98,12 +98,12 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
         # Compute the surface temperature flux
         self._tflx[:, :] = self._theta_flux * exner_edge[nh[2] - 1]
 
-        Surface_impl.iles_surface_flux_application(
-            1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._taux_sfc, ut
-        )
-        Surface_impl.iles_surface_flux_application(
-            1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tauy_sfc, vt
-        )
+       # Surface_impl.iles_surface_flux_application(
+       #     1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._taux_sfc, ut
+       # )
+       # Surface_impl.iles_surface_flux_application(
+       #     1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tauy_sfc, vt
+       # )
         Surface_impl.iles_surface_flux_application(
             1e-6, z_edge, dxi2, nh, alpha0, alpha0_edge, 250.0, self._tflx, st
         )
