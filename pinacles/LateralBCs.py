@@ -58,6 +58,8 @@ class LateralBCsDummy:
 class LateralBCs:
     def __init__(self, Grid, State, VelocityState):
 
+        self.count = 0
+
         self._Grid = Grid
         self._State = State
         self._VelocityState = VelocityState
@@ -122,10 +124,16 @@ class LateralBCs:
 
     def set_vars_on_boundary_recycle(self):
 
+
         nh = self._Grid.n_halo
         nl = self._Grid.nl
         ls = self._Grid._local_start
         le = self._Grid._local_end
+
+        if not self.count%20:
+            self.count += 1
+            return
+        self.count = 0
 
         for var_name in self._State._dofs:
             # Compute the domain mean of the variables
@@ -135,25 +143,17 @@ class LateralBCs:
                 var_name, (self._ix_recycle_plane, self._ix_recycle_plane + 1)
             )
 
-            # if var_name == "s":
-            #    slab_x[0, ls[1] : le[1], :6] += np.random.randn(nl[1], 6) * 0.5
-
-            # print(x_low.shape ,slab_x.shape )
             x_low[nh[1] : -nh[1], nh[2] : -nh[2]] = slab_x[0, ls[1] : le[1], :]
-
-            slab_x = self._State.get_slab_x(
-                var_name, (self._ix_recycle_plane+100, self._ix_recycle_plane+100 + 1)
-            )
 
             x_high[nh[1] : -nh[1], nh[2] : -nh[2]] = slab_x[0, ls[1] : le[1], :]
 
             slab_y = self._State.get_slab_y(
                 var_name, (self._iy_recycle_plane, self._iy_recycle_plane + 1)
             )
-            # if var_name == "s":
-            #    slab_y[ls[0] : le[0], 0, :6] += np.random.randn(nl[0], 6) * 0.5
 
             y_low[nh[0] : -nh[0], nh[2] : -nh[2]] = slab_y[ls[0] : le[0], 0, :]
+
+
             y_high[nh[0] : -nh[0], nh[2] : -nh[2]] = slab_y[ls[0] : le[0], 0, :]
 
         return

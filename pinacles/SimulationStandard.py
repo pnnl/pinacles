@@ -413,6 +413,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         for lbc in [self.LBC, self.LBCVel]:
             # lbc.set_vars_on_boundary_to_mean()
             lbc.set_vars_on_boundary()
+        
         for prog_state in [self.ScalarState, self.VelocityState]:
             prog_state.boundary_exchange()
             prog_state.update_all_bcs()
@@ -424,17 +425,30 @@ class SimulationStandard(SimulationBase.SimulationBase):
         v = self.VelocityState.get_field("v")
         s = self.ScalarState.get_field("s")
 
+        import pylab as plt
+        plt.plot(u[:,5,5])
+
         # Update thermo this is mostly for IO at time 0
         self.Thermo.update(apply_buoyancy=False)
         self.Rad.update(force=True)
         self.PSolver.update()
 
-        for prog_state in [self.ScalarState, self.VelocityState]:
-            prog_state.boundary_exchange()
-            prog_state.update_all_bcs()
+        #for prog_state in [self.ScalarState, self.VelocityState]:
+        #    prog_state.boundary_exchange()
+        #    prog_state.update_all_bcs()
+
+        self.ScalarState.boundary_exchange()
+        self.VelocityState.update_all_bcs()
+        self.ScalarState.update_all_bcs()
+
 
         for lbc in [self.LBC, self.LBCVel]:
             lbc.update()
+
+
+        plt.plot(u[:,5,5])
+        plt.show()
+
 
         # Initialize timers
         self.Timers.add_timer("Restart")
