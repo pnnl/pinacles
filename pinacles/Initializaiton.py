@@ -88,7 +88,7 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     exner = Ref.exner
 
     # Wind is uniform initiall
-    u.fill(10.0)
+    u.fill(0.0)
     v.fill(0.0)
     w.fill(0.0)
 

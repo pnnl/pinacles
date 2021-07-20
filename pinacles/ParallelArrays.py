@@ -108,18 +108,22 @@ class GhostArray(GhostArrayBase):
                         send_buf = np.copy(self.array[:, -2 * nh : -nh, :, :])
                         recv_buf = np.empty_like(send_buf)
                         comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                        self.array[:, :nh, :, :] = recv_buf
+                        if not self._Grid.low_rank[0]:
+                            self.array[:, :nh, :, :] = recv_buf
                     else:
-                        self.array[:, :nh, :, :] = self.array[:, -2 * nh : -nh, :, :]
+                        if not self._Grid.low_rank[0]:
+                            self.array[:, :nh, :, :] = self.array[:, -2 * nh : -nh, :, :]
 
                 if dim == 1:
                     if comm_size > 1:
                         send_buf = np.copy(self.array[:, :, -2 * nh : -nh, :])
                         recv_buf = np.empty_like(send_buf)
                         comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                        self.array[:, :, :nh, :] = recv_buf
+                        if not self._Grid.low_rank[1]:
+                            self.array[:, :, :nh, :] = recv_buf
                     else:
-                        self.array[:, :, :nh, :] = self.array[:, :, -2 * nh : -nh, :]
+                        if not self._Grid.low_rank[1]:
+                            self.array[:, :, :nh, :] = self.array[:, :, -2 * nh : -nh, :]
 
                 # Now do the left exchange
                 source, dest = comm.Shift(0, -1)
@@ -135,18 +139,22 @@ class GhostArray(GhostArrayBase):
                         send_buf = np.copy(self.array[:, nh : 2 * nh, :, :])
                         recv_buf = np.empty_like(send_buf)
                         comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                        self.array[:, -nh:, :, :] = recv_buf
+                        if not self._Grid.high_rank[0]:
+                            self.array[:, -nh:, :, :] = recv_buf
                     else:
-                        self.array[:, -nh:, :, :] = self.array[:, nh : 2 * nh, :, :]
+                        if not self._Grid.high_rank[0]:
+                            self.array[:, -nh:, :, :] = self.array[:, nh : 2 * nh, :, :]
 
                 if dim == 1:
                     if comm_size > 1:
                         send_buf = np.copy(self.array[:, :, nh : 2 * nh, :])
                         recv_buf = np.empty_like(send_buf)
                         comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                        self.array[:, :, -nh:, :] = recv_buf
+                        if not self._Grid.high_rank[1]:
+                            self.array[:, :, -nh:, :] = recv_buf
                     else:
-                        self.array[:, :, -nh:, :] = self.array[:, :, nh : 2 * nh, :]
+                        if not self._Grid.high_rank[1]:
+                            self.array[:, :, -nh:, :] = self.array[:, :, nh : 2 * nh, :]
 
         else:
             for dim in range(2):
@@ -165,6 +173,8 @@ class GhostArray(GhostArrayBase):
 
                 # Construct the buffers
                 nh = self._n_halo[dim]
+
+
 
                 if dim == 0:
                     if comm_size > 1:

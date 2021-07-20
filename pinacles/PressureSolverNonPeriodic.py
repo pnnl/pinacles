@@ -308,17 +308,10 @@ class PressureSolverNonPeriodic:
         v = self._VelocityState.get_field("v")
         w = self._VelocityState.get_field("w")
 
-        # self._correct_mass_leak(u, v)
-        # print(np.max(u0 - u))
-        self._correct_mass_leak(u, v)
         self._correct_mass_leak(u, v)
 
         w[:, :, n_halo[2] - 1] = 0.0
         w[:, :, ibu_edge[2]] = 0.0
-
-        # if MPI.COMM_WORLD.Get_rank() == 0:
-        #    u[32:48, 32:48, 10:20] = 1.0
-
 
 
         dynp = self._DiagnosticState.get_field("dynamic pressure")
@@ -329,18 +322,11 @@ class PressureSolverNonPeriodic:
         dxs = self._Grid.dx
 
         # Set boundary conditions
-        # self._radiation_davies(u, v, w)
 
         div = np.zeros(self._Grid.ngrid_local, dtype=np.double)
 
         # First compute divergence of wind field
         divergence_ghost(n_halo, dxs, rho0, rho0_edge, u, v, w, div)
-
-        # div = div - np.mean(div[
-        #            n_halo[0] : -n_halo[0],
-        #            n_halo[1] : -n_halo[1],
-        #            n_halo[2] : -n_halo[1]])#
-        # ],axis=0),axis=0)[np.newaxis, np.newaxis, :]
 
         # Make the BCS Homogeneous
         if self._Grid.low_rank[0]:
@@ -356,19 +342,6 @@ class PressureSolverNonPeriodic:
         div_copy = np.copy(div)
         self._make_homogeneous(div, div_copy)
 
-        # import pylab as plt
-
-        # plt.figure()
-        # plt.subplot(2, 1, 1)
-        # plt.contourf(div_copy[3:-3, 3:-3, 16].T)
-        # plt.colorbar()
-        # plt.title('div')
-        # plt.show()
-        import time
-
-        # time.sleep(2.0)
-        t0 = time.time()
-
         div_hat = self.dct.forward(
             np.copy(
                 div_copy[
@@ -383,27 +356,16 @@ class PressureSolverNonPeriodic:
 
         fill_pressure(n_halo, p, dynp)
         self._DiagnosticState.boundary_exchange("dynamic pressure")
-        # self._DiagnosticState._gradient_zero_bc("dynamic pressure")
-
-        # import pylab as plt
-        # plt.figure(1)
-        # plt.contourf(u[:,:,10].T)
 
         self._make_non_homogeneous(self._Ref.rho0, div, p, dynp)
-        # apply_pressure_open(n_halo, dxs, dynp, u, v, w)
-        ##apply_pressure(dxs, dynp, u, v, w)
+
         apply_pressure_open_new(
             n_halo, self._vel_starts, self._vel_ends, dxs, dynp, u, v, w
         )
 
-        #self._VelocityState.boundary_exchange()
+        self._VelocityState.boundary_exchange()
         self._VelocityState.update_all_bcs()
 
         self._VelocityState.remove_mean("w")
-
-        # w[:,:,n_halo[2]-1]=0.0
-        # w[:,:,ibu_edge[2]] = 0.0
-        # divergence_ghost(n_halo, dxs, rho0, rho0_edge, u, v, w, div)
-        # print('Divergence', np.amax(np.abs(div[3:-3, 3:-3, 16])))
 
         return

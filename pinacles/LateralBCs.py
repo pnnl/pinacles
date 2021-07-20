@@ -129,8 +129,8 @@ class LateralBCs:
         nl = self._Grid.nl
         ls = self._Grid._local_start
         le = self._Grid._local_end
-
-        if not self.count%20:
+        
+        if not self.count%2 == 0:
             self.count += 1
             return
         self.count = 0
@@ -152,7 +152,6 @@ class LateralBCs:
             )
 
             y_low[nh[0] : -nh[0], nh[2] : -nh[2]] = slab_y[ls[0] : le[0], 0, :]
-
 
             y_high[nh[0] : -nh[0], nh[2] : -nh[2]] = slab_y[ls[0] : le[0], 0, :]
 

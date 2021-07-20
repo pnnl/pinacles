@@ -425,8 +425,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
         v = self.VelocityState.get_field("v")
         s = self.ScalarState.get_field("s")
 
-        import pylab as plt
-        plt.plot(u[:,5,5])
+       # import pylab as plt
+       # plt.plot(u[:,5,5])
 
         # Update thermo this is mostly for IO at time 0
         self.Thermo.update(apply_buoyancy=False)
@@ -442,12 +442,14 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.ScalarState.update_all_bcs()
 
 
-        for lbc in [self.LBC, self.LBCVel]:
-            lbc.update()
+        #for lbc in [self.LBC, self.LBCVel]:
+        self.LBC.update()
+        self.LBCVel.update(normal=False)
 
 
-        plt.plot(u[:,5,5])
-        plt.show()
+
+       # plt.plot(u[:,5,5])
+       # plt.show()
 
 
         # Initialize timers
@@ -847,7 +849,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.ScalarTimeStepping.update()
                 self.VelocityTimeStepping.update()
 
-               # self.VelocityState.boundary_exchange()
+                self.VelocityState.boundary_exchange()
 
                 self.LBCVel.update()
 
