@@ -130,7 +130,7 @@ class LateralBCs:
         ls = self._Grid._local_start
         le = self._Grid._local_end
 
-        if not self.count%20:
+        if not self.count%2==0:
             self.count += 1
             return
         self.count = 0
@@ -143,7 +143,24 @@ class LateralBCs:
                 var_name, (self._ix_recycle_plane, self._ix_recycle_plane + 1)
             )
 
+
+            #if var_name == 'u':
+            #    slab_x.fill(1.0)
+
+
+            if var_name == "s":
+                slab_x[0, ls[1] : le[1], :6] += np.random.randn(nl[1], 6) * 0.5
+
+            # print(x_low.shape ,slab_x.shape )
             x_low[nh[1] : -nh[1], nh[2] : -nh[2]] = slab_x[0, ls[1] : le[1], :]
+
+
+           # slab_x = self._State.get_slab_x(
+           #     var_name, (self._ix_recycle_plane+64, self._ix_recycle_plane+64 + 1)
+           # )
+
+           # if var_name == 'u':
+           #     slab_x.fill(1.0)
 
             x_high[nh[1] : -nh[1], nh[2] : -nh[2]] = slab_x[0, ls[1] : le[1], :]
 
@@ -151,8 +168,26 @@ class LateralBCs:
                 var_name, (self._iy_recycle_plane, self._iy_recycle_plane + 1)
             )
 
+            #slab_y.fill()
+            if var_name == "s":
+                slab_y[ls[0] : le[0], 0, :6] += np.random.randn(nl[0], 6) * 0.5
+
+           # if var_name == 'v':
+           #     slab_y.fill(0.0)
+           # if var_name == 'u':
+           #     slab_y.fill(-6.0)
+
             y_low[nh[0] : -nh[0], nh[2] : -nh[2]] = slab_y[ls[0] : le[0], 0, :]
 
+
+           # slab_y = self._State.get_slab_y(
+           #     var_name, (self._iy_recycle_plane+64, self._iy_recycle_plane+64 + 1)
+           # )
+
+            #if var_name == 'v':
+            #    slab_y.fill(0.0)
+            #if var_name == 'u':
+            #    slab_y.fill(-6.0)
 
             y_high[nh[0] : -nh[0], nh[2] : -nh[2]] = slab_y[ls[0] : le[0], 0, :]
 
