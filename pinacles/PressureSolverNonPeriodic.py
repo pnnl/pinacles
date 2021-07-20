@@ -166,12 +166,8 @@ class PressureSolverNonPeriodic:
 
         rho0 = self._Ref.rho0
         dx = self._Grid.dx
-
-        # rho0[:] = 1.0
-
+    
         leak = 0
-
-        print(ibl_edge, nh)
 
         # Compute the amount of mass entering the system
         if low_rank[0]:
