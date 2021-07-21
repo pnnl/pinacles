@@ -79,10 +79,10 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
 
         # Instantiate variables for storing containers
-        self.ScalarState = Containers.ModelState(
+        self.ScalarState = Containers.ModelState(self._namelist,
             self.ModelGrid, container_name="ScalarState", prognostic=True
         )
-        self.VelocityState = Containers.ModelState(
+        self.VelocityState = Containers.ModelState(self._namelist,
             self.ModelGrid, container_name="VelocityState", prognostic=True
         )
 
@@ -93,7 +93,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self._namelist, self.ModelGrid, self.VelocityState, self.VelocityState
         )
 
-        self.DiagnosticState = Containers.ModelState(
+        self.DiagnosticState = Containers.ModelState(self._namelist,
             self.ModelGrid, container_name="DiagnosticState"
         )
 
@@ -475,13 +475,13 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.ModelGrid = Grid.RegularCartesian(self._namelist)
 
         # Instantiate variables for storing containers
-        self.ScalarState = Containers.ModelState(
+        self.ScalarState = Containers.ModelState(self._namelist,
             self.ModelGrid, container_name="ScalarState", prognostic=True
         )
-        self.VelocityState = Containers.ModelState(
+        self.VelocityState = Containers.ModelState(self._namelist,
             self.ModelGrid, container_name="VelocityState", prognostic=True
         )
-        self.DiagnosticState = Containers.ModelState(
+        self.DiagnosticState = Containers.ModelState(self._namelist,
             self.ModelGrid, container_name="DiagnosticState"
         )
 

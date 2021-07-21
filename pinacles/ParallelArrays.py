@@ -11,14 +11,21 @@ class GhostArrayBase:
 
 
 class GhostArray(GhostArrayBase):
-    def __init__(self, _Grid, dtype=np.double, ndof=1):
+    def __init__(self, _Grid, lbc_type, dtype=np.double, ndof=1):
 
         GhostArrayBase.__init__(self, _Grid)
+        self._lbc_type = lbc_type
         self._shape = tuple(np.append(ndof, self._Grid.ngrid_local))
         self._n_halo = self._Grid.n_halo
         self.array = np.empty(self._shape, dtype=np.double)
 
+
+
         return
+
+    @property
+    def lbc_type(self):
+        return self._lbc_type
 
     @property
     def shape(self):
@@ -108,10 +115,10 @@ class GhostArray(GhostArrayBase):
                         send_buf = np.copy(self.array[:, -2 * nh : -nh, :, :])
                         recv_buf = np.empty_like(send_buf)
                         comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                        if not self._Grid.low_rank[0]:
+                        if not self._Grid.low_rank[0] or self.lbc_type == 'periodic':
                             self.array[:, :nh, :, :] = recv_buf
                     else:
-                        if not self._Grid.low_rank[0]:
+                        if not self._Grid.low_rank[0] or self.lbc_type == 'periodic':
                             self.array[:, :nh, :, :] = self.array[:, -2 * nh : -nh, :, :]
 
                 if dim == 1:
@@ -119,10 +126,10 @@ class GhostArray(GhostArrayBase):
                         send_buf = np.copy(self.array[:, :, -2 * nh : -nh, :])
                         recv_buf = np.empty_like(send_buf)
                         comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                        if not self._Grid.low_rank[1]:
+                        if not self._Grid.low_rank[1] or self.lbc_type == 'periodic':
                             self.array[:, :, :nh, :] = recv_buf
                     else:
-                        if not self._Grid.low_rank[1]:
+                        if not self._Grid.low_rank[1] or self.lbc_type == 'periodic':
                             self.array[:, :, :nh, :] = self.array[:, :, -2 * nh : -nh, :]
 
                 # Now do the left exchange
@@ -139,10 +146,10 @@ class GhostArray(GhostArrayBase):
                         send_buf = np.copy(self.array[:, nh : 2 * nh, :, :])
                         recv_buf = np.empty_like(send_buf)
                         comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                        if not self._Grid.high_rank[0]:
+                        if not self._Grid.high_rank[0] or self.lbc_type == 'periodic':
                             self.array[:, -nh:, :, :] = recv_buf
                     else:
-                        if not self._Grid.high_rank[0]:
+                        if not self._Grid.high_rank[0] or self.lbc_type == 'periodic':
                             self.array[:, -nh:, :, :] = self.array[:, nh : 2 * nh, :, :]
 
                 if dim == 1:
@@ -150,10 +157,10 @@ class GhostArray(GhostArrayBase):
                         send_buf = np.copy(self.array[:, :, nh : 2 * nh, :])
                         recv_buf = np.empty_like(send_buf)
                         comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                        if not self._Grid.high_rank[1]:
+                        if not self._Grid.high_rank[1] or self.lbc_type == 'periodic':
                             self.array[:, :, -nh:, :] = recv_buf
                     else:
-                        if not self._Grid.high_rank[1]:
+                        if not self._Grid.high_rank[1] or self.lbc_type == 'periodic':
                             self.array[:, :, -nh:, :] = self.array[:, :, nh : 2 * nh, :]
 
         else:
