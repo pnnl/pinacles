@@ -19,6 +19,8 @@ def main(casename):
         input_dict = atex()
     elif casename == "testbed":
         input_dict = testbed()
+    elif casename == "magic":
+        input_dict = magic()
 
     write_file(casename, input_dict)
     # Pretty print the output to the terminal
@@ -506,6 +508,84 @@ def testbed():
     return input_dict
 
 
+def magic():
+    input_dict = {}
+
+    key = "meta"
+    input_dict[key] = {}
+    input_dict[key]["casename"] = "magic"
+    input_dict[key]["simname"] = input_dict[key]["casename"]
+    input_dict[key]["output_directory"] = "./"
+    input_dict[key]["random_seed"] = 1
+
+    key = "grid"
+    input_dict[key] = {}
+    # Set the number of grid points in the domain
+    input_dict[key]["n"] = [128, 128, 100]
+    # Set the number of halo points in each direct
+    input_dict[key]["n_halo"] = [4, 4, 4]
+    # Set the domain length, dx will be determined from n and L
+    input_dict[key]["l"] = [6400.0, 6400.0, 4000.0]
+
+    key = "scalar_advection"
+    input_dict[key] = {}
+    input_dict[key]["type"] = "weno5"
+    input_dict[key][input_dict[key]["type"]] = {}
+
+    key = "momentum_advection"
+    input_dict[key] = {}
+    input_dict[key]["type"] = "weno5"
+
+    key = "sgs"
+    input_dict[key] = {}
+    input_dict[key]["model"] = "smagorinsky"
+    input_dict[key][input_dict[key]["model"]] = {}
+    input_dict[key][input_dict[key]["model"]]["cs"] = 0.17
+    input_dict[key][input_dict[key]["model"]]["prt"] = 1.0 / 3.0
+
+    key = "microphysics"
+    input_dict[key] = {}
+    input_dict[key]["scheme"] = "kessler"
+
+    key = "damping"
+    input_dict[key] = {}
+    input_dict[key]["vars"] = ["u", "v", "w", "s"]
+    input_dict[key]["depth"] = 1000.0
+    input_dict[key]["timescale"] = 60.0
+
+    key = "time"
+    input_dict[key] = {}
+    input_dict[key]["cfl"] = 0.6
+    input_dict[key]["time_max"] = 3600.0 * 12.0
+
+    key = "stats"
+    input_dict[key] = {}
+    input_dict[key]["frequency"] = 60.0
+    input_dict[key]["modules"] = []
+
+    key = "restart"
+    input_dict[key] = {}
+    input_dict[key]["frequency"] = 600.0
+    input_dict[key]["restart_simulation"] = False
+    input_dict[key]["infile"] = ""
+
+    key = "fields"
+    input_dict[key] = {}
+    input_dict[key]["frequency"] = 600.0
+
+    key = "magic"
+    input_dict[key] = {}
+    input_dict[key]["input_filepath"] = "magic_leg15a_inputs_test.nc"
+    input_dict[key]["momentum_forcing"] = "geostrophic"
+
+    key = "towers"
+    input_dict[key] = {}
+    input_dict[key]["location"] = []
+    input_dict[key]["frequency"] = 600.0
+
+    return input_dict
+
+
 LIST_OF_CASES = [
     "colliding_blocks",
     "stable_bubble",
@@ -514,6 +594,7 @@ LIST_OF_CASES = [
     "rico",
     "atex",
     "testbed",
+    "magic"
 ]
 
 if __name__ == "__main__":

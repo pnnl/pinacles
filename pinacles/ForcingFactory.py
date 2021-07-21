@@ -3,6 +3,7 @@ from pinacles import CaseBOMEX
 from pinacles import CaseRICO
 from pinacles import CaseATEX
 from pinacles import CaseTestbed
+from pinacles import CaseMAGIC
 from pinacles import Forcing
 
 
@@ -44,6 +45,17 @@ def factory(
         )
     elif casename == "testbed":
         return CaseTestbed.ForcingTestbed(
+            namelist,
+            Timers,
+            Grid,
+            Ref,
+            VelocityState,
+            ScalarState,
+            DiagnosticState,
+            TimeSteppingController,
+        )
+    elif casename == "magic":
+        return CaseMAGIC.ForcingMAGIC(
             namelist,
             Timers,
             Grid,

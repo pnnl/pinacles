@@ -13,6 +13,7 @@ CASENAMES = [
     "rico",
     "atex",
     "testbed",
+    "magic"
 ]
 
 
@@ -561,6 +562,172 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     return
 
+def magic(namelist, ModelGrid, Ref, ScalarState, VelocityState):
+    #  Optionally set a random seed as specified in the namelist
+    try:
+        np.random.seed(namelist["meta"]["random_seed"])
+    except:
+        pass
+
+    file = namelist["magic"]["input_filepath"]
+    try:
+        micro_scheme = namelist["microphysics"]["scheme"]
+    except:
+        micro_scheme = "base"
+    try:
+        sbm_init_type = namelist["magic"]["sbm_init_type"]
+        # options are 'assume_distribution', 'all_vapor',
+        if sbm_init_type not in ["assume_distribution", "all_vapor"]:
+            UtilitiesParallel.print_root(
+                " Warning: sbm_init_type is unknown. Defaulting to all_vapor"
+            )
+    except:
+        sbm_init_type = "all_vapor"
+    try:
+        sbm_init_nc = namelist["magic"]["sbm_init_nc"]
+    except:
+        sbm_init_nc = 55.0e6
+
+    data = nc.Dataset(file, "r")
+    try:
+        init_data = data.groups["initialization_sonde"]
+        UtilitiesParallel.print_root("\t \t Initializing from the sonde profile.")
+        # init_data = data.groups['initialization_varanal]
+        # print('Initializing from the analysis profile')
+    except:
+        init_data = data.groups["initialization"]
+
+    psfc = init_data.variables["surface_pressure"][0]
+    if psfc < 1.0e4:
+        psfc *= 100.0  # Convert from hPa to Pa
+    tsfc = init_data.variables["surface_temperature"][0]
+    u0 = init_data.variables["reference_u0"][0]
+    v0 = init_data.variables["reference_v0"][0]
+
+    Ref.set_surface(Psfc=psfc, Tsfc=tsfc, u0=u0, v0=v0)
+    Ref.integrate()
+
+    u = VelocityState.get_field("u")
+    v = VelocityState.get_field("v")
+    w = VelocityState.get_field("w")
+    s = ScalarState.get_field("s")
+    qv = ScalarState.get_field("qv")
+    qc = ScalarState.get_field("qc")
+
+    zl = ModelGrid.z_local
+
+    init_z = init_data.variables["z"][:]
+
+    raw_qv = init_data.variables["vapor_mixing_ratio"][:]
+    raw_u = init_data.variables["u"][:]
+    raw_v = init_data.variables["v"][:]
+
+    init_var_from_sounding(raw_u, init_z, zl, u)
+    init_var_from_sounding(raw_v, init_z, zl, v)
+    init_var_from_sounding(raw_qv, init_z, zl, qv)
+
+    u -= Ref.u0
+    v -= Ref.v0
+
+    try:
+        raw_clwc = init_data.variables["cloud_water_content"][:]
+        init_qc = True
+        UtilitiesParallel.print_root("\t \t Initialization of qc is true")
+    except:
+        init_qc = False
+        qc.fill(0.0)
+        UtilitiesParallel.print_root("\t \t Initialization of qc is false")
+
+    if init_qc:
+        init_var_from_sounding(raw_clwc, init_z, zl, qc)
+        shape = qc.shape
+        if micro_scheme == "sbm" and sbm_init_type == "assume_distribution":
+            UtilitiesParallel.print_root(
+                "\t \t Initializing cloud liquid to bins with assumptions that number of bins = 33!"
+            )
+            nbins = 33
+            # Assuming a width parameter of the initial distribution, this could be added as a namelist parameter
+            sig1 = 1.2
+
+            # ff1i1= ScalarState.get_field('ff1i1')
+            ff_list = []
+            for ibin in range(nbins):
+                ff_list.append(ScalarState.get_field("ff1i" + str(np.int(ibin + 1))))
+            for i in range(shape[0]):
+                for j in range(shape[1]):
+                    for k in range(shape[2]):
+                        qc_sum = 0.0
+                        if qc[i, j, k] > 0.0:
+
+                            f, xl = get_lognormal_dist(
+                                nbins, qc[i, j, k], sbm_init_nc, sig1
+                            )
+
+                            for ibin in range(nbins):
+
+                                ff_list[ibin][i, j, k] = (
+                                    f[ibin] * 1e6 * xl[ibin] / Ref.rho0[k]
+                                )  # /col* col
+                                qc_sum += ff_list[ibin][i, j, k]
+                        # qc[i,j,k] = qc[i,j,k]/Ref.rho0[k]
+                        qc[i, j, k] = qc_sum
+            UtilitiesParallel.print_root("Max on Rank of Bins")
+            for ff in ff_list:
+                max_on_rank = np.amax(ff)
+                UtilitiesParallel.print_root(str(max_on_rank))
+
+        elif micro_scheme == "sbm" and sbm_init_type == "all_vapor":
+            UtilitiesParallel.print_root(
+                "\t \t SBM initialization with cloud water dumped into vapor."
+            )
+            for i in range(shape[0]):
+                for j in range(shape[1]):
+                    for k in range(shape[2]):
+                        qv[i, j, k] += qc[i, j, k] / Ref.rho0[k]
+                        qc[i, j, k] = 0.0
+        else:
+            for i in range(shape[0]):
+                for j in range(shape[1]):
+                    for k in range(shape[2]):
+                        qc[i, j, k] = qc[i, j, k] / Ref.rho0[k]
+
+    try:
+        raw_temperature = init_data.variables["temperature"][:]
+        init_var_from_sounding(raw_temperature, init_z, zl, s)
+        # hardwire for now, could make inputs in namelist or data file
+        pert_amp = 0.1
+        pert_max_height = 200.0
+        shape = s.shape
+        perts = np.random.uniform(
+            pert_amp * -1.0, pert_amp, (shape[0], shape[1], shape[2])
+        )
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                for k in range(shape[2]):
+                    t = s[i, j, k]
+                    if zl[k] < pert_max_height:
+                        t += perts[i, j, k]
+                    s[i, j, k] = MoistThermo.s(zl[k], t, qc[i, j, k], 0.0)
+    except:
+        raw_theta = init_data.variables["potential_temperature"][:]
+        init_var_from_sounding(raw_theta, init_z, zl, s)
+        # hardwire for now, could make inputs in namelist or data file
+        pert_amp = 0.1
+        pert_max_height = 200.0
+        shape = s.shape
+        perts = np.random.uniform(
+            pert_amp * -1.0, pert_amp, (shape[0], shape[1], shape[2])
+        )
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                for k in range(shape[2]):
+                    t = s[i, j, k] * Ref.exner[k]
+                    if zl[k] < pert_max_height:
+                        t += perts[i, j, k]
+                    s[i, j, k] = MoistThermo.s(zl[k], t, qc[i, j, k], 0.0)
+
+    return
+
 
 def init_var_from_sounding(profile_data, profile_z, grid_z, var3d):
     var3d.fill(0.0)
@@ -615,6 +782,8 @@ def factory(namelist):
         return atex
     elif namelist["meta"]["casename"] == "testbed":
         return testbed
+    elif namelist["meta"]["casename"] == "magic":
+        return magic
 
 
 def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
