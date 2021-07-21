@@ -237,6 +237,7 @@ class ForcingMAGIC(Forcing.ForcingBase):  #CaseATEX
             VelocityState,
             ScalarState,
             DiagnosticState,
+            TimeSteppingController,
         )
 
         self._TimeSteppingController = TimeSteppingController
