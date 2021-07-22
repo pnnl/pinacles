@@ -556,7 +556,7 @@ def magic():
     key = "time"
     input_dict[key] = {}
     input_dict[key]["cfl"] = 0.6
-    input_dict[key]["time_max"] = 3600.0 * 2.0
+    input_dict[key]["time_max"] = 3600.0 * 12.0
 
     key = "stats"
     input_dict[key] = {}
