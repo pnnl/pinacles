@@ -214,14 +214,13 @@ def radiative_transfer(dz, rho0, qc, st):
     return
 
 
-class ForcingMAGIC(Forcing.ForcingBase):  #CaseATEX
+class ForcingMAGIC(Forcing.ForcingBase):
     def __init__(
         self,
         namelist,
         Timers,
         Grid,
         Ref,
-        Microphysics,
         VelocityState,
         ScalarState,
         DiagnosticState,
@@ -237,130 +236,312 @@ class ForcingMAGIC(Forcing.ForcingBase):  #CaseATEX
             VelocityState,
             ScalarState,
             DiagnosticState,
-            TimeSteppingController,
         )
-
         self._TimeSteppingController = TimeSteppingController
-        self._Microphysics = Microphysics
 
-        DiagnosticState.add_variable("radiation_temp_tend")
+        file = namelist["magic"]["input_filepath"]
+        self._momentum_forcing_method = namelist["magic"]["momentum_forcing"]
+        # Options: relaxation, mean_relaxation, geostrophic, none
+        self._subsidence_forcing_method = namelist["magic"]["subsidence_forcing"]
+        # Options: vertical tendency, subsidence, fixed_subsidence
+        # Vertical tendency: provide time-height profiles for qv and temperature (not theta)
+        # Subsidence: provide time-height profile of subsidence velocity and tendencies are computed
+        # Fixed_subsidence: provide a large scale divergence D and get subsidence velocity as -D * z (constant in time)
+        if self._subsidence_forcing_method == "fixed_subsidence":
+            _ls_divergence = namelist["magic"]["largescale_divergence"]
 
-        self._f = 0.376e-4
-
+        data = nc.Dataset(file, "r")
+        forcing_data = data.groups["forcing"]
+        lat = forcing_data.variables["latitude"][0]
+        self._f = 2.0 * parameters.OMEGA * np.sin(lat * np.pi / 180.0)
         zl = self._Grid.z_local
-        nhalo = self._Grid.n_halo
-        exner = self._Ref.exner
 
-        # Set the geostrophic wind
-        self._ug = np.zeros_like(self._Grid.z_global)
-        self._vg = np.zeros_like(self._ug)
+        # Read in the data, we want to
+        forcing_z = forcing_data.variables["z"][:]
+        self._forcing_times = forcing_data.variables["times"][:]
+        ntimes = np.shape(self._forcing_times)[0]
+        if self._momentum_forcing_method == "geostrophic":
+            raw_ug = forcing_data.variables["u_geostrophic"][:, :]
+            raw_vg = forcing_data.variables["v_geostrophic"][:, :]
+        if (
+            self._momentum_forcing_method == "relaxation"
+            or self._momentum_forcing_method == "mean_relaxation"
+        ):
+            raw_ur = forcing_data.variables["u_relaxation"][:, :]
+            raw_vr = forcing_data.variables["v_relaxation"][:, :]
 
-        for k in range(self._ug.shape[0]):
-            z = zl[k]
-            if z <= 150.0:
-                self._ug[k] = max(-11.0 + z * (-10.55 - -11.00) / 150.0, -8.0)
-                self._vg[k] = -2.0 + z * (-1.90 - -2.0) / 150.0
-            elif z > 150.0 and z <= 700.0:
-                dz = 700.0 - 150.0
-                self._ug[k] = max(-10.55 + (z - 150.0) * (-8.90 - -10.55) / dz, -8.0)
-                self._vg[k] = -1.90 + (z - 150.0) * (-1.10 - -1.90) / dz
-            elif z > 700.0 and z <= 750.0:
-                dz = 750.0 - 700.0
-                self._ug[k] = max(-8.90 + (z - 700.0) * (-8.75 - -8.90) / dz, -8.0)
-                self._vg[k] = -1.10 + (z - 700.0) * (-1.00 - -1.10) / dz
-            elif z > 750.0 and z <= 1400.0:
-                dz = 1400.0 - 750.0
-                self._ug[k] = max(-8.75 + (z - 750.0) * (-6.80 - -8.75) / dz, -8.0)
-                self._vg[k] = -1.00 + (z - 750.0) * (-0.14 - -1.00) / dz
-            elif z > 1400.0 and z <= 1650.0:
-                dz = 1650.0 - 1400.0
-                self._ug[k] = max(-6.80 + (z - 1400.0) * (-6.80 - -5.75) / dz, -8.0)
-                self._vg[k] = -0.14 + (z - 1400.0) * (0.18 - -0.14) / dz
-            elif z > 1650.0:
-                dz = 4000.0 - 1650.0
-                self._ug[k] = max(-5.75 + (z - 1650.0) * (1.00 - -5.75) / dz, -8.0)
-                self._vg[k] = 0.18 + (z - 1650.0) * (2.75 - 0.18) / dz
+        raw_adv_qt = forcing_data.variables["qt_advection"][:, :]
+        # If both theta and temperature advection are provided, take temperature
+        # Otherwise, take theta
+        try:
+            raw_adv_temperature = forcing_data.variables["temperature_advection"][:, :]
+            self._use_temperature_advection = True
+        except:
+            raw_adv_theta = forcing_data.variables["theta_advection"][:, :]
+            self._use_temperature_advection = False
+
+        # Get the subsidence/vertical advection tendency ifnromation
+        # Assuming that vertical advection tendencies are provided for temperature, not theta
+        # as this is what varanal provides
+        if self._subsidence_forcing_method == "fixed_subsidence":
+            raw_subsidence = (
+                np.ones_like(raw_adv_qt)
+                * np.tile(forcing_z[np.newaxis, :], (ntimes, 1))
+                * _ls_divergence
+            )
+        else:
+            raw_subsidence = forcing_data.variables["subsidence"][:, :]
+        if self._subsidence_forcing_method == "vertical_tendency":
+            raw_vtend_qt = forcing_data.variables["qt_vertical_tendency"][:, :]
+            # temperature, not theta
+            raw_vtend_temperature = forcing_data.variables[
+                "temperature_vertical_tendency"
+            ][:, :]
+
+        data.close()
+
+        if self._momentum_forcing_method == "geostrophic":
+            self._ug = interpolate.interp1d(
+                forcing_z, raw_ug, axis=1, fill_value="extrapolate", assume_sorted=True
+            )(zl)
+            self._vg = interpolate.interp1d(
+                forcing_z, raw_vg, axis=1, fill_value="extrapolate", assume_sorted=True
+            )(zl)
+        if (
+            self._momentum_forcing_method == "relaxation"
+            or self._momentum_forcing_method == "mean_relaxation"
+        ):
+            self._ur = interpolate.interp1d(
+                forcing_z, raw_ur, axis=1, fill_value="extrapolate", assume_sorted=True
+            )(zl)
+            self._vr = interpolate.interp1d(
+                forcing_z, raw_vr, axis=1, fill_value="extrapolate", assume_sorted=True
+            )(zl)
+
+        self._subsidence = interpolate.interp1d(
+            forcing_z,
+            raw_subsidence,
+            axis=1,
+            fill_value="extrapolate",
+            assume_sorted=True,
+        )(zl)
+        self._adv_qt = interpolate.interp1d(
+            forcing_z, raw_adv_qt, axis=1, fill_value="extrapolate", assume_sorted=True
+        )(zl)
+        if self._use_temperature_advection:
+            self._adv_temperature = interpolate.interp1d(
+                forcing_z,
+                raw_adv_temperature,
+                axis=1,
+                fill_value="extrapolate",
+                assume_sorted=True,
+            )(zl)
+        else:
+            self._adv_theta = interpolate.interp1d(
+                forcing_z,
+                raw_adv_theta,
+                axis=1,
+                fill_value="extrapolate",
+                assume_sorted=True,
+            )(zl)
+        if self._subsidence_forcing_method == "vertical_tendency":
+            self._vtend_temperature = interpolate.interp1d(
+                forcing_z,
+                raw_vtend_temperature,
+                axis=1,
+                fill_value="extrapolate",
+                assume_sorted=True,
+            )(zl)
+
+            self._vtend_qt = interpolate.interp1d(
+                forcing_z,
+                raw_vtend_qt,
+                axis=1,
+                fill_value="extrapolate",
+                assume_sorted=True,
+            )(zl)
+
+        z_top = self._Grid.l[2]
+        # Performing relaxation nudging over the same depth as damping, this is an assumption to revisit
+        _depth = namelist["damping"]["depth"]
+        znudge = z_top - _depth
+        # Assume nudging timescale of 1 hour, again this is an assumption that could be revisited
+        self._compute_relaxation_coefficient(znudge, 3600.0)
 
         self._Timers.add_timer("ForcingMAGIC_update")
+
         return
 
     def update(self):
 
         self._Timers.start_timer("ForcingMAGIC_update")
 
-        # Get grid and reference information
-        zl = self._Grid.z_local
-        exner = self._Ref.exner
-        rho = self._Ref.rho0
-        dxi = self._Grid.dxi
-        dx = self._Grid.dx
-        n_halo = self._Grid.n_halo
+        current_time = self._TimeSteppingController.time
 
-        # Read in fields
+        # interpolate in time
+        if self._momentum_forcing_method == "geostrophic":
+            current_ug = interpolate.interp1d(
+                self._forcing_times,
+                self._ug,
+                axis=0,
+                fill_value="extrapolate",
+                assume_sorted=True,
+            )(current_time)
+            current_vg = interpolate.interp1d(
+                self._forcing_times,
+                self._vg,
+                axis=0,
+                fill_value="extrapolate",
+                assume_sorted=True,
+            )(current_time)
+        if (
+            self._momentum_forcing_method == "relaxation"
+            or self._momentum_forcing_method == "mean_relaxation"
+        ):
+            current_ur = interpolate.interp1d(
+                self._forcing_times,
+                self._ur,
+                axis=0,
+                fill_value="extrapolate",
+                assume_sorted=True,
+            )(current_time)
+            current_vr = interpolate.interp1d(
+                self._forcing_times,
+                self._vr,
+                axis=0,
+                fill_value="extrapolate",
+                assume_sorted=True,
+            )(current_time)
+        current_subsidence = interpolate.interp1d(
+            self._forcing_times,
+            self._subsidence,
+            axis=0,
+            fill_value="extrapolate",
+            assume_sorted=True,
+        )(current_time)
+        current_adv_qt = interpolate.interp1d(
+            self._forcing_times,
+            self._adv_qt,
+            axis=0,
+            fill_value="extrapolate",
+            assume_sorted=True,
+        )(current_time)
+        if self._use_temperature_advection:
+            current_adv_temperature = interpolate.interp1d(
+                self._forcing_times,
+                self._adv_temperature,
+                axis=0,
+                fill_value="extrapolate",
+                assume_sorted=True,
+            )(current_time)
+        else:
+            current_adv_theta = interpolate.interp1d(
+                self._forcing_times,
+                self._adv_theta,
+                axis=0,
+                fill_value="extrapolate",
+                assume_sorted=True,
+            )(current_time)
+        if self._subsidence_forcing_method == "vertical_tendency":
+            current_vtend_temperature = interpolate.interp1d(
+                self._forcing_times,
+                self._vtend_temperature,
+                axis=0,
+                fill_value="extrapolate",
+                assume_sorted=True,
+            )(current_time)
+            current_vtend_qt = interpolate.interp1d(
+                self._forcing_times,
+                self._vtend_qt,
+                axis=0,
+                fill_value="extrapolate",
+                assume_sorted=True,
+            )(current_time)
+
+        exner = self._Ref.exner
+
         u = self._VelocityState.get_field("u")
         v = self._VelocityState.get_field("v")
         s = self._ScalarState.get_field("s")
         qv = self._ScalarState.get_field("qv")
-
-        qc = self._Microphysics.get_qc()
 
         ut = self._VelocityState.get_tend("u")
         vt = self._VelocityState.get_tend("v")
         st = self._ScalarState.get_tend("s")
         qvt = self._ScalarState.get_tend("qv")
 
-        radiation_temp_tend = self._DiagnosticState.get_field("radiation_temp_tend")
+        if self._use_temperature_advection:
+            st += (current_adv_temperature)[np.newaxis, np.newaxis, :]
+        else:
+            st += (current_adv_theta * exner)[np.newaxis, np.newaxis, :]
+        qvt += (current_adv_qt)[np.newaxis, np.newaxis, :]
+        if self._momentum_forcing_method == "geostrophic":
+            Forcing_impl.large_scale_pgf(
+                current_ug,
+                current_vg,
+                self._f,
+                u,
+                v,
+                self._Ref.u0,
+                self._Ref.v0,
+                ut,
+                vt,
+            )
+        if self._momentum_forcing_method == "relaxation":
+            Forcing_impl.relax_velocities(
+                current_ur,
+                current_vr,
+                u,
+                v,
+                self._Ref.u0,
+                self._Ref.v0,
+                ut,
+                vt,
+                self._relaxation_coefficient,
+            )
+        if self._momentum_forcing_method == "mean_relaxation":
+            umean = self._VelocityState.mean("u")
+            vmean = self._VelocityState.mean("v")
+            Forcing_impl.relax_mean_velocities(
+                current_ur,
+                current_vr,
+                umean,
+                vmean,
+                self._Ref.u0,
+                self._Ref.v0,
+                ut,
+                vt,
+                self._relaxation_coefficient,
+            )
 
-        # Compute zi
-        qv_mean_prof = self._ScalarState.mean("qv")
-
-        qv_above = np.where(qv_mean_prof > 6.5 / 1000.0)
-        n_above = qv_above[0][-1]
-
-        dqvdz = (qv_mean_prof[n_above + 1] - qv_mean_prof[n_above]) * dxi[2]
-        extrap_z = ((6.5 / 1000.0) - qv_mean_prof[n_above]) / dqvdz
-
-        zi = zl[n_above] + extrap_z
-
-        # Apply pressure gradient
-        Forcing_impl.large_scale_pgf(
-            self._ug, self._vg, self._f, u, v, self._Ref.u0, self._Ref.v0, ut, vt
-        )
-
-        # Compute subsidence
-        subsidence = np.zeros_like(qv_mean_prof)
-        free_subsidence = -6.5 / 1000.0
-        for k in range(subsidence.shape[0]):
-            if zl[k] < zi:
-                subsidence[k] = (free_subsidence / zi) * zl[k]
-            else:
-                subsidence[k] = free_subsidence
-
-        Forcing_impl.apply_subsidence(subsidence, self._Grid.dxi[2], s, st)
-        Forcing_impl.apply_subsidence(subsidence, self._Grid.dxi[2], qv, qvt)
-
-        # Todo becareful about applying subsidence to velocity fields
-        Forcing_impl.apply_subsidence(subsidence, self._Grid.dxi[2], u, ut)
-        Forcing_impl.apply_subsidence(subsidence, self._Grid.dxi[2], v, vt)
-
-        # Heating rates
-        if self._TimeSteppingController.time > 5400.0:
-            dqtdt = np.zeros_like(subsidence)
-            dtdt = np.zeros_like(subsidence)
-            for k in range(subsidence.shape[0]):
-                dqtdt[k] = -1.58e-8 * (1.0 - zl[k] / zi)
-                dtdt[k] = -1.1575e-5 * (3.0 - zl[k] / zi) * exner[k]
-
-            qvt += dqtdt[np.newaxis, np.newaxis, :]
-            st += dtdt[np.newaxis, np.newaxis, :]
-        dz = dx[2]
-
-        st_old = np.copy(st)
-
-        radiative_transfer(dz, rho, qc, st)
-        radiation_temp_tend[:, :, :] = st[:, :, :] - st_old[:, :, :]
+        if self._subsidence_forcing_method == "vertical_tendency":
+            st += (
+                current_vtend_temperature
+                + current_subsidence * parameters.G * parameters.ICPD
+            )[np.newaxis, np.newaxis, :]
+            qvt += (current_vtend_qt)[np.newaxis, np.newaxis, :]
+        else:
+            Forcing_impl.apply_subsidence(current_subsidence, self._Grid.dxi[2], s, st)
+            Forcing_impl.apply_subsidence(
+                current_subsidence, self._Grid.dxi[2], qv, qvt
+            )
 
         self._Timers.end_timer("ForcingMAGIC_update")
+
+        return
+
+    def _compute_relaxation_coefficient(self, znudge, timescale):
+
+        self._relaxation_coefficient = np.zeros(self._Grid.ngrid[2], dtype=np.double)
+
+        z = self._Grid.z_global
+
+        for k in range(self._Grid.ngrid[2]):
+            self._relaxation_coefficient[k] = 1.0 / timescale
+            if z[k] < znudge:
+                self._relaxation_coefficient[k] *= (
+                    np.sin((np.pi / 2.0) * (1.0 - (znudge - z[k]) / znudge)) ** 2.0
+                )
 
         return
 

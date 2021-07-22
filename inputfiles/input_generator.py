@@ -515,7 +515,7 @@ def magic():
     input_dict[key] = {}
     input_dict[key]["casename"] = "magic"
     input_dict[key]["simname"] = input_dict[key]["casename"]
-    input_dict[key]["output_directory"] = "/Users/huan967/Work/eagles_pinacles/output/"
+    input_dict[key]["output_directory"] = "./"
     input_dict[key]["random_seed"] = 1
 
     key = "grid"
@@ -575,7 +575,9 @@ def magic():
 
     key = "magic"
     input_dict[key] = {}
-    input_dict[key]["input_filepath"] = "/Users/huan967/Work/eagles_pinacles/MAGIC-forcings/PINACLES/magic_leg15a_inputs_test.nc"
+    input_dict[key]["input_filepath"] = "magic_leg15a_inputs_test.nc"
+    input_dict[key]["momentum_forcing"] = "geostrophic"
+    input_dict[key]['subsidence_forcing'] = 'subsidence'
 
     key = "towers"
     input_dict[key] = {}
