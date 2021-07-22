@@ -213,13 +213,6 @@ class PressureSolverNonPeriodic:
         MPI.COMM_WORLD.Allreduce(u_fix_leak_local, u_fix_leak_global, MPI.SUM),
         u_fix_leak = u_fix_leak_global[0]
 
-        print('fix_leak', u_fix_leak, leak)
-
-
-        # print(leak,  linear_mass, u_fix_leak)
-
-        # import sys; sys.exit()
-
         if low_rank[0]:
             u[
                 : ibl_edge[0] + 1, :, :
@@ -362,6 +355,6 @@ class PressureSolverNonPeriodic:
         self._VelocityState.boundary_exchange()
         self._VelocityState.update_all_bcs()
 
-        self._VelocityState.remove_mean("w")
+        #self._VelocityState.remove_mean("w")
 
         return
