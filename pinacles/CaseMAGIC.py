@@ -55,8 +55,6 @@ class SurfaceMAGIC(Surface.SurfaceBase):
         self._bflx_sfc = np.zeros_like(self._windspeed_sfc)
         self._cm = np.zeros_like(self._windspeed_sfc)
         self._ch = np.zeros_like(self._windspeed_sfc)
-        self._shf = np.zeros_like(self._windspeed_sfc)
-        self._lhf = np.zeros_like(self._windspeed_sfc)
         self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
 
         self._Timers.add_timer("SurfaceMAGIC_update")
