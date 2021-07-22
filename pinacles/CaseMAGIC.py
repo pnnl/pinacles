@@ -35,7 +35,7 @@ class SurfaceMAGIC(Surface.SurfaceBase):
 
         self._TimeSteppingController = TimeSteppingController
 
-        file = namelist["testbed"]["input_filepath"]
+        file = namelist["magic"]["input_filepath"]
         data = nc.Dataset(file, "r")
         surface_data = data.groups["surface"]
         self._forcing_times = surface_data.variables["times"][:]
