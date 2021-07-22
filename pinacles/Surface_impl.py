@@ -208,7 +208,7 @@ def momentum_bulk_aero(windspeed_sfc, cm, u, v, u0, v0, taux, tauy):
 
 
 @numba.njit
-def exchange_coefficients_byun(Ri, zb, z0, cm, ch, lmo):
+def exchange_coefficients_byun(Ri, zb, z0):
     logz = np.log(zb / z0)
     zfactor = zb/(zb-z0)*logz
     sb = Ri/PR0
@@ -222,24 +222,32 @@ def exchange_coefficients_byun(Ri, zb, z0, cm, ch, lmo):
             angle = np.arccos(pb/np.sqrt(qb * qb * qb))
             zeta = zfactor * (-2.0 * np.sqrt(qb) * np.cos(angle/3.0)+1.0/(3.0*GAMMA_M))
         else:
-            tb = np.cbrt(np.sqrt(-crit) + abs(pb))
+            tb = (np.sqrt(-crit) + np.abs(pb))**(1./3.)
             zeta = zfactor * (1.0/(3.0*GAMMA_M)-(tb + qb/tb))
 
-        lmo_ = zb/zeta
-        zeta0 = z0/lmo_
+        lmo = zb/zeta
+        zeta0 = z0/lmo
         psi_m = psi_m_unstable(zeta, zeta0)
         psi_h = psi_h_unstable(zeta, zeta0)
     
     else:  #Stable conditions
         zeta = zfactor/(2.0*BETA_H*(BETA_M*Ri -1.0)) * ((1.0-2.0*BETA_H*Ri)-np.sqrt(1.0+4.0*(BETA_H - BETA_M)*sb))
-        lmo_ = zb/zeta
-        zeta0 = z0/lmo_
+        lmo = zb/zeta
+        zeta0 = z0/lmo
         psi_m = psi_m_stable(zeta, zeta0)
         psi_h = psi_h_stable(zeta, zeta0)
 
-    cu = VKB/(logz-psi_m)
-    cth = VKB/(logz-psi_h)/PR0
+    cu = VKB/(logz - psi_m)
+    cth = VKB/(logz - psi_h)/PR0
     cm = cu * cu
     ch = cu * cth 
-
     return cm, ch
+
+
+@numba.njit()
+def compute_exchange_coefficients(Ri, zb, z0, cm, ch):
+    shape = cm.shape
+    for i in range(1, shape[0]):
+        for j in range(1, shape[1]):
+            cm[i, j], ch[i, j] = exchange_coefficients_byun(Ri[i, j], zb, z0[i, j])
+    return 

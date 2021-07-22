@@ -49,10 +49,12 @@ class SurfaceMAGIC(Surface.SurfaceBase):
 
         nl = self._Grid.ngrid_local
 
-        self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
+        self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double) + self.gustiness
         self._taux_sfc = np.zeros_like(self._windspeed_sfc)
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
         self._bflx_sfc = np.zeros_like(self._windspeed_sfc)
+        self._shf = np.zeros_like(self._windspeed_sfc)
+        self._lhf = np.zeros_like(self._windspeed_sfc)
         self._cm = np.zeros_like(self._windspeed_sfc)
         self._ch = np.zeros_like(self._windspeed_sfc)
         self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
@@ -81,8 +83,8 @@ class SurfaceMAGIC(Surface.SurfaceBase):
         if my_rank == 0:
             timeseries_grp = rt_grp["timeseries"]
 
-            timeseries_grp["shf"][-1] = self._shf
-            timeseries_grp["lhf"][-1] = self._lhf
+            timeseries_grp["shf"][-1] = self._shf[0]
+            timeseries_grp["lhf"][-1] = self._lhf[0]
 
             timeseries_grp["ustar"][-1] = self._ustar
             timeseries_grp["z0"][-1] = self._z0
@@ -141,14 +143,15 @@ class SurfaceMAGIC(Surface.SurfaceBase):
         # Nb2 = g/theta_rho_g*(theta_rho_b-theta_rho_g)/zb
         # Ri = Nb2 * zb* zb/(windspeed[ij] * windspeed[ij])
         bvf = self._DiagnosticState.get_field("bvf")
-        dz = self._Grid.dx[2]
+        dz = self._Grid.dx[2] / 2.
 
         bvfsfc = bvf[:, :, nh[2]]
-        zb = dz[:, :, nh[2]]
         wssfc = self._windspeed_sfc
-        Ri = bvfsfc * zb * zb / (wssfc * wssfc)
+        Ri = bvfsfc * dz * dz / (wssfc * wssfc)
 
-        Surface_impl.exchange_coefficients_byun(Ri, zb, self._z0, self._cm, self._ch)
+        self._z0 = self._compute_z0(dz, wssfc)
+
+        Surface_impl.compute_exchange_coefficients(Ri, dz, self._z0, self._cm, self._ch)
         shf = -self._ch * self._windspeed_sfc * (Ssfc - self.T_surface)    
         s_flx_sf = (
             np.zeros_like(self._taux_sfc)
@@ -182,34 +185,13 @@ class SurfaceMAGIC(Surface.SurfaceBase):
 
         # Store the surface fluxes for output
         self._shf = shf
-        self._lhf = qv_flx_sf * parameters.Lv / alpha0_edge[nh[2] - 1]
+        self._lhf = qv_flx_sf * parameters.LV / alpha0_edge[nh[2] - 1]
         return
 
-
-@numba.njit()
-def radiative_transfer(dz, rho0, qc, st):
-
-    shape = qc.shape
-
-    lwp = np.zeros(shape, dtype=np.double)
-    lw_flux = np.zeros(shape, dtype=np.double)
-
-    for i in range(shape[0]):
-        for j in range(shape[1]):
-            # Compute the liquid path
-            for k in range(shape[2] - 1, 1, -1):
-                lwp[i, j, k - 1] = lwp[i, j, k] + rho0[k] * qc[i, j, k] * dz
-
-            for k in range(shape[2]):
-                lw_flux[i, j, k] = 74.0 * np.exp(-130.0 * lwp[i, j, k])
-
-            # Now compute tendencies
-            for k in range(1, shape[2]):
-                st[i, j, k] -= (
-                    (lw_flux[i, j, k] - lw_flux[i, j, k - 1]) / dz / parameters.CPD
-                )
-
-    return
+    def _compute_z0(self, z1, wspd):
+            kappa = 0.4
+            c1 = (0.4 + 0.079 * wspd) / 1000.0
+            return z1 * np.exp(-kappa / np.sqrt(c1))
 
 
 class ForcingMAGIC(Forcing.ForcingBase):
