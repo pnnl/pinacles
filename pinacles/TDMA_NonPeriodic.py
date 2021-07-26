@@ -39,7 +39,7 @@ def PressureThomas(
 
     for i in range(shape[0]):
         for j in range(shape[1]):
-            if wavenumber_substarts[0] + i != 0 or wavenumber_substarts[1] + j != 0:
+            if wavenumber_substarts[0] + i >= 0 or wavenumber_substarts[1] + j >= 0:
                 # For each i and j build the diagonal
                 b[0] = rho0[n_halo[2]] * (kx2[i] + ky2[j]) - (rho0_edge[n_halo[2]]) / (
                     dxs[2] * dxs[2]
@@ -151,10 +151,10 @@ class PressureTDMA:
             )
 
         # Remove the odd-ball
-        if self._wavenumber_substarts[0] == 0:
-            self._kx2[0] = 0.0
-        if self._wavenumber_substarts[1] == 0:
-            self._ky2[0] = 0.0
+       # if self._wavenumber_substarts[0] == 0:
+       #     self._kx2[0] = 0.0
+       # if self._wavenumber_substarts[1] == 0:
+       #     self._ky2[0] = 0.0
 
         return
 

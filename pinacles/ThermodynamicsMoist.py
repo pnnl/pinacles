@@ -65,6 +65,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
 
         if apply_buoyancy:
             ThermodynamicsMoist_impl.apply_buoyancy(buoyancy, w_t)
+            self._VelocityState.remove_mean("w", tend=True)
 
         self._Timers.end_timer("ThermoDynamicsMoist_update")
         return

@@ -209,15 +209,21 @@ class ModelState:
         dof = self._dofs[name]
         return self._tend_array.array[dof, :, :, :]
 
-    def remove_mean(self, name):
+    def remove_mean(self, name, tend=False):
         # This removes the mean from a field
         dof = self._dofs[name]
-        self._state_array.remove_mean(dof)
+        if not tend:
+            self._state_array.remove_mean(dof)
+        else:
+            self._tend_array.remove_mean(dof)
         return
 
-    def mean(self, name, pow=1.0):
+    def mean(self, name, pow=1.0, tend=False):
         dof = self._dofs[name]
-        return self._state_array.mean(dof, pow=pow)
+        if not tend:
+            return self._state_array.mean(dof, pow=pow)
+        else:
+            return self._tend_array.mean(dof, pow=pow)
 
     def max_prof(self, name):
         dof = self._dofs[name]
