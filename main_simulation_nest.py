@@ -30,13 +30,13 @@ def main(namelist):
         # Loop over the dimensions 
         for dim in range(2):
             
-            assert(namelist['nests']['factor'][i]%2 != 0) # Check that the nest refinment factor is odd
+            #assert(namelist['nests']['factor'][i]%2 != 0) # Check that the nest refinment factor is odd
 
             # Compute the number of points and domain physical size for the i+1th nest 
-            nest_namelist['grid']['n'][dim] = namelist['nests']['parent_points'][i]* namelist['nests']['factor'][i]
-            nest_namelist['grid']['l'][dim] =  namelist['nests']['parent_points'][i]* parent_namelist['grid']['l'][i]/parent_namelist['grid']['n'][dim]
+            nest_namelist['grid']['n'][dim] = namelist['nests']['parent_points'][i][dim]* namelist['nests']['factor'][i][dim]
+            nest_namelist['grid']['l'][dim] =  namelist['nests']['parent_points'][i][dim]* parent_namelist['grid']['l'][dim]/parent_namelist['grid']['n'][dim]
 
-        nest_namelist['grid']['n'][2] = parent_namelist['grid']['n'][2]* namelist['nests']['factor'][2]
+        nest_namelist['grid']['n'][2] = parent_namelist['grid']['n'][2] * namelist['nests']['factor'][i][2]
 
         # Here we use the i + 1 th nest namelist to communicat informaton to the nest class
         # TODO Perhaps we could clean this up as may get confusing
@@ -45,6 +45,10 @@ def main(namelist):
         nest_namelist['nest']['parent_pts'] = namelist['nests']['parent_points'][i]
         nest_namelist['nest']['root_point'] = namelist['nests']['ll_corner'][i]
 
+        nest_namelist['pressure'] = "open"
+        nest_namelist['lbc']['type'] = "open"
+        nest_namelist['lbc']['open_boundary_treatment'] = "nest"
+        
         # Create a new simname for i + 1 th nest
         nest_namelist['meta']['simname'] = namelist['meta']['simname'] + '_nest_' + str(i)
         
@@ -54,7 +58,7 @@ def main(namelist):
         llz = 0.0  # This will always be zero
 
         # Instantiate and initialize the 
-        this_sim = SimulationStandard.SimulationStandard(nest_namelist, llx, lly, llz, nest_num=i+1)
+        this_sim = SimulationStandard.SimulationStandard(nest_namelist, llx, lly, llz, ParentNest=parent_sim,  nest_num=i+1)
         
         # Append this simulation to the end of the list of simulations
         ListOfSims.append(this_sim)

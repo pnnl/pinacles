@@ -31,9 +31,9 @@ from pinacles import TowersIO
 from pinacles import Plumes
 from pinacles import Restart
 from pinacles import UtilitiesParallel
-from pinacles import Nest
+#from pinacles import Nest
 from pinacles import Timers
-from pinacles import LateralBCs
+from pinacles import LateralBCsFactory
 from mpi4py import MPI
 import numpy as np
 import pylab as plt
@@ -43,7 +43,7 @@ from termcolor import colored
 
 
 class SimulationStandard(SimulationBase.SimulationBase):
-    def __init__(self, namelist, llx=0.0, lly=0.0, llz=0.0, nest_num=0):
+    def __init__(self, namelist, llx=0.0, lly=0.0, llz=0.0, ParentNest=None, nest_num=0):
 
         self._ll_corner = (llx, lly, llz)
 
@@ -62,13 +62,13 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Initialize differently if this is a restart simulation
         if not self.Restart.restart_simulation:
-            self.initialize()
+            self.initialize(ParentNest)
         else:
             self.initialize_from_restart()
 
         return
 
-    def initialize(self):
+    def initialize(self, ParentNest=None):
 
         # Instantiate the model grid
         self.ModelGrid = Grid.RegularCartesian(
@@ -86,12 +86,20 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ModelGrid, container_name="VelocityState", prognostic=True
         )
 
-        self.LBC = LateralBCs.LateralBCsFactory(
-            self._namelist, self.ModelGrid, self.ScalarState, self.VelocityState
-        )
-        self.LBCVel = LateralBCs.LateralBCsFactory(
-            self._namelist, self.ModelGrid, self.VelocityState, self.VelocityState
-        )
+        if ParentNest is None:
+            self.LBC = LateralBCsFactory.LateralBCsFactory(
+                self._namelist, self.ModelGrid, self.ScalarState, self.VelocityState
+            )
+            self.LBCVel = LateralBCsFactory.LateralBCsFactory(
+                self._namelist, self.ModelGrid, self.VelocityState, self.VelocityState
+            )
+        else:
+            self.LBC = LateralBCsFactory.LateralBCsFactory(
+                self._namelist, self.ModelGrid, self.ScalarState, self.VelocityState, NestState = ParentNest.ScalarState
+            )
+            self.LBCVel = LateralBCsFactory.LateralBCsFactory(
+                self._namelist, self.ModelGrid, self.VelocityState, self.VelocityState, NestState = ParentNest.VelocityState
+            )
 
         self.DiagnosticState = Containers.ModelState(self._namelist,
             self.ModelGrid, container_name="DiagnosticState"
@@ -280,13 +288,13 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
 
         # Instantiate nest
-        self.Nest = Nest.Nest(
-            self._namelist,
-            self.TimeSteppingController,
-            self.ModelGrid,
-            self.ScalarState,
-            self.VelocityState,
-        )
+        #self.Nest = Nest.Nest(
+        #    self._namelist,
+        #    self.TimeSteppingController,
+        #    self.ModelGrid,
+        #    self.ScalarState,
+        #    self.VelocityState,
+        #)
 
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
@@ -412,7 +420,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # the anelastic continuity equation
         for lbc in [self.LBC, self.LBCVel]:
             # lbc.set_vars_on_boundary_to_mean()
-            lbc.set_vars_on_boundary()
+            lbc.set_vars_on_boundary(ParentNest=ParentNest)
         
         for prog_state in [self.ScalarState, self.VelocityState]:
             prog_state.boundary_exchange()
@@ -795,14 +803,15 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
     def update(self, ParentNest=None, ListOfSims=[], integrate_by_dt=0.0):
 
+
         """ This function integrates the model forward by integrate_by_dt seconds. """
         # Compute the startime and endtime for this integration
         start_time = self.TimeSteppingController.time
         end_time = start_time + integrate_by_dt
 
         # Update boundaries for nest if this is Simulation is a nest
-        if ParentNest is not None:
-            self.Nest.update_boundaries(ParentNest)
+        #if ParentNest is not None:
+        #    self.Nest.update_boundaries(ParentNest)
 
         while self.TimeSteppingController.time < end_time:
             self.Timers.start_timer("main")
@@ -811,7 +820,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
             # Loop over the Runge-Kutta steps
             for n in range(self.ScalarTimeStepping.n_rk_step):
-
+                print(self.ModelGrid.n)
                 # Adjust the timestep at the beginning of the step
                 self.TimeSteppingController.adjust_timestep(n, end_time)
 
@@ -842,8 +851,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 # Do Damping
                 self.RayleighDamping.update()
 
-                if ParentNest is not None:
-                    self.Nest.update(ParentNest)
+                #if ParentNest is not None:
+                #    self.Nest.update(ParentNest)
 
                 # Do time stepping
                 self.ScalarTimeStepping.update()
@@ -857,7 +866,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.PSolver.update()
 
                 for lbcs in [self.LBC, self.LBCVel]:
-                    lbcs.set_vars_on_boundary()
+                    lbcs.set_vars_on_boundary(ParentNest=ParentNest)
                 self.LBCVel.update(normal=False)
 
                 self.Timers.start_timer("ScalarLimiter")
@@ -906,7 +915,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 )
 
             # Here we use recursion to update all sub-nests
-            if len(ListOfSims) > self._nest_num:
+            if len(ListOfSims) > self._nest_num + 1:
                 if MPI.COMM_WORLD.Get_rank() == 0:
                     print(
                         "Recursively calling update of Nest " + str(self._nest_num + 1),
