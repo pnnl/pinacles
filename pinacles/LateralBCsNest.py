@@ -23,7 +23,6 @@ class LateralBCsNest(LateralBCsBase):
         return
 
     def set_vars_on_boundary(self, **kwargs):
-        print('Calling Nest')
         assert "ParentNest" in kwargs
         ParentNest = kwargs["ParentNest"]
         
@@ -72,7 +71,7 @@ class LateralBCsNest(LateralBCsBase):
 
             #local_part_of_parent = (
             #    (local_start[1]) // self.factor[1] + self.root_point[1],
-                (local_end[1]) // self.factor[1] + self.root_point[1],
+            #    (local_end[1]) // self.factor[1] + self.root_point[1],
             #)
             
             # Now get the indicies of the subset on this rank

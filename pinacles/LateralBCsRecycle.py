@@ -26,7 +26,6 @@ class LateralBCsRecycle(LateralBCsBase):
         return
 
     def set_vars_on_boundary(self, **kwargs):
-        print('Calling recycle')
 
         nh = self._Grid.n_halo
         nl = self._Grid.nl

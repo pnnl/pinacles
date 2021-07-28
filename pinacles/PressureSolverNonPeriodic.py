@@ -174,7 +174,7 @@ class PressureSolverNonPeriodic:
             leak -= (
                 np.sum(
                     u[ibl_edge[0], nh[1] : -nh[1], nh[2] : -nh[2]]
-                    #* rho0[np.newaxis, nh[2] : -nh[2]]
+                    * rho0[np.newaxis, nh[2] : -nh[2]]
                 )
                 *dx[1]*dx[2]
             )
@@ -183,7 +183,7 @@ class PressureSolverNonPeriodic:
             leak += (
                 np.sum(
                     u[ibu_edge[0]+1, nh[1] : -nh[1], nh[2] : -nh[2]]
-                    #* rho0[np.newaxis, nh[2] : -nh[2]]
+                    * rho0[np.newaxis, nh[2] : -nh[2]]
                 )
                 *dx[1]*dx[2]
             )
@@ -192,7 +192,7 @@ class PressureSolverNonPeriodic:
             leak -= (
                 np.sum(
                     v[nh[0] : -nh[0], ibl_edge[1], nh[2] : -nh[2]]
-                    #* rho0[np.newaxis, nh[2] : -nh[2]]
+                    * rho0[np.newaxis, nh[2] : -nh[2]]
                 )
                 *dx[0]*dx[2]
             )
@@ -201,7 +201,7 @@ class PressureSolverNonPeriodic:
             leak += (
                 np.sum(
                     v[nh[0] : -nh[0], ibu_edge[1]+1, nh[2] : -nh[2]]
-                    #* rho0[np.newaxis, nh[2] : -nh[2]]
+                    * rho0[np.newaxis, nh[2] : -nh[2]]
                 )
                 *dx[0]*dx[2]
             )
@@ -216,20 +216,20 @@ class PressureSolverNonPeriodic:
         if low_rank[0]:
             u[
                 : ibl_edge[0] + 1, :, :
-            ] += u_fix_leak #* rho0[np.newaxis, np.newaxis, :] # / rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
+            ] += u_fix_leak / rho0[np.newaxis, np.newaxis, :] # / rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
         if high_rank[0]:
             u[
                 ibu_edge[0] :, :, :
-            ] -= u_fix_leak #* rho0[np.newaxis, np.newaxis, :] # / rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
+            ] -= u_fix_leak / rho0[np.newaxis, np.newaxis, :] # / rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
 
         if low_rank[1]:
             v[
                 :, : ibl_edge[1] + 1, :
-            ] += u_fix_leak #* rho0[np.newaxis, np.newaxis, :] # /  rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
+            ] += u_fix_leak / rho0[np.newaxis, np.newaxis, :] # /  rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
         if high_rank[1]:
             v[
                 :, ibu_edge[1] :, :
-            ] -= u_fix_leak #* rho0[np.newaxis, np.newaxis, :] # /  rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
+            ] -= u_fix_leak / rho0[np.newaxis, np.newaxis, :] # /  rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
 
         # if low_rank[0]:
         #   np.add(u[:ibl_edge[0]+1, ibl[1] : ibu[1], nh[2]:-nh[2]],  u_fix_leak,out=u[:ibl_edge[0]+1, ibl[1] : ibu[1], nh[2]:-nh[2]])
