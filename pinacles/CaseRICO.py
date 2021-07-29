@@ -2,9 +2,8 @@ import numpy as np
 from mpi4py import MPI
 from pinacles import parameters
 from pinacles import Surface, Surface_impl, Forcing_impl, Forcing
-from pinacles.WRF_Micro_Kessler import compute_qvs
 from pinacles import UtilitiesParallel
-
+from pinacles.WRF_Micro_Kessler import compute_qvs
 
 class SurfaceRICO(Surface.SurfaceBase):
     def __init__(
@@ -22,9 +21,6 @@ class SurfaceRICO(Surface.SurfaceBase):
             DiagnosticState,
         )
 
-        self._cm = 0.001229
-        self._ch = 0.001094
-        self._cq = 0.001133
 
         self._T0 = 299.8
         self._P0 = 1.0154e5
@@ -37,6 +33,13 @@ class SurfaceRICO(Surface.SurfaceBase):
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
         self._qvflx = np.zeros_like(self._windspeed_sfc)
         self._tflx = np.zeros_like(self._windspeed_sfc)
+        self._Ri = np.zeros_like(self._windspeed_sfc)
+        self._N = np.zeros_like(self._windspeed_sfc)
+
+
+        self._cm = np.zeros_like(self._windspeed_sfc)
+        self._ch = np.zeros_like(self._windspeed_sfc)
+        self._cq = np.zeros_like(self._windspeed_sfc)
 
         self._Timers.add_timer("SurfaceRICO_update")
 
@@ -154,12 +157,16 @@ class SurfaceRICO(Surface.SurfaceBase):
         rho0_edge = self._Ref.rho0_edge
 
         exner_edge = self._Ref.exner_edge
+        p0_edge = self._Ref.p0_edge
+        exner = self._Ref.exner
 
         # Get Fields
         u = self._VelocityState.get_field("u")
         v = self._VelocityState.get_field("v")
         qv = self._ScalarState.get_field("qv")
         s = self._ScalarState.get_field("s")
+        
+        T = self._DiagnosticState.get_field("T")
         # Get Tendnecies
         ut = self._VelocityState.get_tend("u")
         vt = self._VelocityState.get_tend("v")
@@ -171,25 +178,42 @@ class SurfaceRICO(Surface.SurfaceBase):
         vsfc = v[:, :, nh[2]]
         Ssfc = s[:, :, nh[2]]
         qvsfc = qv[:, :, nh[2]]
+        Tsfc = T[:,:,nh[2]]
 
         Surface_impl.compute_windspeed_sfc(
             usfc, vsfc, self._Ref.u0, self._Ref.v0, self.gustiness, self._windspeed_sfc
         )
+
+        Surface_impl.compute_surface_layer_Ri(nh, z_edge[nh[2]]/2.0, np.zeros_like(qvsfc) + 299.8, exner_edge[nh[2]-1], p0_edge[nh[2]-1], qvsfc, Tsfc, exner[nh[2]], qvsfc, self._windspeed_sfc, self._N, self._Ri)
+        Surface_impl.compute_exchange_coefficients(self._Ri, z_edge[nh[2]]/2.0, np.zeros_like(qvsfc) + 1.0, self._cm, self._ch)
+        self._cq[:,:] = self._ch[:,:]
+
+
+
+
         # Surface_impl.tau_given_ustar(self._ustar_sfc, usfc, vsfc, self._Ref.u0, self._Ref.v0, self._windspeed_sfc, self._taux_sfc, self._tauy_sfc)
+
+
+        print(np.min(self._cq[nh[0]:-nh[0],nh[1]:-nh[1]]), np.max(self._cq[nh[0]:-nh[0],nh[1]:-nh[1]]))
 
         # TODO Not not optimized code
         self._tflx = -self._ch * self._windspeed_sfc * (Ssfc - self._T0)
         self._qvflx = -self._cq * self._windspeed_sfc * (qvsfc - self._qs0)
-        Surface_impl.momentum_bulk_aero(
-            self._windspeed_sfc,
-            self._cm,
-            usfc,
-            vsfc,
-            self._Ref.u0,
-            self._Ref.v0,
-            self._taux_sfc,
-            self._tauy_sfc,
-        )
+
+        #import pylab as plt
+        #plt.contourf(self._qvflx[nh[0]:-nh[0],nh[1]:-nh[1]].T)
+        #plt.colorbar()
+        #plt.show()
+        #Surface_impl.momentum_bulk_aero(
+        #    self._windspeed_sfc,
+        #    self._cm,
+        #    usfc,
+        #    vsfc,
+        #    self._Ref.u0,
+        #    self._Ref.v0,
+        #    self._taux_sfc,
+        #    self._tauy_sfc,
+        #)
         self._taux_sfc = -self._cm * self._windspeed_sfc * (usfc + self._Ref.u0)
         self._tauy_sfc = -self._cm * self._windspeed_sfc * (vsfc + self._Ref.v0)
 
