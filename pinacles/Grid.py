@@ -2,7 +2,7 @@ from mpi4py import MPI
 import mpi4py_fft
 import numpy as np
 from mpi4py_fft.pencil import Subcomm
-
+from pinacles import ProjectionLCC
 
 class GridBase:
     def __init__(self, namelist, llx, lly, llz):
@@ -265,7 +265,8 @@ class GridBase:
         """
         start = self._local_start[0]
         end = self._local_end[0] + 2 * self._n_halo[0]
-        return np.copy(self._global_axes[0][start:end])
+        return np.copy(self._local_axes[0][start:end])
+
 
     @property
     def y_local(self):
@@ -275,7 +276,7 @@ class GridBase:
         """
         start = self._local_start[1]
         end = self._local_end[1] + 2 * self._n_halo[1]
-        return np.copy(self._global_axes[1][start:end])
+        return np.copy(self._local_axes[1][start:end])
 
     @property
     def z_local(self):
@@ -285,7 +286,8 @@ class GridBase:
         """
         start = self._local_start[2]
         end = self._local_end[2] + 2 * self._n_halo[2]
-        return np.copy(self._global_axes[2][start:end])
+        return np.copy(self._local_axes[2][start:end])
+
 
     @property
     def local_axes(self):
@@ -397,7 +399,39 @@ class RegularCartesian(GridBase):
         GridBase.__init__(self, namelist, llx=llx, lly=lly, llz=llz)
         self._compute_globalcoordiantes()
 
+
+        if 'center_latlon' in namelist['grid']:
+            self._center_latlon = tuple(namelist['grid']['center_latlon'])
+            self._conic_intersection = tuple(namelist['grid']['conic_intersection'])
+
+            self.MapProj = ProjectionLCC.LambertConformal(6370000.0, self._conic_intersection[0], self._conic_intersection[1],
+             self._center_latlon[1], self._center_latlon[0])
+
+
+            
+
+            self.compute_latlon()
+
         return
+
+    def compute_latlon(self):
+
+        #Compute domain half width
+        halfwidth = (self.l[0]/2.0, self.l[1]/2.0)
+
+        local_axis = self._local_axes
+        local_axis_edge = self._local_axes_edge
+
+
+        x_local_mesh, y_local_mesh = np.meshgrid(local_axis[0]-halfwidth[0], local_axis[1]-halfwidth[1])
+        x_local_mesh_edge, y_local_mesh_edge = np.meshgrid(local_axis_edge[0]-halfwidth[0], local_axis_edge[1]-halfwidth[1])
+        
+        self.lon_local, self.lat_local = self.MapProj.compute_latlon(x_local_mesh, y_local_mesh)
+        self.lon_local_edge, self.lat_local_edge = self.MapProj.compute_latlon(x_local_mesh_edge, y_local_mesh_edge)
+
+
+        return
+
 
     def _compute_globalcoordiantes(self):
 
