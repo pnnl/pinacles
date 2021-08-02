@@ -88,7 +88,7 @@ def main(namelist):
             if hasattr(item, 'update'):
                 item.update()
             elif hasattr(item, 'dump_restart'):
-                print(nest_i)
+                #print(nest_i)
                 item.dump_restart(Nest.TimeSteppingController.time)
 
     # Compute how long the first integration step should be

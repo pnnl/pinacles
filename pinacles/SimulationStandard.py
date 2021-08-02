@@ -820,7 +820,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
             # Loop over the Runge-Kutta steps
             for n in range(self.ScalarTimeStepping.n_rk_step):
-                print(self.ModelGrid.n)
+
                 # Adjust the timestep at the beginning of the step
                 self.TimeSteppingController.adjust_timestep(n, end_time)
 

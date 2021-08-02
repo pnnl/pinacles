@@ -199,7 +199,6 @@ class PressureNonPeriodicTDMA:
         if wavenumber_substarts[0] == 0 and wavenumber_substarts[1] == 0:
             self._is_origin = True
 
-        print(wavenumber_substarts)
         return
 
     def _set_upperlower_diagonals(self):

@@ -12,7 +12,7 @@ class GridBase:
 
         self._ll_corner = (llx, lly, llz)
 
-        print(self._ll_corner)
+        #print(self._ll_corner)
         # The total number of points in the domain NOT including halo/ghost points
         self._n = np.array(namelist["grid"]["n"], dtype=np.int)
         self._restart_attributes.append("_n")

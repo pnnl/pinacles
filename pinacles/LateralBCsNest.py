@@ -10,7 +10,7 @@ class LateralBCsNest(LateralBCsBase):
         nest_namelist = namelist['nest']
         assert "factor" in nest_namelist
         self.factor = nest_namelist["factor"]
-        print(self.factor)
+        #print(self.factor)
 
         assert "parent_pts" in nest_namelist
         self.parent_pts = nest_namelist["parent_pts"]
