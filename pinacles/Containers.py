@@ -357,15 +357,15 @@ class ModelState:
                     var + "_max", np.double, dimensions=("time",)
                 )
                 v.units = self._units[var]
-                v.long_name = "minimum " + self._long_names[var]
-                v.standard_name = "min{" + self._latex_names[var] + "}"
+                v.long_name = "maximum " + self._long_names[var]
+                v.standard_name = "max{" + self._latex_names[var] + "}"
 
                 v = timeseries_grp.createVariable(
                     var + "_min", np.double, dimensions=("time",)
                 )
                 v.units = self._units[var]
-                v.long_name = "maximum " + self._long_names[var]
-                v.standard_name = "max{" + self._latex_names[var] + "}"
+                v.long_name = "minimum " + self._long_names[var]
+                v.standard_name = "min{" + self._latex_names[var] + "}"
 
         return
 
