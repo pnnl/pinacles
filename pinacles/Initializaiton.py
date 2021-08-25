@@ -1,6 +1,7 @@
 import numpy as np
 import pinacles.ThermodynamicsDry_impl as DryThermo
 import pinacles.ThermodynamicsMoist_impl as MoistThermo
+from pinacles.CaseReal import InitializeReanalysis
 import netCDF4 as nc
 from scipy import interpolate
 from pinacles import UtilitiesParallel
@@ -15,7 +16,16 @@ CASENAMES = [
     "rico",
     "atex",
     "testbed",
+    "real"
 ]
+
+def real(namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest):
+
+    init_class = InitializeReanalysis(namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest)
+    init_class.initialize()
+
+
+    return
 
 
 def colliding_blocks(namelist, ModelGrid, Ref, ScalarState, VelocityState):
@@ -629,9 +639,14 @@ def factory(namelist):
         return atex
     elif namelist["meta"]["casename"] == "testbed":
         return testbed
+    elif namelist["meta"]["casename"] == "real":
+        return real
 
 
-def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
+def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest=None):
     init_function = factory(namelist)
-    init_function(namelist, ModelGrid, Ref, ScalarState, VelocityState)
+    if Ingest is None:
+        init_function(namelist, ModelGrid, Ref, ScalarState, VelocityState)
+    else:
+        init_function(namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest)
     return

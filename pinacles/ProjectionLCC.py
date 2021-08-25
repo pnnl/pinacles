@@ -71,8 +71,8 @@ class LambertConformal:
         else:
             theta = np.arctan(-x / (-self.rho0 + y))
 
-        lam = theta * 180.0 / np.pi / self.n + self.lam_0 * 180.0 / np.pi
+        lam = theta / self.n + self.lam_0 
 
         phi = 2.0 * np.arctan((self.R * self.F / rho) ** (1.0 / self.n)) - np.pi / 2.0
 
-        return phi * 180.0 / np.pi, lam
+        return lam * 180.0 / np.pi, phi * 180.0 / np.pi

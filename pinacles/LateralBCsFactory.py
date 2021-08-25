@@ -3,8 +3,9 @@ from pinacles.LateralBCs import LateralBCsDummy
 from pinacles.LateralBCsMean import LateralBCsMean
 from pinacles.LateralBCsRecycle import LateralBCsRecycle
 from pinacles.LateralBCsNest import LateralBCsNest
+from pinacles.CaseReal import LateralBCsReanalysis
 
-def LateralBCsFactory(namelist, Grid, State, VelocityState, **kwargs):
+def LateralBCsFactory(namelist, Grid, State, VelocityState, TimeSteppingController, Ingest, **kwargs):
     try:
         lbc = namelist["lbc"]
     except:
@@ -24,6 +25,9 @@ def LateralBCsFactory(namelist, Grid, State, VelocityState, **kwargs):
             if boundary_treatment.lower() == "nest":
                 lbc_class = LateralBCsNest(namelist, Grid, State, VelocityState, NestState=kwargs['NestState'])
                 UtilitiesParallel.print_root("Using nested boundary conditions")
+            if boundary_treatment.lower() == 'reanalysis':
+                lbc_class = LateralBCsReanalysis(namelist, Grid, State, VelocityState, TimeSteppingController, Ingest)
+                UtilitiesParallel.print_root("Using reanalysis boundary conditions")
         except:
             UtilitiesParallel.print_root("Usinge mean boundary treatment.")
 
