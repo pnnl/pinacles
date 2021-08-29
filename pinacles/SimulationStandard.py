@@ -95,6 +95,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self._namelist, self.ModelGrid, self.DiagnosticState, self.VelocityState
         )
 
+        # Ingest data
+        self.Ingest =  Ingest.IngestEra5(self._namelist, self.ModelGrid, self.TimeSteppingController)
+
         self.Timers = Timers.Timer(self._namelist, self.TimeSteppingController)
 
         # Instantiate the time stepping
@@ -245,7 +248,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.VelocityState,
             self.ScalarState,
             self.DiagnosticState,
-            self.TimeSteppingController,
+            self.TimeSteppingController, 
+            self.Ingest
         )
 
         # Instatiate plumes if there are any
@@ -304,8 +308,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.VelocityTimeStepping.initialize()
 
 
-        # Ingest data
-        self.Ingest =  Ingest.IngestEra5(self._namelist, self.ModelGrid, self.TimeSteppingController)
+        self.Ingest.initialize()
 
         if ParentNest is None:
             self.LBC = LateralBCsFactory.LateralBCsFactory(
@@ -325,10 +328,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
             )
 
 
-        self.LBC.init_vars_on_boundary()
-        self.LBCVel.init_vars_on_boundary()
-
-
         # Do case sepcific initalizations the initial profiles are integrated here
         Initializaiton.initialize(
             self._namelist,
@@ -339,8 +338,12 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Ingest
         )
 
+        self.LBC.init_vars_on_boundary()
+        self.LBCVel.init_vars_on_boundary()
+
     
         #import sys; sys.exit()
+        self.Surf.initialize()
 
         # Initialize any work arrays for the microphysics package
         self.Micro.initialize()
@@ -451,15 +454,15 @@ class SimulationStandard(SimulationBase.SimulationBase):
         v = self.VelocityState.get_field("v")
         s = self.ScalarState.get_field("s")
 
-        import pylab as plt
-        plt.figure(figsize=(8,16))
-        plt.subplot(2,1,1)
-        plt.contour(u[:,:,5].T, 100)
-        plt.subplot(2,1,2)
-        plt.contour(u[:,:,5].T, 100)
-        plt.show()
+        #import pylab as plt
+        #plt.figure(figsize=(8,16))
+        #plt.subplot(2,1,1)
+        #plt.contour(u[:,:,5].T, 100)
+        #plt.subplot(2,1,2)
+        #plt.contour(u[:,:,5].T, 100)
+        #plt.show()
 
-        import pylab as plt
+        #import pylab as plt
         #plt.subplot(311)
         #plt.plot(u[:,5,5],'.')
         #plt.plot(u[5,:,5],'.')
@@ -694,6 +697,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ScalarState,
             self.DiagnosticState,
             self.TimeSteppingController,
+            self.Ingest
         )
 
         # Instatiate plumes if there are any
@@ -902,6 +906,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 # Do Damping
                 self.RayleighDamping.update()
+
+                self.LBC.lateral_nudge()
+                self.LBCVel.lateral_nudge()
 
                 #if ParentNest is not None:
                 #    self.Nest.update(ParentNest)

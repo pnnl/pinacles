@@ -9,11 +9,12 @@ from pinacles import UtilitiesParallel
 import xarray as xr
 from pinacles.LateralBCs import LateralBCsBase
 import numba
+from pinacles.WRF_Micro_Kessler import compute_qvs
 
 
 class SurfaceReanalysis(Surface.SurfaceBase):
     def __init__(
-        self, namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+        self, namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState, Ingest
     ):
 
         Surface.SurfaceBase.__init__(
@@ -27,7 +28,44 @@ class SurfaceReanalysis(Surface.SurfaceBase):
             DiagnosticState,
         )
 
+        self._Ingest = Ingest
+
+        nl = self._Grid.ngrid_local
+
+        self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
+        self._taux_sfc = np.zeros_like(self._windspeed_sfc)
+        self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
+        self._qvflx = np.zeros_like(self._windspeed_sfc)
+        self._tflx = np.zeros_like(self._windspeed_sfc)
+        self._Ri = np.zeros_like(self._windspeed_sfc)
+        self._N = np.zeros_like(self._windspeed_sfc)
+
+        self._cm = np.zeros_like(self._windspeed_sfc)
+        self._ch = np.zeros_like(self._windspeed_sfc)
+        self._cq = np.zeros_like(self._windspeed_sfc)
+
+        self._TSKIN = None
+
         return
+
+    def initialize(self):
+
+        # Compute reference profiles
+        lon, lat, skin_T = self._Ingest.get_skin_T()
+
+
+        lon_grid, lat_grid = np.meshgrid(lon, lat)
+        lon_lat = (lon_grid.flatten(), lat_grid.flatten())
+
+        self._TSKIN = interpolate.griddata(
+            lon_lat,
+            skin_T.flatten(),
+            (self._Grid.lon_local, self._Grid.lat_local),
+            method="cubic",
+        )
+
+
+        return super().initialize()
 
     def io_initialize(self, rt_grp):
 
@@ -38,6 +76,91 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         return
 
     def update(self):
+
+        self._Timers.start_timer("SurfaceRICO_update")
+
+        nh = self._Grid.n_halo
+        dxi2 = self._Grid.dxi[2]
+        z_edge = self._Grid.z_edge_global
+
+        alpha0 = self._Ref.alpha0
+        alpha0_edge = self._Ref.alpha0_edge
+        rho0_edge = self._Ref.rho0_edge
+
+        exner_edge = self._Ref.exner_edge
+        p0_edge = self._Ref.p0_edge
+        exner = self._Ref.exner
+
+        # Get Fields
+        u = self._VelocityState.get_field("u")
+        v = self._VelocityState.get_field("v")
+        qv = self._ScalarState.get_field("qv")
+        s = self._ScalarState.get_field("s")
+
+        T = self._DiagnosticState.get_field("T")
+        # Get Tendnecies
+        ut = self._VelocityState.get_tend("u")
+        vt = self._VelocityState.get_tend("v")
+        st = self._ScalarState.get_tend("s")
+        qvt = self._ScalarState.get_tend("qv")
+
+        # Get surface slices
+        usfc = u[:, :, nh[2]]
+        vsfc = v[:, :, nh[2]]
+        Ssfc = s[:, :, nh[2]]
+        qvsfc = qv[:, :, nh[2]]
+        Tsfc = T[:, :, nh[2]]
+
+        Surface_impl.compute_windspeed_sfc(
+            usfc, vsfc, self._Ref.u0, self._Ref.v0, self.gustiness, self._windspeed_sfc
+        )
+
+        Surface_impl.compute_surface_layer_Ri(
+            nh,
+            z_edge[nh[2]] / 2.0,
+            self._TSKIN,
+            exner_edge[nh[2] - 1],
+            p0_edge[nh[2] - 1],
+            qvsfc,
+            Tsfc,
+            exner[nh[2]],
+            qvsfc,
+            self._windspeed_sfc,
+            self._N,
+            self._Ri,
+        )
+
+        self._qv0 = compute_qvs(self._TSKIN, self._Ref.Psfc)
+
+        Surface_impl.compute_exchange_coefficients(
+            self._Ri,
+            z_edge[nh[2]] / 2.0,
+            np.zeros_like(qvsfc) + 0.0002,
+            self._cm,
+            self._ch,
+        )
+        self._cq[:, :] = self._ch[:, :]
+
+        self._tflx = -self._ch * self._windspeed_sfc * (Ssfc - self._TSKIN)
+        self._qvflx = -self._cq * self._windspeed_sfc * (qvsfc - self._qv0)
+
+        self._taux_sfc = -self._cm * self._windspeed_sfc * (usfc + self._Ref.u0)
+        self._tauy_sfc = -self._cm * self._windspeed_sfc * (vsfc + self._Ref.v0)
+
+        Surface_impl.iles_surface_flux_application(
+            10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._taux_sfc, ut
+        )
+        Surface_impl.iles_surface_flux_application(
+            10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._tauy_sfc, vt
+        )
+        Surface_impl.iles_surface_flux_application(
+            10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._tflx, st
+        )
+        Surface_impl.iles_surface_flux_application(
+            10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._qvflx, qvt
+        )
+
+
 
         return
 
@@ -74,7 +197,7 @@ class ForcingReanalysis(Forcing.ForcingBase):
         ut = self._VelocityState.get_tend("u")
         vt = self._VelocityState.get_tend("v")
 
-        self.coriolis_apparent_force(u, v, f_at_u, f_at_v, ut, vt)
+        self.coriolis_apparent_force(u, v, self.f_at_u, self.f_at_v, ut, vt)
 
         return
 
@@ -127,20 +250,9 @@ class InitializeReanalysis:
         # Compute reference profiles
         lon, lat, skin_T = self._Ingest.get_skin_T()
 
-        print(np.amax(lon), np.amin(lon), np.amax(lat), np.amin(lat))
-
-        print("Here")
-        print(
-            np.amax(self._Grid.lon_local),
-            np.amin(self._Grid.lon_local),
-            np.amax(self._Grid.lat_local),
-            np.amin(self._Grid.lat_local),
-        )
 
         lon_grid, lat_grid = np.meshgrid(lon, lat)
         lon_lat = (lon_grid.flatten(), lat_grid.flatten())
-
-        print(np.shape(lon_lat[0]), skin_T.flatten().shape)
 
         TSKIN = interpolate.griddata(
             lon_lat,
@@ -226,6 +338,8 @@ class LateralBCsReanalysis(LateralBCsBase):
 
         self.time_previous = self._TimeSteppingController._time
 
+        self.nudge_width = 4
+
         return
 
     def init_vars_on_boundary(self):
@@ -235,14 +349,17 @@ class LateralBCsReanalysis(LateralBCsBase):
 
         ng = self._Grid.ngrid_local
 
+        bdy_width = self.nudge_width + 1
+
         for bdys in [self._previous_bdy, self._post_bdy]:
             for var_name in self._State._dofs:
                 bdys[var_name] = {}
 
-                bdys[var_name]["x_low"] = np.zeros((ng[1], ng[2]), dtype=np.double)
-                bdys[var_name]["x_high"] = np.zeros((ng[1], ng[2]), dtype=np.double)
-                bdys[var_name]["y_low"] = np.zeros((ng[0], ng[2]), dtype=np.double)
-                bdys[var_name]["y_high"] = np.zeros((ng[0], ng[2]), dtype=np.double)
+                bdys[var_name]["x_low"] = np.zeros((bdy_width, ng[1], ng[2]), dtype=np.double)
+                bdys[var_name]["x_high"] = np.zeros((bdy_width, ng[1], ng[2]), dtype=np.double)
+                bdys[var_name]["y_low"] = np.zeros((ng[0], bdy_width, ng[2]), dtype=np.double)
+                bdys[var_name]["y_high"] = np.zeros((ng[0], bdy_width, ng[2]), dtype=np.double)
+
 
         self.initial_ingest()
 
@@ -251,63 +368,141 @@ class LateralBCsReanalysis(LateralBCsBase):
     # Set initial values
     def initial_ingest(self):
 
+        
         self.bdy_lats = {}
         self.bdy_lons = {}
+        for v in ['u', 'v', 'scalar']:
+            self.bdy_lats[v] = {}
+            self.bdy_lons[v] = {}
+        
+        
         nh = self._Grid.n_halo
 
-        # print(self._Grid._local_axes_edge[0][nh[0]-1])
-        # print(self._Grid._local_axes_edge[1][-nh[1]-1])
+        ##########################################################
+        #
+        #  Get latitude/longitude at u-point 
+        #
+        ##########################################################
 
-        self.bdy_lats["x_low"] = self._Grid.lat_local_edge_x[nh[0] - 1, :].reshape(
-            self._Grid.lat_local_edge_x[nh[0] - 1, :].shape[0], 1
-        )
-        self.bdy_lons["x_low"] = self._Grid.lon_local_edge_x[nh[0] - 1, :].reshape(
-            self._Grid.lon_local_edge_x[nh[0] - 1, :].shape[0], 1
-        )
 
-        self.bdy_lats["x_high"] = self._Grid.lat_local_edge_y[-nh[0] - 1, :].reshape(
-            self._Grid.lat_local_edge_x[-nh[0], :].shape[0], 1
-        )
-        self.bdy_lons["x_high"] = self._Grid.lon_local_edge_y[-nh[0] - 1, :].reshape(
-            self._Grid.lon_local_edge_x[-nh[0], :].shape[0], 1
-        )
+        # x_low (these are normal for u)
+        start = nh[0] - 1
+        end = start + (self.nudge_width + 1)
+        #print(self._Grid._local_axes_edge[0][start:end])   
 
-        self.bdy_lats["y_low"] = self._Grid.lat_local_edge_y[:, nh[1] - 1].reshape(
-            self._Grid.lat_local_edge_y[:, nh[1] - 1].shape[0], 1
-        )
-        self.bdy_lons["y_low"] = self._Grid.lon_local_edge_y[:, nh[1] - 1].reshape(
-            self._Grid.lon_local_edge_y[:, nh[1] - 1].shape[0], 1
-        )
+        self.bdy_lats['u']["x_low"] = self._Grid.lat_local_edge_x[start:end, :]
+        self.bdy_lons['u']["x_low"] = self._Grid.lon_local_edge_x[start:end, :]
 
-        self.bdy_lats["y_high"] = self._Grid.lat_local_edge_y[:, -nh[1] - 1].reshape(
-            self._Grid.lat_local_edge_y[:, -nh[1]].shape[0], 1
-        )
-        self.bdy_lons["y_high"] = self._Grid.lon_local_edge_y[:, -nh[1] - 1].reshape(
-            self._Grid.lon_local_edge_y[:, -nh[1]].shape[0], 1
-        )
+        start = -nh[0] - self.nudge_width - 1
+        end = -nh[0]
+ 
+        self.bdy_lats['u']["x_high"] = self._Grid.lat_local_edge_x[start:end, :]
+        self.bdy_lons['u']["x_high"] = self._Grid.lon_local_edge_x[start:end, :]
 
+
+        #y_low and y_high (these are non-normal for u)        
+        start = nh[1] - 1
+        end =  start + (self.nudge_width + 1)
+        self._Grid._local_axes[1][start:end]
+        self.bdy_lats['u']["y_low"] = self._Grid.lat_local_edge_x[:, start:end]        
+        self.bdy_lons['u']["y_low"] = self._Grid.lon_local_edge_x[:, start:end]
+        
+        start = -nh[1] - self.nudge_width + 1 - 1
+        end = -nh[1] + 1
+       # print(' self._Grid._local_axes[1][start:end])  
+        #print(self._Grid._local_axes[1][start:end])
+        self.bdy_lats['u']["y_high"] = self._Grid.lat_local_edge_x[:, start:end]
+        self.bdy_lons['u']["y_high"] = self._Grid.lon_local_edge_x[:, start:end]
+
+
+        ##########################################################
+        #
+        #  Get latitude/longitude at v-point 
+        #
+        ##########################################################
+        # x_low (these are normal for u)
+        
+        start = nh[1] - 1
+        end =  start + (self.nudge_width + 1)
+        #print(self._Grid._local_axes[0][start:end])   
+
+        self.bdy_lats['v']["x_low"] = self._Grid.lat_local_edge_y[start:end, :]
+        self.bdy_lons['v']["x_low"] = self._Grid.lon_local_edge_y[start:end, :]
+        
+        start = -nh[1] - self.nudge_width
+        end = -nh[1] + 1
+        #print('here', self._Grid._local_axes[0][start:end])   
+        self.bdy_lats['v']["x_high"] = self._Grid.lat_local_edge_y[start:end, :]
+        self.bdy_lons['v']["x_high"] = self._Grid.lon_local_edge_y[start:end, :]
+
+        #y_low and y_high (these are non-normal for u)        
+        start = nh[0] - 1
+        end = start + (self.nudge_width + 1)
+        #print(self._Grid._local_axes_edge[1][start:end])  
+        self.bdy_lats['v']["y_low"] = self._Grid.lat_local_edge_y[:, start:end]        
+        self.bdy_lons['v']["y_low"] = self._Grid.lon_local_edge_y[:, start:end]
+        
+        start = -nh[0] - self.nudge_width - 1
+        end = -nh[0]
+        #print(self._Grid._local_axes_edge[1][start:end])  
+        #print(self._Grid._local_axes[1][start:end])
+        self.bdy_lats['v']["y_high"] = self._Grid.lat_local_edge_y[:, start:end]
+        self.bdy_lons['v']["y_high"] = self._Grid.lon_local_edge_y[:, start:end]
+
+
+        ##################################################################
+        #
+        #   Get latitude/longitude at scalar-point
+        #
+        ##################################################################
+        start = nh[0] - 1
+        end =  start + (self.nudge_width + 1)
+
+        self.bdy_lats['scalar']["x_low"] = self._Grid.lat_local[start:end, :]
+        self.bdy_lons['scalar']["x_low"] = self._Grid.lon_local[start:end, :]
+        #print(self._Grid._local_axes[0][start:end])
+        start = -nh[0] - self.nudge_width
+        end = -nh[0] + 1
+
+        self.bdy_lats['scalar']["x_high"] = self._Grid.lat_local[start:end, :]
+        self.bdy_lons['scalar']["x_high"] = self._Grid.lon_local[start:end, :]
+
+        start = nh[1] - 1
+        end =  start + (self.nudge_width + 1)
+        self.bdy_lats['scalar']["y_low"] = self._Grid.lat_local[:, start:end]        
+        self.bdy_lons['scalar']["y_low"] = self._Grid.lon_local[:, start:end]
+
+        start = -nh[1] - self.nudge_width
+        end = -nh[1] + 1
+        self.bdy_lats['scalar']["y_high"] = self._Grid.lat_local[:, start:end]
+        self.bdy_lons['scalar']["y_high"] = self._Grid.lon_local[:, start:end]
+
+
+        #print(self._Grid._local_axes[0][start:end])  
         for bdy_data, shift in zip([self._previous_bdy, self._post_bdy], [0, 1]):
             for bdy in ["x_low", "x_high", "y_low", "y_high"]:
                 for var in self._State._dofs:
+                    if MPI.COMM_WORLD.Get_rank() == 0:
+                        print('Setting boundaries for: ', var, bdy)
                     if var == "u":
                         bdy_data[var][bdy][:, :] = self._Ingest.interp_u(
-                            self.bdy_lons[bdy],
-                            self.bdy_lats[bdy],
+                            self.bdy_lons[var][bdy],
+                            self.bdy_lats[var][bdy],
                             self._Grid.z_local,
                             shift=shift,
                         ).squeeze()
                     elif var == "v":
                         bdy_data[var][bdy][:, :] = self._Ingest.interp_v(
-                            self.bdy_lons[bdy],
-                            self.bdy_lats[bdy],
+                            self.bdy_lons[var][bdy],
+                            self.bdy_lats[var][bdy],
                             self._Grid.z_local,
                             shift=shift,
                         ).squeeze()
                     elif var == "s":
                         bdy_data[var][bdy][:, :] = (
                             self._Ingest.interp_T(
-                                self.bdy_lons[bdy],
-                                self.bdy_lats[bdy],
+                                self.bdy_lons['scalar'][bdy],
+                                self.bdy_lats['scalar'][bdy],
                                 self._Grid.z_local,
                                 shift=shift,
                             ).squeeze()
@@ -317,13 +512,34 @@ class LateralBCsReanalysis(LateralBCsBase):
                         )
                     elif var == "qv":
                         bdy_data[var][bdy][:, :] = self._Ingest.interp_qv(
-                            self.bdy_lons[bdy],
-                            self.bdy_lats[bdy],
+                            self.bdy_lons['scalar'][bdy],
+                            self.bdy_lats['scalar'][bdy],
                             self._Grid.z_local,
                             shift=shift,
                         ).squeeze()
                     else:
                         bdy_data[var][bdy].fill(0.0)
+
+        # import pylab as plt
+        # if var in self._State._dofs:
+
+        #     u = self._State.get_field(var)
+        #     levels = np.linspace(np.amin(u[:,:,3]), np.amax(u[:,:,3]),24)
+        #     print(levels)
+        #     plt.figure(2)
+        #     plt.contour(self._Grid.lon_local_edge_y, self._Grid.lat_local_edge_y, u[:,:,3], levels)
+
+
+        #     print(np.max(self._Grid.lon_local_edge_x), np.min(self._Grid.lon_local_edge_x))
+
+        #     print(np.max(self.bdy_lons[var]['x_low']), np.min(self.bdy_lons[var]['x_low']))
+
+        #     plt.contour(self.bdy_lons[var]['x_low'], self.bdy_lats[var]['x_low'],self._previous_bdy[var]['x_low'][:,:,3], levels)
+        #     plt.contour(self.bdy_lons[var]['x_high'], self.bdy_lats[var]['x_high'],self._previous_bdy[var]['x_high'][:,:,3], levels)
+        #     plt.contour(self.bdy_lons[var]['y_low'], self.bdy_lats[var]['y_low'],self._previous_bdy[var]['y_low'][:,:,3], levels)
+        #     plt.contour(self.bdy_lons[var]['y_high'], self.bdy_lats[var]['y_high'],self._previous_bdy[var]['y_high'][:,:,3], levels)
+ #           plt.show()
+
 
         return
 
@@ -337,37 +553,37 @@ class LateralBCsReanalysis(LateralBCsBase):
             if var != "w":
 
                 x_low[:, :] = (
-                    self._previous_bdy[var]["x_low"]
-                    + (self._post_bdy[var]["x_low"] - self._previous_bdy[var]["x_low"])
-                    * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
+                    self._previous_bdy[var]["x_low"][0,:,:]
+                     + (self._post_bdy[var]["x_low"][0,:,:] - self._previous_bdy[var]["x_low"][0,:,:])
+                     * (self._TimeSteppingController._time - self.time_previous)
+                     / 3600.0
                 )
 
                 x_high[:, :] = (
-                    self._previous_bdy[var]["x_high"]
-                    + (
-                        self._post_bdy[var]["x_high"]
-                        - self._previous_bdy[var]["x_high"]
-                    )
-                    * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
+                    self._previous_bdy[var]["x_high"][-1,:,:]
+                     + (
+                         self._post_bdy[var]["x_high"][-1,:,:]
+                         - self._previous_bdy[var]["x_high"][-1,:,:]
+                     )
+                     * (self._TimeSteppingController._time - self.time_previous)
+                     / 3600.0
                 )
 
                 y_low[:, :] = (
-                    self._previous_bdy[var]["y_low"]
-                    + (self._post_bdy[var]["y_low"] - self._previous_bdy[var]["y_low"])
-                    * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
+                    self._previous_bdy[var]["y_low"][:,0,:]
+                     + (self._post_bdy[var]["y_low"][:,0,:] - self._previous_bdy[var]["y_low"][:,0,:])
+                     * (self._TimeSteppingController._time - self.time_previous)
+                     / 3600.0
                 )
 
                 y_high[:, :] = (
-                    self._previous_bdy[var]["y_high"]
-                    + (
-                        self._post_bdy[var]["y_high"]
-                        - self._previous_bdy[var]["y_high"]
-                    )
-                    * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
+                    self._previous_bdy[var]["y_high"][:,-1,:]
+                    # + (
+                    #     self._post_bdy[var]["y_high"][:,-1,:]
+                    #     - self._previous_bdy[var]["y_high"][:,-1,:]
+                    # )
+                    # * (self._TimeSteppingController._time - self.time_previous)
+                    # / 3600.0
                 )
 
             else:
@@ -379,5 +595,151 @@ class LateralBCsReanalysis(LateralBCsBase):
                 y_high[:, :] = w[:, -nh[1] - 1, :]
 
         # print(self.time_previous)
+
+        return
+
+    def lateral_nudge(self):
+
+        nudge_width = self.nudge_width
+        weight =  1.0/(2.0 * self._TimeSteppingController.dt)  / (1.0 + np.arange(nudge_width))
+
+        for var in self._State._dofs:
+
+            #    # Compute the domain mean of the variables
+            #x_low, x_high, y_low, y_high = self.get_vars_on_boundary(var)
+            nh = self._Grid.n_halo
+            if var == 'bbbu':
+
+
+                
+                u = self._State.get_field(var)
+                ut = self._State.get_tend(var)
+
+                # Nudge u on the low boundary for x
+                start = nh[0]
+                end = start + self.nudge_width
+
+                u_nudge = (
+                    self._previous_bdy[var]["x_low"][:,:,:]
+                     + (self._post_bdy[var]["x_low"][:,:,:] - self._previous_bdy[var]["x_low"][:,:,:])
+                     * (self._TimeSteppingController._time - self.time_previous)
+                     / 3600.0
+                )
+
+
+                ut[start:end,:,:] -= (u[start:end,:,:] - u_nudge[1:,:,:]) * weight[:,np.newaxis,np.newaxis]
+
+                #print(self._previous_bdy['u']['x_high'][:-1,:,3] - u[start:end,:,3])
+
+                start = -nh[0] - self.nudge_width - 1
+                end = -nh[0] - 1
+
+
+                u_nudge = (
+                    self._previous_bdy[var]["x_high"][:,:,:]
+                     + (self._post_bdy[var]["x_high"][:,:,:] - self._previous_bdy[var]["x_high"][:,:,:])
+                     * (self._TimeSteppingController._time - self.time_previous)
+                     / 3600.0
+                )
+
+                ut[start:end,:,:] -= (u[start:end,:,:] - u_nudge[:-1,:,:]) * weight[::-1,np.newaxis,np.newaxis]
+
+                start = nh[1]
+                end = nh[1] + self.nudge_width 
+
+                print(u[:,start:end,3])
+                print( self._previous_bdy['u']['y_low'][:,1:,3])
+                print(u[:,start:end,3] - self._previous_bdy['u']['y_low'][:,1:,3])
+
+
+
+                u_nudge = (
+                    self._previous_bdy[var]["y_low"][:,:,:]
+                     + (self._post_bdy[var]["y_low"][:,:,:] - self._previous_bdy[var]["y_low"][:,:,:])
+                     * (self._TimeSteppingController._time - self.time_previous)
+                     / 3600.0
+                )
+
+
+                print(self._TimeSteppingController._time - self.time_previous)
+
+                ut[:,start:end,:] -= (u[:,start:end,:] - u_nudge[:,1:,:]) * weight[np.newaxis,: ,np.newaxis]
+
+                u_nudge = (
+                    self._previous_bdy[var]["y_high"][:,:,:]
+                     + (self._post_bdy[var]["y_high"][:,:,:] - self._previous_bdy[var]["y_high"][:,:,:])
+                     * (self._TimeSteppingController._time - self.time_previous)
+                     / 3600.0
+                )
+
+                start = -nh[1] - self.nudge_width
+                end = -nh[1]
+                ut[:,start:end,:] -= (u[:,start:end,:] - u_nudge[:,:-1,:]) * weight[np.newaxis,::-1,np.newaxis]
+
+
+            elif var == 'bbbv':
+                v = self._State.get_field(var)
+                vt = self._State.get_tend(var)
+                
+                start = nh[0]
+                end = nh[0] + self.nudge_width 
+                vt[start:end,:,:] -= (v[start:end,:,:] - self._previous_bdy['v']['x_low'][1:,:,:]) * weight[:,np.newaxis,np.newaxis]
+
+                start = -nh[0] - self.nudge_width
+                end = -nh[0]
+                vt[start:end,:,:] -= (v[start:end,:,:] - self._previous_bdy['v']['x_high'][:-1,:,:]) * weight[::-1,np.newaxis,np.newaxis]
+
+
+                start = nh[1]
+                end = start + self.nudge_width
+                vt[:,start:end,:] -= (v[:,start:end,:] - self._previous_bdy['v']['y_low'][:,1:,:]) * weight[np.newaxis,: ,np.newaxis]
+
+                start = -nh[1] - self.nudge_width - 1
+                end = -nh[1] - 1
+                vt[:,start:end,:] -= (v[:,start:end,:] - self._previous_bdy['v']['y_high'][:,:-1,:]) * weight[np.newaxis,::-1,np.newaxis]
+
+            elif var=='w':
+                w = self._State.get_field(var)
+                wt = self._State.get_tend(var)        
+
+                start = nh[0]
+                end = nh[0] + self.nudge_width 
+                wt[start:end,:,:] -= (w[start:end,:,:] - w[start+1:end+1,:,:] * 0.0) * weight[:,np.newaxis,np.newaxis]
+
+
+                start = -nh[0] - self.nudge_width
+                end = -nh[0]
+                wt[start:end,:,:] -= (w[start:end,:,:] - w[start-1:end-1,:,:]*0.0) * weight[::-1,np.newaxis,np.newaxis]
+
+
+                start = nh[1]
+                end = nh[1] + self.nudge_width 
+                wt[:,start:end,:] -= (w[:,start:end,:] - w[:,start+1:end+1,:]*0.0) * weight[np.newaxis,:,np.newaxis]
+
+                start = -nh[1] - self.nudge_width
+                end = -nh[1]
+                wt[:,start:end,:] -= (w[:,start:end,:] - w[:,start-1:end-1,:]*0.0) * weight[np.newaxis,::-1,np.newaxis]
+
+                #start = nh[0]
+                #end = nh[0] + nudge_width
+                #vt[start:end,:,:] -= (v[start:end,:,:] - x_low[np.newaxis,:,:]) * weight[:,np.newaxis,np.newaxis]
+
+                #start = -(nh[0])
+                #end = start - nudge_width
+                #vt[end:start,:,:] -= (v[end:start,:,:] - x_high[np.newaxis,:,:]) * weight[::-1,np.newaxis,np.newaxis]
+
+
+                # Nudge u on the low boundary for x
+                #start = nh[1]
+                #end = nh[1] + nudge_width
+                #vt[:,start:end,:] -= (v[:,start:end,:] - y_low[:,np.newaxis,:]) #* weight[np.newaxis,:,np.newaxis]
+
+
+                #start = -(nh[1]-1)
+                #end = start - nudge_width
+                
+                #vt[:,end:start,:] -= (vt[:,end:start,:] - y_high[:,np.newaxis,:]#) * weight[np.newaxis,::-1,np.newaxis]
+                #Nudge u on the high boundary for x 
+
 
         return

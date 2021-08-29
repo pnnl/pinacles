@@ -15,6 +15,7 @@ class IngestBase:
 
 
 class IngestEra5:
+
     def __init__(self, namelist, Grid, TimeSteppingController):
 
         IngestBase.__init__(self, namelist, Grid, TimeSteppingController)
@@ -31,6 +32,13 @@ class IngestEra5:
 
         self.start_time = np.datetime64(self.start_time)    
         self.end_time = self.start_time + np.timedelta64(int(namelist["time"]["time_max"]), 's')
+
+
+        return
+
+    def initialize(self):
+
+
 
         self.get_times()
 

@@ -21,6 +21,10 @@ class LateralBCsDummy:
 
         return
 
+    def lateral_nudge(self):
+
+        return
+
 
 class LateralBCsBase:
     def __init__(self, Grid, State, VelocityState):
@@ -87,6 +91,10 @@ class LateralBCsBase:
     def update(self, normal=True):
 
         self.all_scalars(normal)
+
+        return
+
+    def lateral_nudge(self):
 
         return
 

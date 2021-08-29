@@ -423,11 +423,12 @@ class RegularCartesian(GridBase):
 
         x_local_mesh, y_local_mesh = np.meshgrid(local_axis[0]-halfwidth[0], local_axis[1]-halfwidth[1])
 
-
-        print(halfwidth, np.max(x_local_mesh), np.min(x_local_mesh))
-
+        # Longitude-Latitude at the u point
         x_local_mesh_edge_x, y_local_mesh_edge_x = np.meshgrid(local_axis_edge[0]-halfwidth[0], local_axis[1]-halfwidth[1])
+        
+        # Longitude-Latitude at the v point
         x_local_mesh_edge_y, y_local_mesh_edge_y = np.meshgrid(local_axis[0]-halfwidth[0], local_axis_edge[1]-halfwidth[1])
+
 
         self.lon_local, self.lat_local = self.MapProj.compute_latlon(x_local_mesh, y_local_mesh)
         self.lon_local_edge_x, self.lat_local_edge_x = self.MapProj.compute_latlon(x_local_mesh_edge_x, y_local_mesh_edge_x)
@@ -436,12 +437,10 @@ class RegularCartesian(GridBase):
         self.lon_max = MPI.COMM_WORLD.allreduce(np.max(self.lon_local_edge_x), op=MPI.MAX)
         self.lon_min = MPI.COMM_WORLD.allreduce(np.min(self.lon_local_edge_x), op=MPI.MIN)
        
-        print(self.lon_max, self.lon_min)
-
 
         self.lat_max = MPI.COMM_WORLD.allreduce(np.max(self.lat_local_edge_y), op=MPI.MAX)
         self.lat_min = MPI.COMM_WORLD.allreduce(np.min(self.lat_local_edge_y), op=MPI.MIN)
-        print(self.lat_max, self.lat_min)
+
 
         return
 
