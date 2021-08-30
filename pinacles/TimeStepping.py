@@ -80,7 +80,7 @@ class TimeSteppingController:
         self._times_to_match = []
         self._dt = 0.0
         self._restart_atts.append("_dt")
-        self._dt_max = 10.0
+        self._dt_max = 30.0
         self._cfl_target = namelist["time"]["cfl"]
 
         try:

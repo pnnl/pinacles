@@ -55,14 +55,18 @@ class Rayleigh(Damping):
 
                     mean = state.mean(var)
 
-                    if loc == "c":
-                        Damping_impl.rayleigh(
-                            self._timescale_profile, mean, field, tend
-                        )
-                    elif loc == "z":
-                        Damping_impl.rayleigh(
-                            self._timescale_profile_edge, mean, field, tend
-                        )
+                    if var == 'w':
+                        mean.fill(0.0)
+    
+
+                        if loc == "c":
+                            Damping_impl.rayleigh(
+                                self._timescale_profile, mean, field, tend
+                            )
+                        elif loc == "z":
+                            Damping_impl.rayleigh(
+                                self._timescale_profile_edge, mean, field, tend
+                            )
 
         self._Timers.end_timer("Rayleigh_update")
 

@@ -292,7 +292,9 @@ class InitializeReanalysis:
             self._Grid.lon_local, self._Grid.lat_local, self._Grid.z_local
         )
         s = self._ScalarState.get_field("s")
-        s[:, :] = (
+        print(np.shape(self._Grid.lon_local), np.shape(self._Grid.lat_local))
+        print('s', np.shape(s))
+        s[:, :, :] = (
             T
             + self._Grid.z_local[np.newaxis, np.newaxis]
             * (parameters.G)
@@ -338,7 +340,7 @@ class LateralBCsReanalysis(LateralBCsBase):
 
         self.time_previous = self._TimeSteppingController._time
 
-        self.nudge_width = 4
+        self.nudge_width = 5
 
         return
 
@@ -601,14 +603,18 @@ class LateralBCsReanalysis(LateralBCsBase):
     def lateral_nudge(self):
 
         nudge_width = self.nudge_width
-        weight =  1.0/(2.0 * self._TimeSteppingController.dt)  / (1.0 + np.arange(nudge_width))
+        #weight =  1.0/(2.0 * self._TimeSteppingController.dt)  / (1.0 + np.arange(nudge_width))
+        weight = (1.0 - np.tanh(np.arange(self.nudge_width)/2))/(4.0 * self._TimeSteppingController.dt)
+        #weight = (1.0 + np.cos(np.arange(self.nudge_width) * np.pi / self.nudge_width)/2.0) /(4.0 * self._TimeSteppingController.dt)
+        print(weight)
+
 
         for var in self._State._dofs:
 
             #    # Compute the domain mean of the variables
             #x_low, x_high, y_low, y_high = self.get_vars_on_boundary(var)
             nh = self._Grid.n_halo
-            if var == 'bbbu':
+            if var == 'u':
 
 
                 
@@ -647,11 +653,6 @@ class LateralBCsReanalysis(LateralBCsBase):
                 start = nh[1]
                 end = nh[1] + self.nudge_width 
 
-                print(u[:,start:end,3])
-                print( self._previous_bdy['u']['y_low'][:,1:,3])
-                print(u[:,start:end,3] - self._previous_bdy['u']['y_low'][:,1:,3])
-
-
 
                 u_nudge = (
                     self._previous_bdy[var]["y_low"][:,:,:]
@@ -677,69 +678,134 @@ class LateralBCsReanalysis(LateralBCsBase):
                 ut[:,start:end,:] -= (u[:,start:end,:] - u_nudge[:,:-1,:]) * weight[np.newaxis,::-1,np.newaxis]
 
 
-            elif var == 'bbbv':
+            elif var == 'v':
                 v = self._State.get_field(var)
                 vt = self._State.get_tend(var)
                 
+                v_nudge = (
+                    self._previous_bdy[var]["x_low"][:,:,:]
+                     + (self._post_bdy[var]["x_low"][:,:,:] - self._previous_bdy[var]["x_low"][:,:,:])
+                     * (self._TimeSteppingController._time - self.time_previous)
+                     / 3600.0
+                )
+
                 start = nh[0]
                 end = nh[0] + self.nudge_width 
-                vt[start:end,:,:] -= (v[start:end,:,:] - self._previous_bdy['v']['x_low'][1:,:,:]) * weight[:,np.newaxis,np.newaxis]
+                vt[start:end,:,:] -= (v[start:end,:,:] - v_nudge[1:,:,:]) * weight[:,np.newaxis,np.newaxis]
+
+
+                v_nudge = (
+                    self._previous_bdy[var]["x_high"][:,:,:]
+                     + (self._post_bdy[var]["x_high"][:,:,:] - self._previous_bdy[var]["x_high"][:,:,:])
+                     * (self._TimeSteppingController._time - self.time_previous)
+                     / 3600.0
+                )
 
                 start = -nh[0] - self.nudge_width
                 end = -nh[0]
-                vt[start:end,:,:] -= (v[start:end,:,:] - self._previous_bdy['v']['x_high'][:-1,:,:]) * weight[::-1,np.newaxis,np.newaxis]
+                vt[start:end,:,:] -= (v[start:end,:,:] - v_nudge[:-1,:,:]) * weight[::-1,np.newaxis,np.newaxis]
 
+
+                v_nudge = (
+                    self._previous_bdy[var]["y_low"][:,:,:]
+                     + (self._post_bdy[var]["y_low"][:,:,:] - self._previous_bdy[var]["y_low"][:,:,:])
+                     * (self._TimeSteppingController._time - self.time_previous)
+                     / 3600.0
+                )
 
                 start = nh[1]
                 end = start + self.nudge_width
-                vt[:,start:end,:] -= (v[:,start:end,:] - self._previous_bdy['v']['y_low'][:,1:,:]) * weight[np.newaxis,: ,np.newaxis]
+                vt[:,start:end,:] -= (v[:,start:end,:] - v_nudge[:,1:,:]) * weight[np.newaxis,: ,np.newaxis]
+
+                v_nudge = (
+                    self._previous_bdy[var]["y_high"][:,:,:]
+                     + (self._post_bdy[var]["y_high"][:,:,:] - self._previous_bdy[var]["y_high"][:,:,:])
+                     * (self._TimeSteppingController._time - self.time_previous)
+                     / 3600.0
+                )
 
                 start = -nh[1] - self.nudge_width - 1
                 end = -nh[1] - 1
-                vt[:,start:end,:] -= (v[:,start:end,:] - self._previous_bdy['v']['y_high'][:,:-1,:]) * weight[np.newaxis,::-1,np.newaxis]
+                vt[:,start:end,:] -= (v[:,start:end,:] - v_nudge[:,:-1,:]) * weight[np.newaxis,::-1,np.newaxis]
 
             elif var=='w':
+
                 w = self._State.get_field(var)
                 wt = self._State.get_tend(var)        
 
                 start = nh[0]
                 end = nh[0] + self.nudge_width 
-                wt[start:end,:,:] -= (w[start:end,:,:] - w[start+1:end+1,:,:] * 0.0) * weight[:,np.newaxis,np.newaxis]
+                wt[start:end,:,:] -= (w[start:end,:,:] - w[start+1:end+1,:,:] ) * 0.0 * weight[:,np.newaxis,np.newaxis]
 
 
                 start = -nh[0] - self.nudge_width
                 end = -nh[0]
-                wt[start:end,:,:] -= (w[start:end,:,:] - w[start-1:end-1,:,:]*0.0) * weight[::-1,np.newaxis,np.newaxis]
+                wt[start:end,:,:] -= (w[start:end,:,:] - w[start-1:end-1,:,:]) * 0.0 * weight[::-1,np.newaxis,np.newaxis]
 
 
                 start = nh[1]
                 end = nh[1] + self.nudge_width 
-                wt[:,start:end,:] -= (w[:,start:end,:] - w[:,start+1:end+1,:]*0.0) * weight[np.newaxis,:,np.newaxis]
+                wt[2 * nh[1]:-2 * nh[1],start:end,:] -= (w[2 * nh[1]:-2 * nh[1],start:end,:] - 0.0 * w[2 * nh[1]:-2 * nh[1],start+1:end+1,:]) * weight[np.newaxis,:,np.newaxis]
 
                 start = -nh[1] - self.nudge_width
                 end = -nh[1]
-                wt[:,start:end,:] -= (w[:,start:end,:] - w[:,start-1:end-1,:]*0.0) * weight[np.newaxis,::-1,np.newaxis]
+                wt[2 * nh[1]:-2 * nh[1],start:end,:] -= (w[2 * nh[1]:-2 * nh[1],start:end,:] - 0.0 * w[2 * nh[1]:-2 * nh[1],start-1:end-1,:]) * weight[np.newaxis,::-1,np.newaxis]
+            
+            elif var == 'qv' or 's':
 
-                #start = nh[0]
-                #end = nh[0] + nudge_width
-                #vt[start:end,:,:] -= (v[start:end,:,:] - x_low[np.newaxis,:,:]) * weight[:,np.newaxis,np.newaxis]
+                phi = self._State.get_field(var)
+                phi_t = self._State.get_tend(var)
 
-                #start = -(nh[0])
-                #end = start - nudge_width
-                #vt[end:start,:,:] -= (v[end:start,:,:] - x_high[np.newaxis,:,:]) * weight[::-1,np.newaxis,np.newaxis]
+                phi_nudge = (
+                    self._previous_bdy[var]["x_low"][:,:,:]
+                     + (self._post_bdy[var]["x_low"][:,:,:] - self._previous_bdy[var]["x_low"][:,:,:])
+                     * (self._TimeSteppingController._time - self.time_previous)
+                     / 3600.0
+                )
+
+                start = nh[0]
+                end = nh[0] + self.nudge_width 
+
+                phi_t[start:end,:,:] -= (phi[start:end,:,:] - phi_nudge[1:,:,:]) * weight[:,np.newaxis,np.newaxis]
 
 
-                # Nudge u on the low boundary for x
-                #start = nh[1]
-                #end = nh[1] + nudge_width
-                #vt[:,start:end,:] -= (v[:,start:end,:] - y_low[:,np.newaxis,:]) #* weight[np.newaxis,:,np.newaxis]
+                phi_nudge = (
+                    self._previous_bdy[var]["x_high"][:,:,:]
+                     + (self._post_bdy[var]["x_high"][:,:,:] - self._previous_bdy[var]["x_high"][:,:,:])
+                     * (self._TimeSteppingController._time - self.time_previous)
+                     / 3600.0
+                )
+
+                start = -nh[0] - self.nudge_width
+                end = -nh[0]
 
 
-                #start = -(nh[1]-1)
-                #end = start - nudge_width
-                
-                #vt[:,end:start,:] -= (vt[:,end:start,:] - y_high[:,np.newaxis,:]#) * weight[np.newaxis,::-1,np.newaxis]
-                #Nudge u on the high boundary for x 
+                phi_t[start:end,:,:] -= (phi[start:end,:,:] - phi_nudge[:-1,:,:]) * weight[::-1,np.newaxis,np.newaxis]
+
+                phi_nudge = (
+                    self._previous_bdy[var]["y_low"][:,:,:]
+                     + (self._post_bdy[var]["y_low"][:,:,:] - self._previous_bdy[var]["y_low"][:,:,:])
+                     * (self._TimeSteppingController._time - self.time_previous)
+                     / 3600.0
+                )
+
+                start = nh[1]
+                end = nh[1] + self.nudge_width 
+
+                phi_t[:,start:end,:] -= (phi[:,start:end,:] - phi_nudge[:,1:,:]) * weight[np.newaxis,: ,np.newaxis]
+
+                phi_nudge = (
+                    self._previous_bdy[var]["y_high"][:,:,:]
+                     + (self._post_bdy[var]["y_high"][:,:,:] - self._previous_bdy[var]["y_high"][:,:,:])
+                     * (self._TimeSteppingController._time - self.time_previous)
+                     / 3600.0
+                )
+
+
+                start = -nh[1] - self.nudge_width
+                end = -nh[1]
+
+                phi_t[:,start:end,:] -= (phi[:,start:end,:] - phi_nudge[:,:-1,:]) * weight[np.newaxis,::-1,np.newaxis]
 
 
         return

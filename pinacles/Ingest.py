@@ -165,7 +165,7 @@ class IngestEra5:
         mask = mask & (lat_T_grid >= np.amin(lat) - 1.0) & (lat_T_grid <= np.amax(lat) + 1.0)
         lon_lat = (lon_T_grid[mask], lat_T_grid[mask])
 
-
+        
         T_horizontal = np.empty((T.shape[0], lon.shape[0], lon.shape[1]), dtype=np.double)
         for i in range(T.shape[0]):
             T_horizontal[i,:,:] = interpolate.griddata(lon_lat, 
@@ -174,6 +174,7 @@ class IngestEra5:
 
 
         Ti = np.empty((lon.shape[0], lon.shape[1], height.shape[0]), dtype=np.double) 
+        print(lon.shape[0], lon.shape[1], 'Ti', np.shape(Ti))
         nh = self._Grid.n_halo
         for i in range(T_horizontal.shape[1]):
             for j in range(T_horizontal.shape[2]):
