@@ -265,7 +265,7 @@ class GridBase:
         """
         start = self._local_start[0]
         end = self._local_end[0] + 2 * self._n_halo[0]
-        return np.copy(self._local_axes[0][start:end])
+        return np.copy(self._global_axes[0][start:end])
 
 
     @property
@@ -276,7 +276,7 @@ class GridBase:
         """
         start = self._local_start[1]
         end = self._local_end[1] + 2 * self._n_halo[1]
-        return np.copy(self._local_axes[1][start:end])
+        return np.copy(self._global_axes[1][start:end])
 
     @property
     def z_local(self):
@@ -397,6 +397,7 @@ class RegularCartesian(GridBase):
     def __init__(self, namelist, llx=0.0, lly=0.0, llz=0.0):
 
         GridBase.__init__(self, namelist, llx=llx, lly=lly, llz=llz)
+
         self._compute_globalcoordiantes()
 
 
@@ -409,6 +410,7 @@ class RegularCartesian(GridBase):
              self._center_latlon[0], self._center_latlon[1])
 
             self.compute_latlon()
+        
 
         return
 

@@ -308,7 +308,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.VelocityTimeStepping.initialize()
 
 
-        self.Ingest.initialize()
 
         if ParentNest is None:
             self.LBC = LateralBCsFactory.LateralBCsFactory(
@@ -326,7 +325,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self._namelist, self.ModelGrid, self.VelocityState, self.VelocityState, self.TimeSteppingController, self.Ingest, 
                 NestState = ParentNest.VelocityState
             )
-
+        self.Ingest.initialize()
 
         # Do case sepcific initalizations the initial profiles are integrated here
         Initializaiton.initialize(
@@ -365,6 +364,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Ref,
             self.TimeSteppingController,
         )
+
+
         self.Fields2d = Fields2D.Fields2D(
             self._namelist, self.ModelGrid, self.Ref, self.TimeSteppingController
         )
@@ -422,10 +423,13 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Now iniitalzie the IO field
         self.StatsIO.initialize()
 
+
         # Now initialze for the output of 3D fields
         self.FieldsIO = DumpFields.DumpFields(
             self._namelist, self.Timers, self.ModelGrid, self.TimeSteppingController
         )
+
+
         # Add container classes that will dump 3D fields
         self.FieldsIO.add_class(self.ScalarState)
         self.FieldsIO.add_class(self.VelocityState)
@@ -483,7 +487,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Rad.update(force=True)
         self.PSolver.update()
 
-        import pylab as plt
+        #import pylab as plt
         #plt.subplot(311)
         #plt.plot(u[:,5,5],'.')
         #plt.subplot(312)
@@ -518,6 +522,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Timers.add_timer("BoundaryUpdate")
         self.Timers.add_timer("main")
         self.Timers.initialize()
+
+
 
         return
 
@@ -834,6 +840,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Now overwrite model state with restart
         self.Restart.restart()
 
+        
         # These boundary updates are probably not necessary, but just to be safe we will do them.
         # At this point the model is basically initalized, however we should also do boundary exchanges to insure
         # the halo regions are set and the to a pressure solver to insure that the velocity field is initially satifies

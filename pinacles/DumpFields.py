@@ -46,6 +46,7 @@ class DumpFields:
     def update(self):
         self._Timers.start_timer("DumpFields")
 
+
         output_here = os.path.join(
             self._output_path, str(np.round(self._TimeSteppingController.time))
         )
@@ -64,6 +65,7 @@ class DumpFields:
         # Add some metadata
         rt_grp.unique_id = self._namelist["meta"]["unique_id"]
         rt_grp.wall_time = self._namelist["meta"]["wall_time"]
+
 
         self.setup_nc_dims(rt_grp)
 
@@ -111,7 +113,10 @@ class DumpFields:
         X.units = "m"
         X.long_name = "x-coordinate"
         X.standard_name = "x"
+
+
         X[:] = self._Grid.x_local[nhalo[0] : -nhalo[0]]
+
 
         Y = rt_grp.createVariable("Y", np.double, dimensions=("Y"))
         Y.units = "m"
