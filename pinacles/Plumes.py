@@ -1,17 +1,19 @@
 from pinacles import UtilitiesParallel
 from pinacles import parameters
+from pinacles import AerosolBinModel
 import numpy as np
 
 
 class Plume:
     def __init__(
-        self, location, start_time, n, Grid, Ref, ScalarState, TimeSteppingController
+        self, location, start_time, n, Grid, Ref, ScalarState, AerosolBinModel,TimeSteppingController
     ):
 
         self._Grid = Grid
         self._Ref = Ref
         self._TimeSteppingController = TimeSteppingController
         self._ScalarState = ScalarState
+        self._ABM = AerosolBinModel
 
         # These are the plume properties
         self._location = location
@@ -24,6 +26,7 @@ class Plume:
         self._plume_qv_flux = 0.0
         self._plume_heat_flux = 0.0
         self._plume_ql_flux = 0.0
+        self._plume_aerosol = 0.0  # for aerosol bin
 
         # Determine if plume is emitted on this rank
         self._plume_on_rank = self._Grid.point_on_rank(
@@ -80,6 +83,10 @@ class Plume:
                 self._plume_ql_flux / grid_cell_mass
             )
 
+        self._ABM.set_aerosol_scalars(self._indicies[0], self._indicies[1], self._indicies[2], 
+                                        self._plume_number_conc)
+        
+
         # If needed, zero the plume scalar on the boundaries
         if self._boundary_outflow:
             plume_value = self._ScalarState.get_field(self._scalar_name)
@@ -104,6 +111,7 @@ class Plume:
             if np.max(y_local) == np.amax(y_global):
                 plume_value[:, -n_halo[1] :, :] = 0
 
+            self._ABM.boundary_outflow()
         return
 
     @property
@@ -158,6 +166,10 @@ class Plume:
         self._plume_heat_flux = flux
         return
 
+    def set_plume_aerosol_number(self, na_cc):
+        self._plume_aerosol_number = na_cc
+        return
+
     def set_boundary_outflow(self, boundary_outflow):
         self._boundary_outflow = boundary_outflow
         return
@@ -196,6 +208,8 @@ class Plumes:
 
             # Store the liquid water flux of the plumes
             self._plume_ql_flux = namelist["plumes"]["ql_flux"]
+
+            self._plume_aerosol_number = namelist["plumes"]["aerosol_number"]
 
             # Store the boundary treatment
             self._boundary_outflow = namelist["plumes"]["boundary_outflow"]
