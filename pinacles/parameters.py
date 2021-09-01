@@ -18,3 +18,4 @@ LV = np.double(2.5014e6)
 LS = np.double(2.8440e6)
 LF = np.double(0.336e6)
 LARGE = np.double(1e11)  # A very large number
+RHOW = 1000.0 # Density of liquid water

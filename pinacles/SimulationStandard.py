@@ -32,6 +32,7 @@ from pinacles import Plumes
 from pinacles import Restart
 from pinacles import UtilitiesParallel
 from pinacles import Timers
+from pinacles import AerosolBinModel
 from mpi4py import MPI
 import numpy as np
 import pylab as plt
@@ -162,6 +163,16 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.DiagnosticState,
             self.Micro,
         )
+
+        self.Aero = AerosolBinModel.factory(
+            self._namelist, 
+            self.Timers,
+            self.ModelGrid,
+            self.Ref,
+            self.ScalarState,
+            self.VelocityState,
+            self.DiagnosticState,
+            self.TimeSteppingController,)
 
         # Instantiate scalar advection
         self.ScalarAdv = ScalarAdvectionFactory.factory(
@@ -795,6 +806,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     self.Thermo.update(apply_buoyancy=False)
                     # We call the microphysics update at the end of the RK steps.
                     self.Micro.update()
+                    self.Aero.update()
                     self.Rad.update(time_loop=True)
 
                     self.Timers.start_timer("BoundaryUpdate")
