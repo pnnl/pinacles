@@ -255,6 +255,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
+            self.Aero,
             self.TimeSteppingController,
         )
 

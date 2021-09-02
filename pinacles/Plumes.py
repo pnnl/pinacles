@@ -26,7 +26,7 @@ class Plume:
         self._plume_qv_flux = 0.0
         self._plume_heat_flux = 0.0
         self._plume_ql_flux = 0.0
-        self._plume_aerosol = 0.0  # for aerosol bin
+        self._plume_aerosol_number = 0.0  # for aerosol bin
 
         # Determine if plume is emitted on this rank
         self._plume_on_rank = self._Grid.point_on_rank(
@@ -83,8 +83,9 @@ class Plume:
                 self._plume_ql_flux / grid_cell_mass
             )
 
+    
         self._ABM.set_aerosol_scalars(self._indicies[0], self._indicies[1], self._indicies[2], 
-                                        self._plume_number_conc)
+                                        self._plume_aerosol_number)
         
 
         # If needed, zero the plume scalar on the boundaries
@@ -177,13 +178,14 @@ class Plume:
 
 class Plumes:
     def __init__(
-        self, namelist, Timers, Grid, Ref, ScalarState, TimeSteppingController
+        self, namelist, Timers, Grid, Ref, ScalarState, AerosolBinModel, TimeSteppingController
     ):
         self._Timers = Timers
         self._Grid = Grid
         self._Ref = Ref
         self._TimeSteppingController = TimeSteppingController
         self._ScalarState = ScalarState
+        self._ABM = AerosolBinModel
         self._locations = None
         self._startimes = None
 
@@ -248,6 +250,7 @@ class Plumes:
                     self._Grid,
                     self._Ref,
                     self._ScalarState,
+                    self._ABM,
                     self._TimeSteppingController,
                 )
             )
@@ -264,6 +267,9 @@ class Plumes:
 
             # The plume heat flux   # Todo set units
             plume.set_plume_heat_flux(self._plume_heat_flux[i])
+
+            plume.set_plume_aerosol_number( self._plume_aerosol_number[i])
+
 
             # set the treatment of the plume scalars on the boundary
             plume.set_boundary_outflow(self._boundary_outflow[i])
