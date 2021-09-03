@@ -126,7 +126,8 @@ def bomex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         pass
 
     # Integrate the reference profile.
-    Ref.set_surface(Psfc=1015e2, Tsfc=300.4, u0=-8.75, v0=0.0)
+    # Ref.set_surface(Psfc=1015e2, Tsfc=300.4, u0=-8.75, v0=0.0)
+    Ref.set_surface(Psfc=1015e2, Tsfc=300.4, u0=0.0, v0=0.0)
     Ref.integrate()
 
     u = VelocityState.get_field("u")
