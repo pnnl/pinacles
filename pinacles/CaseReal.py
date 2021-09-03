@@ -573,6 +573,7 @@ class LateralBCsReanalysis(LateralBCsBase):
         if self.presvious_shift * 3600 <= self._TimeSteppingController.time:
             print('Updating boundary data: ', self._TimeSteppingController.time)
             self.update_ingest()
+            self.time_previous = self._TimeSteppingController._time
 
 
         nh = self._Grid.n_halo
@@ -631,7 +632,7 @@ class LateralBCsReanalysis(LateralBCsBase):
 
         nudge_width = self.nudge_width
         #weight =  1.0/(2.0 * self._TimeSteppingController.dt)  / (1.0 + np.arange(nudge_width))
-        weight = (1.0 - np.tanh(np.arange(self.nudge_width)/2))/(4.0 * self._TimeSteppingController.dt)
+        weight = (1.0 - np.tanh(np.arange(self.nudge_width)/2))/(2.0 * self._TimeSteppingController.dt)
         #weight = (1.0 + np.cos(np.arange(self.nudge_width) * np.pi / self.nudge_width)/2.0) /(4.0 * self._TimeSteppingController.dt)
 
 
