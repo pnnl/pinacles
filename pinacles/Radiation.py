@@ -57,7 +57,7 @@ class RRTMG:
         try:
             self._radiation_frequency = namelist["radiation"]["update_frequency"]
         except:
-            self._radiation_frequency = 30.0
+            self._radiation_frequency = 60.0
 
         self.frequency = self._radiation_frequency  # This is used for time syncing
         self.time_synced = True
@@ -181,8 +181,8 @@ class RRTMG:
         self._toa_lw_up = 0.0
         self._toa_lw_dn = 0.0
 
-        self._toa_sw_dn_2d = None
-        self._surf_sw_dn_2d = None
+        self._toa_sw_dn_2d = np.zeros((self._Grid.ngrid_local[0], self._Grid.ngrid_local[1]), dtype=np.double)
+        self._surf_sw_dn_2d = np.zeros((self._Grid.ngrid_local[0], self._Grid.ngrid_local[1]), dtype=np.double)
 
         self._restart_attributes = [
             "time_elapsed",
@@ -346,7 +346,7 @@ class RRTMG:
             plev = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")  # hPA !!!
             tlay = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             tlev = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")
-            tsfc = np.ones((_ncol), dtype=np.double, order="F") * self._Surf.T_surface
+            tsfc = np.ravel(self._Surf.T_surface[3:-3,3:-3])   #np.ones((_ncol), dtype=np.double, order="F") * self._Surf.T_surface
             h2ovmr = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             o3vmr = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             co2vmr = np.ones((_ncol, _nlay), dtype=np.double, order="F") * self._vmr_co2
@@ -783,10 +783,10 @@ class RRTMG:
 
     def io_fields2d_update(self, nc_grp):
 
-        alb = -(self._surf_sw_dn_2d - self._toa_sw_dn_2d) / self._toa_sw_dn_2d
+        #alb = -(self._surf_sw_dn_2d - self._toa_sw_dn_2d) / self._toa_sw_dn_2d
 
-        albedo = nc_grp.createVariable("albedo", np.double, dimensions=("X", "Y",))
-        albedo[:, :] = alb.reshape((self._Grid.nl[0], self._Grid.nl[1]))
+        #albedo = nc_grp.createVariable("albedo", np.double, dimensions=("X", "Y",))
+        #albedo[:, :] = alb.reshape((self._Grid.nl[0], self._Grid.nl[1]))
 
         nc_grp.sync()
 

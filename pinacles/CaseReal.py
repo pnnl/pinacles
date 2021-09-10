@@ -56,7 +56,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         self._TSKIN = np.zeros_like(self._windspeed_sfc)
         self._TSKIN_pre = np.zeros_like(self._windspeed_sfc)
         self._TSKIN_post = np.zeros_like(self._windspeed_sfc)
-
+        self.T_surface = np.zeros_like(self._windspeed_sfc)
         self._previous_ingest = 1
 
         return
@@ -76,6 +76,8 @@ class SurfaceReanalysis(Surface.SurfaceBase):
                 (self._Grid.lon_local, self._Grid.lat_local),
                 method="cubic",
             )
+
+        self.T_surface[:,:] = self._TSKIN_pre[:,:]
 
         return super().initialize()
 
@@ -630,12 +632,12 @@ class LateralBCsReanalysis(LateralBCsBase):
 
                 y_high[:, :] = (
                     self._previous_bdy[var]["y_high"][:, -1, :]
-                    # + (
-                    #     self._post_bdy[var]["y_high"][:,-1,:]
-                    #     - self._previous_bdy[var]["y_high"][:,-1,:]
-                    # )
-                    # * (self._TimeSteppingController._time - self.time_previous)
-                    # / 3600.0
+                     + (
+                         self._post_bdy[var]["y_high"][:,-1,:]
+                         - self._previous_bdy[var]["y_high"][:,-1,:]
+                     )
+                     * (self._TimeSteppingController._time - self.time_previous)
+                     / 3600.0
                 )
 
             else:
