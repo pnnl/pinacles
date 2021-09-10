@@ -234,6 +234,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.VelocityState,
             self.ScalarState,
             self.DiagnosticState,
+            self.Micro,
             self.TimeSteppingController,
         )
 
@@ -570,6 +571,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.VelocityState,
             self.ScalarState,
             self.DiagnosticState,
+            self.Micro,
             self.TimeSteppingController,
         )
 

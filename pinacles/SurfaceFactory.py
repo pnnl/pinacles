@@ -15,6 +15,7 @@ def factory(
     VelocityState,
     ScalarState,
     DiagnosticState,
+    Micro,
     TimeSteppingController,
 ):
     casename = namelist["meta"]["casename"]
