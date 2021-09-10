@@ -3,6 +3,10 @@ import os
 
 
 def main():
+    # Build the NOAH-MP LSM
+    build_script(
+        "pinacles/externals/wrf_noahmp_wrapper", "build_wrapper.sh", "NOAH-MP LSM"
+    )
 
     # Build the fast_sbm scheme
     build_script(
@@ -56,7 +60,6 @@ def build_script(path, source, extname):
         source (str): filename of the build script
         extname (str): name of the module, this is just for printing to terminal
     """
-
 
     print("Running build script for: ", extname)
     orig_path = os.getcwd()
