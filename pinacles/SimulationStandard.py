@@ -212,6 +212,19 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.DiagnosticState,
         )
 
+        # Instantiate surface
+        self.Surf = SurfaceFactory.factory(
+            self._namelist,
+            self.Timers,
+            self.ModelGrid,
+            self.Ref,
+            self.VelocityState,
+            self.ScalarState,
+            self.DiagnosticState,
+            self.Micro,
+            self.TimeSteppingController,
+        )
+
         # Instantiate forcing
         self.Force = ForcingFactory.factory(
             self._namelist,
@@ -225,18 +238,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.TimeSteppingController,
         )
 
-        # Instantiate surface
-        self.Surf = SurfaceFactory.factory(
-            self._namelist,
-            self.Timers,
-            self.ModelGrid,
-            self.Ref,
-            self.VelocityState,
-            self.ScalarState,
-            self.DiagnosticState,
-            self.Micro,
-            self.TimeSteppingController,
-        )
 
         # Instatiate plumes if there are any
         self.Plumes = Plumes.Plumes(

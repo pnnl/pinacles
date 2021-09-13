@@ -4,6 +4,7 @@ from pinacles import CaseStableBubble
 from pinacles import CaseRICO
 from pinacles import CaseATEX
 from pinacles import CaseTestbed
+from pinacles import SurfaceNOAH_MP
 from pinacles import Surface
 
 
@@ -40,16 +41,17 @@ def factory(
             namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
     elif casename == "testbed":
-        return CaseTestbed.SurfaceTestbed(
-            namelist,
-            Timers,
-            Grid,
-            Ref,
-            VelocityState,
-            ScalarState,
-            DiagnosticState,
-            TimeSteppingController,
-        )
+        return SurfaceNOAH_MP.SurfaceNoahMP(namelist, Timers, Grid, Ref, Micro, VelocityState, ScalarState, DiagnosticState)
+        # return CaseTestbed.SurfaceTestbed(
+        #    namelist,
+        #    Timers,
+        #    Grid,
+        #    Ref,
+        #    VelocityState,
+        #    ScalarState,
+        #    DiagnosticState,
+        #    TimeSteppingController,
+        # )
     else:
         return Surface.SurfaceBase(
             namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
