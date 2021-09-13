@@ -41,7 +41,16 @@ def factory(
             namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
     elif casename == "testbed":
-        return SurfaceNOAH_MP.SurfaceNoahMP(namelist, Timers, Grid, Ref, Micro, VelocityState, ScalarState, DiagnosticState)
+        return SurfaceNOAH_MP.SurfaceNoahMP(
+            namelist,
+            Timers,
+            Grid,
+            Ref,
+            Micro,
+            VelocityState,
+            ScalarState,
+            DiagnosticState,
+        )
         # return CaseTestbed.SurfaceTestbed(
         #    namelist,
         #    Timers,
