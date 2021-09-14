@@ -774,7 +774,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.SGS.update()
 
                 # Update scalar and momentum advection
-                self.ScalarAdv.update()
+                self.ScalarAdv.update() 
                 self.MomAdv.update()
 
                 # Update scalar and momentum diffusion
@@ -807,6 +807,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     self.Thermo.update(apply_buoyancy=False)
                     # We call the microphysics update at the end of the RK steps.
                     self.Micro.update()
+                    # colleen--for testing
+                    self.Plumes.update()
                     self.Aero.update()
                     self.Rad.update(time_loop=True)
 
