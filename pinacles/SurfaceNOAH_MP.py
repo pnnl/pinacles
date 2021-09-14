@@ -107,6 +107,8 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         NMPvars = self._NoahMPvars
         NMP2ATM = self._NoahMPtoATM
 
+        NMPvars.tslb.fill(294.969329833984)
+
         dx = self._Grid.dx[0]
         dy = self._Grid.dx[1]
 
@@ -351,7 +353,7 @@ class SurfaceNoahMP(Surface.SurfaceBase):
 
         T = self._DiagnosticState.get_field("T")
         dflux_lw = self._DiagnosticState.get_field("dflux_lw")
-        dflux_sw = self._DiagnosticState.get_field("dflux_lw")
+        dflux_sw = self._DiagnosticState.get_field("dflux_sw")
         #import pylab as plt
         #plt.contourf(dflux_lw[:,:,5])
         #plt.colorbar()
@@ -373,6 +375,7 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         ATM2NMP = self._ATMtoNoahMP
         NMP2ATM = self._NoahMPtoATM
         NMPvars = self._NoahMPvars
+
 
         dt = self._TimeSteppingController.dt
         dx = self._Grid.dx[0]
@@ -398,13 +401,12 @@ class SurfaceNoahMP(Surface.SurfaceBase):
             to_wrf_order(n_halo, pinacles_array, wrf_array)
 
 
-
         ATM2NMP.glw[:,:] = np.asfortranarray(dflux_lw[n_halo[0]:-n_halo[0], n_halo[1]:-n_halo[1], n_halo[2]])
         ATM2NMP.swdown[:,:] = np.asfortranarray(dflux_sw[n_halo[0]:-n_halo[0], n_halo[1]:-n_halo[1], n_halo[2]])
 
         ATM2NMP.p8w3d[:,:,:] = self._Ref.p0[:][np.newaxis,n_halo[2]:-n_halo[2],np.newaxis]
         
-
+        print(ATM2NMP.dz8w)
         self._NOAH_MP.noahmplsm(
             self.itimestep,
             self.yr,
@@ -568,7 +570,14 @@ class SurfaceNoahMP(Surface.SurfaceBase):
 
         import pylab as plt
 
-        plt.contourf(NMP2ATM.hfx)
+        plt.figure(1,figsize=(21,10))
+        plt.subplot(121)
+        plt.title('Latent Heat Flux')
+        plt.contourf(NMP2ATM.tradxy.T)
+        plt.colorbar()
+        plt.subplot(122)
+        plt.title('Sensible Heat Flux')
+        plt.contourf(NMPvars.smois.T)
         plt.colorbar()
         plt.show()
 
