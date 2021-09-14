@@ -16,10 +16,11 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         VelocityState,
         ScalarState,
         DiagnosticState,
+        TimeSteppingController
     ):
 
         self._Micro = Micro
-
+        self._TimeSteppingController = TimeSteppingController
         Surface.SurfaceBase.__init__(
             self,
             namelist,
@@ -31,9 +32,12 @@ class SurfaceNoahMP(Surface.SurfaceBase):
             DiagnosticState,
         )
 
-
+        self.itimestep = 1
 
         self._NOAH_MP = NoahMP.noahmp()
+
+
+
 
         n_halo = self._Grid.n_halo
 
@@ -67,15 +71,17 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         iones_float_2d =  np.ones((ime-ims+1,jme-jms+1),dtype=np.float64)
         iones_int_2d = np.ones((ime-ims+1,jme-jms+1),dtype=np.intc)
 
+        self.vegfra = np.asfortranarray(np.ones_like(iones_float_2d)*0.5)  #vegetation fraction, all = 0.5
+        self.vegmax = np.asfortranarray(np.ones_like(iones_float_2d))  #annual maximum veg fraction all = 1
 
-        nsoil=4
-        nsnow = 3 #number of snow layers. set to 3 in the subroutine noahmplsm 
+        self.nsoil=4
+        self.nsnow = 3 #number of snow layers. set to 3 in the subroutine noahmplsm 
         dzs = np.asfortranarray([0.01, 0.3, 0.6, 1]) #soil layer thickness
         dz = 20.0
 
 
         # Container classes
-        self._NoahMPvars = nom.NoahMPvars(ims,ime,jms,jme,nsoil,nsnow,dzs)
+        self._NoahMPvars = nom.NoahMPvars(ims,ime,jms,jme,self.nsoil,self.nsnow,dzs)
         self._NoahMPtoATM = nom.NoahMPtoATM(ims, ime, jms, jme)
         self._ATMtoNoahMP = nom.ATMtoNoahMP(ims,ime,jms,jme,kms,kme,dz)
 
@@ -96,26 +102,26 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         msfty = np.asfortranarray(iones_float_2d)      #map factor
 
 
-        IDVEG = 1    #dynamic vegetation (1 -> off ; 2 -> on) with opt_crs = 1      
-        IOPT_CRS = 1 #canopy stomatal resistance (1-> Ball-Berry; 2->Jarvis)
-        IOPT_BTR = 1 #soil moisture factor for stomatal resistance (1-> Noah; 2-> CLM; 3-> SSiB)
-        IOPT_RUN = 1 #runoff and groundwater (1->SIMGM; 2->SIMTOP; 3->Schaake96; 4->BATS)
-        IOPT_SFC = 1 #surface layer drag coeff (CH & CM) (1->M-O; 2->Chen97)
-        IOPT_FRZ = 1 #supercooled liquid water (1-> NY06; 2->Koren99)
-        IOPT_INF = 1 #frozen soil permeability (1-> NY06; 2->Koren99)
-        IOPT_RAD = 1 #radiation transfer (1->gap=F(3D,cosz); 2->gap=0; 3->gap=1-Fveg)
-        IOPT_ALB = 1 #snow surface albedo (1->BATS; 2->CLASS)
-        IOPT_SNF = 1 #rainfall & snowfall (1-Jordan91; 2->BATS; 3->Noah)
-        IOPT_TBOT = 1 #lower boundary of soil temperature (1->zero-flux; 2->Noah)
-        IOPT_STC = 1 #snow/soil temperature time scheme (for only layer 1) 
+        self.IDVEG = 1    #dynamic vegetation (1 -> off ; 2 -> on) with opt_crs = 1      
+        self.IOPT_CRS = 1 #canopy stomatal resistance (1-> Ball-Berry; 2->Jarvis)
+        self.IOPT_BTR = 1 #soil moisture factor for stomatal resistance (1-> Noah; 2-> CLM; 3-> SSiB)
+        self.IOPT_RUN = 1 #runoff and groundwater (1->SIMGM; 2->SIMTOP; 3->Schaake96; 4->BATS)
+        self.IOPT_SFC = 1 #surface layer drag coeff (CH & CM) (1->M-O; 2->Chen97)
+        self.IOPT_FRZ = 1 #supercooled liquid water (1-> NY06; 2->Koren99)
+        self.IOPT_INF = 1 #frozen soil permeability (1-> NY06; 2->Koren99)
+        self.IOPT_RAD = 1 #radiation transfer (1->gap=F(3D,cosz); 2->gap=0; 3->gap=1-Fveg)
+        self.IOPT_ALB = 1 #snow surface albedo (1->BATS; 2->CLASS)
+        self.IOPT_SNF = 1 #rainfall & snowfall (1-Jordan91; 2->BATS; 3->Noah)
+        self.IOPT_TBOT = 1 #lower boundary of soil temperature (1->zero-flux; 2->Noah)
+        self.IOPT_STC = 1 #snow/soil temperature time scheme (for only layer 1) 
                     # 1 -> semi-implicit; 2 -> full implicit (original Noah))
-        IZ0TLND = 0 #option of Chen adjustment of Czil 
+        self.IZ0TLND = 0 #option of Chen adjustment of Czil 
                     #! it seems to be used; value of 1 uses Chen & Zhang (2009) to modify 
                     #a constant parameter (CZIL) in the expression for thermal roughness length
 
-        ISICE =15
-        ISURBAN = 16
-        ISWATER =  np.intc(17)
+        self.ISICE =15
+        self.ISURBAN = 16
+        self.ISWATER =  np.intc(17)
 
 
         data_in = xr.open_dataset('sensitivity5_d01_static.nc')
@@ -130,6 +136,11 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         lon_in = data_in['XLONG'].values[0,:,:]
         ISLTYP = data_in['ISLTYP'].values[0,:,:]
         IVGTYP = data_in['IVGTYP'].values[0,:,:]
+        landmask = data_in['LANDMASK'].values[0,:,:] 
+        xlandin = landmask.copy
+        xlandin = np.where((landmask < 1) , 2, landmask)
+        xlandin = np.where((IVGTYP ==self.ISWATER), 2, landmask) 
+        xlandin = np.where((ISLTYP == 14), 2, landmask)
 
 
         #print(np.shape(lat_in))
@@ -151,19 +162,19 @@ class SurfaceNoahMP(Surface.SurfaceBase):
                 (self._Grid.lon_local, self._Grid.lat_local),
                 method="nearest",
             )
-        
 
+        xland = interpolate.griddata(
+                lon_lat,
+                xlandin.flatten(),
+                (self._Grid.lon_local, self._Grid.lat_local),
+                method="nearest",
+            )
 
-        ISLTYP = np.asfortranarray(ISLTYP[n_halo[0]:-n_halo[0], n_halo[1]:-n_halo[1]], dtype=np.intc)
-        IVGTYP = np.asfortranarray(IVGTYP[n_halo[0]:-n_halo[0], n_halo[1]:-n_halo[1]], dtype=np.intc)
+        self._ISLTYP = np.asfortranarray(ISLTYP[n_halo[0]:-n_halo[0], n_halo[1]:-n_halo[1]], dtype=np.intc)
+        self._IVGTYP = np.asfortranarray(IVGTYP[n_halo[0]:-n_halo[0], n_halo[1]:-n_halo[1]], dtype=np.intc)
+        self._xland = np.asfortranarray(xlandin[n_halo[0]:-n_halo[0], n_halo[1]:-n_halo[1]], dtype=np.intc)
         print(np.shape(ISLTYP))
-        import pylab as plt
-        plt.figure(figsize=(20,10))
-        plt.subplot(121)
-        plt.pcolor(ISLTYP.T)
-        plt.subplot(122)
-        plt.pcolor(IVGTYP.T)
-        plt.show()
+
 
         data_in.close()
         
@@ -171,9 +182,9 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         self._NOAH_MP.init(ids,ide,jds,jde,kds,kde,
             ims,ime,jms,jme,kms,kme,
             its,ite,jts,jte,kts,kte,
-            nsoil,dzs,NMPvars.tsk,NMPvars.isnowxy,NMPvars.snow, NMPvars.snowh, NMPvars.canwat, 
-            ISICE, ISWATER, ISURBAN, ISLTYP, IVGTYP,
-            NMPvars.xice, IOPT_RUN, is_restart, allowed_to_read,
+            self.nsoil,dzs,NMPvars.tsk,NMPvars.isnowxy, NMPvars.snow, NMPvars.snowh, NMPvars.canwat, 
+            self.ISICE, self.ISWATER, self.ISURBAN, self._ISLTYP, self._IVGTYP,
+            NMPvars.xice, self.IOPT_RUN, is_restart, allowed_to_read,
             NMPvars.smois, NMPvars.sh2o, NMPvars.tslb, NMPvars.tmn, NMPvars.zsnsoxy, 
             NMPvars.tsnoxy, NMPvars.snicexy, NMPvars.snliqxy,
             NMPvars.sneqvoxy, NMPvars.alboldxy, NMPvars.qsnowxy, NMPvars.tvxy, 
@@ -190,6 +201,7 @@ class SurfaceNoahMP(Surface.SurfaceBase):
             NMPvars.rivercondxy, NMPvars.pexpxy)
 
 
+
         return
 
     def initialize(self):
@@ -200,6 +212,33 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         nh = self._Grid.n_halo
         dxi2 = self._Grid.dxi[2]
         z_edge = self._Grid.z_edge_global
+
+        #domain range
+        ids=1
+        ide=self._Grid.nl[0]
+        jds=1
+        jde=self._Grid.nl[1]
+        kds=1
+        kde=1
+
+
+        ## further domain setting and other testcase-dependent setting
+        #domain size & indices
+        #memory range (used to define variable arrays)
+        ims=ids
+        ime=ide#-1
+        jms=jds
+        jme=jde#-1
+        kms=kds
+        kme=kde 
+
+        #tile range
+        its=ids
+        ite=ide#-1
+        jts=jds
+        jte=jde#-1
+        kts=kds
+        kte=kde
 
         alpha0 = self._Ref.alpha0
         alpha0_edge = self._Ref.alpha0_edge
@@ -228,6 +267,41 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         Ssfc = s[:, :, nh[2]]
         qvsfc = qv[:, :, nh[2]]
         Tsfc = T[:, :, nh[2]]
+
+
+        ATM2NMP = self._ATMtoNoahMP
+        NMP2ATM = self._NoahMPtoATM
+        NMPvars = self._NoahMPvars
+
+
+        dt = self._TimeSteppingController
+        dx = self._Grid.dx[0]
+        xice_thres = 0.5  #fraction of grid determining seaice
+
+
+        self._NOAH_MP.noahmplsm(self.itimestep, yr, julian, coszin, xlat, ATM2NMP.dz8w, dt, NMPvars.dzs, nsoil, dx,
+        self._IVGTYP, self._ISLTYP, self.vegfra, self.vegmax, NMPvars.tmn, self.xland, NMPvars.xice, xice_thres, 
+        self.ISICE, self.ISURBAN, self.IDVEG, self.IOPT_CRS, self.IOPT_BTR, self.IOPT_RUN, self.IOPT_SFC,
+        self.IOPT_FRZ, self.IOPT_INF, self.IOPT_RAD, self.IOPT_ALB, self.IOPT_SNF, self.IOPT_TBOT, self.IOPT_STC, IZ0TLND,
+        ATM2NMP.t3d, ATM2NMP.qv3d, ATM2NMP.u_phy, ATM2NMP.v_phy, ATM2NMP.swdown*timescale[itimestep-1], 
+        ATM2NMP.glw, ATM2NMP.p8w3d, ATM2NMP.rainbl,
+        NMPvars.tsk, NMP2ATM.hfx, NMP2ATM.qfx, NMP2ATM.lh, NMPvars.grdflx, NMPvars.smstav, NMPvars.smstot, NMPvars.sfcrunoff, NMPvars.udrunoff,
+        NMP2ATM.albedo, NMPvars.snowc, NMPvars.smois, NMPvars.sh2o, NMPvars.tslb, NMPvars.snow, NMPvars.snowh, NMPvars.canwat, NMPvars.acsnom, NMPvars.acsnow, NMP2ATM.emiss, NMPvars.qsfc,
+        NMPvars.isnowxy, NMPvars.tvxy, NMPvars.tgxy, NMPvars.canicexy, NMPvars.canliqxy, NMPvars.eahxy, NMPvars.tahxy,
+        NMP2ATM.cmxy, NMP2ATM.chxy, NMPvars.fwetxy, NMPvars.sneqvoxy, NMPvars.alboldxy, NMPvars.qsnowxy, NMPvars.wslakexy, NMPvars.zwtxy, NMPvars.waxy, NMPvars.wtxy, 
+        NMPvars.tsnoxy, NMPvars.zsnsoxy, NMPvars.snicexy, NMPvars.snliqxy,
+        NMPvars.lfmassxy, NMPvars.rtmassxy, NMPvars.stmassxy, NMPvars.woodxy,NMPvars.stblcpxy, NMPvars.fastcpxy, NMPvars.xlaixy, NMPvars.xsaixy,
+        NMPvars.taussxy, NMPvars.smoiseq, NMPvars.smcwtdxy, NMPvars.deeprechxy, NMPvars.rechxy,
+        NMPvars.t2mvxy, NMPvars.t2mbxy, NMPvars.q2mvxy, NMPvars.q2mbxy, NMP2ATM.tradxy, NMP2ATM.neexy, NMPvars.gppxy, NMPvars.nppxy, 
+        NMPvars.fvegxy, NMPvars.runsfxy, NMPvars.runsbxy, NMPvars.ecanxy, NMPvars.edirxy, NMPvars.etranxy,
+        NMPvars.fsaxy, NMPvars.firaxy, NMPvars.aparxy, NMPvars.psnxy, NMPvars.savxy, NMPvars.sagxy,
+        NMPvars.rssunxy, NMPvars.rsshaxy, NMPvars.bgapxy, NMPvars.wgapxy, NMPvars.tgvxy, NMPvars.tgbxy,
+        NMPvars.chvxy, NMPvars.chbxy, NMPvars.shgxy, NMPvars.shcxy, NMPvars.shbxy, NMPvars.evgxy, NMPvars.evbxy, NMPvars.ghvxy, NMPvars.ghbxy,
+        NMPvars.irgxy, NMPvars.ircxy, NMPvars.irbxy, NMPvars.trxy, NMPvars.evcxy,
+        NMPvars.chleafxy, NMPvars.chucxy, NMPvars.chv2xy, NMPvars.chb2xy,
+        ids,ide,jds,jde,kds,kde,ims,ime,jms,jme,kms,kme,its,ite,jts,jte,kts,kte)
+
+        self.itimestep +=1 
 
         self._tflx = -self._ch * self._windspeed_sfc * (Ssfc - self._TSKIN)
         self._qvflx = -self._cq * self._windspeed_sfc * (qvsfc - self._qv0)

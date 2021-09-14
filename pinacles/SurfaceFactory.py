@@ -50,6 +50,7 @@ def factory(
             VelocityState,
             ScalarState,
             DiagnosticState,
+            TimeSteppingController
         )
         # return CaseTestbed.SurfaceTestbed(
         #    namelist,
