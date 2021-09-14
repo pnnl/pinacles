@@ -17,6 +17,7 @@ def factory(
     ScalarState,
     DiagnosticState,
     Micro,
+    Radiation,
     TimeSteppingController,
 ):
     casename = namelist["meta"]["casename"]
@@ -47,6 +48,7 @@ def factory(
             Grid,
             Ref,
             Micro,
+            Radiation,
             VelocityState,
             ScalarState,
             DiagnosticState,

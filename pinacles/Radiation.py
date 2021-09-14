@@ -106,10 +106,10 @@ class RRTMG:
         self._DiagnosticState.add_variable("heating_rate_lw")
         self._DiagnosticState.add_variable("heating_rate_sw")
         self._DiagnosticState.add_variable("dTdt_rad")
-        # self._DiagnosticState.add_variable('uflux_lw')
-        # self._DiagnosticState.add_variable('dflux_lw')
-        # self._DiagnosticState.add_variable('uflux_sw')
-        # self._DiagnosticState.add_variable('dflux_sw')
+        self._DiagnosticState.add_variable('uflux_lw')
+        self._DiagnosticState.add_variable('dflux_lw')
+        self._DiagnosticState.add_variable('uflux_sw')
+        self._DiagnosticState.add_variable('dflux_sw')
 
         nl = self._Grid.ngrid_local
 
@@ -239,6 +239,7 @@ class RRTMG:
         self.ql_extension = ql_data[p_data < p_buffer[-1]]
         self.qi_extension = qi_data[p_data < p_buffer[-1]]
 
+
         # Set plev
         _nhalo = self._Grid.n_halo
         play_col = np.concatenate(
@@ -267,14 +268,6 @@ class RRTMG:
         # when setting up a new testbeds case
         # or changing the vertical grid used for a testbeds case
 
-        # plt.figure(1)
-        # plt.plot(plev_col[:-1]-plev_col[1:],'o')
-        # plt.plot(play_col[:-1]-play_col[1:],'s')
-
-        # plt.figure(2)
-        # plt.plot(lw_pressure,lw_absorber[:,index_o3],'o')
-        # plt.plot(play_col,self._profile_o3, 's')
-        # plt.show()
 
         return
 
@@ -629,11 +622,13 @@ class RRTMG:
 
             self._toa_sw_dn_2d = dflx_sw[:, -1]
             self._surf_sw_dn_2d = dflx_sw[:, 0]
+            self._surf_lw_dn_2d = dflx_lw[:, 0]
 
-            # ds_uflux_lw = self._DiagnosticState.get_field('uflux_lw')
-            # ds_dflux_lw = self._DiagnosticState.get_field('dflux_lw')
-            # ds_uflux_sw = self._DiagnosticState.get_field('uflux_sw')
-            # ds_dflux_sw = self._DiagnosticState.get_field('dflux_sw')
+
+            ds_uflux_lw = self._DiagnosticState.get_field('uflux_lw')
+            ds_dflux_lw = self._DiagnosticState.get_field('dflux_lw')
+            ds_uflux_sw = self._DiagnosticState.get_field('uflux_sw')
+            ds_dflux_sw = self._DiagnosticState.get_field('dflux_sw')
             ds_hr_lw = self._DiagnosticState.get_field("heating_rate_lw")
             ds_hr_sw = self._DiagnosticState.get_field("heating_rate_sw")
 
@@ -641,10 +636,10 @@ class RRTMG:
 
             to_our_shape(_nhalo, hr_lw, ds_hr_lw)
             to_our_shape(_nhalo, hr_sw, ds_hr_sw)
-            # to_our_shape(_nhalo, uflx_lw, ds_uflux_lw)
-            # to_our_shape(_nhalo, dflx_lw, ds_dflux_lw)
-            # to_our_shape(_nhalo, uflx_sw, ds_uflux_sw)
-            # to_our_shape(_nhalo, dflx_sw, ds_dflux_sw)
+            to_our_shape(_nhalo, uflx_lw, ds_uflux_lw)
+            to_our_shape(_nhalo, dflx_lw, ds_dflux_lw)
+            to_our_shape(_nhalo, uflx_sw, ds_uflux_sw)
+            to_our_shape(_nhalo, dflx_sw, ds_dflux_sw)
 
             # _ngrid_local = self._Grid._ngrid_local
             # for i in range(_ngrid_local[0]):
@@ -653,12 +648,15 @@ class RRTMG:
             #             ds_dTdt_rad[i,j,k] =  (ds_hr_lw[i,j,k] + ds_hr_sw[i,j,k])  /86400.0
 
             ds_dTdt_rad[:, :, :] = (ds_hr_lw + ds_hr_sw) / 86400.0
+
+
             ds_hr_lw[:, :, :] *= (
                 rho0[np.newaxis, np.newaxis, :] * parameters.CPD / 86400.0
             )
             ds_hr_sw[:, :, :] *= (
                 rho0[np.newaxis, np.newaxis, :] * parameters.CPD / 86400.0
             )
+
 
         s[:, :, :] += ds_dTdt_rad[:, :, :] * dt
 
@@ -783,12 +781,12 @@ class RRTMG:
 
     def io_fields2d_update(self, nc_grp):
 
-        alb = -(self._surf_sw_dn_2d - self._toa_sw_dn_2d) / self._toa_sw_dn_2d
-
-        albedo = nc_grp.createVariable("albedo", np.double, dimensions=("X", "Y",))
-        albedo[:, :] = alb.reshape((self._Grid.nl[0], self._Grid.nl[1]))
-
-        nc_grp.sync()
+        #alb = -(self._surf_sw_dn_2d - self._toa_sw_dn_2d) / self._toa_sw_dn_2d
+        #
+        #albedo = nc_grp.createVariable("albedo", np.double, dimensions=("X", "Y",))
+        #albedo[:, :] = alb.reshape((self._Grid.nl[0], self._Grid.nl[1]))
+        #
+        #nc_grp.sync()
 
         return
 

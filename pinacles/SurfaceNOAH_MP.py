@@ -2,10 +2,12 @@ import pinacles.Surface as Surface
 import pinacles.Surface_impl as Surface_impl
 import pinacles.externals.wrf_noahmp_wrapper.noahmp_via_cffi as NoahMP
 from pinacles.Radiation import cos_sza
+from pinacles.WRFUtil import to_wrf_order
 import pinacles.externals.wrf_noahmp_wrapper.test_notebooks.noahmp_offline_mod as nom
 import numpy as np
 import xarray as xr
 from scipy import interpolate
+
 import datetime
 
 
@@ -17,6 +19,7 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         Grid,
         Ref,
         Micro,
+        Radiation,
         VelocityState,
         ScalarState,
         DiagnosticState,
@@ -24,6 +27,7 @@ class SurfaceNoahMP(Surface.SurfaceBase):
     ):
 
         self._Micro = Micro
+        self._Radiation = Radiation
         self._TimeSteppingController = TimeSteppingController
         Surface.SurfaceBase.__init__(
             self,
@@ -54,27 +58,27 @@ class SurfaceNoahMP(Surface.SurfaceBase):
 
         # domain range
         ids = 1
-        ide = self._Grid.nl[0]
+        ide = self._Grid.nl[0] + 1
         jds = 1
-        jde = self._Grid.nl[1]
+        jde = self._Grid.nl[1] + 1
         kds = 1
-        kde = self._Grid.nl[2]
+        kde = self._Grid.nl[2] 
 
         ## further domain setting and other testcase-dependent setting
         # domain size & indices
         # memory range (used to define variable arrays)
         ims = ids
-        ime = ide  # -1
+        ime = ide   -1
         jms = jds
-        jme = jde  # -1
+        jme = jde   -1
         kms = kds
         kme = kde
 
         # tile range
         its = ids
-        ite = ide  # -1
+        ite = ide   -1
         jts = jds
-        jte = jde  # -1
+        jte = jde   -1
         kts = kds
         kte = kde
 
@@ -91,7 +95,7 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         self.nsoil = 4
         self.nsnow = 3  # number of snow layers. set to 3 in the subroutine noahmplsm
         self.dzs = np.asfortranarray([0.01, 0.3, 0.6, 1])  # soil layer thickness
-        dz = 20.0
+        dz = self._Grid.dx[2]
 
         # Container classes
         self._NoahMPvars = nom.NoahMPvars(
@@ -292,6 +296,8 @@ class SurfaceNoahMP(Surface.SurfaceBase):
             NMPvars.pexpxy,
         )
 
+        self.T_surface = 280.0
+
         return
 
     def initialize(self):
@@ -305,27 +311,27 @@ class SurfaceNoahMP(Surface.SurfaceBase):
 
         # domain range
         ids = 1
-        ide = self._Grid.nl[0]
+        ide = self._Grid.nl[0] + 1
         jds = 1
-        jde = self._Grid.nl[1]
+        jde = self._Grid.nl[1] + 1
         kds = 1
-        kde = 1
+        kde = self._Grid.nl[2] 
 
         ## further domain setting and other testcase-dependent setting
         # domain size & indices
         # memory range (used to define variable arrays)
         ims = ids
-        ime = ide  # -1
+        ime = ide   -1
         jms = jds
-        jme = jde  # -1
+        jme = jde   -1
         kms = kds
         kme = kde
 
         # tile range
         its = ids
-        ite = ide  # -1
+        ite = ide   -1
         jts = jds
-        jte = jde  # -1
+        jte = jde   -1
         kts = kds
         kte = kde
 
@@ -344,6 +350,13 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         s = self._ScalarState.get_field("s")
 
         T = self._DiagnosticState.get_field("T")
+        dflux_lw = self._DiagnosticState.get_field("dflux_lw")
+        dflux_sw = self._DiagnosticState.get_field("dflux_lw")
+        #import pylab as plt
+        #plt.contourf(dflux_lw[:,:,5])
+        #plt.colorbar()
+        #plt.show()
+
         # Get Tendnecies
         ut = self._VelocityState.get_tend("u")
         vt = self._VelocityState.get_tend("v")
@@ -379,7 +392,18 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         print(coszin)
         import sys
 
+        for wrf_array, pinacles_array in zip(
+            [ATM2NMP.t3d, ATM2NMP.qv3d, ATM2NMP.u_phy, ATM2NMP.v_phy], [T, qv, u, v]
+        ):
+            to_wrf_order(n_halo, pinacles_array, wrf_array)
 
+
+
+        ATM2NMP.glw[:,:] = np.asfortranarray(dflux_lw[n_halo[0]:-n_halo[0], n_halo[1]:-n_halo[1], n_halo[2]])
+        ATM2NMP.swdown[:,:] = np.asfortranarray(dflux_sw[n_halo[0]:-n_halo[0], n_halo[1]:-n_halo[1], n_halo[2]])
+
+        ATM2NMP.p8w3d[:,:,:] = self._Ref.p0[:][np.newaxis,n_halo[2]:-n_halo[2],np.newaxis]
+        
 
         self._NOAH_MP.noahmplsm(
             self.itimestep,
@@ -541,6 +565,12 @@ class SurfaceNoahMP(Surface.SurfaceBase):
             kts,
             kte,
         )
+
+        import pylab as plt
+
+        plt.contourf(NMP2ATM.hfx)
+        plt.colorbar()
+        plt.show()
 
         sys.exit()
 
