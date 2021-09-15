@@ -3,6 +3,7 @@ import pinacles.Surface_impl as Surface_impl
 import pinacles.externals.wrf_noahmp_wrapper.noahmp_via_cffi as NoahMP
 from pinacles.Radiation import cos_sza
 from pinacles.WRFUtil import to_wrf_order
+from pinacles import UtilitiesParallel
 import pinacles.externals.wrf_noahmp_wrapper.test_notebooks.noahmp_offline_mod as nom
 import numpy as np
 import xarray as xr
@@ -107,7 +108,7 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         NMPvars = self._NoahMPvars
         NMP2ATM = self._NoahMPtoATM
 
-        NMPvars.tslb.fill(294.969329833984)
+        NMPvars.tslb.fill(298.5068)
 
         dx = self._Grid.dx[0]
         dy = self._Grid.dx[1]
@@ -205,9 +206,61 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         self._xland = np.asfortranarray(
             xlandin[n_halo[0] : -n_halo[0], n_halo[1] : -n_halo[1]], dtype=np.intc
         )
-        print(np.shape(ISLTYP))
 
         data_in.close()
+        
+        # Now provide initial conditions
+        
+        #########################################
+        # First for temperature
+        #
+        #########################################
+        UtilitiesParallel.print_root('Initializing Soil Temperature')
+        soil_temp_in = xr.open_dataset('TSLB.nc')        
+
+        tslb = soil_temp_in['TSLB'][0,:,:,:].values
+        assert(np.shape(tslb)[0] == self.nsoil)
+        lat_in = soil_temp_in["XLAT"].values[0, :, :]
+        lon_in = soil_temp_in["XLONG"].values[0, :, :]
+        lon_lat = (lon_in.flatten(), lat_in.flatten())
+        for k in range(self.nsoil):
+            interp_field = interpolate.griddata(
+            lon_lat,
+            tslb[k,:,:].flatten(),
+            (self._Grid.lon_local, self._Grid.lat_local),
+            method="nearest",
+            )
+            
+            NMPvars.tslb[:,k,:] = np.asfortranarray(interp_field[n_halo[0] : -n_halo[0], n_halo[1] : -n_halo[1]])
+        soil_temp_in.close()
+        ##########################################
+        # Now for soil moisture
+        #
+        ##########################################
+        UtilitiesParallel.print_root('Initializing Soil Moisture')
+        soil_mois_in = xr.open_dataset('SMOIS.nc')
+        SMOIS = soil_mois_in['SMOIS'][0,:,:,:].values
+        assert(np.shape(SMOIS)[0] == self.nsoil)
+        lat_in = soil_mois_in["XLAT"].values[0, :, :]
+        lon_in = soil_mois_in["XLONG"].values[0, :, :]
+        lon_lat = (lon_in.flatten(), lat_in.flatten())
+
+        for k in range(self.nsoil):
+            interp_field = interpolate.griddata(
+            lon_lat,
+            SMOIS[k,:,:].flatten(),
+            (self._Grid.lon_local, self._Grid.lat_local),
+            method="nearest",
+            )
+            
+            NMPvars.smois[:,k,:] = np.asfortranarray(interp_field[n_halo[0] : -n_halo[0], n_halo[1] : -n_halo[1]])
+
+        soil_mois_in.close()
+
+
+        for t in [NMPvars.tsk, NMPvars.tmn, NMPvars.tvxy, NMPvars.tgxy, NMPvars.t2mvxy,  NMPvars.t2mbxy, NMPvars.tahxy] :
+            t.fill(294.969329833984)
+
 
         self._NOAH_MP.init(
             ids,
@@ -298,7 +351,7 @@ class SurfaceNoahMP(Surface.SurfaceBase):
             NMPvars.pexpxy,
         )
 
-        self.T_surface = 280.0
+        self.T_surface = 294.969329833984
 
         return
 
@@ -389,7 +442,7 @@ class SurfaceNoahMP(Surface.SurfaceBase):
             self._Grid.lon_local[n_halo[0] : -n_halo[0], n_halo[1] : -n_halo[1]]
         )
         coszin = cos_sza(
-            self.julian, self._TimeSteppingController.time % 86400.0, xlat, xlon
+            self.julian, self._TimeSteppingController.time // 86400.0, xlat, xlon
         )
 
         print(coszin)
@@ -406,7 +459,6 @@ class SurfaceNoahMP(Surface.SurfaceBase):
 
         ATM2NMP.p8w3d[:,:,:] = self._Ref.p0[:][np.newaxis,n_halo[2]:-n_halo[2],np.newaxis]
         
-        print(ATM2NMP.dz8w)
         self._NOAH_MP.noahmplsm(
             self.itimestep,
             self.yr,
@@ -573,11 +625,11 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         plt.figure(1,figsize=(21,10))
         plt.subplot(121)
         plt.title('Latent Heat Flux')
-        plt.contourf(NMP2ATM.tradxy.T)
+        plt.contourf(NMP2ATM.lh)
         plt.colorbar()
         plt.subplot(122)
         plt.title('Sensible Heat Flux')
-        plt.contourf(NMPvars.smois.T)
+        plt.contourf(NMP2ATM.hfx)
         plt.colorbar()
         plt.show()
 
