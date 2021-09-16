@@ -509,8 +509,8 @@ class RRTMG:
             reliq *= 1.0e6
 
             reice *= 1.0315 
-            reice[effi < 5e-6] = 5e-6 
-            reice[effi > 131e-6] = 140e-6 
+            reice[reice < 5e-6] = 5e-6 
+            reice[reice > 131e-6] = 140e-6 
 
             reice *= 1.0e6
             play *= 0.01
