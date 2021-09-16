@@ -314,10 +314,10 @@ class RRTMG:
             icld = 1
             idrv = 0
             iaer = 0
-            inflglw = 2
+            inflglw = 1
             iceflglw = 3
             liqflglw = 1
-            inflgsw = 2
+            inflgsw = 1
             iceflgsw = 3
             liqflgsw = 1
 

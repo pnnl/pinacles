@@ -88,9 +88,9 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         iones_float_2d = np.ones((ime - ims + 1, jme - jms + 1), dtype=np.float64)
         iones_int_2d = np.ones((ime - ims + 1, jme - jms + 1), dtype=np.intc)
 
-        self.vegfra = np.asfortranarray(
-            np.ones_like(iones_float_2d) * 0.5
-        )  # vegetation fraction, all = 0.5
+        #self.vegfra = np.asfortranarray(
+        #    np.ones_like(iones_float_2d) * 0.5
+        #)  # vegetation fraction, all = 0.5
         self.vegmax = np.asfortranarray(
             np.ones_like(iones_float_2d)
         )  # annual maximum veg fraction all = 1
@@ -262,8 +262,48 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         soil_mois_in.close()
 
 
+        ##########################################
+        # Now for vegitation fraction
+        ##########################################
+        UtilitiesParallel.print_root('Initializing Vegetation Fraction')
+        vegfra_in = xr.open_dataset('VEGFRA.nc')
+        VEGFRA = vegfra_in['VEGFRA'][0,:,:].values
+        lat_in = vegfra_in["XLAT"].values[0, :, :]
+        lon_in = vegfra_in["XLONG"].values[0, :, :]
+        lon_lat = (lon_in.flatten(), lat_in.flatten())
+
+        interp_field = interpolate.griddata(
+        lon_lat,
+        VEGFRA[:,:].flatten(),
+        (self._Grid.lon_local, self._Grid.lat_local),
+        method="nearest",
+        )
+
+        ##########################################
+        # Now for vegitation fraction
+        ##########################################
+        UtilitiesParallel.print_root('Initializing Skin-Temperature')
+        TSK_in = xr.open_dataset('TSK.nc')
+        TSK = TSK_in['TSK'][0,:,:].values
+        lat_in = vegfra_in["XLAT"].values[0, :, :]
+        lon_in = vegfra_in["XLONG"].values[0, :, :]
+        lon_lat = (lon_in.flatten(), lat_in.flatten())
+
+        interp_field = interpolate.griddata(
+        lon_lat,
+        TSK[:,:].flatten(),
+        (self._Grid.lon_local, self._Grid.lat_local),
+        method="nearest",
+        )
+        
+        NMPvars.tsk[:,:] = np.asfortranarray(interp_field[n_halo[0] : -n_halo[0], n_halo[1] : -n_halo[1]])
+
+        TSK_in.close()
+
+
         for t in [NMPvars.tsk, NMPvars.tmn, NMPvars.tvxy, NMPvars.tgxy, NMPvars.t2mvxy,  NMPvars.t2mbxy, NMPvars.tahxy] :
-            t.fill(294.969329833984)
+            t[:,:] = NMPvars.tsk[:,:]
+            #t.fill(294.969329833984)
 
 
         self._NOAH_MP.init(
@@ -488,7 +528,7 @@ class SurfaceNoahMP(Surface.SurfaceBase):
                 dx,
                 self._IVGTYP,
                 self._ISLTYP,
-                self.vegfra,
+                NMPvars.fvegxy,
                 self.vegmax,
                 NMPvars.tmn,
                 self._xland,
@@ -707,6 +747,13 @@ class SurfaceNoahMP(Surface.SurfaceBase):
 
         tskin = nc_grp.createVariable("T_skin", np.double, dimensions=("X", "Y",))
         tskin[:,:] = self.T_skin
+
+        t2m = nc_grp.createVariable("T2m", np.double, dimensions=("X", "Y",))
+        t2m[:,:] = (self._NoahMPvars.t2mvxy * self._NoahMPvars.fvegxy+ self._NoahMPvars.t2mbxy * (1.0-self._NoahMPvars.fvegxy))
+
+        qv2m = nc_grp.createVariable("qv2m", np.double, dimensions=("X", "Y",))
+        qv2m[:,:] = (self._NoahMPvars.q2mvxy * self._NoahMPvars.fvegxy+ self._NoahMPvars.q2mbxy * (1.0-self._NoahMPvars.fvegxy))
+
 
         nc_grp.sync()
         return

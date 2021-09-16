@@ -755,4 +755,7 @@ class MicroP3(MicrophysicsBase):
         return self._DiagnosticState.get_field("diag_effc_3d")
 
     def get_reffi(self):
-        return self._DiagnosticState.get_field("diag_effi_3d")
+        effi = self._DiagnosticState.get_field("diag_effi_3d")
+        effi[effi < (5e-6)/1.0315] = (5e-6)/1.0315 
+        effi[effi > (131e-6)/1.0315] = (140e-6)/1.0315 
+        return effi 
