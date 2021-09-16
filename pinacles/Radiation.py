@@ -314,10 +314,10 @@ class RRTMG:
             icld = 1
             idrv = 0
             iaer = 0
-            inflglw = 1
+            inflglw = 2
             iceflglw = 3
             liqflglw = 1
-            inflgsw = 1
+            inflgsw = 2
             iceflgsw = 3
             liqflgsw = 1
 
@@ -370,7 +370,6 @@ class RRTMG:
             asdif = asdir #np.ones((_ncol), dtype=np.double, order="F") * self._adif
             aldir = asdir #np.ones((_ncol), dtype=np.double, order="F") * self._adir
             aldif = asdif #np.ones((_ncol), dtype=np.double, order="F") * self._adif
-            print(asdif)
             taucld_lw = np.zeros((_nbndlw, _ncol, _nlay), dtype=np.double, order="F")
             tauaer_lw = np.zeros((_ncol, _nlay, _nbndlw), dtype=np.double, order="F")
             taucld_sw = np.zeros((_nbndsw, _ncol, _nlay), dtype=np.double, order="F")
@@ -508,6 +507,11 @@ class RRTMG:
             )
 
             reliq *= 1.0e6
+
+            reice *= 1.0315 
+            reice[effi < 5e-6] = 5e-6 
+            reice[effi > 131e-6] = 140e-6 
+
             reice *= 1.0e6
             play *= 0.01
             plev *= 0.01

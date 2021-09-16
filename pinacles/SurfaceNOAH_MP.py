@@ -163,7 +163,6 @@ class SurfaceNoahMP(Surface.SurfaceBase):
 
         self._RAINC_last = np.copy(self._Micro._RAINNC)
 
-        print(np.shape(ISLTYP))
 
         lat_in = data_in["XLAT"].values[0, :, :]
         lon_in = data_in["XLONG"].values[0, :, :]
@@ -500,8 +499,6 @@ class SurfaceNoahMP(Surface.SurfaceBase):
             self.julian, self._TimeSteppingController.time // 86400.0, xlat, xlon
         )
 
-        print(coszin)
-        import sys
 
         for wrf_array, pinacles_array in zip(
             [ATM2NMP.t3d, ATM2NMP.qv3d, ATM2NMP.u_phy, ATM2NMP.v_phy], [T, qv, u, v]
