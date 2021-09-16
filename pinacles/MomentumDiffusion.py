@@ -24,24 +24,24 @@ def compute_u_fluxes(
     # kz_fact = dx[2]*dx[2]/((dx[0] * dx[1]))
     shape = ut.shape
     # Compute the fluxes
-    for i in range(n_halo[0] - 1, shape[0] - n_halo[0] + 1):
-        for j in range(n_halo[1] - 1, shape[1] - n_halo[1] + 1):
-            for k in range(n_halo[2], shape[2] - n_halo[2]):
+    for i in range(1, shape[0] -1):
+        for j in range(1, shape[1] - 1):
+            for k in range(1, shape[2] - 1):
 
                 s11 = dudx[i, j, k]
                 s12 = 0.5 * (dvdx[i, j, k] + dudy[i, j, k])
-                s13 = 0.5 * (dudz[i, j, k] + dwdx[i, j, k])
+                s13 = 0.5 * (dudz[i, j, k] +  dwdx[i, j, k])
 
-                fluxx[i, j, k] = -2.0 * rho0[k] * eddy_viscosity[i, j, k] * s11
+                fluxx[i, j, k] = -2.0 * rho0[k] * eddy_viscosity[i, j, k] * s11 
                 fluxy[i, j, k] = -2.0 * rho0[k] * eddy_viscosity[i, j, k] * s12
                 fluxz[i, j, k] = (
                     -2.0 * rho0[k] * eddy_viscosity[i, j, k] * s13
                 )  # * kz_fact
 
     # Compute the flux divergences
-    for i in range(n_halo[0], shape[0] - n_halo[0]):
-        for j in range(n_halo[1], shape[1] - n_halo[1]):
-            for k in range(n_halo[2], shape[2] - n_halo[2]):
+    for i in range(1, shape[0] -1):
+        for j in range(1, shape[1] - 1):
+            for k in range(1, shape[2] - 1):
 
                 # For u the x flux is in the correct location
                 ut[i, j, k] -= (fluxx[i + 1, j, k] - fluxx[i, j, k]) * dxi[0] / rho0[k]
@@ -116,9 +116,9 @@ def compute_v_fluxes(
 
     # kz_fact = dx[2]*dx[2]/((dx[0] * dx[1]))
     # Compute the fluxes
-    for i in range(n_halo[0] - 1, shape[0] - n_halo[0] + 1):
-        for j in range(n_halo[1] - 1, shape[1] - n_halo[1] + 1):
-            for k in range(n_halo[2], shape[2] - n_halo[2]):
+    for i in range(1, shape[0] -1):
+        for j in range(1, shape[1] - 1):
+            for k in range(1, shape[2] - 1):
 
                 s22 = dvdy[i, j, k]
                 s21 = 0.5 * (dvdx[i, j, k] + dudy[i, j, k])
@@ -131,9 +131,9 @@ def compute_v_fluxes(
                 )  # * kz_fact
 
     # Compute the flux divergences
-    for i in range(n_halo[0], shape[0] - n_halo[0]):
-        for j in range(n_halo[1], shape[1] - n_halo[1]):
-            for k in range(n_halo[2], shape[2] - n_halo[2]):
+    for i in range(1, shape[0] -1):
+        for j in range(1, shape[1] - 1):
+            for k in range(1, shape[2] - 1):
                 vt[i, j, k] -= (
                     0.25
                     * (
@@ -204,9 +204,9 @@ def compute_w_fluxes(
     # kz_fact = dx[2]*dx[2]/((dx[0] * dx[1]))
 
     # Compute the fluxes
-    for i in range(n_halo[0] - 1, shape[0] - n_halo[0] + 1):
-        for j in range(n_halo[1] - 1, shape[1] - n_halo[1] + 1):
-            for k in range(n_halo[2], shape[2] - n_halo[2]):
+    for i in range(1, shape[0] -1):
+        for j in range(1, shape[1] - 1):
+            for k in range(1, shape[2] - 1):
 
                 s33 = dwdz[i, j, k]
                 s31 = 0.5 * (dwdx[i, j, k] + dudz[i, j, k])
@@ -219,9 +219,9 @@ def compute_w_fluxes(
                 )  # * kz_fact
 
     # Compute the flux divergences
-    for i in range(n_halo[0], shape[0] - n_halo[0]):
-        for j in range(n_halo[1], shape[1] - n_halo[1]):
-            for k in range(n_halo[2], shape[2] - n_halo[2]):
+    for i in range(1, shape[0] -1):
+        for j in range(1, shape[1] - 1):
+            for k in range(1, shape[2] - 1):
 
                 wt[i, j, k] -= (
                     0.25

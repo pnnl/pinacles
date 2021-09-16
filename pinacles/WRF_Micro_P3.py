@@ -732,6 +732,13 @@ class MicroP3(MicrophysicsBase):
         rainncv = nc_grp.createVariable("RAINNCV", np.double, dimensions=("X", "Y"))
         rainncv[:, :] = self._RAINNCV
 
+        nh = self._Grid.n_halo
+        rho0 = self._Ref.rho0
+        qc = self._ScalarState.get_field('qc')[nh[0]:-nh[0], nh[1]:-nh[1],:]
+        lwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis,0] , axis=2)
+        lwp = nc_grp.createVariable("lwp", np.double, dimensions=("X", "Y"))
+        lwp[:, :] = lwp_compute
+       
         nc_grp.sync()
         return
 

@@ -34,14 +34,14 @@ def buoyancy(alpha0, alpha):
 
 
 @numba.njit(fastmath=True)
-def compute_bvf(n_halo, theta_ref, exner, T, qv, ql, dz, thetav, bvf):
+def compute_bvf(n_halo, theta_ref, exner, T, qv, ql, qi, dz, thetav, bvf):
 
     shape = bvf.shape
     for i in range(shape[0]):
         for j in range(shape[1]):
             for k in range(shape[2]):
                 thetav[i, j, k] = (
-                    T[i, j, k] / exner[k] * (1.0 + 0.61 * qv[i, j, k] - ql[i, j, k])
+                    T[i, j, k] / exner[k] * (1.0 + 0.61 * qv[i, j, k] - ql[i, j, k] - qi[i,j,k])
                 )
 
     for i in range(n_halo[0], shape[0] - n_halo[0]):
@@ -102,6 +102,7 @@ def eos_sam(
                     T_out[i, j, k] / tref[k]
                     + 0.608 * qv_in[i, j, k]
                     - ql_in[i, j, k]
+                    - qi_in[i, j, k]
                     - p_prime / P_in[k]
                 )
 

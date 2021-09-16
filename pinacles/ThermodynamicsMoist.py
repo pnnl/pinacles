@@ -60,7 +60,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
 
         # Compute the buoyancy frequency
         ThermodynamicsMoist_impl.compute_bvf(
-            n_halo, theta_ref, exner, T, qv, ql, dz, thetav, bvf
+            n_halo, theta_ref, exner, T, qv, ql, qi, dz, thetav, bvf
         )
 
         if apply_buoyancy:

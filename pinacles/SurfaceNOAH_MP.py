@@ -4,6 +4,7 @@ import pinacles.externals.wrf_noahmp_wrapper.noahmp_via_cffi as NoahMP
 from pinacles.Radiation import cos_sza
 from pinacles.WRFUtil import to_wrf_order
 from pinacles import UtilitiesParallel
+from pinacles import parameters
 import pinacles.externals.wrf_noahmp_wrapper.test_notebooks.noahmp_offline_mod as nom
 import numpy as np
 import xarray as xr
@@ -42,7 +43,8 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         )
 
         self.itimestep = 1
-
+        nl = self._Grid.ngrid_local
+        self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
         self._NOAH_MP = NoahMP.noahmp()
 
         self.yr = namelist["time"]["year"]
@@ -158,6 +160,8 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         IVGTYP = np.asfortranarray(
             np.ones_like(iones_int_2d) * 5
         )  # 5 = all grid points are grass
+
+        self._RAINC_last = np.copy(self._Micro._RAINNC)
 
         print(np.shape(ISLTYP))
 
@@ -351,14 +355,15 @@ class SurfaceNoahMP(Surface.SurfaceBase):
             NMPvars.pexpxy,
         )
 
-        self.T_surface = 294.969329833984
-
+        self.T_skin = NMPvars.tsk
+        self.albedo = self._NoahMPtoATM.albedo
+        self.emiss =  self._NoahMPtoATM.emiss
         return
 
     def initialize(self):
         return super().initialize()
 
-    def update(self):
+    def update(self, dt=None):
 
         nh = self._Grid.n_halo
         dxi2 = self._Grid.dxi[2]
@@ -425,12 +430,22 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         qvsfc = qv[:, :, nh[2]]
         Tsfc = T[:, :, nh[2]]
 
+        Surface_impl.compute_windspeed_sfc(
+            usfc, vsfc, self._Ref.u0, self._Ref.v0, self.gustiness, self._windspeed_sfc
+        )
+
         ATM2NMP = self._ATMtoNoahMP
         NMP2ATM = self._NoahMPtoATM
         NMPvars = self._NoahMPvars
-
+        
+        #Compute precipitation
+        np.subtract(self._Micro._RAINNC, self._RAINC_last, ATM2NMP.rainbl)
+        self._RAINC_last = np.copy(self._RAINC_last)
 
         dt = self._TimeSteppingController.dt
+        if self.itimestep == 1:
+            dt = 0.0
+        
         dx = self._Grid.dx[0]
         xice_thres = 0.5  # fraction of grid determining seaice
 
@@ -459,204 +474,222 @@ class SurfaceNoahMP(Surface.SurfaceBase):
 
         ATM2NMP.p8w3d[:,:,:] = self._Ref.p0[:][np.newaxis,n_halo[2]:-n_halo[2],np.newaxis]
         
-        self._NOAH_MP.noahmplsm(
-            self.itimestep,
-            self.yr,
-            self.julian,
-            coszin,
-            xlat,
-            ATM2NMP.dz8w,
-            dt,
-            self.dzs,
-            self.nsoil,
-            dx,
-            self._IVGTYP,
-            self._ISLTYP,
-            self.vegfra,
-            self.vegmax,
-            NMPvars.tmn,
-            self._xland,
-            NMPvars.xice,
-            xice_thres,
-            self.ISICE,
-            self.ISURBAN,
-            self.IDVEG,
-            self.IOPT_CRS,
-            self.IOPT_BTR,
-            self.IOPT_RUN,
-            self.IOPT_SFC,
-            self.IOPT_FRZ,
-            self.IOPT_INF,
-            self.IOPT_RAD,
-            self.IOPT_ALB,
-            self.IOPT_SNF,
-            self.IOPT_TBOT,
-            self.IOPT_STC,
-            self.IZ0TLND,
-            ATM2NMP.t3d,
-            ATM2NMP.qv3d,
-            ATM2NMP.u_phy,
-            ATM2NMP.v_phy,
-            ATM2NMP.swdown,
-            ATM2NMP.glw,
-            ATM2NMP.p8w3d,
-            ATM2NMP.rainbl,
-            NMPvars.tsk,
-            NMP2ATM.hfx,
-            NMP2ATM.qfx,
-            NMP2ATM.lh,
-            NMPvars.grdflx,
-            NMPvars.smstav,
-            NMPvars.smstot,
-            NMPvars.sfcrunoff,
-            NMPvars.udrunoff,
-            NMP2ATM.albedo,
-            NMPvars.snowc,
-            NMPvars.smois,
-            NMPvars.sh2o,
-            NMPvars.tslb,
-            NMPvars.snow,
-            NMPvars.snowh,
-            NMPvars.canwat,
-            NMPvars.acsnom,
-            NMPvars.acsnow,
-            NMP2ATM.emiss,
-            NMPvars.qsfc,
-            NMPvars.isnowxy,
-            NMPvars.tvxy,
-            NMPvars.tgxy,
-            NMPvars.canicexy,
-            NMPvars.canliqxy,
-            NMPvars.eahxy,
-            NMPvars.tahxy,
-            NMP2ATM.cmxy,
-            NMP2ATM.chxy,
-            NMPvars.fwetxy,
-            NMPvars.sneqvoxy,
-            NMPvars.alboldxy,
-            NMPvars.qsnowxy,
-            NMPvars.wslakexy,
-            NMPvars.zwtxy,
-            NMPvars.waxy,
-            NMPvars.wtxy,
-            NMPvars.tsnoxy,
-            NMPvars.zsnsoxy,
-            NMPvars.snicexy,
-            NMPvars.snliqxy,
-            NMPvars.lfmassxy,
-            NMPvars.rtmassxy,
-            NMPvars.stmassxy,
-            NMPvars.woodxy,
-            NMPvars.stblcpxy,
-            NMPvars.fastcpxy,
-            NMPvars.xlaixy,
-            NMPvars.xsaixy,
-            NMPvars.taussxy,
-            NMPvars.smoiseq,
-            NMPvars.smcwtdxy,
-            NMPvars.deeprechxy,
-            NMPvars.rechxy,
-            NMPvars.t2mvxy,
-            NMPvars.t2mbxy,
-            NMPvars.q2mvxy,
-            NMPvars.q2mbxy,
-            NMP2ATM.tradxy,
-            NMP2ATM.neexy,
-            NMPvars.gppxy,
-            NMPvars.nppxy,
-            NMPvars.fvegxy,
-            NMPvars.runsfxy,
-            NMPvars.runsbxy,
-            NMPvars.ecanxy,
-            NMPvars.edirxy,
-            NMPvars.etranxy,
-            NMPvars.fsaxy,
-            NMPvars.firaxy,
-            NMPvars.aparxy,
-            NMPvars.psnxy,
-            NMPvars.savxy,
-            NMPvars.sagxy,
-            NMPvars.rssunxy,
-            NMPvars.rsshaxy,
-            NMPvars.bgapxy,
-            NMPvars.wgapxy,
-            NMPvars.tgvxy,
-            NMPvars.tgbxy,
-            NMPvars.chvxy,
-            NMPvars.chbxy,
-            NMPvars.shgxy,
-            NMPvars.shcxy,
-            NMPvars.shbxy,
-            NMPvars.evgxy,
-            NMPvars.evbxy,
-            NMPvars.ghvxy,
-            NMPvars.ghbxy,
-            NMPvars.irgxy,
-            NMPvars.ircxy,
-            NMPvars.irbxy,
-            NMPvars.trxy,
-            NMPvars.evcxy,
-            NMPvars.chleafxy,
-            NMPvars.chucxy,
-            NMPvars.chv2xy,
-            NMPvars.chb2xy,
-            ids,
-            ide,
-            jds,
-            jde,
-            kds,
-            kde,
-            ims,
-            ime,
-            jms,
-            jme,
-            kms,
-            kme,
-            its,
-            ite,
-            jts,
-            jte,
-            kts,
-            kte,
-        )
+        if self.itimestep %2 == 0 or self.itimestep==1:
+            self._NOAH_MP.noahmplsm(
+                self.itimestep,
+                self.yr,
+                self.julian,
+                coszin,
+                xlat,
+                ATM2NMP.dz8w,
+                dt,
+                self.dzs,
+                self.nsoil,
+                dx,
+                self._IVGTYP,
+                self._ISLTYP,
+                self.vegfra,
+                self.vegmax,
+                NMPvars.tmn,
+                self._xland,
+                NMPvars.xice,
+                xice_thres,
+                self.ISICE,
+                self.ISURBAN,
+                self.IDVEG,
+                self.IOPT_CRS,
+                self.IOPT_BTR,
+                self.IOPT_RUN,
+                self.IOPT_SFC,
+                self.IOPT_FRZ,
+                self.IOPT_INF,
+                self.IOPT_RAD,
+                self.IOPT_ALB,
+                self.IOPT_SNF,
+                self.IOPT_TBOT,
+                self.IOPT_STC,
+                self.IZ0TLND,
+                ATM2NMP.t3d,
+                ATM2NMP.qv3d,
+                ATM2NMP.u_phy + self._Ref.u0,
+                ATM2NMP.v_phy + self._Ref.v0,
+                ATM2NMP.swdown,
+                ATM2NMP.glw,
+                ATM2NMP.p8w3d,
+                ATM2NMP.rainbl,
+                NMPvars.tsk,
+                NMP2ATM.hfx,
+                NMP2ATM.qfx,
+                NMP2ATM.lh,
+                NMPvars.grdflx,
+                NMPvars.smstav,
+                NMPvars.smstot,
+                NMPvars.sfcrunoff,
+                NMPvars.udrunoff,
+                NMP2ATM.albedo,
+                NMPvars.snowc,
+                NMPvars.smois,
+                NMPvars.sh2o,
+                NMPvars.tslb,
+                NMPvars.snow,
+                NMPvars.snowh,
+                NMPvars.canwat,
+                NMPvars.acsnom,
+                NMPvars.acsnow,
+                NMP2ATM.emiss,
+                NMPvars.qsfc,
+                NMPvars.isnowxy,
+                NMPvars.tvxy,
+                NMPvars.tgxy,
+                NMPvars.canicexy,
+                NMPvars.canliqxy,
+                NMPvars.eahxy,
+                NMPvars.tahxy,
+                NMP2ATM.cmxy,
+                NMP2ATM.chxy,
+                NMPvars.fwetxy,
+                NMPvars.sneqvoxy,
+                NMPvars.alboldxy,
+                NMPvars.qsnowxy,
+                NMPvars.wslakexy,
+                NMPvars.zwtxy,
+                NMPvars.waxy,
+                NMPvars.wtxy,
+                NMPvars.tsnoxy,
+                NMPvars.zsnsoxy,
+                NMPvars.snicexy,
+                NMPvars.snliqxy,
+                NMPvars.lfmassxy,
+                NMPvars.rtmassxy,
+                NMPvars.stmassxy,
+                NMPvars.woodxy,
+                NMPvars.stblcpxy,
+                NMPvars.fastcpxy,
+                NMPvars.xlaixy,
+                NMPvars.xsaixy,
+                NMPvars.taussxy,
+                NMPvars.smoiseq,
+                NMPvars.smcwtdxy,
+                NMPvars.deeprechxy,
+                NMPvars.rechxy,
+                NMPvars.t2mvxy,
+                NMPvars.t2mbxy,
+                NMPvars.q2mvxy,
+                NMPvars.q2mbxy,
+                NMP2ATM.tradxy,
+                NMP2ATM.neexy,
+                NMPvars.gppxy,
+                NMPvars.nppxy,
+                NMPvars.fvegxy,
+                NMPvars.runsfxy,
+                NMPvars.runsbxy,
+                NMPvars.ecanxy,
+                NMPvars.edirxy,
+                NMPvars.etranxy,
+                NMPvars.fsaxy,
+                NMPvars.firaxy,
+                NMPvars.aparxy,
+                NMPvars.psnxy,
+                NMPvars.savxy,
+                NMPvars.sagxy,
+                NMPvars.rssunxy,
+                NMPvars.rsshaxy,
+                NMPvars.bgapxy,
+                NMPvars.wgapxy,
+                NMPvars.tgvxy,
+                NMPvars.tgbxy,
+                NMPvars.chvxy,
+                NMPvars.chbxy,
+                NMPvars.shgxy,
+                NMPvars.shcxy,
+                NMPvars.shbxy,
+                NMPvars.evgxy,
+                NMPvars.evbxy,
+                NMPvars.ghvxy,
+                NMPvars.ghbxy,
+                NMPvars.irgxy,
+                NMPvars.ircxy,
+                NMPvars.irbxy,
+                NMPvars.trxy,
+                NMPvars.evcxy,
+                NMPvars.chleafxy,
+                NMPvars.chucxy,
+                NMPvars.chv2xy,
+                NMPvars.chb2xy,
+                ids,
+                ide,
+                jds,
+                jde,
+                kds,
+                kde,
+                ims,
+                ime,
+                jms,
+                jme,
+                kms,
+                kme,
+                its,
+                ite,
+                jts,
+                jte,
+                kts,
+                kte,
+            )
 
-        import pylab as plt
+    
+        self.T_skin = NMPvars.tsk
+        self.albedo = self._NoahMPtoATM.albedo
+        self.emiss =  self._NoahMPtoATM.emiss
 
-        plt.figure(1,figsize=(21,10))
-        plt.subplot(121)
-        plt.title('Latent Heat Flux')
-        plt.contourf(NMP2ATM.lh)
-        plt.colorbar()
-        plt.subplot(122)
-        plt.title('Sensible Heat Flux')
-        plt.contourf(NMP2ATM.hfx)
-        plt.colorbar()
-        plt.show()
+        #import pylab as plt
+        #if self.itimestep % 2 == 0:
+        #    plt.figure(1,figsize=(21,10))
+        #    plt.subplot(121)
+        #    plt.title('Latent Heat Flux')
+        #    plt.contourf(NMP2ATM.lh,64)
+        #    plt.colorbar()
+        #    plt.subplot(122)
+        #    plt.title('Sensible Heat Flux')
+        #    plt.contourf(NMP2ATM.hfx,64)
+        #    plt.colorbar()
+        #    plt.savefig('./plot_figs/' + str(self.itimestep + 10000000) + '.png')
+        #    plt.close()
 
-        sys.exit()
+        #sys.exit()
 
-        self.itimestep += 1
+        
 
-        self._tflx = -self._ch * self._windspeed_sfc * (Ssfc - self._TSKIN)
-        self._qvflx = -self._cq * self._windspeed_sfc * (qvsfc - self._qv0)
+
+
+        #self._tflx = -self._ch * self._windspeed_sfc * (Ssfc - self._TSKIN)
+        #self._qvflx = -self._cq * self._windspeed_sfc * (qvsfc - self._qv0)
+
+        self._cm = np.pad(NMP2ATM.cmxy, pad_width=(n_halo[0], n_halo[1]),mode='edge')
 
         self._taux_sfc = -self._cm * self._windspeed_sfc * (usfc + self._Ref.u0)
         self._tauy_sfc = -self._cm * self._windspeed_sfc * (vsfc + self._Ref.v0)
 
-        # Apply the surface fluxes
-        Surface_impl.iles_surface_flux_application(
-            10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._taux_sfc, ut
-        )
-        Surface_impl.iles_surface_flux_application(
-            10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._tauy_sfc, vt
-        )
-        Surface_impl.iles_surface_flux_application(
-            10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._tflx, st
-        )
-        Surface_impl.iles_surface_flux_application(
-            10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._qvflx, qvt
-        )
+        self._qvflx = np.pad(NMP2ATM.qfx, pad_width=(n_halo[0], n_halo[1]), mode='edge')
+        self._tflx = np.pad(NMP2ATM.hfx, pad_width=(n_halo[0], n_halo[1]), mode='edge')
 
+        #Apply the surface fluxes
+        if self.itimestep > 1:
+            #Surface_impl.iles_surface_flux_application_u(
+            #    10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._taux_sfc, ut
+            #)
+
+            #Surface_impl.iles_surface_flux_application_v(
+            #    10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._tauy_sfc, vt
+            #)
+
+            Surface_impl.iles_surface_flux_application(
+                10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._tflx* alpha0_edge[nh[2] - 1] / parameters.CPD, st
+            )
+
+            Surface_impl.iles_surface_flux_application(
+                10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._qvflx, qvt
+            )
+        self.itimestep += 1
         return super().update()
 
     def io_initialize(self, rt_grp):
@@ -664,3 +697,16 @@ class SurfaceNoahMP(Surface.SurfaceBase):
 
     def io_update(self, rt_grp):
         return super().io_update(rt_grp)
+
+    def io_fields2d_update(self, nc_grp):
+        lhf = nc_grp.createVariable("latent_heat_flux", np.double, dimensions=("X", "Y",))
+        lhf[:,:] = self._NoahMPtoATM.lh
+
+        shf = nc_grp.createVariable("sensible_heat_flux", np.double, dimensions=("X", "Y",))
+        shf[:,:] = self._NoahMPtoATM.hfx
+
+        tskin = nc_grp.createVariable("T_skin", np.double, dimensions=("X", "Y",))
+        tskin[:,:] = self.T_skin
+
+        nc_grp.sync()
+        return

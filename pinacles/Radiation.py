@@ -57,7 +57,7 @@ class RRTMG:
         try:
             self._radiation_frequency = namelist["radiation"]["update_frequency"]
         except:
-            self._radiation_frequency = 30.0
+            self._radiation_frequency = 60.0
 
         self.frequency = self._radiation_frequency  # This is used for time syncing
         self.time_synced = True
@@ -339,7 +339,7 @@ class RRTMG:
             plev = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")  # hPA !!!
             tlay = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             tlev = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")
-            tsfc = np.ones((_ncol), dtype=np.double, order="F") * self._Surf.T_surface
+            tsfc = np.ravel(self._Surf.T_skin)
             h2ovmr = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             o3vmr = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             co2vmr = np.ones((_ncol, _nlay), dtype=np.double, order="F") * self._vmr_co2
@@ -359,16 +359,18 @@ class RRTMG:
                 np.ones((_ncol, _nlay), dtype=np.double, order="F") * self._vmr_ccl4
             )
             emis = np.ones((_ncol, _nbndlw), dtype=np.double, order="F") * self._emis
+            emis[:,:] = np.ravel(self._Surf.emiss)[:,np.newaxis]
             cldfr = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             cicewp = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             cliqwp = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             reice = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             reliq = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             coszen = np.ones((_ncol), dtype=np.double, order="F") * self.coszen
-            asdir = np.ones((_ncol), dtype=np.double, order="F") * self._adir
-            asdif = np.ones((_ncol), dtype=np.double, order="F") * self._adif
-            aldir = np.ones((_ncol), dtype=np.double, order="F") * self._adir
-            aldif = np.ones((_ncol), dtype=np.double, order="F") * self._adif
+            asdir = np.ravel(self._Surf.albedo)#np.ones((_ncol), dtype=np.double, order="F") * self._adir
+            asdif = asdir #np.ones((_ncol), dtype=np.double, order="F") * self._adif
+            aldir = asdir #np.ones((_ncol), dtype=np.double, order="F") * self._adir
+            aldif = asdif #np.ones((_ncol), dtype=np.double, order="F") * self._adif
+            print(asdif)
             taucld_lw = np.zeros((_nbndlw, _ncol, _nlay), dtype=np.double, order="F")
             tauaer_lw = np.zeros((_ncol, _nlay, _nbndlw), dtype=np.double, order="F")
             taucld_sw = np.zeros((_nbndsw, _ncol, _nlay), dtype=np.double, order="F")
@@ -421,7 +423,7 @@ class RRTMG:
 
             # Interpolate temperature to the levels
             # Extrapolate to surface temp between the lowest pressure layer and surface
-            t_temp = np.insert(tlay, 0, self._Surf.T_surface, axis=1)
+            t_temp = np.insert(tlay, 0, tsfc, axis=1)
             p_temp = np.insert(play, 0, self._Ref._Psfc, axis=1)
             # extrapolate as isothermal between top pressure layer and TOA
             t_temp = np.append(t_temp, np.expand_dims(t_temp[:, -1], axis=1), axis=1)
@@ -648,7 +650,7 @@ class RRTMG:
             #             ds_dTdt_rad[i,j,k] =  (ds_hr_lw[i,j,k] + ds_hr_sw[i,j,k])  /86400.0
 
             ds_dTdt_rad[:, :, :] = (ds_hr_lw + ds_hr_sw) / 86400.0
-
+ 
 
             ds_hr_lw[:, :, :] *= (
                 rho0[np.newaxis, np.newaxis, :] * parameters.CPD / 86400.0
@@ -657,8 +659,10 @@ class RRTMG:
                 rho0[np.newaxis, np.newaxis, :] * parameters.CPD / 86400.0
             )
 
-
         s[:, :, :] += ds_dTdt_rad[:, :, :] * dt
+
+ 
+
 
         self._Timers.end_timer("RRTMG")
         return

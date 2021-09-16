@@ -318,6 +318,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
         self.Fields2d.add_class(self.Micro)
         self.Fields2d.add_class(self.Rad)
+        self.Fields2d.add_class(self.Surf)
 
         # Instantiate optional TowerIO
         self.IOTower = TowersIO.Towers(
@@ -386,7 +387,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Update thermo this is mostly for IO at time 0
         self.Thermo.update(apply_buoyancy=False)
-        self.Rad.update(force=True)
+        #self.Surf.update()
+        #self.Rad.update(force=True)
         self.PSolver.update()
 
         # Initialize timers
@@ -720,6 +722,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             prog_state.update_all_bcs()
 
         self.Thermo.update(apply_buoyancy=False)
+        self.Surf.update()
         self.Rad.update(force=True)
         # self.PSolver.update()
 
@@ -771,7 +774,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 # Update scalar and momentum diffusion
                 self.ScalarDiff.update()
-                self.MomDiff.update()
+                #self.MomDiff.update()
 
                 # Do Damping
                 self.RayleighDamping.update()
@@ -799,7 +802,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     self.Thermo.update(apply_buoyancy=False)
                     # We call the microphysics update at the end of the RK steps.
                     self.Micro.update()
-                    self.Rad.update(time_loop=True)
+                    #self.Rad.update(time_loop=True)
 
                     self.Timers.start_timer("BoundaryUpdate")
                     self.ScalarState.boundary_exchange()
