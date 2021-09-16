@@ -1,0 +1,3 @@
+[submodule "parcel_model_ssp"]
+	path = parcel_model_ssp
+	url = ssh://git@gitlab.pnnl.gov:2222/chen696/parcel_model_ssp.git
