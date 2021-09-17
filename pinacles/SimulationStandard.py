@@ -774,7 +774,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 # Update scalar and momentum diffusion
                 self.ScalarDiff.update()
-                #self.MomDiff.update()
+                self.MomDiff.update()
 
                 # Do Damping
                 self.RayleighDamping.update()

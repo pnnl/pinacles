@@ -44,8 +44,8 @@ def compute_bvf(n_halo, theta_ref, exner, T, qv, ql, qi, dz, thetav, bvf):
                     T[i, j, k] / exner[k] * (1.0 + 0.61 * qv[i, j, k] - ql[i, j, k] - qi[i,j,k])
                 )
 
-    for i in range(n_halo[0], shape[0] - n_halo[0]):
-        for j in range(n_halo[1], shape[1] - n_halo[1]):
+    for i in range(shape[0]):
+        for j in range(shape[1]):
             k = n_halo[2]
             bvf[i, j, k] = (
                 parameters.G
