@@ -663,12 +663,20 @@ class RRTMG:
                 rho0[np.newaxis, np.newaxis, :] * parameters.CPD / 86400.0
             )
 
-        s[:, :, :] += ds_dTdt_rad[:, :, :] * dt
+        #s[:, :, :] += ds_dTdt_rad[:, :, :] * dt
 
  
-
+        UtilitiesParallel.print_root('UPDATED RADIATION')
 
         self._Timers.end_timer("RRTMG")
+        return
+
+    def update_tend(self):
+        s = self._ScalarState.get_field('s')
+        dTdt_rad = self._DiagnosticState.get_field("dTdt_rad")
+        dt = self._TimeSteppingController.dt
+        s[:, :, :] += dTdt_rad[:, :, :] * dt
+        UtilitiesParallel.print_root('UPDATED RADIATION TEND')
         return
 
     def io_initialize(self, nc_grp):

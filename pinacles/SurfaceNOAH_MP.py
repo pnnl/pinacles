@@ -711,13 +711,13 @@ class SurfaceNoahMP(Surface.SurfaceBase):
 
         #Apply the surface fluxes
         if self.itimestep > 1:
-            #Surface_impl.iles_surface_flux_application_u(
-            #    10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._taux_sfc, ut
-            #)
+            Surface_impl.iles_surface_flux_application_u(
+                10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._taux_sfc, ut
+            )
 
-            #Surface_impl.iles_surface_flux_application_v(
-            #    10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._tauy_sfc, vt
-            #)
+            Surface_impl.iles_surface_flux_application_v(
+                10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._tauy_sfc, vt
+            )
 
             Surface_impl.iles_surface_flux_application(
                 10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._tflx* alpha0_edge[nh[2] - 1] / parameters.CPD, st
