@@ -5,7 +5,7 @@ import netCDF4 as nc
 from scipy import interpolate
 from pinacles import UtilitiesParallel
 from mpi4py import MPI
-
+import xarray as xr
 
 CASENAMES = [
     "colliding_blocks",
@@ -443,11 +443,23 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     if psfc < 1.0e4:
         psfc *= 100.0  # Convert from hPa to Pa
     tsfc = init_data.variables["surface_temperature"][0]
-    u0 = 0.0 #init_data.variables["reference_u0"][0]
-    v0 = 0.0 #init_data.variables["reference_v0"][0]
+    u0 = 0.0  # init_data.variables["reference_u0"][0]
+    v0 = 0.0  # init_data.variables["reference_v0"][0]
 
-    Ref.set_surface(Psfc=psfc, Tsfc=tsfc, u0=u0, v0=v0)
-    Ref.integrate()
+    input_data = xr.load_dataset("./sgpsondewnpnC1.b1.20160830.053300.cdf")
+    print(input_data["pres"])
+
+    p = input_data["pres"].values * 100.0
+    tdry = input_data["tdry"].values + 273.15
+    alt = input_data["alt"].values
+    rh = input_data["rh"].values
+
+    # tsfc = input_data['surface_temperature'].values
+
+    print(psfc, tsfc)
+    Ref.set_surface(Psfc=p[0], Tsfc=tdry[0], u0=u0, v0=v0)
+    Ref.specify(alt, p, tdry, rh)
+    # Ref.integrate()
 
     u = VelocityState.get_field("u")
     v = VelocityState.get_field("v")
@@ -466,6 +478,7 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     init_var_from_sounding(raw_u, init_z, zl, u)
     init_var_from_sounding(raw_v, init_z, zl, v)
+
     init_var_from_sounding(raw_qv, init_z, zl, qv)
 
     u -= Ref.u0
