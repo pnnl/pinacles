@@ -118,6 +118,14 @@ class AerosolBinModel(AerosolBinBase):
         self._aero_cffi = parcel_model_via_cffi.AerosolModel()
         self._aero_cffi.init(ichem, self._nbins_aero)
 
+
+        self._ScalarState.add_variable(
+                'ql_aero',
+                long_name='mixing ratio of aerosol liquid',
+                units="kg kg^{-1}",
+                latex_name = "q_{l,aero}",
+                limit=True,
+            )
         # Create the prognosed and diagnostic scalars
         for i in range(self._nbins_aero):
             
@@ -134,6 +142,18 @@ class AerosolBinModel(AerosolBinBase):
                 units="kg kg^{-1}",
                 latex_name = "q_{dry}",
                 limit=True,
+            )
+            self._DiagnosticState.add_variable(
+                'pmass_total_cbase_'+str(i),
+                long_name = 'total mass of particles in bin ' + str(i),
+                units = "m",
+                latex_name = 'particleradius',
+            )
+            self._DiagnosticState.add_variable(
+                'pmass_aero_cbase_'+str(i),
+                long_name = 'total mass of aerosols in bin ' + str(i),
+                units = "m",
+                latex_name = 'particleradius',
             )
             self._DiagnosticState.add_variable(
                 'prad_'+str(i),
@@ -217,6 +237,7 @@ class AerosolBinModel(AerosolBinBase):
 
         T = self._DiagnosticState.get_field("T")
         qv = self._ScalarState.get_field("qv")
+        ql_aero = self._ScalarState.get_field("ql_aero")
         qc = self._ScalarState.get_field("qc")
         s = self._ScalarState.get_field("s")
         p0 = self._Ref.p0
@@ -241,8 +262,8 @@ class AerosolBinModel(AerosolBinBase):
         for i in range(nhalo[0],nlocal[0]-nhalo[0]):
             for j in range(nhalo[1],nlocal[1]-nhalo[1]):
                 for k in range(nhalo[2],nlocal[2]-nhalo[2]):
-                    if i == 8 and j==8 and k ==4:
-                        ipt_injection = ipt
+                    # if i == 8 and j==8 and k ==4:
+                    #     ipt_injection = ipt
                     T_1d[ipt] = T[i,j,k]
                     qv_1d[ipt] = qv[i,j,k]
                     pressure_1d[ipt] = p0[k]
@@ -251,10 +272,18 @@ class AerosolBinModel(AerosolBinBase):
         for ibin in range(self._nbins_aero):
             pmass_aero_3d = self._ScalarState.get_field('pmass_aero_'+str(ibin))
             pmass_total_3d = self._ScalarState.get_field('pmass_total_'+str(ibin))
+            pmass_aero_cbase = self._DiagnosticState.get_field('pmass_aero_cbase_'+str(ibin))
+            pmass_total_cbase = self._DiagnosticState.get_field('pmass_aero_cbase_'+str(ibin))
             ipt = 0
             for i in range(nhalo[0],nlocal[0]-nhalo[0]):
                 for j in range(nhalo[1],nlocal[1]-nhalo[1]):
                     for k in range(nhalo[2],nlocal[2]-nhalo[2]):
+                        if qc[i,j,k] > 1e-10:
+                            pmass_aero_cbase[i,j,k]+=pmass_aero_3d[i,j,k]
+                            pmass_total_cbase[i,j,k]+=pmass_total_3d[i,j,k]
+                            pmass_aero_3d[i,j,k] = 0.0
+                            pmass_total_3d[i,j,k] = 0.0
+    
                         pmass_total_m[ipt,ibin] = pmass_total_3d[i,j,k]
                         pmass_aero_m[ipt,ibin] = pmass_aero_3d[i,j,k]                    
                         ipt +=1
@@ -296,8 +325,8 @@ class AerosolBinModel(AerosolBinBase):
                     dqaero[i,j,k] = (qv_1d[ipt] - qv[i,j,k])/dt_les
                     T[i,j,k] = T_1d[ipt]
                     qv[i,j,k] = qv_1d[ipt]
-                    qc[i,j,k] = ql_1d[ipt]
-                    s[i,j,k] = MoistThermo.s(zl[k],T[i,j,k],qc[i,j,k],0.0)
+                    ql_aero[i,j,k] = ql_1d[ipt]
+                    s[i,j,k] = MoistThermo.s(zl[k],T[i,j,k],qc[i,j,k]+ql_aero[i,j,k],0.0)
                     ipt +=1
         for ibin in range(self._nbins_aero):
             pmass_aero_3d = self._ScalarState.get_field('pmass_aero_'+str(ibin))
