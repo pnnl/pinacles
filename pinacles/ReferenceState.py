@@ -3,6 +3,7 @@ import numpy as np
 from scipy.integrate import odeint
 from scipy import interpolate
 import numba
+from mpi4py import MPI
 
 
 class ReferenceBase:

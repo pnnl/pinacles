@@ -9,7 +9,7 @@ import pinacles.externals.wrf_noahmp_wrapper.test_notebooks.noahmp_offline_mod a
 import numpy as np
 import xarray as xr
 from scipy import interpolate
-
+from mpi4py import MPI
 import datetime
 
 
@@ -152,7 +152,12 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         self.ISURBAN = 16
         self.ISWATER = np.intc(17)
 
-        data_in = xr.open_dataset("sensitivity5_d01_static.nc")
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            data_in = xr.load_dataset("sensitivity5_d01_static.nc")
+        else:
+            data_in = None 
+        
+        data_in = MPI.COMM_WORLD.bcast(data_in)
 
         ISLTYP = np.asfortranarray(
             np.ones_like(iones_int_2d)
@@ -241,7 +246,12 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         #
         ##########################################
         UtilitiesParallel.print_root('Initializing Soil Moisture')
-        soil_mois_in = xr.open_dataset('SMOIS.nc')
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            soil_mois_in = xr.load_dataset('SMOIS.nc')
+        else:
+            soil_mois_in = None
+        soil_mois_in = MPI.COMM_WORLD.bcast(soil_mois_in)
+
         SMOIS = soil_mois_in['SMOIS'][0,:,:,:].values
         assert(np.shape(SMOIS)[0] == self.nsoil)
         lat_in = soil_mois_in["XLAT"].values[0, :, :]
@@ -265,7 +275,11 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         # Now for vegitation fraction
         ##########################################
         UtilitiesParallel.print_root('Initializing Vegetation Fraction')
-        vegfra_in = xr.open_dataset('VEGFRA.nc')
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            vegfra_in = xr.load_dataset('VEGFRA.nc')
+        else:
+            vegfra_in = None
+        vegfra_in = MPI.COMM_WORLD.bcast(vegfra_in)
         VEGFRA = vegfra_in['VEGFRA'][0,:,:].values
         lat_in = vegfra_in["XLAT"].values[0, :, :]
         lon_in = vegfra_in["XLONG"].values[0, :, :]
@@ -282,7 +296,12 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         # Now for vegitation fraction
         ##########################################
         UtilitiesParallel.print_root('Initializing Skin-Temperature')
-        TSK_in = xr.open_dataset('TSK.nc')
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            TSK_in = xr.load_dataset('TSK.nc')
+        else:
+            TSK_in = None
+        TSK_in = MPI.COMM_WORLD.bcast(TSK_in)
+
         TSK = TSK_in['TSK'][0,:,:].values
         lat_in = vegfra_in["XLAT"].values[0, :, :]
         lon_in = vegfra_in["XLONG"].values[0, :, :]

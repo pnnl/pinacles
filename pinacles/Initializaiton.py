@@ -446,9 +446,15 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     u0 = 0.0  # init_data.variables["reference_u0"][0]
     v0 = 0.0  # init_data.variables["reference_v0"][0]
 
-    input_data = xr.load_dataset("./sgpsondewnpnC1.b1.20160830.053300.cdf")
-    print(input_data["pres"])
 
+    if MPI.COMM_WORLD.Get_rank() == 0:
+        input_data = xr.load_dataset("./sgpsondewnpnC1.b1.20160830.053300.cdf")
+    else:
+        input_data = None
+    
+    input_data = MPI.COMM_WORLD.bcast(input_data)
+
+    
     p = input_data["pres"].values * 100.0
     tdry = input_data["tdry"].values + 273.15
     alt = input_data["alt"].values
@@ -456,7 +462,6 @@ def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     # tsfc = input_data['surface_temperature'].values
 
-    print(psfc, tsfc)
     Ref.set_surface(Psfc=p[0], Tsfc=tdry[0], u0=u0, v0=v0)
     Ref.specify(alt, p, tdry, rh)
     # Ref.integrate()
