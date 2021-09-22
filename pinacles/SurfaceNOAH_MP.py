@@ -65,32 +65,32 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         jds = 1
         jde = self._Grid.nl[1] + 1
         kds = 1
-        kde = self._Grid.nl[2] 
+        kde = self._Grid.nl[2]
 
         ## further domain setting and other testcase-dependent setting
         # domain size & indices
         # memory range (used to define variable arrays)
         ims = ids
-        ime = ide   -1
+        ime = ide - 1
         jms = jds
-        jme = jde   -1
+        jme = jde - 1
         kms = kds
         kme = kde
 
         # tile range
         its = ids
-        ite = ide   -1
+        ite = ide - 1
         jts = jds
-        jte = jde   -1
+        jte = jde - 1
         kts = kds
         kte = kde
 
         iones_float_2d = np.ones((ime - ims + 1, jme - jms + 1), dtype=np.float64)
         iones_int_2d = np.ones((ime - ims + 1, jme - jms + 1), dtype=np.intc)
 
-        #self.vegfra = np.asfortranarray(
+        # self.vegfra = np.asfortranarray(
         #    np.ones_like(iones_float_2d) * 0.5
-        #)  # vegetation fraction, all = 0.5
+        # )  # vegetation fraction, all = 0.5
         self.vegmax = np.asfortranarray(
             np.ones_like(iones_float_2d)
         )  # annual maximum veg fraction all = 1
@@ -155,8 +155,8 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         if MPI.COMM_WORLD.Get_rank() == 0:
             data_in = xr.load_dataset("sensitivity5_d01_static.nc")
         else:
-            data_in = None 
-        
+            data_in = None
+
         data_in = MPI.COMM_WORLD.bcast(data_in)
 
         ISLTYP = np.asfortranarray(
@@ -167,7 +167,6 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         )  # 5 = all grid points are grass
 
         self._RAINC_last = np.copy(self._Micro._RAINNC)
-
 
         lat_in = data_in["XLAT"].values[0, :, :]
         lon_in = data_in["XLONG"].values[0, :, :]
@@ -216,113 +215,135 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         )
 
         data_in.close()
-        
+
         # Now provide initial conditions
-        
+
         #########################################
         # First for temperature
         #
         #########################################
-        UtilitiesParallel.print_root('Initializing Soil Temperature')
-        soil_temp_in = xr.open_dataset('TSLB.nc')        
+        UtilitiesParallel.print_root("Initializing Soil Temperature")
+        soil_temp_in = xr.open_dataset("TSLB.nc")
 
-        tslb = soil_temp_in['TSLB'][0,:,:,:].values
-        assert(np.shape(tslb)[0] == self.nsoil)
+        tslb = soil_temp_in["TSLB"][0, :, :, :].values
+        assert np.shape(tslb)[0] == self.nsoil
         lat_in = soil_temp_in["XLAT"].values[0, :, :]
         lon_in = soil_temp_in["XLONG"].values[0, :, :]
         lon_lat = (lon_in.flatten(), lat_in.flatten())
         for k in range(self.nsoil):
             interp_field = interpolate.griddata(
-            lon_lat,
-            tslb[k,:,:].flatten(),
-            (self._Grid.lon_local, self._Grid.lat_local),
-            method="nearest",
+                lon_lat,
+                tslb[k, :, :].flatten(),
+                (self._Grid.lon_local, self._Grid.lat_local),
+                method="nearest",
             )
-            
-            NMPvars.tslb[:,k,:] = np.asfortranarray(interp_field[n_halo[0] : -n_halo[0], n_halo[1] : -n_halo[1]])
+
+            NMPvars.tslb[:, k, :] = np.asfortranarray(
+                interp_field[n_halo[0] : -n_halo[0], n_halo[1] : -n_halo[1]]
+            )
         soil_temp_in.close()
         ##########################################
         # Now for soil moisture
         #
         ##########################################
-        UtilitiesParallel.print_root('Initializing Soil Moisture')
+        UtilitiesParallel.print_root("Initializing Soil Moisture")
         if MPI.COMM_WORLD.Get_rank() == 0:
-            soil_mois_in = xr.load_dataset('SMOIS.nc')
+            soil_mois_xr = xr.load_dataset("SMOIS.nc")
+            soil_mois_in = {}
+            soil_mois_in["SMOIS"] = soil_mois_xr["SMOIS"][0, :, :, :].values
+            soil_mois_in["XLAT"] = soil_mois_xr["XLAT"].values[0, :, :]
+            soil_mois_in["XLONG"] = soil_mois_xr["XLONG"].values[0, :, :]
+            soil_mois_xr.close()
         else:
             soil_mois_in = None
         soil_mois_in = MPI.COMM_WORLD.bcast(soil_mois_in)
 
-        SMOIS = soil_mois_in['SMOIS'][0,:,:,:].values
-        assert(np.shape(SMOIS)[0] == self.nsoil)
-        lat_in = soil_mois_in["XLAT"].values[0, :, :]
-        lon_in = soil_mois_in["XLONG"].values[0, :, :]
+        SMOIS = soil_mois_in["SMOIS"]
+        assert np.shape(SMOIS)[0] == self.nsoil
+        lat_in = soil_mois_in["XLAT"]
+        lon_in = soil_mois_in["XLONG"]
         lon_lat = (lon_in.flatten(), lat_in.flatten())
 
         for k in range(self.nsoil):
             interp_field = interpolate.griddata(
-            lon_lat,
-            SMOIS[k,:,:].flatten(),
-            (self._Grid.lon_local, self._Grid.lat_local),
-            method="nearest",
+                lon_lat,
+                SMOIS[k, :, :].flatten(),
+                (self._Grid.lon_local, self._Grid.lat_local),
+                method="nearest",
             )
-            
-            NMPvars.smois[:,k,:] = np.asfortranarray(interp_field[n_halo[0] : -n_halo[0], n_halo[1] : -n_halo[1]])
 
-        soil_mois_in.close()
-
+            NMPvars.smois[:, k, :] = np.asfortranarray(
+                interp_field[n_halo[0] : -n_halo[0], n_halo[1] : -n_halo[1]]
+            )
 
         ##########################################
         # Now for vegitation fraction
         ##########################################
-        UtilitiesParallel.print_root('Initializing Vegetation Fraction')
+        UtilitiesParallel.print_root("Initializing Vegetation Fraction")
         if MPI.COMM_WORLD.Get_rank() == 0:
-            vegfra_in = xr.load_dataset('VEGFRA.nc')
+            vegfra_xr = xr.load_dataset("VEGFRA.nc")
+            vegfra_in = {}
+            vegfra_in["VEGFRA"] = vegfra_xr["VEGFRA"][0, :, :].values
+            vegfra_in["XLAT"] = vegfra_xr["XLAT"].values[0, :, :]
+            vegfra_in["XLONG"] = vegfra_xr["XLONG"].values[0, :, :]
+            vegfra_xr.close()
         else:
             vegfra_in = None
         vegfra_in = MPI.COMM_WORLD.bcast(vegfra_in)
-        VEGFRA = vegfra_in['VEGFRA'][0,:,:].values
-        lat_in = vegfra_in["XLAT"].values[0, :, :]
-        lon_in = vegfra_in["XLONG"].values[0, :, :]
+        VEGFRA = vegfra_in["VEGFRA"]
+        lat_in = vegfra_in["XLAT"]
+        lon_in = vegfra_in["XLONG"]
         lon_lat = (lon_in.flatten(), lat_in.flatten())
 
         interp_field = interpolate.griddata(
-        lon_lat,
-        VEGFRA[:,:].flatten(),
-        (self._Grid.lon_local, self._Grid.lat_local),
-        method="nearest",
+            lon_lat,
+            VEGFRA[:, :].flatten(),
+            (self._Grid.lon_local, self._Grid.lat_local),
+            method="nearest",
         )
 
         ##########################################
         # Now for vegitation fraction
         ##########################################
-        UtilitiesParallel.print_root('Initializing Skin-Temperature')
+        UtilitiesParallel.print_root("Initializing Skin-Temperature")
         if MPI.COMM_WORLD.Get_rank() == 0:
-            TSK_in = xr.load_dataset('TSK.nc')
+            TSK_xr = xr.load_dataset("TSK.nc")
+            TSK_in = {}
+            TSK_in["TSK"] = TSK_xr["TSK"][0, :, :].values
+            TSK_in["XLAT"] = TSK_xr["XLAT"].values[0, :, :]
+            TSK_in["XLONG"] = TSK_xr["XLONG"].values[0, :, :]
+            TSK_xr.close()
         else:
             TSK_in = None
         TSK_in = MPI.COMM_WORLD.bcast(TSK_in)
 
-        TSK = TSK_in['TSK'][0,:,:].values
-        lat_in = vegfra_in["XLAT"].values[0, :, :]
-        lon_in = vegfra_in["XLONG"].values[0, :, :]
+        TSK = TSK_in["TSK"]
+        lat_in = vegfra_in["XLAT"]
+        lon_in = vegfra_in["XLONG"]
         lon_lat = (lon_in.flatten(), lat_in.flatten())
 
         interp_field = interpolate.griddata(
-        lon_lat,
-        TSK[:,:].flatten(),
-        (self._Grid.lon_local, self._Grid.lat_local),
-        method="nearest",
+            lon_lat,
+            TSK[:, :].flatten(),
+            (self._Grid.lon_local, self._Grid.lat_local),
+            method="nearest",
         )
-        
-        NMPvars.tsk[:,:] = np.asfortranarray(interp_field[n_halo[0] : -n_halo[0], n_halo[1] : -n_halo[1]])
 
-        TSK_in.close()
+        NMPvars.tsk[:, :] = np.asfortranarray(
+            interp_field[n_halo[0] : -n_halo[0], n_halo[1] : -n_halo[1]]
+        )
 
-
-        for t in [NMPvars.tsk, NMPvars.tmn, NMPvars.tvxy, NMPvars.tgxy, NMPvars.t2mvxy,  NMPvars.t2mbxy, NMPvars.tahxy] :
-            t[:,:] = NMPvars.tsk[:,:]
-            #t.fill(294.969329833984)
-
+        for t in [
+            NMPvars.tsk,
+            NMPvars.tmn,
+            NMPvars.tvxy,
+            NMPvars.tgxy,
+            NMPvars.t2mvxy,
+            NMPvars.t2mbxy,
+            NMPvars.tahxy,
+        ]:
+            t[:, :] = NMPvars.tsk[:, :]
+            # t.fill(294.969329833984)
 
         self._NOAH_MP.init(
             ids,
@@ -415,7 +436,7 @@ class SurfaceNoahMP(Surface.SurfaceBase):
 
         self.T_skin = NMPvars.tsk
         self.albedo = self._NoahMPtoATM.albedo
-        self.emiss =  self._NoahMPtoATM.emiss
+        self.emiss = self._NoahMPtoATM.emiss
         return
 
     def initialize(self):
@@ -433,23 +454,23 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         jds = 1
         jde = self._Grid.nl[1] + 1
         kds = 1
-        kde = self._Grid.nl[2] 
+        kde = self._Grid.nl[2]
 
         ## further domain setting and other testcase-dependent setting
         # domain size & indices
         # memory range (used to define variable arrays)
         ims = ids
-        ime = ide   -1
+        ime = ide - 1
         jms = jds
-        jme = jde   -1
+        jme = jde - 1
         kms = kds
         kme = kde
 
         # tile range
         its = ids
-        ite = ide   -1
+        ite = ide - 1
         jts = jds
-        jte = jde   -1
+        jte = jde - 1
         kts = kds
         kte = kde
 
@@ -470,10 +491,10 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         T = self._DiagnosticState.get_field("T")
         dflux_lw = self._DiagnosticState.get_field("dflux_lw")
         dflux_sw = self._DiagnosticState.get_field("dflux_sw")
-        #import pylab as plt
-        #plt.contourf(dflux_lw[:,:,5])
-        #plt.colorbar()
-        #plt.show()
+        # import pylab as plt
+        # plt.contourf(dflux_lw[:,:,5])
+        # plt.colorbar()
+        # plt.show()
 
         # Get Tendnecies
         ut = self._VelocityState.get_tend("u")
@@ -495,15 +516,15 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         ATM2NMP = self._ATMtoNoahMP
         NMP2ATM = self._NoahMPtoATM
         NMPvars = self._NoahMPvars
-        
-        #Compute precipitation
+
+        # Compute precipitation
         np.subtract(self._Micro._RAINNC, self._RAINC_last, ATM2NMP.rainbl)
         self._RAINC_last = np.copy(self._RAINC_last)
 
         dt = self._TimeSteppingController.dt
         if self.itimestep == 1:
             dt = 0.0
-        
+
         dx = self._Grid.dx[0]
         xice_thres = 0.5  # fraction of grid determining seaice
 
@@ -518,19 +539,23 @@ class SurfaceNoahMP(Surface.SurfaceBase):
             self.julian, self._TimeSteppingController.time // 86400.0, xlat, xlon
         )
 
-
         for wrf_array, pinacles_array in zip(
             [ATM2NMP.t3d, ATM2NMP.qv3d, ATM2NMP.u_phy, ATM2NMP.v_phy], [T, qv, u, v]
         ):
             to_wrf_order(n_halo, pinacles_array, wrf_array)
 
+        ATM2NMP.glw[:, :] = np.asfortranarray(
+            dflux_lw[n_halo[0] : -n_halo[0], n_halo[1] : -n_halo[1], n_halo[2]]
+        )
+        ATM2NMP.swdown[:, :] = np.asfortranarray(
+            dflux_sw[n_halo[0] : -n_halo[0], n_halo[1] : -n_halo[1], n_halo[2]]
+        )
 
-        ATM2NMP.glw[:,:] = np.asfortranarray(dflux_lw[n_halo[0]:-n_halo[0], n_halo[1]:-n_halo[1], n_halo[2]])
-        ATM2NMP.swdown[:,:] = np.asfortranarray(dflux_sw[n_halo[0]:-n_halo[0], n_halo[1]:-n_halo[1], n_halo[2]])
+        ATM2NMP.p8w3d[:, :, :] = self._Ref.p0[:][
+            np.newaxis, n_halo[2] : -n_halo[2], np.newaxis
+        ]
 
-        ATM2NMP.p8w3d[:,:,:] = self._Ref.p0[:][np.newaxis,n_halo[2]:-n_halo[2],np.newaxis]
-        
-        if self.itimestep %2 == 0 or self.itimestep==1:
+        if self.itimestep % 2 == 0 or self.itimestep == 1:
             self._NOAH_MP.noahmplsm(
                 self.itimestep,
                 self.yr,
@@ -692,13 +717,12 @@ class SurfaceNoahMP(Surface.SurfaceBase):
                 kte,
             )
 
-    
         self.T_skin = NMPvars.tsk
         self.albedo = self._NoahMPtoATM.albedo
-        self.emiss =  self._NoahMPtoATM.emiss
+        self.emiss = self._NoahMPtoATM.emiss
 
-        #import pylab as plt
-        #if self.itimestep % 2 == 0:
+        # import pylab as plt
+        # if self.itimestep % 2 == 0:
         #    plt.figure(1,figsize=(21,10))
         #    plt.subplot(121)
         #    plt.title('Latent Heat Flux')
@@ -711,24 +735,20 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         #    plt.savefig('./plot_figs/' + str(self.itimestep + 10000000) + '.png')
         #    plt.close()
 
-        #sys.exit()
+        # sys.exit()
 
-        
+        # self._tflx = -self._ch * self._windspeed_sfc * (Ssfc - self._TSKIN)
+        # self._qvflx = -self._cq * self._windspeed_sfc * (qvsfc - self._qv0)
 
-
-
-        #self._tflx = -self._ch * self._windspeed_sfc * (Ssfc - self._TSKIN)
-        #self._qvflx = -self._cq * self._windspeed_sfc * (qvsfc - self._qv0)
-
-        self._cm = np.pad(NMP2ATM.cmxy, pad_width=(n_halo[0], n_halo[1]),mode='edge')
+        self._cm = np.pad(NMP2ATM.cmxy, pad_width=(n_halo[0], n_halo[1]), mode="edge")
 
         self._taux_sfc = -self._cm * self._windspeed_sfc * (usfc + self._Ref.u0)
         self._tauy_sfc = -self._cm * self._windspeed_sfc * (vsfc + self._Ref.v0)
 
-        self._qvflx = np.pad(NMP2ATM.qfx, pad_width=(n_halo[0], n_halo[1]), mode='edge')
-        self._tflx = np.pad(NMP2ATM.hfx, pad_width=(n_halo[0], n_halo[1]), mode='edge')
+        self._qvflx = np.pad(NMP2ATM.qfx, pad_width=(n_halo[0], n_halo[1]), mode="edge")
+        self._tflx = np.pad(NMP2ATM.hfx, pad_width=(n_halo[0], n_halo[1]), mode="edge")
 
-        #Apply the surface fluxes
+        # Apply the surface fluxes
         if self.itimestep > 1:
             Surface_impl.iles_surface_flux_application_u(
                 10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._taux_sfc, ut
@@ -739,7 +759,15 @@ class SurfaceNoahMP(Surface.SurfaceBase):
             )
 
             Surface_impl.iles_surface_flux_application(
-                10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._tflx* alpha0_edge[nh[2] - 1] / parameters.CPD, st
+                10,
+                z_edge,
+                dxi2,
+                nh,
+                alpha0,
+                alpha0_edge,
+                10,
+                self._tflx * alpha0_edge[nh[2] - 1] / parameters.CPD,
+                st,
             )
 
             Surface_impl.iles_surface_flux_application(
@@ -755,21 +783,61 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         return super().io_update(rt_grp)
 
     def io_fields2d_update(self, nc_grp):
-        lhf = nc_grp.createVariable("latent_heat_flux", np.double, dimensions=("X", "Y",))
-        lhf[:,:] = self._NoahMPtoATM.lh
+        lhf = nc_grp.createVariable(
+            "latent_heat_flux",
+            np.double,
+            dimensions=(
+                "X",
+                "Y",
+            ),
+        )
+        lhf[:, :] = self._NoahMPtoATM.lh
 
-        shf = nc_grp.createVariable("sensible_heat_flux", np.double, dimensions=("X", "Y",))
-        shf[:,:] = self._NoahMPtoATM.hfx
+        shf = nc_grp.createVariable(
+            "sensible_heat_flux",
+            np.double,
+            dimensions=(
+                "X",
+                "Y",
+            ),
+        )
+        shf[:, :] = self._NoahMPtoATM.hfx
 
-        tskin = nc_grp.createVariable("T_skin", np.double, dimensions=("X", "Y",))
-        tskin[:,:] = self.T_skin
+        tskin = nc_grp.createVariable(
+            "T_skin",
+            np.double,
+            dimensions=(
+                "X",
+                "Y",
+            ),
+        )
+        tskin[:, :] = self.T_skin
 
-        t2m = nc_grp.createVariable("T2m", np.double, dimensions=("X", "Y",))
-        t2m[:,:] = (self._NoahMPvars.t2mvxy * self._NoahMPvars.fvegxy+ self._NoahMPvars.t2mbxy * (1.0-self._NoahMPvars.fvegxy))
+        t2m = nc_grp.createVariable(
+            "T2m",
+            np.double,
+            dimensions=(
+                "X",
+                "Y",
+            ),
+        )
+        t2m[:, :] = (
+            self._NoahMPvars.t2mvxy * self._NoahMPvars.fvegxy
+            + self._NoahMPvars.t2mbxy * (1.0 - self._NoahMPvars.fvegxy)
+        )
 
-        qv2m = nc_grp.createVariable("qv2m", np.double, dimensions=("X", "Y",))
-        qv2m[:,:] = (self._NoahMPvars.q2mvxy * self._NoahMPvars.fvegxy+ self._NoahMPvars.q2mbxy * (1.0-self._NoahMPvars.fvegxy))
-
+        qv2m = nc_grp.createVariable(
+            "qv2m",
+            np.double,
+            dimensions=(
+                "X",
+                "Y",
+            ),
+        )
+        qv2m[:, :] = (
+            self._NoahMPvars.q2mvxy * self._NoahMPvars.fvegxy
+            + self._NoahMPvars.q2mbxy * (1.0 - self._NoahMPvars.fvegxy)
+        )
 
         nc_grp.sync()
         return
