@@ -31,7 +31,7 @@ class AerosolBinBase():
     
     def update(self):
         return
-    def set_aerosol_scalars(self, loc_indices_x, loc_indices_y, loc_indices_z, na_cc):
+    def set_aerosol_scalars(self, loc_indices_x, loc_indices_y, loc_indices_z, injection_rate,grid_cell_mass):
         # Do nothing in the base class
         return
     def boundary_outflow(self):
@@ -126,6 +126,12 @@ class AerosolBinModel(AerosolBinBase):
                 latex_name = "q_{l,aero}",
                 limit=True,
             )
+        self._DiagnosticState.add_variable(
+                'aerosol_conc',
+                long_name='aerosol concentration',
+                units="# m^{-3}",
+                latex_name = "n_{aero}",
+            )
         # Create the prognosed and diagnostic scalars
         for i in range(self._nbins_aero):
             
@@ -145,15 +151,15 @@ class AerosolBinModel(AerosolBinBase):
             )
             self._DiagnosticState.add_variable(
                 'pmass_total_cbase_'+str(i),
-                long_name = 'total mass of particles in bin ' + str(i),
+                long_name = 'cloud base total mass of particles in bin ' + str(i),
                 units = "m",
-                latex_name = 'particleradius',
+                latex_name = 'pmass_total_cbase',
             )
             self._DiagnosticState.add_variable(
                 'pmass_aero_cbase_'+str(i),
-                long_name = 'total mass of aerosols in bin ' + str(i),
+                long_name = ' cloud base total mass of aerosols in bin ' + str(i),
                 units = "m",
-                latex_name = 'particleradius',
+                latex_name = 'pmass_aero_cbase',
             )
             self._DiagnosticState.add_variable(
                 'prad_'+str(i),
@@ -171,7 +177,7 @@ class AerosolBinModel(AerosolBinBase):
                 'pmass1_'+str(i),
                 long_name = 'mass of particle in bin ' + str(i),
                 units = "kg",
-                latex_name = 'particle concentration',
+                latex_name = 'particle mass',
             )
             self._DiagnosticState.add_variable(
                 'T_tendency_aerosol',
@@ -351,7 +357,8 @@ class AerosolBinModel(AerosolBinBase):
         nlocal = self._Grid.ngrid_local
         nhalo = self._Grid.n_halo
         rhow_cgs = parameters.RHOW * 1.0e-3
-
+        n_a = self._DiagnosticState.get_field('aerosol_conc')
+        
         for ii in range(self._nbins_aero):
             prad_i = self._DiagnosticState.get_field('prad_'+str(ii))
             pconc_i = self._DiagnosticState.get_field('pconc_'+str(ii))
@@ -381,6 +388,12 @@ class AerosolBinModel(AerosolBinBase):
                             prad_cm=0.75*(pmass1_g-(1.0-self._solfracm)*self._pmass0[ii])/rhows/np.pi
                             prad_cm=(prad_cm+(1.0-self._solfracv)*self._prad0[ii]**3.0)**(1.0/3.0)
                             prad_i[i,j,k] = prad_cm * 1e-2
+                        if ii == 0:
+                            n_a[i,j,k] = pconc_i[i,j,k]
+                        else:
+                            n_a[i,j,k] += pconc_i[i,j,k]
+
+                        
 
         return
 
@@ -391,31 +404,32 @@ class AerosolBinModel(AerosolBinBase):
     # replicating the aerospec and dropspec code in python
     # This might not be the best approach but we can clean up later
     # when the overall algorithm is better defined
-    def set_aerosol_scalars(self, loc_indices_x, loc_indices_y, loc_indices_z, na_cc):
+    def set_aerosol_scalars(self, loc_indices_x, loc_indices_y, loc_indices_z, injection_rate,grid_cell_mass):
+        # injection_rate ==> number of particles per second
         # print("indices", loc_indices_x,loc_indices_y,loc_indices_z)
+
         rhow_cgs = parameters.RHOW * 1.0e-3
-        T = self._DiagnosticState.get_field('T')
-        qv = self._ScalarState.get_field('qv')
-        str_aero = ''
-        str_tot = ''
+        
+      
+        
         # print('bin masses at injection')
         for ii in range(self._nbins_aero):
             
             drop_r0_est = (self._drop_br0[ii] + self._drop_br0[ii+1])/2.0
             drop_m0 = rhow_cgs*4.0/3.0*np.pi*drop_r0_est**3 # assuming pure water
-            qaero = self._ScalarState.get_field('pmass_aero_'+str(ii))
-            qtot = self._ScalarState.get_field('pmass_total_'+str(ii))
+            qaero_tend = self._ScalarState.get_tend('pmass_aero_'+str(ii))
+            qtot_tend = self._ScalarState.get_tend('pmass_total_'+str(ii))
             
             i = loc_indices_x
             j = loc_indices_y
             k = loc_indices_z
             # print('Before setting',ii,qaero[i,j,k],qtot[i,j,k])
-            conc_kg = self._concfrac_init[ii] * na_cc * 1.0e6 / self._Ref.rho0[k]
-            qaero[i,j,k] = conc_kg * (self._pmass0[ii] * 1.0e-3) # (# particle /kg air) * single particle mass in kg
-            qtot[i,j,k] = conc_kg * (drop_m0 * 1.0e-3)
+            
+            qaero_tend[i,j,k] = injection_rate /grid_cell_mass * self._concfrac_init[ii] * (self._pmass0[ii] * 1.0e-3) # (# particle /kg air) * single particle mass in kg
+            qtot_tend[i,j,k] = injection_rate /grid_cell_mass * self._concfrac_init[ii] *   (drop_m0 * 1.0e-3)
 
-            str_aero +=str(qaero[i,j,k]) + ' , '
-            str_tot +=str(qtot[i,j,k]) + ' , '
+            # str_aero +=str(qaero[i,j,k]) + ' , '
+            # str_tot +=str(qtot[i,j,k]) + ' , '
         # print('thermo conditions at injection', T[i,j,k], qv[i,j,k],self._Ref.rho0[loc_indices_z],self._Ref.p0[loc_indices_z])
         # print('aero masses', str_aero)
         # print('total masses', str_tot)

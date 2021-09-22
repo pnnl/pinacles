@@ -55,7 +55,8 @@ class Plume:
         dxs = self._Grid.dx
 
         grid_cell_volume = dxs[0] * dxs[1] * dxs[2]
-        grid_cell_mass = grid_cell_volume * self._Ref.rho0[self._indicies[0]]
+        # Bug fix to density below (CK)
+        grid_cell_mass = grid_cell_volume * self._Ref.rho0[self._indicies[2]]
 
         # Add the plume scalar flux
         plume_tend = self._ScalarState.get_tend(self._scalar_name)
@@ -85,7 +86,7 @@ class Plume:
 
     
         self._ABM.set_aerosol_scalars(self._indicies[0], self._indicies[1], self._indicies[2], 
-                                        self._plume_aerosol_number)
+                                        self._plume_aerosol_number, grid_cell_mass)
         
 
         # If needed, zero the plume scalar on the boundaries
