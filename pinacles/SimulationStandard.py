@@ -729,7 +729,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
     def update(self, integrate_by_dt=0.0):
 
-        """ This function integrates the model forward by integrate_by_dt seconds. """
+        """This function integrates the model forward by integrate_by_dt seconds."""
         # Compute the startime and endtime for this integration
         start_time = self.TimeSteppingController.time
         end_time = start_time + integrate_by_dt
@@ -795,7 +795,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     self.Thermo.update(apply_buoyancy=False)
                     # We call the microphysics update at the end of the RK steps.
                     self.Micro.update()
-                    self.Rad.update(time_loop=True)
+                    self.Rad.update_apply_tend()
 
                     self.Timers.start_timer("BoundaryUpdate")
                     self.ScalarState.boundary_exchange()

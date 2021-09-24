@@ -165,7 +165,8 @@ class TimeSteppingController:
                     np.round(diff_num_max_time_div_dt * self._dt, 5),
                 )
                 print(
-                    "\tdt:", self._dt,
+                    "\tdt:",
+                    self._dt,
                 )
                 print(
                     "\tumax: ",

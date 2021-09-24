@@ -70,7 +70,9 @@ class Tower:
 
         rt_grp.createDimension("time")
         rt_grp.createVariable(
-            "time", np.double, dimensions=("time"),
+            "time",
+            np.double,
+            dimensions=("time"),
         )
 
         for con in self._containers:

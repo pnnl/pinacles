@@ -20,12 +20,17 @@ def compute_visc(
                 # Compute the stratification correction
                 fb = 1
                 if bvf[i, j, k] > 0 and strain_rate_mag[i, j, k] > 0.0:
-                    fb = max(
-                        0.0,
-                        1.0
-                        - bvf[i, j, k]
-                        / (pr * strain_rate_mag[i, j, k] * strain_rate_mag[i, j, k]),
-                    ) ** (1.0 / 2.0)
+                    fb = (
+                        max(
+                            0.0,
+                            1.0
+                            - bvf[i, j, k]
+                            / (
+                                pr * strain_rate_mag[i, j, k] * strain_rate_mag[i, j, k]
+                            ),
+                        )
+                        ** (1.0 / 2.0)
+                    )
                 # Compute the eddy viscosity with a correction for
                 # stratification
                 eddy_viscosity[i, j, k] = (cs * filt_scale) ** 2.0 * (
