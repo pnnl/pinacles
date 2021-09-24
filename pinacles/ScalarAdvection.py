@@ -563,7 +563,12 @@ class ScalarWENO(ScalarAdvectionBase):
             if "ff" in var:
                 continue
             v = profiles_grp.createVariable(
-                "w" + var + "_resolved", np.double, dimensions=("time", "z",)
+                "w" + var + "_resolved",
+                np.double,
+                dimensions=(
+                    "time",
+                    "z",
+                ),
             )
             v.long_name = "Resolved flux of " + var
             v.units = "m s^{-1} " + self._ScalarState.get_units(var)
@@ -571,14 +576,24 @@ class ScalarWENO(ScalarAdvectionBase):
 
         # Add the thetali flux
         v = profiles_grp.createVariable(
-            "w" + "T" + "_resolved", np.double, dimensions=("time", "z",)
+            "w" + "T" + "_resolved",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
         )
         v.long_name = "Resolved flux of temperature"
         v.units = "m s^{-1} K"
         v.standard_name = "wT"
 
         v = profiles_grp.createVariable(
-            "w" + "thetali" + "_resolved", np.double, dimensions=("time", "z",)
+            "w" + "thetali" + "_resolved",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
         )
         v.long_name = "Resolved flux of liquid-ice potential temperature"
         v.units = "m s^{-1} K"

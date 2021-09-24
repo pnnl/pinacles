@@ -630,12 +630,26 @@ class MicroP3(MicrophysicsBase):
         v.latex_name = "rainncv"
 
         # Now add cloud fraction and rain fraction profiles
-        v = profiles_grp.createVariable("CF", np.double, dimensions=("time", "z",))
+        v = profiles_grp.createVariable(
+            "CF",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "Cloud Fraction"
         v.standard_name = "CF"
         v.units = ""
 
-        profiles_grp.createVariable("RF", np.double, dimensions=("time", "z",))
+        profiles_grp.createVariable(
+            "RF",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "Rain Fraction"
         v.standard_name = "RF"
         v.units = ""
@@ -726,7 +740,14 @@ class MicroP3(MicrophysicsBase):
 
     def io_fields2d_update(self, nc_grp):
 
-        rainnc = nc_grp.createVariable("RAINNC", np.double, dimensions=("X", "Y",))
+        rainnc = nc_grp.createVariable(
+            "RAINNC",
+            np.double,
+            dimensions=(
+                "X",
+                "Y",
+            ),
+        )
         rainnc[:, :] = self._RAINNC
 
         rainncv = nc_grp.createVariable("RAINNCV", np.double, dimensions=("X", "Y"))

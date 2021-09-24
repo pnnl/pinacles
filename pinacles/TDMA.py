@@ -4,8 +4,8 @@ import numba
 
 @numba.njit(fastmath=True)
 def Thomas(x, a, b, c):
-    """ a generic Thomas algorithm tridiagonal solver. 
-    
+    """a generic Thomas algorithm tridiagonal solver.
+
     Arguments:
         x {[type]} -- [description]
         a {[type]} -- [description]

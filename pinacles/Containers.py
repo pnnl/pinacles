@@ -294,28 +294,48 @@ class ModelState:
             if not "ff" in var:  # Avoid SBM Bins
                 if self._loc[var] != "z":
                     v = profiles_grp.createVariable(
-                        var, np.double, dimensions=("time", "z",)
+                        var,
+                        np.double,
+                        dimensions=(
+                            "time",
+                            "z",
+                        ),
                     )
                     v.units = self._units[var]
                     v.long_name = self._long_names[var]
                     v.standard_name = "\bar{" + self._latex_names[var] + "}"
 
                     v = profiles_grp.createVariable(
-                        var + "_squared", np.double, dimensions=("time", "z",)
+                        var + "_squared",
+                        np.double,
+                        dimensions=(
+                            "time",
+                            "z",
+                        ),
                     )
                     v.units = "{" + self._units[var] + "}^2"
                     v.long_name = self._long_names[var] + " mean of squared"
                     v.standard_name = self._latex_names[var]
 
                     v = profiles_grp.createVariable(
-                        var + "_min", np.double, dimensions=("time", "z",)
+                        var + "_min",
+                        np.double,
+                        dimensions=(
+                            "time",
+                            "z",
+                        ),
                     )
                     v.units = self._units[var]
                     v.long_name = "minimum " + self._long_names[var]
                     v.standard_name = "min{" + self._latex_names[var] + "}"
 
                     v = profiles_grp.createVariable(
-                        var + "_max", np.double, dimensions=("time", "z",)
+                        var + "_max",
+                        np.double,
+                        dimensions=(
+                            "time",
+                            "z",
+                        ),
                     )
                     v.units = self._units[var]
                     v.long_name = "maximum " + self._long_names[var]
@@ -323,14 +343,24 @@ class ModelState:
 
                 else:
                     v = profiles_grp.createVariable(
-                        var, np.double, dimensions=("time", "z_edge",)
+                        var,
+                        np.double,
+                        dimensions=(
+                            "time",
+                            "z_edge",
+                        ),
                     )
                     v.units = self._units[var]
                     v.long_name = self._long_names[var]
                     v.standard_name = "\bar{" + self._latex_names[var] + "}"
 
                     v = profiles_grp.createVariable(
-                        var + "_squared", np.double, dimensions=("time", "z_edge",)
+                        var + "_squared",
+                        np.double,
+                        dimensions=(
+                            "time",
+                            "z_edge",
+                        ),
                     )
                     v.units = "{" + self._units[var] + "}^2"
                     v.long_name = self._long_names[var] + " mean of squared"

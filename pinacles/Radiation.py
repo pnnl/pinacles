@@ -660,9 +660,16 @@ class RRTMG:
                 rho0[np.newaxis, np.newaxis, :] * parameters.CPD / 86400.0
             )
 
-        s[:, :, :] += ds_dTdt_rad[:, :, :] * dt
-
         self._Timers.end_timer("RRTMG")
+        return
+
+    def update_apply_tend(self):
+
+        s = self._ScalarState.get_field("s")
+        dTdt_rad = self._DiagnosticState.get_field("dTdt_rad")
+        dt = self._TimeSteppingController.dt
+        s[:, :, :] += dTdt_rad[:, :, :] * dt
+
         return
 
     def io_initialize(self, nc_grp):
@@ -725,7 +732,12 @@ class RRTMG:
 
         # Now add profile of effective radius
         v = profiles_grp.createVariable(
-            "r_eff_cloud", np.double, dimensions=("time", "z",)
+            "r_eff_cloud",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
         )
         v.long_name = "Effective droplet radius"
         v.standard_name = "r_eff_cloud"
@@ -785,7 +797,14 @@ class RRTMG:
 
         alb = -(self._surf_sw_dn_2d - self._toa_sw_dn_2d) / self._toa_sw_dn_2d
 
-        albedo = nc_grp.createVariable("albedo", np.double, dimensions=("X", "Y",))
+        albedo = nc_grp.createVariable(
+            "albedo",
+            np.double,
+            dimensions=(
+                "X",
+                "Y",
+            ),
+        )
         albedo[:, :] = alb.reshape((self._Grid.nl[0], self._Grid.nl[1]))
 
         nc_grp.sync()
@@ -797,9 +816,9 @@ class RRTMG:
         return self._name
 
     def restart(self, data_dict):
-        """ 
+        """
         Here we just do checks for domain decomposition consistency with the namelist file
-        # currently, we require that a restarted simulation have exactly the same domain 
+        # currently, we require that a restarted simulation have exactly the same domain
         # as the simulation from which it is being restarted.
         """
 
