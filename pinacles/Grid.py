@@ -67,6 +67,12 @@ class GridBase:
 
         return
 
+    def attach_metrics(self, Metrics):
+
+        self.Metrics = Metrics
+
+        return
+
     def restart(self):
 
         return

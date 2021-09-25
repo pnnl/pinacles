@@ -188,25 +188,25 @@ def w_advection_2nd(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
 
 
 @numba.njit(fastmath=True)
-def u_advection_weno5(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz):
+def u_advection_weno5(rho0, rho_edge0, Uc, Vc, Wc, u, fluxx, fluxy, fluxz):
     shape = u.shape
     for i in range(2, shape[0] - 3):
         for j in range(2, shape[1] - 3):
             for k in range(2, shape[2] - 3):
                 # Compute advection of u by u-wind
-                up = interpolation_impl.centered_fourth(
-                    u[i - 1, j, k], u[i, j, k], u[i + 1, j, k], u[i + 2, j, k]
-                )
-                vp = interpolation_impl.centered_fourth(
-                    v[i - 1, j, k], v[i, j, k], v[i + 1, j, k], v[i + 2, j, k]
-                )
-                wp = interpolation_impl.centered_fourth(
-                    w[i - 1, j, k], w[i, j, k], w[i + 1, j, k], w[i + 2, j, k]
-                )
+                #up = interpolation_impl.centered_fourth(
+                #    u[i - 1, j, k], u[i, j, k], u[i + 1, j, k], u[i + 2, j, k]
+                #)
+                #vp = interpolation_impl.centered_fourth(
+                #    v[i - 1, j, k], v[i, j, k], v[i + 1, j, k], v[i + 2, j, k]
+                #)
+                #wp = interpolation_impl.centered_fourth(
+                #    w[i - 1, j, k], w[i, j, k], w[i + 1, j, k], w[i + 2, j, k]
+                #)
 
-                # up = interpolation_impl.centered_second(u[i,j,k], u[i+1,j,k])
-                # vp = interpolation_impl.centered_second(v[i,j,k], v[i+1,j,k])
-                # wp = interpolation_impl.centered_second(w[i,j,k], w[i+1,j,k])
+                up = interpolation_impl.centered_second(Uc[i,j,k], Uc[i+1,j,k])
+                vp = interpolation_impl.centered_second(Vc[i,j,k], Vc[i+1,j,k])
+                wp = interpolation_impl.centered_second(Wc[i,j,k], Wc[i+1,j,k])
 
                 if up >= 0.0:
                     fluxx[i, j, k] = (
@@ -290,24 +290,24 @@ def u_advection_weno5(rho0, rho_edge0, u, v, w, fluxx, fluxy, fluxz):
 
 
 @numba.njit(fastmath=True)
-def v_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
+def v_advection_weno5(rho0, rho0_edge, Uc, Vc, Wc, v, fluxx, fluxy, fluxz):
     shape = v.shape
     for i in range(2, shape[0] - 3):
         for j in range(2, shape[1] - 3):
             for k in range(2, shape[2] - 3):
                 # Compute v advection by the u wind
-                up = interpolation_impl.centered_fourth(
-                    u[i, j - 1, k], u[i, j, k], u[i, j + 1, k], u[i, j + 2, k]
-                )
-                vp = interpolation_impl.centered_fourth(
-                    v[i, j - 1, k], v[i, j, k], v[i, j + 1, k], v[i, j + 2, k]
-                )
-                wp = interpolation_impl.centered_fourth(
-                    w[i, j - 1, k], w[i, j, k], w[i, j + 1, k], w[i, j + 2, k]
-                )
-                # up = interpolation_impl.centered_second(u[i,j,k], u[i,j+1,k])
-                # vp = interpolation_impl.centered_second(v[i,j,k], v[i,j+1,k])
-                # wp = interpolation_impl.centered_second(w[i,j,k], w[i,j+1,k])
+                #up = interpolation_impl.centered_fourth(
+                #    u[i, j - 1, k], u[i, j, k], u[i, j + 1, k], u[i, j + 2, k]
+                #)
+                #vp = interpolation_impl.centered_fourth(
+                #    v[i, j - 1, k], v[i, j, k], v[i, j + 1, k], v[i, j + 2, k]
+                #)
+                #wp = interpolation_impl.centered_fourth(
+                #    w[i, j - 1, k], w[i, j, k], w[i, j + 1, k], w[i, j + 2, k]
+                #)
+                up = interpolation_impl.centered_second(Uc[i,j,k], Uc[i,j+1,k])
+                vp = interpolation_impl.centered_second(Vc[i,j,k], Vc[i,j+1,k])
+                wp = interpolation_impl.centered_second(Wc[i,j,k], Wc[i,j+1,k])
 
                 if up >= 0.0:
                     fluxx[i, j, k] = (
@@ -389,24 +389,24 @@ def v_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
 
 
 @numba.njit(fastmath=True)
-def w_advection_weno5(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz):
+def w_advection_weno5(rho0, rho0_edge, Uc, Vc, Wc,  w, fluxx, fluxy, fluxz):
     shape = w.shape
     for i in range(2, shape[0] - 3):
         for j in range(2, shape[1] - 3):
             for k in range(2, shape[2] - 3):
                 # Compute w advection by the u wind
-                up = interpolation_impl.centered_fourth(
-                    u[i, j, k - 1], u[i, j, k], u[i, j, k + 1], u[i, j, k + 2]
-                )
-                vp = interpolation_impl.centered_fourth(
-                    v[i, j, k - 1], v[i, j, k], v[i, j, k + 1], v[i, j, k + 2]
-                )
-                wp = interpolation_impl.centered_fourth(
-                    w[i, j, k - 1], w[i, j, k], w[i, j, k + 1], w[i, j, k + 2]
-                )
-                # up = interpolation_impl.centered_second(u[i,j,k], u[i,j,k+1])
-                # vp = interpolation_impl.centered_second(v[i,j,k], v[i,j,k+1])
-                # wp = interpolation_impl.centered_second(w[i,j,k], w[i,j,k+1])
+                #up = interpolation_impl.centered_fourth(
+                #    u[i, j, k - 1], u[i, j, k], u[i, j, k + 1], u[i, j, k + 2]
+                #)
+                #vp = interpolation_impl.centered_fourth(
+                #    v[i, j, k - 1], v[i, j, k], v[i, j, k + 1], v[i, j, k + 2]
+                #)
+                #wp = interpolation_impl.centered_fourth(
+                #    w[i, j, k - 1], w[i, j, k], w[i, j, k + 1], w[i, j, k + 2]
+                #)
+                up = interpolation_impl.centered_second(Uc[i,j,k], Uc[i,j,k+1])
+                vp = interpolation_impl.centered_second(Vc[i,j,k], Vc[i,j,k+1])
+                wp = interpolation_impl.centered_second(Wc[i,j,k], Wc[i,j,k+1])
                 if up >= 0.0:
                     fluxx[i, j, k] = (
                         up

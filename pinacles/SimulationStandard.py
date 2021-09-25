@@ -32,12 +32,15 @@ from pinacles import Plumes
 from pinacles import Restart
 from pinacles import UtilitiesParallel
 from pinacles import Timers
+from pinacles import MetricTerms
 from mpi4py import MPI
 import numpy as np
 import pylab as plt
-
 import os
 from termcolor import colored
+
+
+
 
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
@@ -79,6 +82,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.DiagnosticState = Containers.ModelState(
             self.ModelGrid, container_name="DiagnosticState"
         )
+
+        self.MetricTerms = MetricTerms.MetricTerms(self.ModelGrid, self.VelocityState, self.DiagnosticState)
+        self.ModelGrid.attach_metrics(self.MetricTerms)
 
         self.TimeSteppingController = TimeStepping.TimeSteppingController(
             self._namelist, self.ModelGrid, self.DiagnosticState, self.VelocityState
@@ -181,6 +187,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Ref,
             self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState
         )
 
         # Instantiate scalar diffusion
@@ -385,6 +392,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Thermo.update(apply_buoyancy=False)
         self.Rad.update(force=True)
         self.PSolver.update()
+
+
+        self.MetricTerms.compute_contravariant_velocities()
 
         # Initialize timers
         self.Timers.add_timer("Restart")

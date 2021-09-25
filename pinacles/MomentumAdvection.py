@@ -5,12 +5,13 @@ from pinacles import UtilitiesParallel
 
 
 class MomentumAdvectionBase:
-    def __init__(self, namelist, Timers, Grid, Ref, ScalarState, VelocityState):
+    def __init__(self, namelist, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState):
         self._Timers = Timers
         self._Grid = Grid
         self._Ref = Ref
         self._ScalarState = ScalarState
         self._VelocityState = VelocityState
+        self._DiagnosticState = DiagnosticState
 
         self._fu = None  # Function for computing u-fluxes
         self._fv = None  # Function for computing v-fluxes
@@ -75,9 +76,9 @@ class MomentumAdvectionBase:
 
 
 class MomentumWENO(MomentumAdvectionBase):
-    def __init__(self, namelist, Timers, Grid, Ref, ScalarState, VelocityState):
+    def __init__(self, namelist, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState):
         MomentumAdvectionBase.__init__(
-            self, namelist, Timers, Grid, Ref, ScalarState, VelocityState
+            self, namelist, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState
         )
 
         self._Timers.add_timer("MomentumWENO_update")
@@ -100,6 +101,10 @@ class MomentumWENO(MomentumAdvectionBase):
         v = self._VelocityState.get_field("v")
         w = self._VelocityState.get_field("w")
 
+        Uc = self._DiagnosticState.get_field('Uc')
+        Vc = self._DiagnosticState.get_field("Vc")
+        Wc = self._DiagnosticState.get_field("Wc")
+
         u_t = self._VelocityState.get_tend("u")
         v_t = self._VelocityState.get_tend("v")
         w_t = self._VelocityState.get_tend("w")
@@ -111,29 +116,30 @@ class MomentumWENO(MomentumAdvectionBase):
 
         # Here we return the fluxes. We could capture these for output
         # U Component
-        self._fu(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz)
+        self._fu(rho0, rho0_edge, Uc, Vc, Wc, w, fluxx, fluxy, fluxz)
 
         MomentumAdvection_impl.uv_flux_div(
             dxi[0], dxi[1], dxi[2], alpha0, fluxx, fluxy, fluxz, u_t
         )
 
         # V Component
-        self._fv(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz)
+        self._fv(rho0, rho0_edge, Uc, Vc, Wc, w, fluxx, fluxy, fluxz)
 
         MomentumAdvection_impl.uv_flux_div(
             dxi[0], dxi[1], dxi[2], alpha0, fluxx, fluxy, fluxz, v_t
         )
 
         # W Component
-        self._fw(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz)
+        self._fw(rho0, rho0_edge, Uc, Vc, Wc, w, fluxx, fluxy, fluxz)
 
         MomentumAdvection_impl.w_flux_div(
             dxi[0], dxi[1], dxi[2], alpha0_edge, fluxx, fluxy, fluxz, w_t
         )
 
         self._Timers.end_timer("MomentumWENO_update")
+        import sys; sys.exit()
         return
 
 
-def factory(namelist, Timers, Grid, Ref, ScalarState, VelocityState):
-    return MomentumWENO(namelist, Timers, Grid, Ref, ScalarState, VelocityState)
+def factory(namelist, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState):
+    return MomentumWENO(namelist, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState)
