@@ -122,4 +122,19 @@ class Fields2D:
         Y.standard_name = "y"
         Y[:] = self._Grid.y_local[nhalo[1] : -nhalo[1]]
 
+
+
+        nh = self._Grid.n_halo
+        lat = rt_grp.createVariable("lat", np.double, dimensions=("X", "Y"))
+        lat.units = "degrees"
+        lat.long_name = "degress latitude"
+        lat.standard_name = "latitude"
+        lat[:,:] = self._Grid.lat_local[nh[0]:-nh[0], nh[1]:-nh[1]]
+
+        lon = rt_grp.createVariable("lon", np.double, dimensions=("X", "Y"))
+        lon.units = "degrees"
+        lon.long_name = "degrees longitude"
+        lon.standard_name = "longitude"
+        lon[:,:] = self._Grid.lon_local[nh[0]:-nh[0], nh[1]:-nh[1]]
+
         return

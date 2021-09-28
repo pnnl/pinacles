@@ -723,7 +723,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         self.Thermo.update(apply_buoyancy=False)
         self.Surf.update()
-        #self.Rad.update(force=True)
+        self.Rad.update(force=True)
         # self.PSolver.update()
 
         self.Timers.add_timer("Restart")
