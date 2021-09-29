@@ -31,6 +31,7 @@ class MicroSBM(MicrophysicsBase):
     def __init__(
         self,
         namelist,
+        Timers,
         Grid,
         Ref,
         ScalarState,
@@ -40,6 +41,7 @@ class MicroSBM(MicrophysicsBase):
     ):
         MicrophysicsBase.__init__(
             self,
+            Timers,
             Grid,
             Ref,
             ScalarState,
@@ -322,6 +324,9 @@ class MicroSBM(MicrophysicsBase):
             ro_solute_in,
         )
 
+        self._Timers.add_timer("FastSBM_update")
+        self._Timers.add_timer("FastSBMfortran")
+
         return
 
     def add_output_container_diags(self):
@@ -526,6 +531,8 @@ class MicroSBM(MicrophysicsBase):
         return
 
     def update(self):
+        self._Timers.start_timer("FastSBM_update")
+
         # Get grid information
         nhalo = self._Grid.n_halo
 
@@ -622,6 +629,7 @@ class MicroSBM(MicrophysicsBase):
 
         rain_accum_old = np.sum(self._RAINNC)
 
+        self._Timers.start_timer("FastSBMfortran")
         module_mp_fast_sbm.module_mp_warm_sbm.warm_sbm(
             self._wrf_vars["w"],
             self._wrf_vars["u"],
@@ -683,6 +691,7 @@ class MicroSBM(MicrophysicsBase):
             rainncv=self._wrf_vars["RAINNCV"],
             sr=self._wrf_vars["SR"],
         )
+        self._Timers.end_timer("FastSBMfortran")
 
         self._RAINNC[:, :] = self._wrf_vars["RAINNC"][:, :]
         self._RAINNCV[:, :] = self._wrf_vars["RAINNCV"][:, :]
@@ -730,6 +739,7 @@ class MicroSBM(MicrophysicsBase):
         self._call_count += 1
         self._itimestep += 1
 
+        self._Timers.end_timer("FastSBM_update")
         return
 
     @staticmethod
@@ -802,12 +812,26 @@ class MicroSBM(MicrophysicsBase):
 
         timeseries_grp.createVariable("rain_rate", np.double, dimensions=("time",))
         # Now add cloud fraction and rain fraction profiles
-        v = profiles_grp.createVariable("CF", np.double, dimensions=("time", "z",))
+        v = profiles_grp.createVariable(
+            "CF",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "Cloud Fraction"
         v.standard_name = "CF"
         v.units = ""
 
-        profiles_grp.createVariable("RF", np.double, dimensions=("time", "z",))
+        profiles_grp.createVariable(
+            "RF",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "Rain Fraction"
         v.standard_name = "RF"
         v.units = ""
@@ -875,7 +899,14 @@ class MicroSBM(MicrophysicsBase):
 
     def io_fields2d_update(self, nc_grp):
 
-        rainnc = nc_grp.createVariable("RAINNC", np.double, dimensions=("X", "Y",))
+        rainnc = nc_grp.createVariable(
+            "RAINNC",
+            np.double,
+            dimensions=(
+                "X",
+                "Y",
+            ),
+        )
         rainnc[:, :] = self._RAINNC
 
         rainncv = nc_grp.createVariable("RAINNCV", np.double, dimensions=("X", "Y"))

@@ -8,6 +8,7 @@ from pinacles import Forcing
 
 def factory(
     namelist,
+    Timers,
     Grid,
     Ref,
     Microphysics,
@@ -19,19 +20,20 @@ def factory(
     casename = namelist["meta"]["casename"]
     if casename == "sullivan_and_patton":
         return CaseSullivanAndPatton.ForcingSullivanAndPatton(
-            namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
     elif casename == "bomex":
         return CaseBOMEX.ForcingBOMEX(
-            namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
     elif casename == "rico":
         return CaseRICO.ForcingRICO(
-            namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
     elif casename == "atex":
         return CaseATEX.ForcingATEX(
             namelist,
+            Timers,
             Grid,
             Ref,
             Microphysics,
@@ -43,6 +45,7 @@ def factory(
     elif casename == "testbed":
         return CaseTestbed.ForcingTestbed(
             namelist,
+            Timers,
             Grid,
             Ref,
             VelocityState,
@@ -52,5 +55,5 @@ def factory(
         )
     else:
         return Forcing.ForcingBase(
-            namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )

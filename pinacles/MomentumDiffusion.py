@@ -278,8 +278,11 @@ def compute_w_fluxes(
 
 
 class MomentumDiffusion:
-    def __init__(self, namelist, Grid, Ref, DiagnosticState, Kine, VelocityState):
+    def __init__(
+        self, namelist, Timers, Grid, Ref, DiagnosticState, Kine, VelocityState
+    ):
 
+        self._Timers = Timers
         self._Grid = Grid
         self._Ref = Ref
         self._DiagnosticState = DiagnosticState
@@ -290,9 +293,12 @@ class MomentumDiffusion:
         self._fluxy = np.zeros_like(self._fluxx)
         self._fluxz = np.zeros_like(self._fluxx)
 
+        self._Timers.add_timer("MomentumDiffusion_update")
         return
 
     def update(self):
+
+        self._Timers.start_timer("MomentumDiffusion_update")
 
         dxi = self._Grid.dxi
         dx = self._Grid.dx
@@ -377,5 +383,7 @@ class MomentumDiffusion:
             fluxz,
             wt,
         )
+
+        self._Timers.end_timer("MomentumDiffusion_update")
 
         return

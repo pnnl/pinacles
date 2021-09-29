@@ -7,9 +7,10 @@ from mpi4py import MPI
 
 
 class ScalarAdvectionBase:
-    def __init__(self, Grid, Ref, ScalarState, VelocityState, TimeStepping):
+    def __init__(self, Timers, Grid, Ref, ScalarState, VelocityState, TimeStepping):
 
         self._name = "ScalarAdvection"
+        self._Timers = Timers
         self._Grid = Grid
         self._ScalarState = ScalarState
         self._VelocityState = VelocityState
@@ -514,9 +515,11 @@ def flux_divergence_bounded(
 
 
 class ScalarWENO(ScalarAdvectionBase):
-    def __init__(self, namelist, Grid, Ref, ScalarState, VelocityState, TimeStepping):
+    def __init__(
+        self, namelist, Timers, Grid, Ref, ScalarState, VelocityState, TimeStepping
+    ):
         ScalarAdvectionBase.__init__(
-            self, Grid, Ref, ScalarState, VelocityState, TimeStepping
+            self, Timers, Grid, Ref, ScalarState, VelocityState, TimeStepping
         )
         self._flux_profiles = {}
 
@@ -533,6 +536,8 @@ class ScalarWENO(ScalarAdvectionBase):
         self._fluxz_low = np.zeros_like(self._fluxx)
 
         self._phi_norm = np.zeros_like(self._fluxx)
+
+        self._Timers.add_timer("ScalarWENO_update")
 
         return
 
@@ -558,7 +563,12 @@ class ScalarWENO(ScalarAdvectionBase):
             if "ff" in var:
                 continue
             v = profiles_grp.createVariable(
-                "w" + var + "_resolved", np.double, dimensions=("time", "z",)
+                "w" + var + "_resolved",
+                np.double,
+                dimensions=(
+                    "time",
+                    "z",
+                ),
             )
             v.long_name = "Resolved flux of " + var
             v.units = "m s^{-1} " + self._ScalarState.get_units(var)
@@ -566,14 +576,24 @@ class ScalarWENO(ScalarAdvectionBase):
 
         # Add the thetali flux
         v = profiles_grp.createVariable(
-            "w" + "T" + "_resolved", np.double, dimensions=("time", "z",)
+            "w" + "T" + "_resolved",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
         )
         v.long_name = "Resolved flux of temperature"
         v.units = "m s^{-1} K"
         v.standard_name = "wT"
 
         v = profiles_grp.createVariable(
-            "w" + "thetali" + "_resolved", np.double, dimensions=("time", "z",)
+            "w" + "thetali" + "_resolved",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
         )
         v.long_name = "Resolved flux of liquid-ice potential temperature"
         v.units = "m s^{-1} K"
@@ -648,6 +668,8 @@ class ScalarWENO(ScalarAdvectionBase):
 
         # For now we assume that all scalars are advected with this scheme. This doesn't have to
         # remain true.
+
+        self._Timers.start_timer("ScalarWENO_update")
 
         # Get the velocities (No copy done here)
         u = self._VelocityState.get_field("u")
@@ -785,5 +807,7 @@ class ScalarWENO(ScalarAdvectionBase):
                     phi_range,
                     phi_t,
                 )
+
+        self._Timers.end_timer("ScalarWENO_update")
 
         return

@@ -70,7 +70,9 @@ class Tower:
 
         rt_grp.createDimension("time")
         rt_grp.createVariable(
-            "time", np.double, dimensions=("time"),
+            "time",
+            np.double,
+            dimensions=("time"),
         )
 
         for con in self._containers:
@@ -115,9 +117,10 @@ class Tower:
 
 
 class Towers:
-    def __init__(self, namelist, Grid, TimeSteppingController):
+    def __init__(self, namelist, Timers, Grid, TimeSteppingController):
 
         self._list_of_towers = []
+        self._Timers = Timers
 
         if "towers" not in namelist:
             return
@@ -130,6 +133,7 @@ class Towers:
                 Tower(namelist, Grid, TimeSteppingController, loc=tuple(loc))
             )
 
+        self._Timers.add_timer("Towers")
         return
 
     def add_state_container(self, state_container):
@@ -147,9 +151,12 @@ class Towers:
         return
 
     def update(self):
+        self._Timers.start_timer("Towers")
+
         for tower in self._list_of_towers:
             tower.update()
 
+        self._Timers.end_timer("Towers")
         return
 
     @property

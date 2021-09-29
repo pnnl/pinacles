@@ -1,9 +1,11 @@
-from pinacles.Radiation import RRTMG, RadiationDycoms
+from pinacles.Radiation import RRTMG
+from pinacles.RadiationDycoms import RadiationDycoms
 from mpi4py import MPI
 
 
 def factory(
     namelist,
+    Timers,
     Grid,
     Ref,
     ScalarState,
@@ -18,6 +20,7 @@ def factory(
         except:
             return RRTMG(
                 namelist,
+                Timers,
                 Grid,
                 Ref,
                 ScalarState,
@@ -30,6 +33,7 @@ def factory(
         if rad_type == "dycoms":
             return RadiationDycoms(
                 namelist,
+                Timers,
                 Grid,
                 Ref,
                 ScalarState,
@@ -40,6 +44,7 @@ def factory(
         else:
             return RRTMG(
                 namelist,
+                Timers,
                 Grid,
                 Ref,
                 ScalarState,

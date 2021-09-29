@@ -44,6 +44,7 @@ def water_fraction_profile(n_halo, npts, q, threshold=1e-8):
 class MicrophysicsBase:
     def __init__(
         self,
+        Timers,
         Grid,
         Ref,
         ScalarState,
@@ -52,6 +53,7 @@ class MicrophysicsBase:
         TimeSteppingController,
     ):
 
+        self._Timers = Timers
         self._Grid = Grid
         self._Ref = Ref
         self._ScalarState = ScalarState

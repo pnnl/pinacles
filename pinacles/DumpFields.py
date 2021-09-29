@@ -5,8 +5,9 @@ from mpi4py import MPI
 
 
 class DumpFields:
-    def __init__(self, namelist, Grid, TimeSteppingController):
+    def __init__(self, namelist, Timers, Grid, TimeSteppingController):
 
+        self._Timers = Timers
         self._Grid = Grid
         self._TimeSteppingController = TimeSteppingController
 
@@ -30,6 +31,7 @@ class DumpFields:
         self._classes = {}
         self._namelist = namelist
 
+        self._Timers.add_timer("DumpFields")
         return
 
     @property
@@ -42,6 +44,7 @@ class DumpFields:
         return
 
     def update(self):
+        self._Timers.start_timer("DumpFields")
 
         output_here = os.path.join(
             self._output_path, str(np.round(self._TimeSteppingController.time))
@@ -86,6 +89,7 @@ class DumpFields:
             rt_grp.sync()
 
         rt_grp.close()
+        self._Timers.end_timer("DumpFields")
         return
 
     def setup_nc_dims(self, rt_grp):

@@ -8,8 +8,9 @@ os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
 
 class Stats:
-    def __init__(self, namelist, Grid, Ref, TimeSteppingController):
+    def __init__(self, namelist, Timers, Grid, Ref, TimeSteppingController):
 
+        self._Timers = Timers
         self._Grid = Grid
         self._Ref = Ref
 
@@ -32,6 +33,7 @@ class Stats:
 
         self._namelist = namelist
 
+        self._Timers.add_timer("Stats")
         return
 
     @property
@@ -134,6 +136,7 @@ class Stats:
 
         if not np.allclose(self._TimeSteppingController._time % self._frequency, 0.0):
             return
+        self._Timers.start_timer("Stats")
 
         if MPI.COMM_WORLD.Get_rank() == 0:
             self._rt_grp = nc.Dataset(self._stats_file, "r+")
@@ -164,6 +167,7 @@ class Stats:
 
         self._last_io_time = self._TimeSteppingController._time
 
+        self._Timers.end_timer("Stats")
         return
 
     def setup_directories(self):

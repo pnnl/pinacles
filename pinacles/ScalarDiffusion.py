@@ -67,10 +67,11 @@ def compute_fluxes(
 
 
 class ScalarDiffusion:
-    def __init__(self, namelist, Grid, Ref, DiagnosticState, ScalarState):
+    def __init__(self, namelist, Timers, Grid, Ref, DiagnosticState, ScalarState):
 
         self._name = "ScalarDiffusion"
 
+        self._Timers = Timers
         self._Grid = Grid
         self._Ref = Ref
         self._DiagnosticState = DiagnosticState
@@ -81,6 +82,7 @@ class ScalarDiffusion:
         self._fluxy = np.zeros_like(self._fluxx)
         self._fluxz = np.zeros_like(self._fluxx)
 
+        self._Timers.add_timer("ScalarDiffusion_update")
         return
 
     def io_initialize(self, this_grp):
@@ -90,21 +92,36 @@ class ScalarDiffusion:
                 continue
 
             v = profiles_grp.createVariable(
-                "w" + var + "_sgs", np.double, dimensions=("time", "z",)
+                "w" + var + "_sgs",
+                np.double,
+                dimensions=(
+                    "time",
+                    "z",
+                ),
             )
             v.long_name = "SGS flux of " + var
             v.units = "m s^{-1} " + self._ScalarState.get_units(var)
             v.standard_name = "w " + self._ScalarState._latex_names[var] + " sgs"
         # Add the thetali flux
         v = profiles_grp.createVariable(
-            "w" + "T" + "_sgs", np.double, dimensions=("time", "z",)
+            "w" + "T" + "_sgs",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
         )
         v.long_name = "SGS flux of temperature"
         v.units = "m s^{-1} K"
         v.standard_name = "wT sgs"
 
         v = profiles_grp.createVariable(
-            "w" + "thetali" + "_sgs", np.double, dimensions=("time", "z",)
+            "w" + "thetali" + "_sgs",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
         )
         v.long_name = "SGS flux of liquid-ice potential temperature"
         v.units = "m s^{-1} K"
@@ -174,6 +191,8 @@ class ScalarDiffusion:
 
     def update(self):
 
+        self._Timers.start_timer("ScalarDiffusion_update")
+
         n_halo = self._Grid.n_halo
         dxi = self._Grid.dxi
         dx = self._Grid.dx
@@ -207,6 +226,8 @@ class ScalarDiffusion:
                 io_flux,
                 phi_t,
             )
+
+        self._Timers.end_timer("ScalarDiffusion_update")
 
         return
 

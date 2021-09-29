@@ -39,6 +39,7 @@ def compute_rh(qv, temp, pressure):
 class MicroKessler(MicrophysicsBase):
     def __init__(
         self,
+        Timers,
         Grid,
         Ref,
         ScalarState,
@@ -49,6 +50,7 @@ class MicroKessler(MicrophysicsBase):
 
         MicrophysicsBase.__init__(
             self,
+            Timers,
             Grid,
             Ref,
             ScalarState,
@@ -102,9 +104,13 @@ class MicroKessler(MicrophysicsBase):
 
         self._rain_rate = 0.0
 
+        self._Timers.add_timer("MicroKessler_update")
+
         return
 
     def update(self):
+
+        self._Timers.start_timer("MicroKessler_update")
 
         # Get variables from the model state
         T = self._DiagnosticState.get_field("T")
@@ -241,6 +247,8 @@ class MicroKessler(MicrophysicsBase):
         # Convert sedimentation sources to units of tendency
         np.multiply(liq_sed, 1.0 / self._TimeSteppingController.dt, out=liq_sed)
         np.multiply(s_liq_sed, -1.0 / self._TimeSteppingController.dt, out=s_liq_sed)
+
+        self._Timers.end_timer("MicroKessler_update")
         return
 
     def io_initialize(self, nc_grp):
@@ -287,12 +295,26 @@ class MicroKessler(MicrophysicsBase):
         timeseries_grp.createVariable("rain_rate", np.double, dimensions=("time",))
 
         # Now add cloud fraction and rain fraction profiles
-        v = profiles_grp.createVariable("CF", np.double, dimensions=("time", "z",))
+        v = profiles_grp.createVariable(
+            "CF",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "Cloud Fraction"
         v.standard_name = "CF"
         v.units = ""
 
-        profiles_grp.createVariable("RF", np.double, dimensions=("time", "z",))
+        profiles_grp.createVariable(
+            "RF",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "Rain Fraction"
         v.standard_name = "RF"
         v.units = ""
@@ -363,7 +385,14 @@ class MicroKessler(MicrophysicsBase):
 
     def io_fields2d_update(self, nc_grp):
 
-        rainnc = nc_grp.createVariable("RAINNC", np.double, dimensions=("X", "Y",))
+        rainnc = nc_grp.createVariable(
+            "RAINNC",
+            np.double,
+            dimensions=(
+                "X",
+                "Y",
+            ),
+        )
         rainnc[:, :] = self._RAINNC
 
         rainncv = nc_grp.createVariable("RAINNCV", np.double, dimensions=("X", "Y"))

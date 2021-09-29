@@ -4,6 +4,8 @@ import pinacles.ThermodynamicsMoist_impl as MoistThermo
 import netCDF4 as nc
 from scipy import interpolate
 from pinacles import UtilitiesParallel
+from mpi4py import MPI
+
 
 CASENAMES = [
     "colliding_blocks",
@@ -19,7 +21,8 @@ CASENAMES = [
 def colliding_blocks(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     #  Optionally set a random seed as specified in the namelist
     try:
-        np.random.seed(namelist["meta"]["random_seed"])
+        rank = MPI.Get_rank()
+        np.random.seed(namelist["meta"]["random_seed"] + rank)
     except:
         pass
 
@@ -60,12 +63,13 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     #  Optionally set a random seed as specified in the namelist
     try:
-        np.random.seed(namelist["meta"]["random_seed"])
+        rank = MPI.Get_rank()
+        np.random.seed(namelist["meta"]["random_seed"] + rank)
     except:
         pass
 
     # Integrate the reference profile.
-    Ref.set_surface(Tsfc=300.0, u0=0.0, v0=0.0)
+    Ref.set_surface(Tsfc=300.0, u0=1.0, v0=0.0)
     Ref.integrate()
 
     u = VelocityState.get_field("u")
@@ -82,7 +86,7 @@ def sullivan_and_patton(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     exner = Ref.exner
 
     # Wind is uniform initiall
-    u.fill(5.0)
+    u.fill(1.0)
     v.fill(0.0)
     w.fill(0.0)
 
@@ -116,7 +120,8 @@ def bomex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     #  Optionally set a random seed as specified in the namelist
     try:
-        np.random.seed(namelist["meta"]["random_seed"])
+        rank = MPI.Get_rank()
+        np.random.seed(namelist["meta"]["random_seed"] + rank)
     except:
         pass
 
@@ -187,7 +192,8 @@ def bomex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 def atex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     #  Optionally set a random seed as specified in the namelist
     try:
-        np.random.seed(namelist["meta"]["random_seed"])
+        rank = MPI.Get_rank()
+        np.random.seed(namelist["meta"]["random_seed"] + rank)
     except:
         pass
 
@@ -275,7 +281,8 @@ def atex(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 def rico(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     #  Optionally set a random seed as specified in the namelist
     try:
-        np.random.seed(namelist["meta"]["random_seed"])
+        rank = MPI.Get_rank()
+        np.random.seed(namelist["meta"]["random_seed"] + rank)
     except:
         pass
 
@@ -343,7 +350,8 @@ def rico(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 def stable_bubble(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     #  Optionally set a random seed as specified in the namelist
     try:
-        np.random.seed(namelist["meta"]["random_seed"])
+        rank = MPI.Get_rank()
+        np.random.seed(namelist["meta"]["random_seed"] + rank)
     except:
         pass
 
@@ -398,7 +406,8 @@ def stable_bubble(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 def testbed(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     #  Optionally set a random seed as specified in the namelist
     try:
-        np.random.seed(namelist["meta"]["random_seed"])
+        rank = MPI.Get_rank()
+        np.random.seed(namelist["meta"]["random_seed"] + rank)
     except:
         pass
 

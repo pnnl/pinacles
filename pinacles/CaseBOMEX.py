@@ -7,11 +7,18 @@ from pinacles import UtilitiesParallel
 
 class SurfaceBOMEX(Surface.SurfaceBase):
     def __init__(
-        self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+        self, namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
     ):
 
         Surface.SurfaceBase.__init__(
-            self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            self,
+            namelist,
+            Timers,
+            Grid,
+            Ref,
+            VelocityState,
+            ScalarState,
+            DiagnosticState,
         )
 
         self._theta_flux = 8.0e-3  # K m/s
@@ -28,6 +35,8 @@ class SurfaceBOMEX(Surface.SurfaceBase):
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
         self._bflx_sfc = np.zeros_like(self._windspeed_sfc) + self._buoyancy_flux
         self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
+
+        self._Timers.add_timer("SurfaceBomex_update")
 
         return
 
@@ -125,6 +134,7 @@ class SurfaceBOMEX(Surface.SurfaceBase):
 
     def update(self):
 
+        self._Timers.start_timer("SurfaceBomex_update")
         nh = self._Grid.n_halo
         dxi2 = self._Grid.dxi[2]
         z_edge = self._Grid.z_edge_global
@@ -182,15 +192,23 @@ class SurfaceBOMEX(Surface.SurfaceBase):
             1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, qv_flx_sf, qvt
         )
 
+        self._Timers.end_timer("SurfaceBomex_update")
         return
 
 
 class ForcingBOMEX(Forcing.ForcingBase):
     def __init__(
-        self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+        self, namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
     ):
         Forcing.ForcingBase.__init__(
-            self, namelist, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+            self,
+            namelist,
+            Timers,
+            Grid,
+            Ref,
+            VelocityState,
+            ScalarState,
+            DiagnosticState,
         )
 
         self._f = 0.376e-4
@@ -224,10 +242,12 @@ class ForcingBOMEX(Forcing.ForcingBase):
                     0.0 - -0.65 / 100.0
                 ) / (2100.0 - 1500.0)
 
+        self._Timers.add_timer("ForcingBomex_update")
         return
 
     def update(self):
 
+        self._Timers.start_timer("ForcingBomex_update")
         exner = self._Ref.exner
 
         u = self._VelocityState.get_field("u")
@@ -249,4 +269,5 @@ class ForcingBOMEX(Forcing.ForcingBase):
         Forcing_impl.apply_subsidence(self._subsidence, self._Grid.dxi[2], s, st)
         Forcing_impl.apply_subsidence(self._subsidence, self._Grid.dxi[2], qv, qvt)
 
+        self._Timers.end_timer("ForcingBomex_update")
         return

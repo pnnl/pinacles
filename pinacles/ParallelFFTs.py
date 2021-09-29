@@ -79,7 +79,11 @@ class fft_mpi4py:
         self._n = n  # Total number of points to be transfomred
 
         # Setup z, y, x pencils
-        self.p2 = mpi4py_fft.pencil.Pencil(self._subcomms, self._n, axis=2,)  # z pencil
+        self.p2 = mpi4py_fft.pencil.Pencil(
+            self._subcomms,
+            self._n,
+            axis=2,
+        )  # z pencil
         self.p1 = self.p2.pencil(1)  # y-pencil
         self.p0 = self.p1.pencil(0)  # x-pencil
 

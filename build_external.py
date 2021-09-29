@@ -12,20 +12,21 @@ def main():
     # Build P3
     build_script("pinacles/externals/wrf_p3_wrapper", "build_p3.sh", "p3")
 
-    # Build kessler
+    # Build Kessler
     f2py_file(
         "pinacles/externals/wrf_kessler_wrapper", "module_mp_kessler.f95", "kessler"
     )
 
-    # Now optionall build rrtmg
+    # Now optionally build RRTMG
+    skip_rrtmg = True
     rrtmg_path = "pinacles/externals/rrtmg_wrapper"
     rrtmg_lw_exists = os.path.exists(os.path.join(rrtmg_path, "librrtmglw.so"))
     rrtmg_sw_exists = os.path.exists(os.path.join(rrtmg_path, "librrtmgsw.so"))
-    if not rrtmg_lw_exists and not rrtmg_sw_exists:
+    if not rrtmg_lw_exists and not rrtmg_sw_exists and not skip_rrtmg:
         # RRTMG does not appear to be compiled so we will compile it no
         build_script(rrtmg_path, "debug_compile.sh", "rrtmg")
     else:
-        print("Using existing complication of rrtmg.")
+        print("Using existing compilation of rrtmg.")
 
     return
 
@@ -49,7 +50,7 @@ def f2py_file(path, source, extname):
 
 
 def build_script(path, source, extname):
-    """Build cffi wrapper for an external Fotran dependency.
+    """Build cffi wrapper for an external Fortran dependency.
 
     Args:
         path (str): path to directory containing a build script for the module
