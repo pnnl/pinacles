@@ -54,13 +54,13 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         bvf = self._DiagnosticState.get_field("bvf")
         w_t = self._VelocityState.get_tend("w")
 
-        ThermodynamicsMoist_impl.eos_sam(
+        ThermodynamicsMoist_impl.eos(
             z, p0, alpha0, s, qv, ql, qi, T, tref, alpha, buoyancy
         )
 
         # Compute the buoyancy frequency
         ThermodynamicsMoist_impl.compute_bvf(
-            n_halo, theta_ref, exner, T, qv, ql, dz, thetav, bvf
+            n_halo, theta_ref, exner, T, qv, ql, qi, dz, thetav, bvf
         )
 
         if apply_buoyancy:
@@ -71,7 +71,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
 
     @staticmethod
     @numba.njit()
-    def compute_thetali(exner, T, thetali, qc):
+    def compute_thetali(exner, T, thetali, qc, qi):
         shape = T.shape
         for i in range(shape[0]):
             for j in range(shape[1]):
@@ -81,8 +81,10 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
                         / exner[k]
                         * (
                             1.0
-                            - parameters.LV
-                            * qc[i, j, k]
+                            - (
+                                parameters.LV * qc[i, j, k]
+                                + parameters.LS * qi[i, j, k]
+                            )
                             / (parameters.CPD * T[i, j, k])
                         )
                     )
@@ -92,8 +94,9 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         exner = self._Ref.exner
         T = self._DiagnosticState.get_field("T")
         qc = self._Micro.get_qc()
+        qi = self._Micro.get_qi()
         thetali = np.empty_like(T)
-        self.compute_thetali(exner, T, thetali, qc)
+        self.compute_thetali(exner, T, thetali, qc, qi)
 
         return thetali
 
