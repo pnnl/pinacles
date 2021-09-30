@@ -59,7 +59,7 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         bvf = self._DiagnosticState.get_field("bvf")
         w_t = self._VelocityState.get_tend("w")
 
-        ThermodynamicsDry_impl.eos_sam(z, p0, alpha0, s, qv, T, tref, alpha, buoyancy)
+        ThermodynamicsDry_impl.eos(z, p0, alpha0, s, qv, T, tref, alpha, buoyancy)
         ThermodynamicsDry_impl.compute_bvf(
             n_halo, theta_ref, exner, T, qv, dz, thetav, bvf
         )
