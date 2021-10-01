@@ -311,10 +311,15 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.TimeSteppingController,
         )
         self.Fields2d = Fields2D.Fields2D(
-            self._namelist, self.ModelGrid, self.Ref, self.VelocityState, self.TimeSteppingController
+            self._namelist,
+            self.ModelGrid,
+            self.Ref,
+            self.VelocityState,
+            self.TimeSteppingController,
         )
         self.Fields2d.add_class(self.Micro)
         self.Fields2d.add_class(self.Thermo)
+        self.Fields2d.add_class(self.Plumes)
 
         # Instantiate optional TowerIO
         self.IOTower = TowersIO.Towers(
@@ -694,6 +699,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Now iniitalzie the IO field
         self.StatsIO.initialize()
+
+        self.Fields2d = Fields2D.Fields2D(
+            self._namelist,
+            self.ModelGrid,
+            self.Ref,
+            self.VelocityState,
+            self.TimeSteppingController,
+        )
+        self.Fields2d.add_class(self.Micro)
+        self.Fields2d.add_class(self.Thermo)
+        self.Fields2d.add_class(self.Plumes)
 
         # Now initialze for the output of 3D fields
         self.FieldsIO = DumpFields.DumpFields(
