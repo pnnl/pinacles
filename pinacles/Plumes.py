@@ -1,5 +1,6 @@
 from pinacles import UtilitiesParallel
 from pinacles import parameters
+from mpi4py import MPI
 import numpy as np
 
 
@@ -43,45 +44,12 @@ class Plume:
     def update(self):
 
         # If it is not time to start the plume just return w/o doing anything
-        if (
-            self._TimeSteppingController.time < self._start_time
-            or not self._plume_on_rank
-        ):
+        if self._TimeSteppingController.time < self._start_time:
             return
-
-        dxs = self._Grid.dx
-
-        grid_cell_volume = dxs[0] * dxs[1] * dxs[2]
-        grid_cell_mass = grid_cell_volume * self._Ref.rho0[self._indicies[0]]
-
-        # Add the plume scalar flux
-        plume_tend = self._ScalarState.get_tend(self._scalar_name)
-        plume_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
-            self._plume_flux / grid_cell_mass
-        )
-
-        # Add the plume heat flux
-        s_tend = self._ScalarState.get_tend("s")
-        s_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
-            self._plume_heat_flux / grid_cell_mass * parameters.ICPD
-        )
-
-        # Add the plume liquid flux
-        if "qv" in self._ScalarState._dofs:
-            qv_tend = self._ScalarState.get_tend("qv")
-            qv_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
-                self._plume_qv_flux / grid_cell_mass
-            )
-
-        # Add the plume liquid flux
-        if "ql" in self._ScalarState._dofs:
-            ql_tend = self._ScalarState.get_tend("ql")
-            ql_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
-                self._plume_ql_flux / grid_cell_mass
-            )
 
         # If needed, zero the plume scalar on the boundaries
         if self._boundary_outflow:
+
             plume_value = self._ScalarState.get_field(self._scalar_name)
 
             n_halo = self._Grid.n_halo
@@ -92,7 +60,7 @@ class Plume:
             if np.amin(x_local) == np.amin(x_global):
                 plume_value[: n_halo[0], :, :] = 0
 
-            if np.max(x_local) == np.amax(x_global):
+            if np.amax(x_local) == np.amax(x_global):
                 plume_value[-n_halo[0] :, :, :] = 0
 
             y_local = self._Grid.y_local
@@ -101,8 +69,74 @@ class Plume:
             if np.amin(y_local) == np.amin(y_global):
                 plume_value[:, : n_halo[1], :] = 0
 
-            if np.max(y_local) == np.amax(y_global):
+            if np.amax(y_local) == np.amax(y_global):
                 plume_value[:, -n_halo[1] :, :] = 0
+
+        if self._plume_on_rank:
+            dxs = self._Grid.dx
+
+            grid_cell_volume = dxs[0] * dxs[1] * dxs[2]
+            grid_cell_mass = grid_cell_volume * self._Ref.rho0[self._indicies[0]]
+
+            # Add the plume scalar flux
+            plume_tend = self._ScalarState.get_tend(self._scalar_name)
+            plume_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
+                self._plume_flux / grid_cell_mass
+            )
+
+            # Add the plume heat flux
+            s_tend = self._ScalarState.get_tend("s")
+            s_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
+                self._plume_heat_flux / grid_cell_mass * parameters.ICPD
+            )
+
+            # Add the plume liquid flux
+            if "qv" in self._ScalarState._dofs:
+                qv_tend = self._ScalarState.get_tend("qv")
+                qv_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
+                    self._plume_qv_flux / grid_cell_mass
+                )
+
+            # Add the plume liquid flux
+            if "ql" in self._ScalarState._dofs:
+                ql_tend = self._ScalarState.get_tend("ql")
+                ql_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
+                    self._plume_ql_flux / grid_cell_mass
+                )
+
+        return
+
+    def io_fields2d(self, nc_grp):
+
+        start = self._Grid.local_start
+        end = self._Grid._local_end
+        nh = self._Grid.n_halo
+
+        send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
+        recv_buffer = np.empty_like(send_buffer)
+
+        if nc_grp is not None:
+            var_nc = nc_grp.createVariable(
+                self._scalar_name,
+                np.double,
+                dimensions=(
+                    "X",
+                    "Y",
+                ),
+            )
+
+        s = self._ScalarState.get_field(self._scalar_name)
+
+        send_buffer[start[0] : end[0], start[1] : end[1]] = s[
+            nh[0] : -nh[0], nh[1] : -nh[1], nh[2]
+        ]
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+
+        if nc_grp is not None:
+            var_nc[:, :] = recv_buffer
+
+        if nc_grp is not None:
+            nc_grp.sync()
 
         return
 
@@ -176,6 +210,8 @@ class Plumes:
         self._startimes = None
 
         self._n = 0
+
+        self.name = "Plumes"
 
         if "plumes" in namelist:
 
@@ -269,6 +305,13 @@ class Plumes:
             plume_i.update()
 
         self._Timers.end_timer("Plumes_update")
+        return
+
+    def io_fields2d_update(self, nc_grp):
+
+        for plume_i in self._list_of_plumes:
+            plume_i.io_fields2d(nc_grp)
+
         return
 
     @property
