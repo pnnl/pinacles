@@ -311,10 +311,10 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.TimeSteppingController,
         )
         self.Fields2d = Fields2D.Fields2D(
-            self._namelist, self.ModelGrid, self.Ref, self.TimeSteppingController
+            self._namelist, self.ModelGrid, self.Ref, self.VelocityState, self.TimeSteppingController
         )
         self.Fields2d.add_class(self.Micro)
-        self.Fields2d.add_class(self.Rad)
+        self.Fields2d.add_class(self.Thermo)
 
         # Instantiate optional TowerIO
         self.IOTower = TowersIO.Towers(
