@@ -793,21 +793,6 @@ class RRTMG:
         return
 
     def io_fields2d_update(self, nc_grp):
-
-        alb = -(self._surf_sw_dn_2d - self._toa_sw_dn_2d) / self._toa_sw_dn_2d
-
-        albedo = nc_grp.createVariable(
-            "albedo",
-            np.double,
-            dimensions=(
-                "X",
-                "Y",
-            ),
-        )
-        albedo[:, :] = alb.reshape((self._Grid.nl[0], self._Grid.nl[1]))
-
-        nc_grp.sync()
-
         return
 
     @property

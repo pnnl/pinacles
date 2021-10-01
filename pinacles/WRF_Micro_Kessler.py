@@ -385,20 +385,71 @@ class MicroKessler(MicrophysicsBase):
 
     def io_fields2d_update(self, nc_grp):
 
-        rainnc = nc_grp.createVariable(
-            "RAINNC",
-            np.double,
-            dimensions=(
-                "X",
-                "Y",
-            ),
-        )
-        rainnc[:, :] = self._RAINNC
+        start = self._Grid.local_start
+        end = self._Grid._local_end
+        send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
+        recv_buffer = np.empty_like(send_buffer)
 
-        rainncv = nc_grp.createVariable("RAINNCV", np.double, dimensions=("X", "Y"))
-        rainncv[:, :] = self._RAINNCV
+        if nc_grp is not None:
+            rainnc = nc_grp.createVariable(
+                "RAINNC",
+                np.double,
+                dimensions=(
+                    "X",
+                    "Y",
+                ),
+            )
+        
+        send_buffer[start[0]:end[0], start[1]:end[1]] = self._RAINNC
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)        
 
-        nc_grp.sync()
+        if nc_grp is not None:
+            print(np.shape(rainnc), np.shape(recv_buffer))
+            rainnc[:, :] = recv_buffer
+
+
+        if nc_grp is not None:
+            rainncv = nc_grp.createVariable(
+                "RAINNCV",
+                np.double,
+                dimensions=(
+                    "X",
+                    "Y",
+                ),
+            )
+
+        send_buffer.fill(0.0)
+        send_buffer[start[0]:end[0], start[1]:end[1]] = self._RAINNCV
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        if nc_grp is not None:
+            rainncv[:, :] = recv_buffer
+
+
+        # Compute and output the LWP
+        if nc_grp is not None:
+            lwp = nc_grp.createVariable(
+                "LWP",
+                np.double,
+                dimensions=(
+                    "X",
+                    "Y",
+                ),
+            )
+        nh = self._Grid.n_halo
+        rho0 = self._Ref.rho0
+        qc = self._ScalarState.get_field('qc')[nh[0]:-nh[0], nh[1]:-nh[1],:]
+        lwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis,0] , axis=2)
+
+        send_buffer.fill(0.0)
+        send_buffer[start[0]:end[0], start[1]:end[1]] = lwp_compute
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        if nc_grp is not None:
+            lwp[:, :] = recv_buffer
+
+
+        if nc_grp is not None:
+            nc_grp.sync()
+
         return
 
     def get_qc(self):
