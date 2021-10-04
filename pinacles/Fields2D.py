@@ -4,6 +4,7 @@ import time
 import os
 from mpi4py import MPI
 from pinacles import UtilitiesParallel
+
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
 
@@ -14,13 +15,20 @@ class Fields2D:
         self._Ref = Ref
         self._VelocityState = VelocityState
 
-        self._frequency = namelist["stats"]["frequency"]
-        self._ouput_root = str(namelist["meta"]["output_directory"])
+        """Set the output frequency, default it to the stats frequency 
+        but allow in to be overridden """
+
+        try:
+            self._frequency = namelist["fields2d"]["frequency"]
+        except:
+            self._frequency = namelist["stats"]["frequency"]
+
+        self._output_root = str(namelist["meta"]["output_directory"])
         self._casename = str(namelist["meta"]["simname"])
 
         self._classes = {}
 
-        self._output_path = os.path.join(self._ouput_root, self._casename)
+        self._output_path = os.path.join(self._output_root, self._casename)
         self._output_path = os.path.join(self._output_path, "fields2d")
 
         self._TimeSteppingController = TimeSteppingController
@@ -67,7 +75,6 @@ class Fields2D:
                 os.makedirs(output_here)
         MPI.COMM_WORLD.barrier()
 
-
         rt_grp = None
         if MPI.COMM_WORLD.Get_rank() == 0:
             rt_grp = nc.Dataset(
@@ -83,14 +90,11 @@ class Fields2D:
 
             self.setup_nc_dims(rt_grp)
 
-
-
         for aclass in self._classes:
             self._classes[aclass].io_fields2d_update(rt_grp)
 
-
         self.output_velocities(rt_grp)
-        
+
         # Sync and closue netcdf file
         if rt_grp is not None:
             rt_grp.sync()
@@ -99,12 +103,14 @@ class Fields2D:
         self._last_io_time = self._TimeSteppingController._time
 
         t1 = time.perf_counter()
-        UtilitiesParallel.print_root("\t  2D IO Finished in: " +  str(t1 - t0) + " seconds.")
+        UtilitiesParallel.print_root(
+            "\t  2D IO Finished in: " + str(t1 - t0) + " seconds."
+        )
 
         return
 
     def output_velocities(self, nc_grp):
-        
+
         start = self._Grid.local_start
         end = self._Grid._local_end
         nh = self._Grid.n_halo
@@ -112,9 +118,7 @@ class Fields2D:
         send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
         recv_buffer = np.empty_like(send_buffer)
 
-
-        for v in ['u', 'v', 'w']:
-
+        for v in ["u", "v", "w"]:
 
             if nc_grp is not None:
                 var_nc = nc_grp.createVariable(
@@ -125,18 +129,18 @@ class Fields2D:
                         "Y",
                     ),
                 )
-            
+
             var = self._VelocityState.get_field(v)
             send_buffer.fill(0.0)
-            send_buffer[start[0]:end[0], start[1]:end[1]] = var[nh[0]:-nh[0], nh[1]:-nh[1],nh[2]]
+            send_buffer[start[0] : end[0], start[1] : end[1]] = var[
+                nh[0] : -nh[0], nh[1] : -nh[1], nh[2]
+            ]
             MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
             if nc_grp is not None:
                 var_nc[:, :] = recv_buffer
 
             if nc_grp is not None:
                 nc_grp.sync()
-
-
 
         return
 
