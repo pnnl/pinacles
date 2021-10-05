@@ -321,11 +321,12 @@ class RRTMG:
             icld = 1
             idrv = 0
             iaer = 0
+            iceflag = 3
             inflglw = 2
-            iceflglw = 3
+            iceflglw = iceflag
             liqflglw = 1
             inflgsw = 2
-            iceflgsw = 3
+            iceflgsw = iceflag
             liqflgsw = 1
 
             _nbndlw = 16
@@ -513,7 +514,14 @@ class RRTMG:
             )
 
             reliq *= 1.0e6
-            reice *= 1.0e6
+            
+            reice *= 1.0e6 
+            # For iceflag = 3, bound the generalized effective radius
+            if iceflag == 3:
+                reice *= 1.0315 
+                reice[reice < 5.0] = 5.0
+                reice[reice > 140.0] = 140.0
+
             play *= 0.01
             plev *= 0.01
 
