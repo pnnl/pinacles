@@ -328,6 +328,8 @@ class InitializeReanalysis:
             self._Grid.lon_local, self._Grid.lat_local, self._Grid.z_local
         )
 
+        qv[qv < 1e-9] = 1e-9
+
         # Now initializing u
         if MPI.COMM_WORLD.Get_rank() == 0:
             print("Initializaing u")

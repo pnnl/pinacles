@@ -114,16 +114,16 @@ class RRTMG:
         nl = self._Grid.ngrid_local
 
         self._radiation_file_path = namelist["radiation"]["input_filepath"]
-        data = nc.Dataset(self._radiation_file_path, "r")
+        #data = nc.Dataset(self._radiation_file_path, "r")
         try:
             rad_data = data.groups["radiation_varanal"]
             UtilitiesParallel.print_root("\t \t radiation profiles from analysis")
             # rad_data = data.groups['radiation_sonde']
             # print('radiation profiles from sonde')
         except:
-            rad_data = data.groups["radiation"]
-        self._latitude = rad_data.variables["latitude"][0]
-        self._longitude = rad_data.variables["longitude"][0]
+            rad_data = None#data.groups["radiation"]
+        #self._latitude = rad_data.variables["latitude"][0]
+        #self._longitude = rad_data.variables["longitude"][0]
         date = datetime.datetime(namelist["time"]["year"],
             namelist["time"]["month"],
             namelist["time"]["day"],
@@ -145,7 +145,7 @@ class RRTMG:
         self._adir = albedo
         self._adif = albedo
 
-        data.close()
+        #data.close()
 
         # CL WRF values based on 2005 values from 2007 IPCC report
         self._vmr_co2 = 379.0e-6
@@ -208,7 +208,7 @@ class RRTMG:
             return
         n_halo = self._Grid.n_halo[2]
 
-        data = nc.Dataset(self._radiation_file_path, "r")
+        #data = nc.Dataset(self._radiation_file_path, "r")
         #try:
         #    rad_data = data.groups["radiation_varanal"]
         #    UtilitiesParallel.print_root("\t \t radiation profiles from analysis")
@@ -317,19 +317,21 @@ class RRTMG:
             if self.hourz > 24.0:
                 self.hourz = np.remainder(self.hourz, 24.0)
             self.coszen = cos_sza(
-                self.dyofyr, self.hourz, self._latitude, self._longitude
+                self.dyofyr, self.hourz, self._Grid.lat_local, self._Grid.lon_local
             )
 
             # RRTMG flags. Hardwiring for now
             icld = 1
             idrv = 0
             iaer = 0
+            iceflag = 3
             inflglw = 2
-            iceflglw = 3
+            iceflglw = iceflag
             liqflglw = 1
             inflgsw = 2
-            iceflgsw = 3
+            iceflgsw = iceflag
             liqflgsw = 1
+
 
             _nbndlw = 16
             _nbndsw = 14
@@ -374,7 +376,7 @@ class RRTMG:
             cliqwp = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             reice = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             reliq = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
-            coszen = np.ones((_ncol), dtype=np.double, order="F") * self.coszen
+            coszen = np.ravel(self.coszen[_nhalo[0]:-_nhalo[0], _nhalo[1]:-_nhalo[1]])
             asdir = np.ones((_ncol), dtype=np.double, order="F") * self._adir
             asdif = np.ones((_ncol), dtype=np.double, order="F") * self._adif
             aldir = np.ones((_ncol), dtype=np.double, order="F") * self._adir
@@ -491,6 +493,12 @@ class RRTMG:
 
             reliq *= 1.0e6
             reice *= 1.0e6
+            # For iceflag = 3, bound the generalized effective radius
+            if iceflag == 3:
+                reice *= 1.0315 
+                reice[reice < 5.0] = 5.0
+                reice[reice > 140.0] = 140.0
+
             play *= 0.01
             plev *= 0.01
 
@@ -624,10 +632,21 @@ class RRTMG:
                 rho0[np.newaxis, np.newaxis, :] * parameters.CPD / 86400.0
             )
 
-        s[:, :, :] += ds_dTdt_rad[:, :, :] * dt
+        #s[:, :, :] += ds_dTdt_rad[:, :, :] * dt
 
         self._Timers.end_timer("RRTMG")
         return
+
+    def update_apply_tend(self):
+
+        s = self._ScalarState.get_field("s")
+        dTdt_rad = self._DiagnosticState.get_field("dTdt_rad")
+        dt = self._TimeSteppingController.dt
+        
+        s[:, :, :] += dTdt_rad[:, :, :] * dt
+
+        return
+
 
     def io_initialize(self, nc_grp):
         if not self._compute_radiation:
