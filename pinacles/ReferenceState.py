@@ -1,6 +1,7 @@
 from pinacles import ThermodynamicsDry_impl, parameters
 import numpy as np
 from scipy.integrate import odeint
+from scipy import interpolate
 import numba
 
 
@@ -179,7 +180,7 @@ class ReferenceDry(ReferenceBase):
 
         return
 
-    def specify(self, z_in, pressure_in, temperature_in, rh_in):
+    def specify(self, z_in, pressure_in, temperature_in, qv_in):
 
         nhalo = self._Grid.n_halo[2]
 

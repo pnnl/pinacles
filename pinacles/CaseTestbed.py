@@ -67,8 +67,8 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         p = init_data["pressure"]
         tdry = init_data["temperature"]
         alt = init_data.variables["z"][:]
-        rh = init_data.variables["rh"]
-        Ref.specify(alt,p,tdry, rh)
+        qv = init_data.variables["vapor_mixing_ratio"]
+        Ref.specify(alt,p,tdry, qv)
 
     else:
         print_root('Unrecognized init type, exiting.')
