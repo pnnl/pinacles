@@ -34,13 +34,15 @@ def large_scale_pgf(ug, vg, f, u, v, u0, v0, ut, vt):
 
 
 @numba.njit
-def apply_subsidence(subsidence, idz, phi, phi_t):
+def apply_subsidence(wsub, idz, phi, phi_t):
     phi_shape = phi.shape
     for i in range(1, phi_shape[0] - 1):
         for j in range(1, phi_shape[1] - 1):
             for k in range(1, phi_shape[2] - 1):
                 phi_t[i, j, k] -= (
-                    subsidence[k] * (phi[i, j, k + 1] - phi[i, j, k]) * idz
+                   0.5 * (wsub[k] -np.abs(wsub[k])) * (phi[i, j, k + 1] - phi[i, j, k]) * idz
+                   +
+                   0.5 * (wsub[k] + np.abs(wsub[k])) * (phi[i, j, k ] - phi[i, j, k-1]) * idz
                 )
 
     return
