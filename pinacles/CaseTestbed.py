@@ -41,7 +41,9 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     try:
         ref_init_type = namelist["testbed"]["reference_init_type"]
     except:
-        ref_init_type = 'integrate'
+        UtilitiesParallel.print_root('must specify init_type')
+        sys.exit()
+        # ref_init_type = 'integrate'
 
 
     data = nc.Dataset(file, "r")
@@ -71,7 +73,7 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         Ref.specify(alt,p,tdry, qv)
 
     else:
-        print_root('Unrecognized init type, exiting.')
+        UtilitiesParallel.print_root('Unrecognized init type, exiting.')
         sys.exit()
 
     u = VelocityState.get_field("u")
