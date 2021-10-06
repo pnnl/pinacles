@@ -213,6 +213,9 @@ class Plumes:
 
         self.name = "Plumes"
 
+        # This is a list that will store one instance of the Plume class for each physical plume
+        self._list_of_plumes = []
+        
         if "plumes" in namelist:
 
             # Store the plume locations
@@ -244,8 +247,7 @@ class Plumes:
         assert len(self._locations) == len(self._startimes)
         self._n = len(self._startimes)
 
-        # This is a list that will store one instance of the Plume class for each physical plume
-        self._list_of_plumes = []
+
 
         # Initialize the plumes and update them and print to terminal
         UtilitiesParallel.print_root("Adding, " + str(self._n) + " plumes.")
