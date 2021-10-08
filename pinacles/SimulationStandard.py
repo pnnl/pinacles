@@ -29,6 +29,7 @@ from pinacles import DiagnosticsTurbulence
 from pinacles import DiagnosticsClouds
 from pinacles import TowersIO
 from pinacles import Plumes
+from pinacles import PlatformSimulator
 from pinacles import Restart
 from pinacles import UtilitiesParallel
 from pinacles import Timers
@@ -260,6 +261,15 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.TimeSteppingController,
         )
 
+        self.PlatSim = PlatformSimulator.PlatformSimulator(
+            'aaf', 
+            self.TimeSteppingController, 
+            self.ModelGrid,
+            self.Ref,
+            self.ScalarState,
+            self.VelocityState,
+            self.DiagnosticState)
+
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
         self.Restart.add_class_to_restart(self.ScalarState)
@@ -330,6 +340,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
         for state in [self.VelocityState, self.ScalarState, self.DiagnosticState]:
             self.IOTower.add_state_container(state)
         self.IOTower.initialize()
+
+        self.PlatSim.initialize()
 
         # Initialze statistical diagnostics for turbulence and clouds
         self.DiagClouds = DiagnosticsClouds.DiagnosticsClouds(

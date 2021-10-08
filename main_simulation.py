@@ -25,6 +25,7 @@ def main(namelist):
         Sim.Restart,
         Sim.Rad,
         Sim.Timers,
+        Sim.PlatSim
     ]
 
     # Determine all of the output frequencies
