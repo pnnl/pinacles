@@ -371,7 +371,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.StatsIO.initialize()
 
         # Now initialze for the output of 3D fields
-        self.FieldsIO = DumpFields.DumpFields(
+        self.FieldsIO = DumpFields.DumpFieldsFactory(
             self._namelist, self.Timers, self.ModelGrid, self.TimeSteppingController
         )
         # Add container classes that will dump 3D fields
