@@ -2,7 +2,7 @@ from pinacles import Thermodynamics, ThermodynamicsMoist_impl
 from pinacles import parameters
 import numpy as np
 import numba
-
+from mpi4py import MPI
 
 class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
     def __init__(
@@ -27,6 +27,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
 
         self._Timers.add_timer("ThermoDynamicsMoist_update")
 
+        self.name = 'ThermodynamicsMoist'
         return
 
     def update(self, apply_buoyancy=True):
@@ -106,3 +107,56 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         qi = self._Micro.get_qi()
 
         return qv + qc + qi
+
+    def io_fields2d_update(self, nc_grp):
+
+        start = self._Grid.local_start
+        end = self._Grid._local_end
+        nh = self._Grid.n_halo
+
+        send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
+        recv_buffer = np.empty_like(send_buffer)
+
+        # Output Temperature
+        if nc_grp is not None:
+            t = nc_grp.createVariable(
+                "T",
+                np.double,
+                dimensions=(
+                    "X",
+                    "Y",
+                ),
+            )
+
+        T = self._DiagnosticState.get_field('T')
+        send_buffer[start[0]:end[0], start[1]:end[1]] = T[nh[0]:-nh[0], nh[1]:-nh[1],nh[2]]
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        if nc_grp is not None:
+            t[:, :] = recv_buffer
+
+        if nc_grp is not None:
+            nc_grp.sync()
+
+
+        # Output specific humidity
+        if nc_grp is not None:
+            qv_var = nc_grp.createVariable(
+                "qv",
+                np.double,
+                dimensions=(
+                    "X",
+                    "Y",
+                ),
+            )
+
+        qv = self._ScalarState.get_field('qv')
+        send_buffer.fill(0.0)
+        send_buffer[start[0]:end[0], start[1]:end[1]] = qv[nh[0]:-nh[0], nh[1]:-nh[1],nh[2]]
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        if nc_grp is not None:
+            qv_var[:, :] = recv_buffer
+
+        if nc_grp is not None:
+            nc_grp.sync()
+
+        return 

@@ -771,7 +771,7 @@ class RRTMG:
         #albedo = nc_grp.createVariable("albedo", np.double, dimensions=("X", "Y",))
         #albedo[:, :] = alb.reshape((self._Grid.nl[0], self._Grid.nl[1]))
 
-        nc_grp.sync()
+        #nc_grp.sync()
 
         return
 
