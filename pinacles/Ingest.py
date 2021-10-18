@@ -139,7 +139,7 @@ class IngestEra5:
         for i in range(hgt.shape[0]):
             hgt_horizontal[i,:,:] = interpolate.griddata(lon_lat, 
                                             hgt[i,:,:].flatten()[mask],
-                                            (lon, lat), method='nearest')
+                                            (lon, lat), method='linear')
 
         return hgt_horizontal 
 
@@ -170,7 +170,7 @@ class IngestEra5:
         for i in range(T.shape[0]):
             T_horizontal[i,:,:] = interpolate.griddata(lon_lat, 
                                             T[i,:,:].flatten()[mask],
-                                            (lon, lat), method='nearest')
+                                            (lon, lat), method='linear')
 
 
         Ti = np.empty((lon.shape[0], lon.shape[1], height.shape[0]), dtype=np.double) 
@@ -215,7 +215,7 @@ class IngestEra5:
         for i in range(qv.shape[0]):
             qv_horizontal[i,:,:] = interpolate.griddata(lon_lat, 
                                             qv[i,:,:].flatten()[mask],
-                                            (lon, lat), method='nearest')
+                                            (lon, lat), method='linear')
 
 
         qvi = np.empty((lon.shape[0], lon.shape[1], height.shape[0]), dtype=np.double) 
@@ -257,9 +257,10 @@ class IngestEra5:
 
         u_horizontal = np.empty((u.shape[0], lon.shape[0], lon.shape[1]), dtype=np.double)
         for i in range(u.shape[0]):
+            
             u_horizontal[i,:,:] = interpolate.griddata(lon_lat, 
                                             u[i,:,:].flatten()[mask],
-                                            (lon, lat), method='nearest')
+                                            (lon, lat), method='linear')
 
 
         ui = np.empty((lon.shape[0], lon.shape[1], height.shape[0]), dtype=np.double) 
@@ -305,7 +306,7 @@ class IngestEra5:
         for i in range(v.shape[0]):
             v_horizontal[i,:,:] = interpolate.griddata(lon_lat, 
                                             v[i,:,:].flatten()[mask],
-                                            (lon, lat), method='nearest')
+                                            (lon, lat), method='linear')
 
 
         vi = np.empty((lon.shape[0], lon.shape[1], height.shape[0]), dtype=np.double) 
