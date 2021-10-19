@@ -258,9 +258,18 @@ class IngestEra5:
         u_horizontal = np.empty((u.shape[0], lon.shape[0], lon.shape[1]), dtype=np.double)
         for i in range(u.shape[0]):
             
-            u_horizontal[i,:,:] = interpolate.griddata(lon_lat, 
-                                            u[i,:,:].flatten()[mask],
-                                            (lon, lat), method='linear')
+            
+            lat_lon_array = np.vstack(lon_lat).T
+            rbf = interpolate.RBFInterpolator(lat_lon_array, u[i,:,:].flatten()[mask], neighbors=6)
+
+            field = rbf(np.vstack((lon.flatten(), lat.flatten())).T)
+
+            
+
+            #import sys; sys.exit()
+            u_horizontal[i,:,:] = field.reshape(u_horizontal[i,:,:].shape) #interpolate.griddata(lon_lat, 
+                                  #          u[i,:,:].flatten()[mask],
+                                  #          (lon, lat), method='linear')
 
 
         ui = np.empty((lon.shape[0], lon.shape[1], height.shape[0]), dtype=np.double) 
@@ -304,9 +313,15 @@ class IngestEra5:
 
         v_horizontal = np.empty((v.shape[0], lon.shape[0], lon.shape[1]), dtype=np.double)
         for i in range(v.shape[0]):
-            v_horizontal[i,:,:] = interpolate.griddata(lon_lat, 
-                                            v[i,:,:].flatten()[mask],
-                                            (lon, lat), method='linear')
+            
+            lat_lon_array = np.vstack(lon_lat).T
+            rbf = interpolate.RBFInterpolator(lat_lon_array, v[i,:,:].flatten()[mask], neighbors=6)
+
+            field = rbf(np.vstack((lon.flatten(), lat.flatten())).T)
+            
+            v_horizontal[i,:,:] = field.reshape(v_horizontal[i,:,:].shape)#interpolate.griddata(lon_lat, 
+                                  #          v[i,:,:].flatten()[mask],
+                                  #          (lon, lat), method='linear')
 
 
         vi = np.empty((lon.shape[0], lon.shape[1], height.shape[0]), dtype=np.double) 
