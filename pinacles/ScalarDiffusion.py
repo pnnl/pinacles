@@ -20,6 +20,9 @@ def compute_fluxes(
     phi_t,
 ):
 
+    if np.count_nonzero(phi) == 0:
+        return
+
     shape = phi.shape
     # kz_fact = dx[2]*dx[2]/((dx[0] * dx[1]))
     for i in range(shape[0] - 1):
