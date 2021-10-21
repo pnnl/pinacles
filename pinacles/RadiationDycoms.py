@@ -6,6 +6,7 @@ import numpy as np
 from mpi4py import MPI
 from scipy import interpolate
 import netCDF4 as nc
+import sys
 
 
 class RadiationDycoms:
@@ -36,13 +37,22 @@ class RadiationDycoms:
         self.zi_min = 0.0
         self.zi_max = 0.0
 
+ 
+        try:
+            self.time_synced= namelist["radiation"]["time_synced"]
+        except:
+            self.time_synced = False
+
         try:
             self._radiation_frequency = namelist["radiation"]["update_frequency"]
         except:
-            self._radiation_frequency = 0.0
+            if self.time_synced:
+                sys.exit('EXITING: for time syncing of DYCOMS, a radiation update frequency must be specified in the namelist')
+            else:
+                self._radiation_frequency =0.0
 
         self.frequency = self._radiation_frequency  # This is used for time syncing
-        self.time_synced = False
+     
         self.time_elapsed = parameters.LARGE
 
         self._restart_attributes = ["time_elapsed"]
@@ -56,7 +66,6 @@ class RadiationDycoms:
 
     def update(self, force=False):
         self._Timers.start_timer("RadiationDycoms")
-
        
         self.time_elapsed += self._TimeSteppingController.dt
         dTdt_rad = self._DiagnosticState.get_field("dTdt_rad")
@@ -71,7 +80,7 @@ class RadiationDycoms:
             )
             or force
         ):
-            
+            self.time_elapsed = 0.0
             # heating_rate_lw = self._DiagnosticState.get_field('heating_rate_lw')
             
             qc = self._Micro.get_qc()

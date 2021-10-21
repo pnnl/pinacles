@@ -35,6 +35,9 @@ class RRTMG:
         self._Surf = Surf
         self._Micro = Micro
         self._TimeSteppingController = TimeSteppingController
+        self.frequency = 1e20
+        self.time_synced = False
+
 
         try:
             self._compute_radiation = namelist["radiation"]["compute_radiation"]
@@ -49,19 +52,27 @@ class RRTMG:
                 UtilitiesParallel.print_root(
                     "\t \t Assuming RRTMG should not be used for this case."
                 )
-        self.frequency = 1e20
-        self.time_synced = True
+
         self._restart_attributes = []
         if not self._compute_radiation:
             return
 
+        
+ 
+        try:
+            self.time_synced= namelist["radiation"]["time_synced"]
+        except:
+            self.time_synced = True
+
         try:
             self._radiation_frequency = namelist["radiation"]["update_frequency"]
         except:
-            self._radiation_frequency = 30.0
+                self._radiation_frequency =30.0
 
         self.frequency = self._radiation_frequency  # This is used for time syncing
-        self.time_synced = True
+     
+
+
 
         #
 
@@ -94,8 +105,10 @@ class RRTMG:
                  double swdflxc[] , double swhrc[]);",
             override=True,
         )
-
-        self._rrtmg_lib_path = namelist["radiation"]["rrtmg_lib_path"]
+        try:
+            self._rrtmg_lib_path = namelist["radiation"]["rrtmg_lib_path"]
+        except:
+            self._rrtmg_lib_path = './pinacles/externals/rrtmg_wrapper/'
         if self._rrtmg_lib_path[-1] != "/":
             self._rrtmg_lib_path += "/"
         self._lib_lw = ffi.dlopen(self._rrtmg_lib_path + "librrtmglw.so")
@@ -303,7 +316,7 @@ class RRTMG:
             )
             or force
         ):
-
+        
             self.time_elapsed = 0.0
             # TODO: testing of this code
             self.hourz = self._hourz_init + self._TimeSteppingController.time / 3600.0

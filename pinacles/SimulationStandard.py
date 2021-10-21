@@ -811,7 +811,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     self.Thermo.update(apply_buoyancy=False)
                     # We call the microphysics update at the end of the RK steps.
                     self.Micro.update()
-                    self.Rad.update(force=True)
+                    if not self.Rad.time_synced:
+                        self.Rad.update()
                     self.Rad.update_apply_tend()
 
                     self.Timers.start_timer("BoundaryUpdate")
