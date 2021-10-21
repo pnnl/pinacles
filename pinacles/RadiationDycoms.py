@@ -57,7 +57,6 @@ class RadiationDycoms:
     def update(self, force=False):
         self._Timers.start_timer("RadiationDycoms")
 
-        UtilitiesParallel.print_root('RadiationDycoms Update')
        
         self.time_elapsed += self._TimeSteppingController.dt
         dTdt_rad = self._DiagnosticState.get_field("dTdt_rad")
@@ -93,7 +92,6 @@ class RadiationDycoms:
         return
 
     def update_apply_tend(self):
-        UtilitiesParallel.print_root('RadiationDycoms Update Apply Tend')
        
         s = self._ScalarState.get_field("s")
         dTdt_rad = self._DiagnosticState.get_field("dTdt_rad")
