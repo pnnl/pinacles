@@ -18,10 +18,11 @@ def main():
     )
 
     # Now optionally build RRTMG
+    skip_rrtmg = True
     rrtmg_path = "pinacles/externals/rrtmg_wrapper"
     rrtmg_lw_exists = os.path.exists(os.path.join(rrtmg_path, "librrtmglw.so"))
     rrtmg_sw_exists = os.path.exists(os.path.join(rrtmg_path, "librrtmgsw.so"))
-    if not rrtmg_lw_exists and not rrtmg_sw_exists:
+    if not rrtmg_lw_exists and not rrtmg_sw_exists and not skip_rrtmg:
         # RRTMG does not appear to be compiled so we will compile it no
         build_script(rrtmg_path, "debug_compile.sh", "rrtmg")
     else:

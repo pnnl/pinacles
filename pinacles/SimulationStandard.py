@@ -759,7 +759,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             prog_state.update_all_bcs()
 
         self.Thermo.update(apply_buoyancy=False)
-        self.Rad.update(force=True)
+        self.Rad.update(force=True,time_loop=False)
         # self.PSolver.update()
 
         self.Timers.add_timer("Restart")
@@ -838,6 +838,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     self.Thermo.update(apply_buoyancy=False)
                     # We call the microphysics update at the end of the RK steps.
                     self.Micro.update()
+                    if not self.Rad.time_synced:
+                        self.Rad.update()
                     self.Rad.update_apply_tend()
 
                     self.Timers.start_timer("BoundaryUpdate")
