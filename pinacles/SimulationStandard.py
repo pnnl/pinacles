@@ -261,8 +261,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.TimeSteppingController,
         )
 
-        self.PlatSim = PlatformSimulator.PlatformSimulator(
-            'aaf', 
+        self.PlatSim = PlatformSimulator.PlatformSimulators(
+            self._namelist,
             self.TimeSteppingController, 
             self.ModelGrid,
             self.Ref,
@@ -417,7 +417,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Announce that this is a restart simulation
         if MPI.COMM_WORLD.Get_rank() == 0:
             print("This is a restared simulation!")
-            print("Simulation is being restarted from: ", self.Restart.path)
+            print("Simulation is being restarted from: ", self.Restart.infile)
 
         # Instantiate required classes, this setsup the classes that will be need by the simulations.
         # Much of the data in many of these classes will be overwritten by the restart.
@@ -483,7 +483,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ModelGrid,
             self.Ref,
             self.VelocityState,
-            self.DiagnosticState,
+            self.DiagnosticState
         )
         self.SGS = SGSFactory.factory(
             self._namelist,
@@ -613,6 +613,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.TimeSteppingController,
         )
 
+
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
         self.Restart.add_class_to_restart(self.ScalarState)
@@ -674,6 +675,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.IOTower.add_state_container(state)
         self.IOTower.initialize()
 
+        
+
         # Initialze statistical diagnostics for turbulence and clouds
         self.DiagClouds = DiagnosticsClouds.DiagnosticsClouds(
             self.ModelGrid,
@@ -734,6 +737,18 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Now overwrite model state with restart
         self.Restart.restart()
+
+
+        self.PlatSim = PlatformSimulator.PlatformSimulators(
+            self._namelist,
+            self.TimeSteppingController, 
+            self.ModelGrid,
+            self.Ref,
+            self.ScalarState,
+            self.VelocityState,
+            self.DiagnosticState)      
+
+        self.PlatSim.initialize()
 
         # These boundary updates are probably not necessary, but just to be safe we will do them.
         # At this point the model is basically initalized, however we should also do boundary exchanges to insure
