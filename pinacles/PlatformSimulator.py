@@ -3,9 +3,10 @@ import netCDF4 as nc
 from mpi4py import MPI
 from pinacles.interpolation_impl import centered_second
 import pickle 
+import os
 class PlatformSimulator:
 
-    def __init__(self, name, TimeSteppingController, Grid, Ref, 
+    def __init__(self,name, startloc, datafile, TimeSteppingController, Grid, Ref, 
         ScalarState, VelocityState, DiagnosticState):
 
 
@@ -16,33 +17,46 @@ class PlatformSimulator:
         self._ScalarState = ScalarState
         self._VelocityState = VelocityState
         self._DiagnosticState = DiagnosticState
+        self._location = np.zeros((3,), dtype=np.double)        
+        self._location[0] = startloc[0]
+        self._location[1] = startloc[1]
+        self._location[2] = startloc[2]
 
         self._path = './' + self._simulator_name + '.nc'
-        self._location = np.zeros((3,), dtype=np.double)
+        
         self.frequency = 1.0
-        self._starttime = 1800.0
-        self._endtime = 9600.0
-
-        self._location[0] = 0.0
-        self._location[1] = 100.0
-        self._location[2] = 100.0
-
-        self._up_or_down = 1
-
         self._count = 0
-        self._starttime = 0
-        self._endtime = 1000.0
-        # with open('/Users/pres026/Desktop/HISCALE_airplane/2016/sgp/hiscale/mei-iwg1/fligh_path.pkl','rb') as f:
-        #     self._flight_path = pickle.load(f)
-        #     self._starttime = self._flight_path['start_time']
-        #     self._endtime = self._flight_path['end_time']
+        self._up_or_down = 1
+       
+        with open(datafile,'rb') as f:
+            self._flight_path = pickle.load(f)
+            self._starttime = self._flight_path['time_offset'][0]
+            self._endtime = self._flight_path['time_offset'][-1]
+            print("PLATFORM START, END", self._starttime, self._endtime)
 
+        print(self._TimeSteppingController.time)
+
+        # "Fast-forward the location if the time is greater than the start time of the platform
+        if self._TimeSteppingController.time > self._starttime and self._TimeSteppingController.time  < self._endtime:
+            print(name, "in the if")
+            while self._flight_path['time_offset'][self._count] <= self._TimeSteppingController.time:
+                # print(self._count, self._flight_path['time_offset'][self._count])
+                self.update_position_file(self._flight_path['time_offset'][self._count] ,wrap_x=True, wrap_y=True)
+
+
+        print('initialize plaform', name, self._location[0],self._location[1],self._location[2])
 
         return
 
     def initialize(self):
 
         if MPI.COMM_WORLD.Get_rank() == 0:
+            if os.path.exists(self._path):
+                old_rt = nc.Dataset(self._path,'r')
+                t_end = old_rt.variables['time'][-1]
+                t_start = old_rt.variables['time'][0]
+                os.rename(self._path, self._path[:-3]+'_' + str(t_start) +'_' + str(t_end)+'.nc')
+
 
             rt_grp = nc.Dataset(self._path, 'w')
             rt_grp.createDimension('time')
@@ -72,8 +86,9 @@ class PlatformSimulator:
             self._TimeSteppingController.time   > self._endtime):
             return
 
-        # self.update_position_file()
-        self.update_position(wrap_x=True, wrap_y=True)
+
+        self.update_position_file(self._TimeSteppingController.time ,wrap_x=True, wrap_y=True)
+        # self.update_position(self._TimeSteppingController.time, wrap_x=True, wrap_y=True)
 
         platform_on_rank = self._Grid.point_on_rank(
             self._location[0],self._location[1],self._location[2]
@@ -86,9 +101,7 @@ class PlatformSimulator:
             self._location[0],self._location[1],self._location[2]
             )
 
-      
 
-    
 
         xind = indices[0]
         yind = indices[1]
@@ -123,43 +136,130 @@ class PlatformSimulator:
 
         return
 
-    def update_position(self,wrap_x=True, wrap_y=True):
-        if self._location[2] < 0.0:
-            self._up_or_down = 1.0
-        if self._location[2] >  1300.0:
-            self._up_or_down = -1.0
+    def update_position(self,time, wrap_x=True, wrap_y=True):
+        
+        self._location[0] = 2560.0 + 500.0 * np.sin(2.0 * np.pi * time/360.0)
+        self._location[1] = 2560.0 + 500.0 *  np.cos(2.0 * np.pi * time/360.0)
 
-
-        self._location[0] = 2560.0 + 500.0 * np.sin(2.0 * np.pi * self._TimeSteppingController.time/360.0)
-        self._location[1] = 2560.0 + 500.0 *  np.cos(2.0 * np.pi * self._TimeSteppingController.time/360.0)
+        if self._location[2] > 1300.0:
+            self._up_or_down = -1
+        elif self._location[2] < 100.0:
+            self._up_or_down = 1
 
         self._location[2] += 0.5 * self._up_or_down
 
         if wrap_x:
             x_range = self._Grid.x_range
             if self._location[0] < x_range[0]:
-                self._location[0] = x_range[1] - (x_range[0]-self._location[0]) + 1.0
+                self._location[0] += x_range[1] - x_range[0]
             elif self._location[0] > x_range[1]:
-                self._location[0] = x_range[0] + (self._location[0] - x_range[1]) -1.0
+                self._location[0] +=  x_range[0] - x_range[1]
         if wrap_y:
             y_range = self._Grid.y_range
             if self._location[1] < y_range[0]:
-                self._location[1] = y_range[1] - (y_range[0]-self._location[1]) + 1.0
+                self._location[1] += y_range[1] - y_range[0]
             elif self._location[1] > y_range[1]:
-                self._location[1] = y_range[0] + (self._location[1] - y_range[1]) -1.0
+                self._location[1] +=  y_range[0] - y_range[1]
 
 
         return
 
-    def update_position_file(self):
+    def update_position_file(self, time ,wrap_x=True, wrap_y=True):
 
-
-        #self._location[0] = 2560.0 + 500.0 * np.sin(2.0 * np.pi * self._TimeSteppingController.time/360.0)
-        #self._location[1] = 2560.0 + 500.0 *  np.cos(2.0 * np.pi * self._TimeSteppingController.time/360.0)#
-        self._location[0] += self._flight_path['air_speed'][self._count]
-        self._location[2] = self._flight_path['radar_alt'][self._count]
+        dx_current = np.interp(time, self._flight_path['time_offset'][:], self._flight_path['dx'][:] )
+        dy_current = np.interp(time, self._flight_path['time_offset'][:], self._flight_path['dy'][:] )
+        z_current = np.interp(time, self._flight_path['time_offset'][:], self._flight_path['z'][:] )
+ 
+        self._location[0] += dx_current
+        self._location[1] += dy_current
+        self._location[2] = z_current
 
         self._count += 1
+
+        if wrap_x:
+            x_range = self._Grid.x_range
+            if self._location[0] < x_range[0]:
+                self._location[0] += x_range[1] - x_range[0]
+            elif self._location[0] > x_range[1]:
+                self._location[0] +=  x_range[0] - x_range[1]
+        if wrap_y:
+            y_range = self._Grid.y_range
+            if self._location[1] < y_range[0]:
+                self._location[1] += y_range[1] - y_range[0]
+            elif self._location[1] > y_range[1]:
+                self._location[1] +=  y_range[0] - y_range[1]
+
         return
+
+class PlatformSimulators:
+    def __init__( self, namelist, TimeSteppingController, Grid, Ref, 
+        ScalarState, VelocityState, DiagnosticState):
+
+        self._Grid = Grid
+        self._Ref = Ref
+        self._TimeSteppingController = TimeSteppingController
+        self._ScalarState = ScalarState
+        self._flight_data_files = None
+        self._startlocations = None
+        
+
+        self._n = 0
+
+        self.name = "PlatformSimulators"
+        
+
+        self._list_of_platforms = []
+    
+
+        if 'platforms' in namelist:
+            self._startlocations = namelist['platforms']['start_locations']
+            self._flight_data_files = namelist['platforms']['flight_data_files']
+            self.frequency = 1.0
+
+        else:
+            self.frequency = 86400.0*100
+            # Don't limit the time step due to the (non)existence of this simulator
+            return
+        
+        self._n = len(self._startlocations)
+
+        for i,startloc in enumerate(self._startlocations):
+            self._list_of_platforms.append(
+                PlatformSimulator(
+                    'aaf_'+str(i),
+                    startloc,
+                    self._flight_data_files[i],
+                    TimeSteppingController, 
+                    Grid, 
+                    Ref,
+                    ScalarState, 
+                    VelocityState, 
+                    DiagnosticState)
+                    )
+        return
+
+
+    def initialize(self):
+        if self._n == 0:
+            return
+        
+        for platform_i in self._list_of_platforms:
+            platform_i.initialize()
+        
+        return
+
+
+
+    def update(self):
+        if self._n == 0:
+            return
+        
+        for platform_i in self._list_of_platforms:
+            platform_i.update()
+        
+        return
+
+
+
 
 

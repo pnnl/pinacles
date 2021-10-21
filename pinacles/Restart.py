@@ -29,6 +29,7 @@ class Restart:
         self._infile = None
         if self._restart_simulation:
             self._infile = self._namelist["restart"]["infile"]
+          
 
         sim_path = os.path.join(
             namelist["meta"]["output_directory"], namelist["meta"]["simname"]
