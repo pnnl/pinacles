@@ -242,7 +242,7 @@ class MicroKessler(MicrophysicsBase):
         np.multiply(liq_sed, parameters.LV / parameters.CPD, out=s_liq_sed)
 
         # Sedimentation source term
-        np.subtract(s, s_liq_sed, out=s)
+        #np.subtract(s, s_liq_sed, out=s)
 
         # Convert sedimentation sources to units of tendency
         np.multiply(liq_sed, 1.0 / self._TimeSteppingController.dt, out=liq_sed)

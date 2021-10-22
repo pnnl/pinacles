@@ -568,8 +568,8 @@ class MicroP3(MicrophysicsBase):
         # Compute and apply sedimentation sources of static energy
         np.multiply(liq_sed, parameters.LV / parameters.CPD, out=s_tend_liq_sed)
         np.multiply(ice_sed, parameters.LS / parameters.CPD, out=s_tend_ice_sed)
-        np.subtract(s, s_tend_liq_sed, out=s)
-        np.subtract(s, s_tend_ice_sed, out=s)
+        #np.subtract(s, s_tend_liq_sed, out=s)
+        #np.subtract(s, s_tend_ice_sed, out=s)
 
         # Convert sedimentation sources to units of tendency
         np.multiply(liq_sed, 1.0 / self._TimeSteppingController.dt, out=liq_sed)
