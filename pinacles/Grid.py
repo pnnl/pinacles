@@ -1,6 +1,7 @@
 from mpi4py import MPI
 import mpi4py_fft
 import numpy as np
+from numba import stencil
 from mpi4py_fft.pencil import Subcomm
 from pinacles import ProjectionLCC
 
@@ -392,6 +393,14 @@ class GridBase:
 
         return
 
+    @stencil
+    def upt_to_vpt(u):
+        return 0.25 * (u[0,0,0] + u[1,0,0] +u[0,-1,0] + u[1,-1,0])
+
+    @stencil
+    def vpt_to_upt(v):
+        return 0.25 * (v[0,0,0] + v[0,1,0] + v[-1,0,0] + v[-1,1,0])
+
 
 class RegularCartesian(GridBase):
     def __init__(self, namelist, llx=0.0, lly=0.0, llz=0.0):
@@ -439,6 +448,22 @@ class RegularCartesian(GridBase):
         self.lon_local, self.lat_local = self.MapProj.compute_latlon(x_local_mesh, y_local_mesh)
         self.lon_local_edge_x, self.lat_local_edge_x = self.MapProj.compute_latlon(x_local_mesh_edge_x, y_local_mesh_edge_x)
         self.lon_local_edge_y, self.lat_local_edge_y = self.MapProj.compute_latlon(x_local_mesh_edge_y, y_local_mesh_edge_y)
+
+
+        #u = np.ones_like(self.lon_local)
+        #v = np.zeros_like(self.lon_local)
+        
+        #u = np.ones((3,3,3))
+
+        #uv = self.upt_to_vpt(u)
+        #print(uv)
+
+
+        #urot, vrot = self.MapProj.rotate_wind(self.lon_local, u, v)
+        #import pylab as plt
+        #plt.quiver(self.lon_local, self.lat_local, urot, vrot)
+        #plt.colorbar()
+        #plt.show()
 
         self.lon_max = MPI.COMM_WORLD.allreduce(np.max(self.lon_local_edge_x), op=MPI.MAX)
         self.lon_min = MPI.COMM_WORLD.allreduce(np.min(self.lon_local_edge_x), op=MPI.MIN)

@@ -168,13 +168,19 @@ class IngestEra5:
         
         T_horizontal = np.empty((T.shape[0], lon.shape[0], lon.shape[1]), dtype=np.double)
         for i in range(T.shape[0]):
-            T_horizontal[i,:,:] = interpolate.griddata(lon_lat, 
-                                            T[i,:,:].flatten()[mask],
-                                            (lon, lat), method='linear')
+
+            lat_lon_array = np.vstack(lon_lat).T
+
+            rbf = interpolate.RBFInterpolator(lat_lon_array, T[i,:,:].flatten()[mask], neighbors=6)
+
+            field = rbf(np.vstack((lon.flatten(), lat.flatten())).T)
+
+            T_horizontal[i,:,:] = field.reshape(T_horizontal[i,:,:].shape) #interpolate.griddata(lon_lat, 
+                                  #          T[i,:,:].flatten()[mask],
+                                  #          (lon, lat), method='linear')
 
 
         Ti = np.empty((lon.shape[0], lon.shape[1], height.shape[0]), dtype=np.double) 
-        print(lon.shape[0], lon.shape[1], 'Ti', np.shape(Ti))
         nh = self._Grid.n_halo
         for i in range(T_horizontal.shape[1]):
             for j in range(T_horizontal.shape[2]):
@@ -213,9 +219,17 @@ class IngestEra5:
 
         qv_horizontal = np.empty((qv.shape[0], lon.shape[0], lon.shape[1]), dtype=np.double)
         for i in range(qv.shape[0]):
-            qv_horizontal[i,:,:] = interpolate.griddata(lon_lat, 
-                                            qv[i,:,:].flatten()[mask],
-                                            (lon, lat), method='linear')
+
+            lat_lon_array = np.vstack(lon_lat).T
+
+            rbf = interpolate.RBFInterpolator(lat_lon_array, qv[i,:,:].flatten()[mask], neighbors=6)
+            field = rbf(np.vstack((lon.flatten(), lat.flatten())).T)
+
+
+            qv_horizontal[i,:,:] = field.reshape(qv_horizontal[i,:,:].shape)
+                                  #interpolate.griddata(lon_lat, 
+                                   #         qv[i,:,:].flatten()[mask],
+                                   #         (lon, lat), method='linear')
 
 
         qvi = np.empty((lon.shape[0], lon.shape[1], height.shape[0]), dtype=np.double) 
@@ -244,6 +258,10 @@ class IngestEra5:
         lon_u, lat_u, u = self.get_u(shift=shift)
         lon_u_grid, lat_u_grid = np.meshgrid(lon_u, lat_u)
         
+        lon_v, lat_v, v = self.get_v(shift=shift)
+        uu, vv = self._Grid.MapProj.rotate_wind(lon_u_grid, u, v)
+        u[:,:,:] = uu[:,:,:]
+
         lon_u_grid = lon_u_grid.flatten()
         lat_u_grid = lat_u_grid.flatten()
 
@@ -282,7 +300,7 @@ class IngestEra5:
                 z = hgt_horizontal_interp[:,i,j]
                 z = np.concatenate(([10.0], z))
 
-                interp = interpolate.Akima1DInterpolator(z, u_horizontal[:,i,j])
+                interp = interpolate.Akima1DInterpolator(z[1:], u_horizontal[1:,i,j])
                 ui[i,j,:] =  np.pad(interp.__call__(height[nh[2]:-nh[2]]), 3, mode='edge')
 
 
@@ -300,6 +318,10 @@ class IngestEra5:
         lon_v, lat_v, v = self.get_v(shift=shift)
         lon_v_grid, lat_v_grid = np.meshgrid(lon_v, lat_v)
         
+        lon_u, lat_u, u = self.get_u(shift=shift)
+        uu, vv = self._Grid.MapProj.rotate_wind(lon_v_grid, u, v)
+        v[:,:,:] = vv[:,:,:]
+
         lon_v_grid = lon_v_grid.flatten()
         lat_v_grid = lat_v_grid.flatten()
 
@@ -335,7 +357,7 @@ class IngestEra5:
                 z = hgt_horizontal_interp[:,i,j]
                 z = np.concatenate(([10.0], z))
 
-                interp = interpolate.Akima1DInterpolator(z, v_horizontal[:,i,j])
+                interp = interpolate.Akima1DInterpolator(z[1:], v_horizontal[1:,i,j])
                 vi[i,j,:] = np.pad(interp.__call__(height[nh[2]:-nh[2]]), 3, mode='edge')
 
 
@@ -500,10 +522,6 @@ class IngestMerra(IngestBase):
 
             for time in asm_xr.time:
                 print(time.values)
-            #print(ocn_xr.time[0].values)
-            #print(np.datetime64(ocn_xr.time[1].values, 's') - np.datetime64(ocn_xr.time[0].values, 's'))
-            #for i, time in enumerate(ocn_xr.time):
-            #    print(i, time[0]), #np.datetime64(ocn_xr.time[0]) - np.datetime64(time))
 
         return
     

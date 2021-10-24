@@ -346,6 +346,19 @@ class InitializeReanalysis:
             self._Grid.lon_local_edge_y, self._Grid.lat_local_edge_y, self._Grid.z_local
         )
 
+        #Now we need to rotate the wind field
+        #u_at_v = self._Grid.upt_to_vpt(u)
+        #v_at_u = self._Grid.vpt_to_upt(v)
+ 
+        #urot, tmp = self._Grid.MapProj.rotate_wind(self._Grid.lon_local_edge_x, u, v_at_u)
+        #tmp, vrot = self._Grid.MapProj.rotate_wind(self._Grid.lon_local_edge_y, u_at_v, v)
+
+        #v[:,:,:] = vrot[:,:,:]
+        #u[:,:,:] = urot[:,:,:]
+
+
+
+
         return
 
 
@@ -447,26 +460,26 @@ class LateralBCsReanalysis(LateralBCsBase):
         ##########################################################
         # x_low (these are normal for u)
 
-        start = nh[1] - 1
+        start = nh[0] - 1
         end = start + (self.nudge_width + 1)
 
         self.bdy_lats["v"]["x_low"] = self._Grid.lat_local_edge_y[start:end, :]
         self.bdy_lons["v"]["x_low"] = self._Grid.lon_local_edge_y[start:end, :]
 
-        start = -nh[1] - self.nudge_width
-        end = -nh[1] + 1
+        start = -nh[0] - self.nudge_width
+        end = -nh[0] + 1
         # print('here', self._Grid._local_axes[0][start:end])
         self.bdy_lats["v"]["x_high"] = self._Grid.lat_local_edge_y[start:end, :]
         self.bdy_lons["v"]["x_high"] = self._Grid.lon_local_edge_y[start:end, :]
 
         # y_low and y_high (these are non-normal for u)
-        start = nh[0] - 1
+        start = nh[1] - 1
         end = start + (self.nudge_width + 1)
         self.bdy_lats["v"]["y_low"] = self._Grid.lat_local_edge_y[:, start:end]
         self.bdy_lons["v"]["y_low"] = self._Grid.lon_local_edge_y[:, start:end]
 
-        start = -nh[0] - self.nudge_width - 1
-        end = -nh[0]
+        start = -nh[1] - self.nudge_width - 1
+        end = -nh[1]
         self.bdy_lats["v"]["y_high"] = self._Grid.lat_local_edge_y[:, start:end]
         self.bdy_lons["v"]["y_high"] = self._Grid.lon_local_edge_y[:, start:end]
 
@@ -818,36 +831,40 @@ class LateralBCsReanalysis(LateralBCsBase):
                         v[:, start:end, :] - v_nudge[:, :-1, :]
                     ) * weight[np.newaxis, ::-1, np.newaxis]
 
-            elif var == "wbbbb":
+            elif var == "w":
 
                 w = self._State.get_field(var)
                 wt = self._State.get_tend(var)
 
-                start = nh[0]
-                end = nh[0] + self.nudge_width
-                wt[start:end, :, :] -= (
-                    w[start:end, :, :] - w[start + 1 : end + 1, :, :]
-                ) * weight[:, np.newaxis, np.newaxis]
+                #if self._TimeSteppingController.time < 3600.0:
+                #    wt[:,:,:] = -w[:,:,:] * 1/300.0 
 
-                start = -nh[0] - self.nudge_width
-                end = -nh[0]
-                wt[start:end, :, :] -= (
-                    w[start:end, :, :] - w[start - 1 : end - 1, :, :]
-                ) * weight[::-1, np.newaxis, np.newaxis]
 
-                start = nh[1]
-                end = nh[1] + self.nudge_width
-                wt[2 * nh[1] : -2 * nh[1], start:end, :] -= (
-                    w[2 * nh[1] : -2 * nh[1], start:end, :]
-                    - w[2 * nh[1] : -2 * nh[1], start + 1 : end + 1, :]
-                ) * weight[np.newaxis, :, np.newaxis]
+                # start = nh[0]
+                # end = nh[0] + self.nudge_width
+                # wt[start:end, :, :] -= (
+                #     w[start:end, :, :] - w[start + 1 : end + 1, :, :]
+                # ) * weight[:, np.newaxis, np.newaxis]
 
-                start = -nh[1] - self.nudge_width
-                end = -nh[1]
-                wt[2 * nh[1] : -2 * nh[1], start:end, :] -= (
-                    w[2 * nh[1] : -2 * nh[1], start:end, :]
-                    - w[2 * nh[1] : -2 * nh[1], start - 1 : end - 1, :]
-                ) * weight[np.newaxis, ::-1, np.newaxis]
+                # start = -nh[0] - self.nudge_width
+                # end = -nh[0]
+                # wt[start:end, :, :] -= (
+                #     w[start:end, :, :] - w[start - 1 : end - 1, :, :]
+                # ) * weight[::-1, np.newaxis, np.newaxis]
+
+                # start = nh[1]
+                # end = nh[1] + self.nudge_width
+                # wt[2 * nh[1] : -2 * nh[1], start:end, :] -= (
+                #     w[2 * nh[1] : -2 * nh[1], start:end, :]
+                #     - w[2 * nh[1] : -2 * nh[1], start + 1 : end + 1, :]
+                # ) * weight[np.newaxis, :, np.newaxis]
+
+                # start = -nh[1] - self.nudge_width
+                # end = -nh[1]
+                # wt[2 * nh[1] : -2 * nh[1], start:end, :] -= (
+                #     w[2 * nh[1] : -2 * nh[1], start:end, :]
+                #     - w[2 * nh[1] : -2 * nh[1], start - 1 : end - 1, :]
+                # ) * weight[np.newaxis, ::-1, np.newaxis]
 
             elif var == "qv" or "s":
 
