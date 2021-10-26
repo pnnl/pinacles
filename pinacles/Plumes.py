@@ -114,7 +114,6 @@ class Plume:
         nh = self._Grid.n_halo
         z = self._Grid.z_global[nh[2]+z_index]
 
-        print(z)
 
         send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
         recv_buffer = np.empty_like(send_buffer)

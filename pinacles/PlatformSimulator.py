@@ -6,7 +6,7 @@ import pickle
 import os
 class PlatformSimulator:
 
-    def __init__(self,name, startloc, datafile, TimeSteppingController, Grid, Ref, 
+    def __init__(self, namelist,name, startloc, datafile, TimeSteppingController, Grid, Ref, 
         ScalarState, VelocityState, DiagnosticState):
 
 
@@ -22,7 +22,12 @@ class PlatformSimulator:
         self._location[1] = startloc[1]
         self._location[2] = startloc[2]
 
-        self._path = './' + self._simulator_name + '.nc'
+        output_root = str(namelist["meta"]["output_directory"])
+        casename = str(namelist["meta"]["simname"])
+        self._path = os.path.join(output_root, casename)
+        self._path = os.path.join(self._path, self._simulator_name + ".nc")
+
+       
         
         self.frequency = 1.0
         self._count = 0
@@ -226,6 +231,7 @@ class PlatformSimulators:
         for i,startloc in enumerate(self._startlocations):
             self._list_of_platforms.append(
                 PlatformSimulator(
+                    namelist,
                     'aaf_'+str(i),
                     startloc,
                     self._flight_data_files[i],
