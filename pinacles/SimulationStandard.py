@@ -759,7 +759,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             prog_state.update_all_bcs()
 
         self.Thermo.update(apply_buoyancy=False)
-        self.Rad.update(force=True,time_loop=False)
+        self.Rad.update(force=True)
         # self.PSolver.update()
 
         self.Timers.add_timer("Restart")
