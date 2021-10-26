@@ -67,8 +67,7 @@ class RadiationDycoms:
     def update(self, force=False):
         self._Timers.start_timer("RadiationDycoms")
 
-        print('in radiation dycoms')
-        print('Time elapsed',self.time_elapsed)
+     
         if not force:
             self.time_elapsed += self._TimeSteppingController.dt
         dTdt_rad = self._DiagnosticState.get_field("dTdt_rad")
@@ -86,7 +85,7 @@ class RadiationDycoms:
             if not force:
                 self.time_elapsed = 0.0
             # heating_rate_lw = self._DiagnosticState.get_field('heating_rate_lw')
-            print('Radiation dycoms--computing new tendencies')
+
             qc = self._Micro.get_qc()
             qv = self._ScalarState.get_field("qv")
             rho = self._Ref._rho0
@@ -157,7 +156,6 @@ class RadiationDycoms:
         key = "Radiation"
         for item in self._restart_attributes:
             self.__dict__[item] = data_dict[key][item]
-            print('READ RESTART', key, item,data_dict[key][item] )
 
         return
 
@@ -167,7 +165,7 @@ class RadiationDycoms:
         data_dict[key] = {}
         for item in self._restart_attributes:
             data_dict[key][item] = self.__dict__[item]
-            print('DUMP RESTART', key, item,data_dict[key][item] )
+        
         return
 
     @property
