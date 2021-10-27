@@ -568,8 +568,6 @@ class MicroP3(MicrophysicsBase):
         # Compute and apply sedimentation sources of static energy
         np.multiply(liq_sed, parameters.LV / parameters.CPD, out=s_tend_liq_sed)
         np.multiply(ice_sed, parameters.LS / parameters.CPD, out=s_tend_ice_sed)
-        np.subtract(s, s_tend_liq_sed, out=s)
-        np.subtract(s, s_tend_ice_sed, out=s)
 
         # Convert sedimentation sources to units of tendency
         np.multiply(liq_sed, 1.0 / self._TimeSteppingController.dt, out=liq_sed)
@@ -754,13 +752,12 @@ class MicroP3(MicrophysicsBase):
                     "Y",
                 ),
             )
-        
-        send_buffer[start[0]:end[0], start[1]:end[1]] = self._RAINNC
-        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)        
+
+        send_buffer[start[0] : end[0], start[1] : end[1]] = self._RAINNC
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
 
         if nc_grp is not None:
             rainnc[:, :] = recv_buffer
-
 
         if nc_grp is not None:
             rainncv = nc_grp.createVariable(
@@ -773,11 +770,10 @@ class MicroP3(MicrophysicsBase):
             )
 
         send_buffer.fill(0.0)
-        send_buffer[start[0]:end[0], start[1]:end[1]] = self._RAINNCV
+        send_buffer[start[0] : end[0], start[1] : end[1]] = self._RAINNCV
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
         if nc_grp is not None:
             rainncv[:, :] = recv_buffer
-
 
         # Compute and output the LWP
         if nc_grp is not None:
@@ -791,11 +787,11 @@ class MicroP3(MicrophysicsBase):
             )
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
-        qc = self._ScalarState.get_field('qc')[nh[0]:-nh[0], nh[1]:-nh[1],:]
-        lwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis,0] , axis=2)
+        qc = self._ScalarState.get_field("qc")[nh[0] : -nh[0], nh[1] : -nh[1], :]
+        lwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis, 0], axis=2)
 
         send_buffer.fill(0.0)
-        send_buffer[start[0]:end[0], start[1]:end[1]] = lwp_compute
+        send_buffer[start[0] : end[0], start[1] : end[1]] = lwp_compute
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
         if nc_grp is not None:
             lwp[:, :] = recv_buffer
@@ -813,15 +809,14 @@ class MicroP3(MicrophysicsBase):
 
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
-        qc = self._ScalarState.get_field('qi1')[nh[0]:-nh[0], nh[1]:-nh[1],:]
-        iwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis,0] , axis=2)
+        qc = self._ScalarState.get_field("qi1")[nh[0] : -nh[0], nh[1] : -nh[1], :]
+        iwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis, 0], axis=2)
 
         send_buffer.fill(0.0)
-        send_buffer[start[0]:end[0], start[1]:end[1]] = iwp_compute
+        send_buffer[start[0] : end[0], start[1] : end[1]] = iwp_compute
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
         if nc_grp is not None:
             iwp[:, :] = recv_buffer
-
 
         if nc_grp is not None:
             nc_grp.sync()

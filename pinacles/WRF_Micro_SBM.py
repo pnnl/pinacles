@@ -727,9 +727,6 @@ class MicroSBM(MicrophysicsBase):
         to_our_order(nhalo, self._wrf_vars["LIQUID_SEDIMENTATION"], liq_sed)
         np.multiply(liq_sed, parameters.LV / parameters.CPD, out=s_tend_liq_sed)
 
-        # Sedimentation source term
-        np.subtract(s, s_tend_liq_sed, out=s)
-
         # Convert sedimentation sources to units of tendency
         np.multiply(liq_sed, 1.0 / self._TimeSteppingController.dt, out=liq_sed)
         np.multiply(
