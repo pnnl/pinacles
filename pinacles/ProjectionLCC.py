@@ -23,11 +23,7 @@ class LambertConformal:
             np.tan(np.pi / 4.0 + self.phi_2 / 2.0)
             / np.tan(np.pi / 4.0 + self.phi_1 / 2.0)
         )
-
-        # If center latitude is in southern hemisphere
-        if self.phi_0 < 0.0:
-            self.n = - self.n
-
+        
         return
 
     def _compute_F(self):
@@ -36,14 +32,14 @@ class LambertConformal:
             * (np.tan(np.pi / 4.0 + self.phi_1 / 2.0) ** self.n)
             / self.n
         )
+
+
         return
 
     def _compute_rho0(self):
         self.rho0 = self.R * self.F / (np.tan(np.pi / 4.0 + self.phi_0 / 2.0) ** self.n)
-        
-        # If center latitude is in southern hemisphere
-        if self.phi_0 < 0.0:
-            self.rho0 = - self.rho0
+
+
         return
 
     def compute_xy(self, phi, lam):
@@ -69,12 +65,10 @@ class LambertConformal:
     def compute_latlon(self, x, y):
 
         rho = np.sign(self.n) * np.sqrt((x * x + (self.rho0 - y) ** 2.0))
-
-        if self.n >= 0:
+        if self.n > 0:
             theta = np.arctan(x / (self.rho0 - y))
         else:
             theta = np.arctan(-x / (-self.rho0 + y))
-
         lam = theta / self.n + self.lam_0 
 
         phi = 2.0 * np.arctan((self.R * self.F / rho) ** (1.0 / self.n)) - np.pi / 2.0

@@ -171,7 +171,7 @@ class IngestEra5:
 
             lat_lon_array = np.vstack(lon_lat).T
 
-            rbf = interpolate.RBFInterpolator(lat_lon_array, T[i,:,:].flatten()[mask], neighbors=6)
+            rbf = interpolate.RBFInterpolator(lat_lon_array, T[i,:,:].flatten()[mask], neighbors=16)
 
             field = rbf(np.vstack((lon.flatten(), lat.flatten())).T)
 
@@ -222,7 +222,7 @@ class IngestEra5:
 
             lat_lon_array = np.vstack(lon_lat).T
 
-            rbf = interpolate.RBFInterpolator(lat_lon_array, qv[i,:,:].flatten()[mask], neighbors=6)
+            rbf = interpolate.RBFInterpolator(lat_lon_array, qv[i,:,:].flatten()[mask], neighbors=16)
             field = rbf(np.vstack((lon.flatten(), lat.flatten())).T)
 
 
@@ -278,7 +278,7 @@ class IngestEra5:
             
             
             lat_lon_array = np.vstack(lon_lat).T
-            rbf = interpolate.RBFInterpolator(lat_lon_array, u[i,:,:].flatten()[mask], neighbors=6)
+            rbf = interpolate.RBFInterpolator(lat_lon_array, u[i,:,:].flatten()[mask], neighbors=16)
 
             field = rbf(np.vstack((lon.flatten(), lat.flatten())).T)
 
@@ -320,6 +320,12 @@ class IngestEra5:
         
         lon_u, lat_u, u = self.get_u(shift=shift)
         uu, vv = self._Grid.MapProj.rotate_wind(lon_v_grid, u, v)
+
+        #import pylab as plt
+        #plt.contourf(lon_v_grid, lat_v_grid, vv[-1,:,:,] -v[-1,:,:])
+        #plt.colorbar()
+        #plt.show()
+
         v[:,:,:] = vv[:,:,:]
 
         lon_v_grid = lon_v_grid.flatten()
@@ -337,7 +343,7 @@ class IngestEra5:
         for i in range(v.shape[0]):
             
             lat_lon_array = np.vstack(lon_lat).T
-            rbf = interpolate.RBFInterpolator(lat_lon_array, v[i,:,:].flatten()[mask], neighbors=6)
+            rbf = interpolate.RBFInterpolator(lat_lon_array, v[i,:,:].flatten()[mask], neighbors=16)
 
             field = rbf(np.vstack((lon.flatten(), lat.flatten())).T)
             

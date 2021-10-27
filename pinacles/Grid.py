@@ -431,7 +431,10 @@ class RegularCartesian(GridBase):
         local_axis = self._local_axes
         local_axis_edge = self._local_axes_edge
 
+        x_global_mesh, y_global_mesh = np.meshgrid(self.x_global[:]-halfwidth[0], self.y_global[:]-halfwidth[1],indexing='ij')
 
+
+        
         x_local_mesh, y_local_mesh = np.meshgrid(local_axis[0]-halfwidth[0], local_axis[1]-halfwidth[1],indexing='ij')
 
 
@@ -445,6 +448,7 @@ class RegularCartesian(GridBase):
         x_local_mesh_edge_y, y_local_mesh_edge_y = np.meshgrid(local_axis[0]-halfwidth[0], local_axis_edge[1]-halfwidth[1],indexing='ij')
 
 
+        self.lon_global, self.lat_global = self.MapProj.compute_latlon(x_global_mesh, y_global_mesh)
         self.lon_local, self.lat_local = self.MapProj.compute_latlon(x_local_mesh, y_local_mesh)
         self.lon_local_edge_x, self.lat_local_edge_x = self.MapProj.compute_latlon(x_local_mesh_edge_x, y_local_mesh_edge_x)
         self.lon_local_edge_y, self.lat_local_edge_y = self.MapProj.compute_latlon(x_local_mesh_edge_y, y_local_mesh_edge_y)
