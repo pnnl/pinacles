@@ -783,61 +783,61 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         return super().io_update(rt_grp)
 
     def io_fields2d_update(self, nc_grp):
-        lhf = nc_grp.createVariable(
-            "latent_heat_flux",
-            np.double,
-            dimensions=(
-                "X",
-                "Y",
-            ),
-        )
-        lhf[:, :] = self._NoahMPtoATM.lh
+        # lhf = nc_grp.createVariable(
+        #     "latent_heat_flux",
+        #     np.double,
+        #     dimensions=(
+        #         "X",
+        #         "Y",
+        #     ),
+        # )
+        # lhf[:, :] = self._NoahMPtoATM.lh
 
-        shf = nc_grp.createVariable(
-            "sensible_heat_flux",
-            np.double,
-            dimensions=(
-                "X",
-                "Y",
-            ),
-        )
-        shf[:, :] = self._NoahMPtoATM.hfx
+        # shf = nc_grp.createVariable(
+        #     "sensible_heat_flux",
+        #     np.double,
+        #     dimensions=(
+        #         "X",
+        #         "Y",
+        #     ),
+        # )
+        # shf[:, :] = self._NoahMPtoATM.hfx
 
-        tskin = nc_grp.createVariable(
-            "T_skin",
-            np.double,
-            dimensions=(
-                "X",
-                "Y",
-            ),
-        )
-        tskin[:, :] = self.T_skin
+        # tskin = nc_grp.createVariable(
+        #     "T_skin",
+        #     np.double,
+        #     dimensions=(
+        #         "X",
+        #         "Y",
+        #     ),
+        # )
+        # tskin[:, :] = self.T_skin
 
-        t2m = nc_grp.createVariable(
-            "T2m",
-            np.double,
-            dimensions=(
-                "X",
-                "Y",
-            ),
-        )
-        t2m[:, :] = (
-            self._NoahMPvars.t2mvxy * self._NoahMPvars.fvegxy
-            + self._NoahMPvars.t2mbxy * (1.0 - self._NoahMPvars.fvegxy)
-        )
+        # t2m = nc_grp.createVariable(
+        #     "T2m",
+        #     np.double,
+        #     dimensions=(
+        #         "X",
+        #         "Y",
+        #     ),
+        # )
+        # t2m[:, :] = (
+        #     self._NoahMPvars.t2mvxy * self._NoahMPvars.fvegxy
+        #     + self._NoahMPvars.t2mbxy * (1.0 - self._NoahMPvars.fvegxy)
+        # )
 
-        qv2m = nc_grp.createVariable(
-            "qv2m",
-            np.double,
-            dimensions=(
-                "X",
-                "Y",
-            ),
-        )
-        qv2m[:, :] = (
-            self._NoahMPvars.q2mvxy * self._NoahMPvars.fvegxy
-            + self._NoahMPvars.q2mbxy * (1.0 - self._NoahMPvars.fvegxy)
-        )
+        # qv2m = nc_grp.createVariable(
+        #     "qv2m",
+        #     np.double,
+        #     dimensions=(
+        #         "X",
+        #         "Y",
+        #     ),
+        # )
+        # qv2m[:, :] = (
+        #     self._NoahMPvars.q2mvxy * self._NoahMPvars.fvegxy
+        #     + self._NoahMPvars.q2mbxy * (1.0 - self._NoahMPvars.fvegxy)
+        # )
 
-        nc_grp.sync()
+        # nc_grp.sync()
         return

@@ -241,9 +241,6 @@ class MicroKessler(MicrophysicsBase):
         # Todo preallocate
         np.multiply(liq_sed, parameters.LV / parameters.CPD, out=s_liq_sed)
 
-        # Sedimentation source term
-        np.subtract(s, s_liq_sed, out=s)
-
         # Convert sedimentation sources to units of tendency
         np.multiply(liq_sed, 1.0 / self._TimeSteppingController.dt, out=liq_sed)
         np.multiply(s_liq_sed, -1.0 / self._TimeSteppingController.dt, out=s_liq_sed)
@@ -295,12 +292,26 @@ class MicroKessler(MicrophysicsBase):
         timeseries_grp.createVariable("rain_rate", np.double, dimensions=("time",))
 
         # Now add cloud fraction and rain fraction profiles
-        v = profiles_grp.createVariable("CF", np.double, dimensions=("time", "z",))
+        v = profiles_grp.createVariable(
+            "CF",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "Cloud Fraction"
         v.standard_name = "CF"
         v.units = ""
 
-        profiles_grp.createVariable("RF", np.double, dimensions=("time", "z",))
+        profiles_grp.createVariable(
+            "RF",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "Rain Fraction"
         v.standard_name = "RF"
         v.units = ""
@@ -371,20 +382,68 @@ class MicroKessler(MicrophysicsBase):
 
     def io_fields2d_update(self, nc_grp):
 
-        rainnc = nc_grp.createVariable("RAINNC", np.double, dimensions=("X", "Y",))
-        rainnc[:, :] = self._RAINNC
+        start = self._Grid.local_start
+        end = self._Grid._local_end
+        send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
+        recv_buffer = np.empty_like(send_buffer)
 
-        rainncv = nc_grp.createVariable("RAINNCV", np.double, dimensions=("X", "Y"))
-        rainncv[:, :] = self._RAINNCV
+        if nc_grp is not None:
+            rainnc = nc_grp.createVariable(
+                "RAINNC",
+                np.double,
+                dimensions=(
+                    "X",
+                    "Y",
+                ),
+            )
 
+        send_buffer[start[0] : end[0], start[1] : end[1]] = self._RAINNC
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+
+        if nc_grp is not None:
+            print(np.shape(rainnc), np.shape(recv_buffer))
+            rainnc[:, :] = recv_buffer
+
+        if nc_grp is not None:
+            rainncv = nc_grp.createVariable(
+                "RAINNCV",
+                np.double,
+                dimensions=(
+                    "X",
+                    "Y",
+                ),
+            )
+
+        send_buffer.fill(0.0)
+        send_buffer[start[0] : end[0], start[1] : end[1]] = self._RAINNCV
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        if nc_grp is not None:
+            rainncv[:, :] = recv_buffer
+
+        # Compute and output the LWP
+        if nc_grp is not None:
+            lwp = nc_grp.createVariable(
+                "LWP",
+                np.double,
+                dimensions=(
+                    "X",
+                    "Y",
+                ),
+            )
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
-        qc = self._ScalarState.get_field('qc')[nh[0]:-nh[0], nh[1]:-nh[1],:]
-        lwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis,0] , axis=2)
-        lwp = nc_grp.createVariable("lwp", np.double, dimensions=("X", "Y"))
-        lwp[:, :] = lwp_compute
+        qc = self._ScalarState.get_field("qc")[nh[0] : -nh[0], nh[1] : -nh[1], :]
+        lwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis, 0], axis=2)
 
-        nc_grp.sync()
+        send_buffer.fill(0.0)
+        send_buffer[start[0] : end[0], start[1] : end[1]] = lwp_compute
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        if nc_grp is not None:
+            lwp[:, :] = recv_buffer
+
+        if nc_grp is not None:
+            nc_grp.sync()
+
         return
 
     def get_qc(self):

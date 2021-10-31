@@ -20,6 +20,9 @@ def compute_fluxes(
     phi_t,
 ):
 
+    if np.count_nonzero(phi) == 0:
+        return
+
     shape = phi.shape
     # kz_fact = dx[2]*dx[2]/((dx[0] * dx[1]))
     for i in range(shape[0] - 1):
@@ -92,21 +95,36 @@ class ScalarDiffusion:
                 continue
 
             v = profiles_grp.createVariable(
-                "w" + var + "_sgs", np.double, dimensions=("time", "z",)
+                "w" + var + "_sgs",
+                np.double,
+                dimensions=(
+                    "time",
+                    "z",
+                ),
             )
             v.long_name = "SGS flux of " + var
             v.units = "m s^{-1} " + self._ScalarState.get_units(var)
             v.standard_name = "w " + self._ScalarState._latex_names[var] + " sgs"
         # Add the thetali flux
         v = profiles_grp.createVariable(
-            "w" + "T" + "_sgs", np.double, dimensions=("time", "z",)
+            "w" + "T" + "_sgs",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
         )
         v.long_name = "SGS flux of temperature"
         v.units = "m s^{-1} K"
         v.standard_name = "wT sgs"
 
         v = profiles_grp.createVariable(
-            "w" + "thetali" + "_sgs", np.double, dimensions=("time", "z",)
+            "w" + "thetali" + "_sgs",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
         )
         v.long_name = "SGS flux of liquid-ice potential temperature"
         v.units = "m s^{-1} K"

@@ -727,9 +727,6 @@ class MicroSBM(MicrophysicsBase):
         to_our_order(nhalo, self._wrf_vars["LIQUID_SEDIMENTATION"], liq_sed)
         np.multiply(liq_sed, parameters.LV / parameters.CPD, out=s_tend_liq_sed)
 
-        # Sedimentation source term
-        np.subtract(s, s_tend_liq_sed, out=s)
-
         # Convert sedimentation sources to units of tendency
         np.multiply(liq_sed, 1.0 / self._TimeSteppingController.dt, out=liq_sed)
         np.multiply(
@@ -812,12 +809,26 @@ class MicroSBM(MicrophysicsBase):
 
         timeseries_grp.createVariable("rain_rate", np.double, dimensions=("time",))
         # Now add cloud fraction and rain fraction profiles
-        v = profiles_grp.createVariable("CF", np.double, dimensions=("time", "z",))
+        v = profiles_grp.createVariable(
+            "CF",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "Cloud Fraction"
         v.standard_name = "CF"
         v.units = ""
 
-        profiles_grp.createVariable("RF", np.double, dimensions=("time", "z",))
+        profiles_grp.createVariable(
+            "RF",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "Rain Fraction"
         v.standard_name = "RF"
         v.units = ""
@@ -885,7 +896,14 @@ class MicroSBM(MicrophysicsBase):
 
     def io_fields2d_update(self, nc_grp):
 
-        rainnc = nc_grp.createVariable("RAINNC", np.double, dimensions=("X", "Y",))
+        rainnc = nc_grp.createVariable(
+            "RAINNC",
+            np.double,
+            dimensions=(
+                "X",
+                "Y",
+            ),
+        )
         rainnc[:, :] = self._RAINNC
 
         rainncv = nc_grp.createVariable("RAINNCV", np.double, dimensions=("X", "Y"))

@@ -2,7 +2,7 @@ from pinacles import Thermodynamics, ThermodynamicsMoist_impl
 from pinacles import parameters
 import numpy as np
 import numba
-
+from mpi4py import MPI
 
 class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
     def __init__(
@@ -54,7 +54,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         bvf = self._DiagnosticState.get_field("bvf")
         w_t = self._VelocityState.get_tend("w")
 
-        ThermodynamicsMoist_impl.eos_sam(
+        ThermodynamicsMoist_impl.eos(
             z, p0, alpha0, s, qv, ql, qi, T, tref, alpha, buoyancy
         )
 
@@ -71,7 +71,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
 
     @staticmethod
     @numba.njit()
-    def compute_thetali(exner, T, thetali, qc):
+    def compute_thetali(exner, T, thetali, qc, qi):
         shape = T.shape
         for i in range(shape[0]):
             for j in range(shape[1]):
@@ -81,8 +81,10 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
                         / exner[k]
                         * (
                             1.0
-                            - parameters.LV
-                            * qc[i, j, k]
+                            - (
+                                parameters.LV * qc[i, j, k]
+                                + parameters.LS * qi[i, j, k]
+                            )
                             / (parameters.CPD * T[i, j, k])
                         )
                     )
@@ -92,16 +94,69 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         exner = self._Ref.exner
         T = self._DiagnosticState.get_field("T")
         qc = self._Micro.get_qc()
+        qi = self._Micro.get_qi()
         thetali = np.empty_like(T)
-        self.compute_thetali(exner, T, thetali, qc)
+        self.compute_thetali(exner, T, thetali, qc, qi)
 
         return thetali
 
     def get_qt(self):
-        # Todo optimize
 
         qv = self._ScalarState.get_field("qv")
         qc = self._Micro.get_qc()
         qi = self._Micro.get_qi()
 
         return qv + qc + qi
+
+    def io_fields2d_update(self, nc_grp):
+
+        start = self._Grid.local_start
+        end = self._Grid._local_end
+        nh = self._Grid.n_halo
+
+        send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
+        recv_buffer = np.empty_like(send_buffer)
+
+        # Output Temperature
+        if nc_grp is not None:
+            t = nc_grp.createVariable(
+                "T",
+                np.double,
+                dimensions=(
+                    "X",
+                    "Y",
+                ),
+            )
+
+        T = self._DiagnosticState.get_field('T')
+        send_buffer[start[0]:end[0], start[1]:end[1]] = T[nh[0]:-nh[0], nh[1]:-nh[1],nh[2]]
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        if nc_grp is not None:
+            t[:, :] = recv_buffer
+
+        if nc_grp is not None:
+            nc_grp.sync()
+
+
+        # Output specific humidity
+        if nc_grp is not None:
+            qv_var = nc_grp.createVariable(
+                "qv",
+                np.double,
+                dimensions=(
+                    "X",
+                    "Y",
+                ),
+            )
+
+        qv = self._ScalarState.get_field('qv')
+        send_buffer.fill(0.0)
+        send_buffer[start[0]:end[0], start[1]:end[1]] = qv[nh[0]:-nh[0], nh[1]:-nh[1],nh[2]]
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        if nc_grp is not None:
+            qv_var[:, :] = recv_buffer
+
+        if nc_grp is not None:
+            nc_grp.sync()
+
+        return 

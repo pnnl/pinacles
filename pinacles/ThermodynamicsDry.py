@@ -1,7 +1,11 @@
-from pinacles import Thermodynamics, ThermodynamicsDry_impl
-from pinacles import parameters
 import numpy as np
 import numba
+from mpi4py import MPI
+from pinacles import Thermodynamics, ThermodynamicsDry_impl
+from pinacles import parameters
+
+
+
 
 
 class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
@@ -59,7 +63,7 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         bvf = self._DiagnosticState.get_field("bvf")
         w_t = self._VelocityState.get_tend("w")
 
-        ThermodynamicsDry_impl.eos_sam(z, p0, alpha0, s, qv, T, tref, alpha, buoyancy)
+        ThermodynamicsDry_impl.eos(z, p0, alpha0, s, qv, T, tref, alpha, buoyancy)
         ThermodynamicsDry_impl.compute_bvf(
             n_halo, theta_ref, exner, T, qv, dz, thetav, bvf
         )
@@ -70,6 +74,37 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         self._Timers.end_timer("ThermoDynamicsDry_update")
 
         return
+
+    def io_fields2d_update(self, nc_grp):
+
+        start = self._Grid.local_start
+        end = self._Grid._local_end
+        nh = self._Grid.n_halo
+
+        send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
+        recv_buffer = np.empty_like(send_buffer)
+
+        # Output Temperature
+        if nc_grp is not None:
+            t = nc_grp.createVariable(
+                "T",
+                np.double,
+                dimensions=(
+                    "X",
+                    "Y",
+                ),
+            )
+
+        T = self._DiagnosticState.get_field('T')
+        send_buffer[start[0]:end[0], start[1]:end[1]] = T[nh[0]:-nh[0], nh[1]:-nh[1],nh[2]]
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        if nc_grp is not None:
+            t[:, :] = recv_buffer
+
+        if nc_grp is not None:
+            nc_grp.sync()
+
+        return 
 
     @staticmethod
     @numba.njit()

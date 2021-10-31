@@ -67,6 +67,9 @@ class DummyRad:
     def init_profiles(self):
         return
 
+    def update_apply_tend(self):
+        return
+
     def io_initialize(self, nc_grp):
         return
 

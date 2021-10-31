@@ -30,6 +30,8 @@ class ThermodynamicsBase:
             "buoyancy", units="m s^{-1}", latex_name="b", long_name="buoyancy"
         )
 
+        self.name = "ThermodynamicsBase"
+
         return
 
     def get_qc(self):

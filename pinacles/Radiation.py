@@ -314,11 +314,12 @@ class RRTMG:
             icld = 1
             idrv = 0
             iaer = 0
+            iceflag = 3
             inflglw = 2
-            iceflglw = 3
+            iceflglw = iceflag
             liqflglw = 1
             inflgsw = 2
-            iceflgsw = 3
+            iceflgsw = iceflag
             liqflgsw = 1
 
             _nbndlw = 16
@@ -507,12 +508,14 @@ class RRTMG:
             )
 
             reliq *= 1.0e6
+            
+            reice *= 1.0e6 
+            # For iceflag = 3, bound the generalized effective radius
+            if iceflag == 3:
+                reice *= 1.0315 
+                reice[reice < 5.0] = 5.0
+                reice[reice > 140.0] = 140.0
 
-            reice *= 1.0315 
-            reice[reice < 5e-6] = 5e-6 
-            reice[reice > 131e-6] = 140e-6 
-
-            reice *= 1.0e6
             play *= 0.01
             plev *= 0.01
 
@@ -663,20 +666,16 @@ class RRTMG:
                 rho0[np.newaxis, np.newaxis, :] * parameters.CPD / 86400.0
             )
 
-        #s[:, :, :] += ds_dTdt_rad[:, :, :] * dt
-
- 
-        UtilitiesParallel.print_root('UPDATED RADIATION')
-
         self._Timers.end_timer("RRTMG")
         return
 
-    def update_tend(self):
-        s = self._ScalarState.get_field('s')
+    def update_apply_tend(self):
+
+        s = self._ScalarState.get_field("s")
         dTdt_rad = self._DiagnosticState.get_field("dTdt_rad")
         dt = self._TimeSteppingController.dt
         s[:, :, :] += dTdt_rad[:, :, :] * dt
-        UtilitiesParallel.print_root('UPDATED RADIATION TEND')
+
         return
 
     def io_initialize(self, nc_grp):
@@ -739,7 +738,12 @@ class RRTMG:
 
         # Now add profile of effective radius
         v = profiles_grp.createVariable(
-            "r_eff_cloud", np.double, dimensions=("time", "z",)
+            "r_eff_cloud",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
         )
         v.long_name = "Effective droplet radius"
         v.standard_name = "r_eff_cloud"
@@ -796,14 +800,6 @@ class RRTMG:
         return
 
     def io_fields2d_update(self, nc_grp):
-
-        #alb = -(self._surf_sw_dn_2d - self._toa_sw_dn_2d) / self._toa_sw_dn_2d
-        #
-        #albedo = nc_grp.createVariable("albedo", np.double, dimensions=("X", "Y",))
-        #albedo[:, :] = alb.reshape((self._Grid.nl[0], self._Grid.nl[1]))
-        #
-        #nc_grp.sync()
-
         return
 
     @property
@@ -811,9 +807,9 @@ class RRTMG:
         return self._name
 
     def restart(self, data_dict):
-        """ 
+        """
         Here we just do checks for domain decomposition consistency with the namelist file
-        # currently, we require that a restarted simulation have exactly the same domain 
+        # currently, we require that a restarted simulation have exactly the same domain
         # as the simulation from which it is being restarted.
         """
 

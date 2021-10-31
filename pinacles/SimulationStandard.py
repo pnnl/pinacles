@@ -314,11 +314,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.TimeSteppingController,
         )
         self.Fields2d = Fields2D.Fields2D(
-            self._namelist, self.ModelGrid, self.Ref, self.TimeSteppingController
+            self._namelist,
+            self.ModelGrid,
+            self.Ref,
+            self.VelocityState,
+            self.TimeSteppingController,
         )
         self.Fields2d.add_class(self.Micro)
         self.Fields2d.add_class(self.Rad)
         self.Fields2d.add_class(self.Surf)
+        self.Fields2d.add_class(self.Thermo)
+        self.Fields2d.add_class(self.Plumes)
 
         # Instantiate optional TowerIO
         self.IOTower = TowersIO.Towers(
@@ -370,7 +376,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.StatsIO.initialize()
 
         # Now initialze for the output of 3D fields
-        self.FieldsIO = DumpFields.DumpFields(
+        self.FieldsIO = DumpFields.DumpFieldsFactory(
             self._namelist, self.Timers, self.ModelGrid, self.TimeSteppingController
         )
         # Add container classes that will dump 3D fields
@@ -701,6 +707,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Now iniitalzie the IO field
         self.StatsIO.initialize()
 
+        self.Fields2d = Fields2D.Fields2D(
+            self._namelist,
+            self.ModelGrid,
+            self.Ref,
+            self.VelocityState,
+            self.TimeSteppingController,
+        )
+        self.Fields2d.add_class(self.Micro)
+        self.Fields2d.add_class(self.Thermo)
+        self.Fields2d.add_class(self.Plumes)
+
         # Now initialze for the output of 3D fields
         self.FieldsIO = DumpFields.DumpFields(
             self._namelist, self.Timers, self.ModelGrid, self.TimeSteppingController
@@ -736,7 +753,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
     def update(self, integrate_by_dt=0.0):
 
-        """ This function integrates the model forward by integrate_by_dt seconds. """
+        """This function integrates the model forward by integrate_by_dt seconds."""
         # Compute the startime and endtime for this integration
         start_time = self.TimeSteppingController.time
         end_time = start_time + integrate_by_dt
@@ -802,7 +819,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     self.Thermo.update(apply_buoyancy=False)
                     # We call the microphysics update at the end of the RK steps.
                     self.Micro.update()
-                    self.Rad.update_tend()
+                    self.Rad.update_apply_tend()
 
                     self.Timers.start_timer("BoundaryUpdate")
                     self.ScalarState.boundary_exchange()
