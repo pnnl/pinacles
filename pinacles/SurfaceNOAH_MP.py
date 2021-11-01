@@ -783,61 +783,111 @@ class SurfaceNoahMP(Surface.SurfaceBase):
         return super().io_update(rt_grp)
 
     def io_fields2d_update(self, nc_grp):
-        # lhf = nc_grp.createVariable(
-        #     "latent_heat_flux",
-        #     np.double,
-        #     dimensions=(
-        #         "X",
-        #         "Y",
-        #     ),
-        # )
-        # lhf[:, :] = self._NoahMPtoATM.lh
+        
 
-        # shf = nc_grp.createVariable(
-        #     "sensible_heat_flux",
-        #     np.double,
-        #     dimensions=(
-        #         "X",
-        #         "Y",
-        #     ),
-        # )
-        # shf[:, :] = self._NoahMPtoATM.hfx
 
-        # tskin = nc_grp.createVariable(
-        #     "T_skin",
-        #     np.double,
-        #     dimensions=(
-        #         "X",
-        #         "Y",
-        #     ),
-        # )
-        # tskin[:, :] = self.T_skin
+        start = self._Grid.local_start
+        end = self._Grid._local_end
+        send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
+        recv_buffer = np.empty_like(send_buffer)
 
-        # t2m = nc_grp.createVariable(
-        #     "T2m",
-        #     np.double,
-        #     dimensions=(
-        #         "X",
-        #         "Y",
-        #     ),
-        # )
-        # t2m[:, :] = (
-        #     self._NoahMPvars.t2mvxy * self._NoahMPvars.fvegxy
-        #     + self._NoahMPvars.t2mbxy * (1.0 - self._NoahMPvars.fvegxy)
-        # )
+        if nc_grp is not None:
+            rainnc = nc_grp.createVariable(
+                "latent_heat_flux",
+                np.double,
+                dimensions=(
+                    "X",
+                    "Y",
+                ),
+            )
 
-        # qv2m = nc_grp.createVariable(
-        #     "qv2m",
-        #     np.double,
-        #     dimensions=(
-        #         "X",
-        #         "Y",
-        #     ),
-        # )
-        # qv2m[:, :] = (
-        #     self._NoahMPvars.q2mvxy * self._NoahMPvars.fvegxy
-        #     + self._NoahMPvars.q2mbxy * (1.0 - self._NoahMPvars.fvegxy)
-        # )
 
-        # nc_grp.sync()
+        send_buffer[start[0] : end[0], start[1] : end[1]] =  self._NoahMPtoATM.lh
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        
+    
+        if nc_grp is not None:
+            rainnc[:, :] = recv_buffer
+
+
+
+        if nc_grp is not None:
+            sensible_heat_flux = nc_grp.createVariable(
+            "sensible_heat_flux",
+            np.double,
+            dimensions=(
+                "X",
+                "Y",
+            ),
+        )
+
+
+        send_buffer[start[0] : end[0], start[1] : end[1]] =  self._NoahMPtoATM.hfx
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        
+    
+        if nc_grp is not None:
+            sensible_heat_flux[:, :] = recv_buffer
+
+
+
+        if nc_grp is not None:
+            T_skin = nc_grp.createVariable(
+            "T_skin",
+            np.double,
+            dimensions=(
+                "X",
+                "Y",
+            ),
+        )
+
+
+        send_buffer[start[0] : end[0], start[1] : end[1]] =  self.T_skin
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        
+    
+        if nc_grp is not None:
+            T_skin[:, :] = recv_buffer
+
+
+        if nc_grp is not None:
+            t2m = nc_grp.createVariable(
+            "T2m",
+            np.double,
+            dimensions=(
+                "X",
+                "Y",
+            ),
+        )
+
+        send_buffer[start[0] : end[0], start[1] : end[1]] =  (
+             self._NoahMPvars.t2mvxy * self._NoahMPvars.fvegxy
+             + self._NoahMPvars.t2mbxy * (1.0 - self._NoahMPvars.fvegxy)
+         )
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        
+    
+        if nc_grp is not None:
+            t2m[:, :] = recv_buffer
+
+        if nc_grp is not None:
+            qv2m = nc_grp.createVariable(
+            "qv2m",
+            np.double,
+            dimensions=(
+                "X",
+                "Y",
+            ),
+        )
+
+        send_buffer[start[0] : end[0], start[1] : end[1]] = (
+             self._NoahMPvars.q2mvxy * self._NoahMPvars.fvegxy
+             + self._NoahMPvars.q2mbxy * (1.0 - self._NoahMPvars.fvegxy)
+         )
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        
+    
+        if nc_grp is not None:
+            qv2m[:, :] = recv_buffer
+
         return
