@@ -14,7 +14,6 @@ def water_path(n_halo, dz, npts, rho, q):
 
 @numba.njit()
 def water_path_lasso(n_halo, dz, rho, qc):
-    path = 0.0
     shape = qc.shape
     npts = 0
     lwp = 0
@@ -24,12 +23,12 @@ def water_path_lasso(n_halo, dz, rho, qc):
         for j in range(n_halo[1], shape[1] - n_halo[1]):
             for k in range(n_halo[2], shape[2] - n_halo[2]):
                 if qc[i,j,k] > 1e-7:
-                    path[i,j] += qc[i, j, k] * rho[k] * dz
+                    paths[i,j] += qc[i, j, k] * rho[k] * dz
 
     for i in range(n_halo[0], shape[0] - n_halo[0]):
         for j in range(n_halo[1], shape[1] - n_halo[1]):
-            if path[i,j] * 1000.0 > 1.0:
-                lwp += path[i,j]
+            if paths[i,j] * 1000.0 > 1.0:
+                lwp += paths[i,j]
                 npts += 1
 
     return lwp, npts
