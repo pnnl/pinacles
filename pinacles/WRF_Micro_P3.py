@@ -682,10 +682,8 @@ class MicroP3(MicrophysicsBase):
         lwp_lasso = UtilitiesParallel.ScalarAllReduce(lwp)
         npts = UtilitiesParallel.ScalarAllReduce(lwp)
         if npts > 0:
-            lwp_lasso /= npts:
+            lwp_lasso /= npts
     
-    
-
         rwp = water_path(n_halo, dz, npts, rho, qr)
         rwp = UtilitiesParallel.ScalarAllReduce(rwp)
 
