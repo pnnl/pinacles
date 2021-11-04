@@ -678,7 +678,7 @@ class MicroP3(MicrophysicsBase):
         lwp = UtilitiesParallel.ScalarAllReduce(lwp)
 
         # First compute liqud water path
-        lwp_lasso, npts = water_path_lasso(n_halo, dz, npts, rho, qc)
+        lwp_lasso, npts = water_path_lasso(n_halo, dz, rho, qc)
         lwp_lasso = UtilitiesParallel.ScalarAllReduce(lwp)
         npts = UtilitiesParallel.ScalarAllReduce(lwp)
         if npts > 0:
