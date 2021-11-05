@@ -727,9 +727,11 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Fields2d.add_class(self.Plumes)
 
         # Now initialze for the output of 3D fields
-        self.FieldsIO = DumpFields.DumpFields(
+        # Now initialze for the output of 3D fields
+        self.FieldsIO = DumpFields.DumpFieldsFactory(
             self._namelist, self.Timers, self.ModelGrid, self.TimeSteppingController
         )
+
         # Add container classes that will dump 3D fields
         self.FieldsIO.add_class(self.ScalarState)
         self.FieldsIO.add_class(self.VelocityState)
