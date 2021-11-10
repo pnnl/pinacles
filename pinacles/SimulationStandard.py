@@ -809,6 +809,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 if n == 1:
                     self.Thermo.update(apply_buoyancy=False)
+    
                     # We call the microphysics update at the end of the RK steps.
                     self.Micro.update()
                     self.Rad.update_apply_tend()
@@ -816,7 +817,11 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     self.Timers.start_timer("BoundaryUpdate")
                     self.ScalarState.boundary_exchange()
                     self.ScalarState.update_all_bcs()
+
                     self.Timers.end_timer("BoundaryUpdate")
+
+                    # Get a consistant temperature for io
+                    self.Thermo.update(apply_buoyancy=False)
 
             self.Timers.finish_timestep()
             self.TimeSteppingController._time += self.TimeSteppingController._dt
