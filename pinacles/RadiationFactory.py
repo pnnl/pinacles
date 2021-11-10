@@ -1,4 +1,5 @@
-from pinacles.Radiation import RRTMG, RadiationDycoms
+from pinacles.Radiation import RRTMG
+from pinacles.RadiationDycoms import RadiationDycoms
 from mpi4py import MPI
 
 

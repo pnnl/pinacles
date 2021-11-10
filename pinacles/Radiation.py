@@ -9,6 +9,7 @@ import netCDF4 as nc
 from cffi import FFI
 import ctypes
 
+
 ffi = FFI()
 
 
@@ -34,6 +35,9 @@ class RRTMG:
         self._Surf = Surf
         self._Micro = Micro
         self._TimeSteppingController = TimeSteppingController
+        self.frequency = 1e20
+        self.time_synced = False
+
 
         try:
             self._compute_radiation = namelist["radiation"]["compute_radiation"]
@@ -48,19 +52,27 @@ class RRTMG:
                 UtilitiesParallel.print_root(
                     "\t \t Assuming RRTMG should not be used for this case."
                 )
-        self.frequency = 1e20
-        self.time_synced = True
+
         self._restart_attributes = []
         if not self._compute_radiation:
             return
 
+        
+ 
+        try:
+            self.time_synced= namelist["radiation"]["time_synced"]
+        except:
+            self.time_synced = True
+
         try:
             self._radiation_frequency = namelist["radiation"]["update_frequency"]
         except:
-            self._radiation_frequency = 30.0
+                self._radiation_frequency =30.0
 
         self.frequency = self._radiation_frequency  # This is used for time syncing
-        self.time_synced = True
+     
+
+
 
         #
 
@@ -93,8 +105,10 @@ class RRTMG:
                  double swdflxc[] , double swhrc[]);",
             override=True,
         )
-
-        self._rrtmg_lib_path = namelist["radiation"]["rrtmg_lib_path"]
+        try:
+            self._rrtmg_lib_path = namelist["radiation"]["rrtmg_lib_path"]
+        except:
+            self._rrtmg_lib_path = './pinacles/externals/rrtmg_wrapper/'
         if self._rrtmg_lib_path[-1] != "/":
             self._rrtmg_lib_path += "/"
         self._lib_lw = ffi.dlopen(self._rrtmg_lib_path + "librrtmglw.so")
@@ -278,12 +292,10 @@ class RRTMG:
 
         return
 
-    def update(self, force=False, time_loop=False):
+    def update(self, force=False):
         self._Timers.start_timer("RRTMG")
 
-        if time_loop and self.time_synced and not force:
-            return
-
+      
         if not self._compute_radiation:
             return
 
@@ -304,7 +316,7 @@ class RRTMG:
             )
             or force
         ):
-
+        
             self.time_elapsed = 0.0
             # TODO: testing of this code
             self.hourz = self._hourz_init + self._TimeSteppingController.time / 3600.0
@@ -961,148 +973,3 @@ def interpolate_trace_gas(p_trace_pa, trace_vmr, p_pa):
     return interp_vmr
 
 
-class RadiationDycoms:
-    def __init__(
-        self,
-        namelist,
-        Timers,
-        Grid,
-        Ref,
-        ScalarState,
-        DiagnosticState,
-        Micro,
-        TimeSteppingController,
-    ):
-
-        self._name = "RadiationDycoms"
-        self._Timers = Timers
-        self._Grid = Grid
-        self._Ref = Ref
-        self._ScalarState = ScalarState
-        self._DiagnosticState = DiagnosticState
-        self._Micro = Micro
-        self._TimeSteppingController = TimeSteppingController
-
-        self._DiagnosticState.add_variable("dTdt_rad")
-
-        try:
-            self._radiation_frequency = namelist["radiation"]["update_frequency"]
-        except:
-            self._radiation_frequency = 30.0
-
-        self.frequency = self._radiation_frequency  # This is used for time syncing
-        self.time_synced = True
-        self.time_elapsed = parameters.LARGE
-
-        self._restart_attributes = ["time_elapsed"]
-
-        self._Timers.add_timer("RadiationDycoms")
-        return
-
-    def init_profiles(self):
-        # Nothing to do here
-        return
-
-    def update(self, force=False, time_loop=False):
-        self._Timers.start_timer("RadiationDycoms")
-
-        if time_loop and self.time_synced and not force:
-            return
-        self.time_elapsed += self._TimeSteppingController.dt
-        if (
-            (self.time_elapsed > self._radiation_frequency and not self.time_synced)
-            or (
-                self.time_synced
-                and np.allclose(
-                    self._TimeSteppingController._time % self.frequency, 0.0
-                )
-            )
-            or force
-        ):
-            dTdt_rad = self._DiagnosticState.get_field("dTdt_rad")
-            # heating_rate_lw = self._DiagnosticState.get_field('heating_rate_lw')
-            s = self._ScalarState.get_field("s")
-            qc = self._Micro.get_qc()
-            qv = self._ScalarState.get_field("qv")
-            rho = self._Ref._rho0
-            rho_edge = self._Ref._rho0_edge
-            nh = self._Grid.n_halo
-
-            z = self._Grid.z_global
-            z_edge = self._Grid.z_edge_global
-            dt = self._TimeSteppingController.dt
-            dycoms_rad_calc(
-                nh, self._Grid.dxi[2], z, z_edge, rho, rho_edge, qc, qv, dTdt_rad
-            )
-
-            s[:, :, :] += dTdt_rad[:, :, :] * dt
-
-        self._Timers.end_timer("RadiationDycoms")
-        return
-
-    def io_initialize(self, nc_grp):
-        # add zi to the output?
-        return
-
-    def io_update(self, nc_grp):
-        return
-
-    def io_fields2d_update(self, nc_grp):
-        return
-
-    def restart(self, data_dict):
-        return
-
-    def dump_restart(self, data_dict):
-        # Loop through all attributes storing them
-        key = "Radiation"
-        data_dict[key] = {}
-        for item in self._restart_attributes:
-            data_dict[key][item] = self.__dict__[item]
-        return
-
-    @property
-    def name(self):
-        return self._name
-
-
-@numba.njit()
-def dycoms_rad_calc(nh, dzi, z, z_edge, rho, rho_edge, qc, qv, dT):
-    F0 = 70.0  # W m^-2
-    F1 = 22.0  # W m^-2
-    kappa = 85  # m^2 kg^-1
-    a = 1.0  # K m^{-1/3}
-    rho_zi = 1.12  # kg m^{-3} (air density at initial inversion zi = 795)
-    qt_zi = 8.0e-3  # kg kg^-1 (total water threshold for diagnosing zi)
-    D = 3.75e-6  # s^{-1} dive
-    shape = qc.shape
-    lw_flux = np.zeros(shape[2], dtype=np.double)
-    kmin = nh[2] - 1
-    kmax = shape[2] - nh[2]
-    for i in range(nh[0], shape[0] - nh[0]):
-        for j in range(nh[1], shape[1] - nh[1]):
-            index = np.amax(np.argwhere(qc[i, j, :] + qv[i, j, :] > qt_zi))
-            zi = z[index]
-            qc_edge = np.interp(z_edge, z, qc[i, j, :])
-            for k in range(kmin, kmax):
-                qtop = (
-                    np.trapz(
-                        rho_edge[k : kmax + 1] * qc_edge[k : kmax + 1], dx=1.0 / dzi
-                    )
-                    * kappa
-                )
-                qbot = (
-                    np.trapz(
-                        rho_edge[kmin : k + 1] * qc_edge[kmin : k + 1], dx=1.0 / dzi
-                    )
-                    * kappa
-                )
-                lw_flux[k] = F0 * np.exp(-qtop) + F1 * np.exp(-qbot)
-                if z_edge[k] > zi:
-                    cbrt_z = (z_edge[k] - zi) ** (1.0 / 3.0)
-                    lw_flux[k] += (
-                        a * rho_zi * D * 1004.0 * (0.25 * cbrt_z ** 4.0 + zi * cbrt_z)
-                    )
-
-                dT[i, j, k] = -(lw_flux[k] - lw_flux[k - 1]) * dzi / 1004.0 / rho[k]
-    return

@@ -17,15 +17,21 @@ def main(namelist):
     # Albedo = SimulationUtilities.Albedo(20.0, Sim)
 
     # Put all of the output classes into a list (these are just references)
+
+    
+
+
     io_classes = [
         Sim.StatsIO,
         Sim.FieldsIO,
         Sim.Fields2d,
         Sim.IOTower,
         Sim.Restart,
-        Sim.Rad,
         Sim.Timers,
     ]
+
+    if Sim.Rad.time_synced :
+        io_classes.append(Sim.Rad)
 
     # Determine all of the output frequencies
     io_frequencies = []
