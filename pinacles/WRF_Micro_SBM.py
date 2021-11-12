@@ -7,6 +7,7 @@ import time
 from pinacles.Microphysics import (
     MicrophysicsBase,
     water_path,
+    water_path_lasso,
     water_fraction,
     water_fraction_profile,
 )
@@ -727,6 +728,9 @@ class MicroSBM(MicrophysicsBase):
         to_our_order(nhalo, self._wrf_vars["LIQUID_SEDIMENTATION"], liq_sed)
         np.multiply(liq_sed, parameters.LV / parameters.CPD, out=s_tend_liq_sed)
 
+        # Sedimentation source term
+        #np.subtract(s, s_tend_liq_sed, out=s)
+
         # Convert sedimentation sources to units of tendency
         np.multiply(liq_sed, 1.0 / self._TimeSteppingController.dt, out=liq_sed)
         np.multiply(
@@ -780,6 +784,11 @@ class MicroSBM(MicrophysicsBase):
         v.long_name = "Rain Fraction"
         v.standard_name = "RF"
         v.units = ""
+        
+        v = timeseries_grp.createVariable("LWP_LASSO", np.double, dimensions=("time",))
+        v.long_name = "LASSO Liquid Water Path"
+        v.standard_name = "LWP"
+        v.units = "kg/m^2"
 
         v = timeseries_grp.createVariable("LWP", np.double, dimensions=("time",))
         v.long_name = "Liquid Water Path"
@@ -851,6 +860,14 @@ class MicroSBM(MicrophysicsBase):
         lwp = water_path(n_halo, dz, npts, rho, qc)
         lwp = UtilitiesParallel.ScalarAllReduce(lwp)
 
+        # First compute liqud water path
+        lwp_lasso, npts_lasso = water_path_lasso(n_halo, dz, rho, qc+qr)
+        lwp_lasso = UtilitiesParallel.ScalarAllReduce(lwp_lasso)
+        npts_lasso = UtilitiesParallel.ScalarAllReduce(npts_lasso)
+        if npts_lasso > 0:
+            lwp_lasso /= npts_lasso
+
+
         rwp = water_path(n_halo, dz, npts, rho, qr)
         rwp = UtilitiesParallel.ScalarAllReduce(rwp)
 
@@ -884,6 +901,7 @@ class MicroSBM(MicrophysicsBase):
             timeseries_grp["CF"][-1] = cf
             timeseries_grp["RF"][-1] = rf
             timeseries_grp["LWP"][-1] = lwp
+            timeseries_grp["LWP_LASSO"][-1] = lwp_lasso
             timeseries_grp["RWP"][-1] = rwp
             timeseries_grp["VWP"][-1] = vwp
 
@@ -896,20 +914,94 @@ class MicroSBM(MicrophysicsBase):
 
     def io_fields2d_update(self, nc_grp):
 
-        rainnc = nc_grp.createVariable(
-            "RAINNC",
-            np.double,
-            dimensions=(
-                "X",
-                "Y",
-            ),
-        )
-        rainnc[:, :] = self._RAINNC
 
-        rainncv = nc_grp.createVariable("RAINNCV", np.double, dimensions=("X", "Y"))
-        rainncv[:, :] = self._RAINNCV
+        start = self._Grid.local_start
+        end = self._Grid._local_end
+        send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
+        recv_buffer = np.empty_like(send_buffer)
 
-        nc_grp.sync()
+        if nc_grp is not None:
+            rainnc = nc_grp.createVariable(
+                "RAINNC",
+                np.double,
+                dimensions=(
+                    "X",
+                    "Y",
+                ),
+            )
+        
+        send_buffer[start[0]:end[0], start[1]:end[1]] = self._RAINNC
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)        
+
+        if nc_grp is not None:
+            rainnc[:, :] = recv_buffer
+
+
+        if nc_grp is not None:
+            rainncv = nc_grp.createVariable(
+                "RAINNCV",
+                np.double,
+                dimensions=(
+                    "X",
+                    "Y",
+                ),
+            )
+
+        send_buffer.fill(0.0)
+        send_buffer[start[0]:end[0], start[1]:end[1]] = self._RAINNCV
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        if nc_grp is not None:
+            rainncv[:, :] = recv_buffer
+
+
+        # Compute and output the LWP
+        if nc_grp is not None:
+            lwp = nc_grp.createVariable(
+                "LWP",
+                np.double,
+                dimensions=(
+                    "X",
+                    "Y",
+                ),
+            )
+        nh = self._Grid.n_halo
+        rho0 = self._Ref.rho0
+        qc = self._ScalarState.get_field('qc')[nh[0]:-nh[0], nh[1]:-nh[1],:]
+        lwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis,0] , axis=2)
+
+        send_buffer.fill(0.0)
+        send_buffer[start[0]:end[0], start[1]:end[1]] = lwp_compute
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        if nc_grp is not None:
+            lwp[:, :] = recv_buffer
+
+        # Compute and output the LWP
+        '''
+        if nc_grp is not None:
+            iwp = nc_grp.createVariable(
+                "IWP",
+                np.double,
+                dimensions=(
+                    "X",
+                    "Y",
+                ),
+            )
+
+        nh = self._Grid.n_halo
+        rho0 = self._Ref.rho0
+        qc = self._ScalarState.get_field('qi1')[nh[0]:-nh[0], nh[1]:-nh[1],:]
+        iwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis,0] , axis=2)
+
+        send_buffer.fill(0.0)
+        send_buffer[start[0]:end[0], start[1]:end[1]] = iwp_compute
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        if nc_grp is not None:
+            iwp[:, :] = recv_buffer
+        '''
+
+        if nc_grp is not None:
+            nc_grp.sync()
+
         return
 
     def get_reffc(self):

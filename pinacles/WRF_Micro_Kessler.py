@@ -1,6 +1,7 @@
 from pinacles.Microphysics import (
     MicrophysicsBase,
     water_path,
+    water_path_lasso,
     water_fraction,
     water_fraction_profile,
 )
@@ -241,6 +242,9 @@ class MicroKessler(MicrophysicsBase):
         # Todo preallocate
         np.multiply(liq_sed, parameters.LV / parameters.CPD, out=s_liq_sed)
 
+        # Sedimentation source term
+        #np.subtract(s, s_liq_sed, out=s)
+
         # Convert sedimentation sources to units of tendency
         np.multiply(liq_sed, 1.0 / self._TimeSteppingController.dt, out=liq_sed)
         np.multiply(s_liq_sed, -1.0 / self._TimeSteppingController.dt, out=s_liq_sed)
@@ -262,6 +266,11 @@ class MicroKessler(MicrophysicsBase):
         v.long_name = "Rain Fraction"
         v.standard_name = "RF"
         v.units = ""
+
+        v = timeseries_grp.createVariable("LWP_LASSO", np.double, dimensions=("time",))
+        v.long_name = "LASSO Liquid Water Path"
+        v.standard_name = "LWP"
+        v.units = "kg/m^2"
 
         v = timeseries_grp.createVariable("LWP", np.double, dimensions=("time",))
         v.long_name = "Liquid Water Path"
@@ -335,6 +344,13 @@ class MicroKessler(MicrophysicsBase):
         lwp = water_path(n_halo, dz, npts, rho, qc)
         lwp = UtilitiesParallel.ScalarAllReduce(lwp)
 
+        # First compute liqud water path
+        lwp_lasso, npts_lasso = water_path_lasso(n_halo, dz, rho, qc+qr)
+        lwp_lasso = UtilitiesParallel.ScalarAllReduce(lwp_lasso)
+        npts_lasso = UtilitiesParallel.ScalarAllReduce(npts_lasso)
+        if npts_lasso > 0:
+            lwp_lasso /= npts_lasso
+
         rwp = water_path(n_halo, dz, npts, rho, qr)
         rwp = UtilitiesParallel.ScalarAllReduce(rwp)
 
@@ -368,6 +384,7 @@ class MicroKessler(MicrophysicsBase):
             timeseries_grp["CF"][-1] = cf
             timeseries_grp["RF"][-1] = rf
             timeseries_grp["LWP"][-1] = lwp
+            timeseries_grp["LWP_LASSO"][-1] = lwp_lasso
             timeseries_grp["RWP"][-1] = rwp
             timeseries_grp["VWP"][-1] = vwp
 
@@ -396,13 +413,14 @@ class MicroKessler(MicrophysicsBase):
                     "Y",
                 ),
             )
-
-        send_buffer[start[0] : end[0], start[1] : end[1]] = self._RAINNC
-        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        
+        send_buffer[start[0]:end[0], start[1]:end[1]] = self._RAINNC
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)        
 
         if nc_grp is not None:
             print(np.shape(rainnc), np.shape(recv_buffer))
             rainnc[:, :] = recv_buffer
+
 
         if nc_grp is not None:
             rainncv = nc_grp.createVariable(
@@ -415,10 +433,11 @@ class MicroKessler(MicrophysicsBase):
             )
 
         send_buffer.fill(0.0)
-        send_buffer[start[0] : end[0], start[1] : end[1]] = self._RAINNCV
+        send_buffer[start[0]:end[0], start[1]:end[1]] = self._RAINNCV
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
         if nc_grp is not None:
             rainncv[:, :] = recv_buffer
+
 
         # Compute and output the LWP
         if nc_grp is not None:
@@ -432,14 +451,15 @@ class MicroKessler(MicrophysicsBase):
             )
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
-        qc = self._ScalarState.get_field("qc")[nh[0] : -nh[0], nh[1] : -nh[1], :]
-        lwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis, 0], axis=2)
+        qc = self._ScalarState.get_field('qc')[nh[0]:-nh[0], nh[1]:-nh[1],:]
+        lwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis,0] , axis=2)
 
         send_buffer.fill(0.0)
-        send_buffer[start[0] : end[0], start[1] : end[1]] = lwp_compute
+        send_buffer[start[0]:end[0], start[1]:end[1]] = lwp_compute
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
         if nc_grp is not None:
             lwp[:, :] = recv_buffer
+
 
         if nc_grp is not None:
             nc_grp.sync()

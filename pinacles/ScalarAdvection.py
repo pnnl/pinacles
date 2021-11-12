@@ -65,87 +65,131 @@ def phi_has_nonzero(phi):
 
 @numba.njit(fastmath=True)
 def weno5_advection(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t):
+        
     phi_shape = phi.shape
+
+    u_loc = np.empty((u.shape[0]), dtype=np.double)
+    phi_loc = np.empty((phi.shape[0]), dtype=np.double)
+    fluxx_loc = np.empty((fluxx.shape[0]), dtype=np.double)
+    
+    for j in range(2, phi_shape[1] - 3):
+        for k in range(2, phi_shape[2] - 3):
+            phi_loc[:] = phi[:,j,k]
+
+            if np.count_nonzero(phi_loc) != 0:
+                u_loc[:] = u[:,j,k]
+                fluxx_loc[:] = fluxx[:,j,k]
+                rho_loc = rho0[k]
+                for i in range(2, phi_shape[0] - 3):
+                    # First compute x-advection
+                    if u_loc[i] >= 0:
+                        fluxx_loc[i] = (
+                            rho_loc
+                            * u_loc[i] 
+                            * interp_weno5(
+                                phi_loc[i - 2],
+                                phi_loc[i - 1],
+                                phi_loc[i],
+                                phi_loc[i + 1],
+                                phi_loc[i + 2],
+                            )
+                        )
+                    else:
+                        fluxx_loc[i] = (
+                            rho_loc
+                            * u_loc[i]
+                            * interp_weno5(
+                                phi_loc[i],
+                                phi_loc[i + 2],
+                                phi_loc[i + 1],
+                                phi_loc[i],
+                                phi_loc[i - 1],
+                            )
+                        )
+                fluxx[:,j,k] = fluxx_loc
+
+
+    v_loc = np.empty((v.shape[1]), dtype=np.double)
+    phi_loc = np.empty((phi.shape[1]), dtype=np.double)
+    fluxy_loc = np.empty((fluxy.shape[1]), dtype=np.double)
+
+    for i in range(2, phi_shape[0] - 3):
+        for k in range(2, phi_shape[2] - 3):
+            phi_loc[:] = phi[i,:,k]
+            if np.count_nonzero(phi_loc) != 0:
+                v_loc[:] = v[i,:,k]
+                fluxy_loc[:] = fluxy[i,:,k]
+                rho_loc = rho0[k]
+
+                for j in range(2, phi_shape[1] - 3):
+                    # First compute y-advection
+                
+                    if v_loc[j] >= 0:
+                        fluxy_loc[j] = (
+                            rho_loc
+                            * v_loc[j]
+                            * interp_weno5(
+                                phi_loc[j - 2],
+                                phi_loc[j - 1],
+                                phi_loc[j],
+                                phi_loc[j + 1],
+                                phi_loc[j + 2],
+                            )
+                        )
+                    else:
+                        fluxy_loc[j] = (
+                            rho_loc
+                            * v_loc[j]
+                            * interp_weno5(
+                                phi_loc[j + 3],
+                                phi_loc[j + 2],
+                                phi_loc[j + 1],
+                                phi_loc[j],
+                                phi_loc[j - 1],
+                            )
+                        )
+                fluxy[i,:,k] = fluxy_loc
+
+    w_loc = np.empty((w.shape[2]), dtype=np.double)
+    phi_loc = np.empty((phi.shape[2]), dtype=np.double)
+    fluxz_loc = np.empty((fluxy.shape[2]), dtype=np.double)
+
     for i in range(2, phi_shape[0] - 3):
         for j in range(2, phi_shape[1] - 3):
-            for k in range(2, phi_shape[2] - 3):
-                # First compute x-advection
-                if u[i, j, k] >= 0:
-                    fluxx[i, j, k] = (
-                        rho0[k]
-                        * u[i, j, k]
-                        * interp_weno5(
-                            phi[i - 2, j, k],
-                            phi[i - 1, j, k],
-                            phi[i, j, k],
-                            phi[i + 1, j, k],
-                            phi[i + 2, j, k],
-                        )
-                    )
-                else:
-                    fluxx[i, j, k] = (
-                        rho0[k]
-                        * u[i, j, k]
-                        * interp_weno5(
-                            phi[i + 3, j, k],
-                            phi[i + 2, j, k],
-                            phi[i + 1, j, k],
-                            phi[i, j, k],
-                            phi[i - 1, j, k],
-                        )
-                    )
 
-                # First compute y-advection
-                if v[i, j, k] >= 0:
-                    fluxy[i, j, k] = (
-                        rho0[k]
-                        * v[i, j, k]
-                        * interp_weno5(
-                            phi[i, j - 2, k],
-                            phi[i, j - 1, k],
-                            phi[i, j, k],
-                            phi[i, j + 1, k],
-                            phi[i, j + 2, k],
-                        )
-                    )
-                else:
-                    fluxy[i, j, k] = (
-                        rho0[k]
-                        * v[i, j, k]
-                        * interp_weno5(
-                            phi[i, j + 3, k],
-                            phi[i, j + 2, k],
-                            phi[i, j + 1, k],
-                            phi[i, j, k],
-                            phi[i, j - 1, k],
-                        )
-                    )
+            phi_loc[:] = phi[i,j,:]
+            if np.count_nonzero(phi_loc) != 0:
+                w_loc[:] = w[i,j,:]
+                fluxz_loc[:] = fluxz[i,j,:] 
 
-                # First compute y-advection
-                if w[i, j, k] >= 0:
-                    fluxz[i, j, k] = (
-                        rho0_edge[k]
-                        * w[i, j, k]
-                        * interp_weno5(
-                            phi[i, j, k - 2],
-                            phi[i, j, k - 1],
-                            phi[i, j, k],
-                            phi[i, j, k + 1],
-                            phi[i, j, k + 2],
+                for k in range(2, phi_shape[2] - 3):
+                    # First compute y-advection
+                    if w_loc[k] >= 0:
+                        fluxz_loc[k] = (
+                            rho0_edge[k]
+                            * w_loc[k]
+                            * interp_weno5(
+                                phi_loc[k - 2],
+                                phi_loc[k - 1],
+                                phi_loc[k],
+                                phi_loc[k + 1],
+                                phi_loc[k + 2],
+                            )
                         )
-                    )
-                else:
-                    fluxz[i, j, k] = (
-                        rho0_edge[k]
-                        * w[i, j, k]
-                        * interp_weno5(
-                            phi[i, j, k + 3],
-                            phi[i, j, k + 2],
-                            phi[i, j, k + 1],
-                            phi[i, j, k],
-                            phi[i, j, k - 1],
+                    else:
+                        fluxz_loc[k] = (
+                            rho0_edge[k]
+                            * w_loc[k]
+                            * interp_weno5(
+                                phi_loc[k + 3],
+                                phi_loc[k + 2],
+                                phi_loc[k + 1],
+                                phi_loc[k],
+                                phi_loc[k - 1],
+                            )
                         )
-                    )
+
+                fluxz[i,j,:] = fluxz_loc
     return
 
 
@@ -376,27 +420,68 @@ def weno5_advection_flux_limit(
 def first_order(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t):
 
     phi_shape = phi.shape
+
+    u_loc = np.empty((u.shape[0]), dtype=np.double)
+    phi_loc = np.empty((phi.shape[0]), dtype=np.double)
+    fluxx_loc = np.empty((fluxx.shape[0]), dtype=np.double)
+
+
+
+    for j in range(2, phi_shape[1] - 3):
+        for k in range(2, phi_shape[2] - 3):
+            phi_loc[:] = phi[:,j,k]
+
+            if np.count_nonzero(phi_loc) != 0:
+                u_loc[:] = u[:,j,k]
+                fluxx_loc[:] = fluxx[:,j,k]
+                rho_loc = rho0[k]
+
+                for i in range(2, phi_shape[0] - 3):
+                    # First compute x-advection
+                    fluxx_loc[i] = 0.5 * (abs(u_loc[i] + u_loc[i]) *  rho_loc  * phi_loc[i] + abs(u_loc[i] - u_loc[i])* rho_loc * u_loc[i] * phi_loc[i + 1])
+
+                fluxx[:,j,k] = fluxx_loc
+
+    v_loc = np.empty((v.shape[1]), dtype=np.double)
+    phi_loc = np.empty((phi.shape[1]), dtype=np.double)
+    fluxy_loc = np.empty((fluxx.shape[1]), dtype=np.double)
+
+    for i in range(2, phi_shape[0] - 3):
+        for k in range(2, phi_shape[2] - 3):
+            phi_loc[:] = phi[i,:,k]
+
+            if np.count_nonzero(phi_loc) != 0:
+                v_loc[:] = v[i,:,k]
+                fluxy_loc[:] = fluxy[i,:,k]
+                rho_loc = rho0[k]
+
+                for j in range(2, phi_shape[1] - 3):
+                    # First compute y-advection
+                    fluxy_loc[j] = 0.5 * (abs(v_loc[j] + v_loc[j]) *  rho_loc  * phi_loc[j] + abs(v_loc[j] - v_loc[j])* rho_loc * v_loc[j] * phi_loc[j  + 1])
+
+
+                fluxy[i,:,k] = fluxy_loc
+
+
+    w_loc = np.empty((w.shape[2]), dtype=np.double)
+    phi_loc = np.empty((phi.shape[2]), dtype=np.double)
+    fluxz_loc = np.empty((fluxz.shape[2]), dtype=np.double)
+
     for i in range(2, phi_shape[0] - 3):
         for j in range(2, phi_shape[1] - 3):
-            for k in range(2, phi_shape[2] - 3):
-                # First compute x-advection
-                if u[i, j, k] >= 0:
-                    fluxx[i, j, k] = rho0[k] * u[i, j, k] * phi[i, j, k]
-                else:
-                    fluxx[i, j, k] = rho0[k] * u[i, j, k] * phi[i + 1, j, k]
+            phi_loc[:] = phi[i,j,:]
+            
+            if np.count_nonzero(phi_loc) != 0:
+                w_loc[:] = w[i,j,:]
+                fluxz_loc[:] = fluxz[i,j,:]
+                
 
-                # First compute y-advection
-                if v[i, j, k] >= 0:
-                    fluxy[i, j, k] = rho0[k] * v[i, j, k] * phi[i, j, k]
-                else:
-                    fluxy[i, j, k] = rho0[k] * v[i, j, k] * phi[i, j + 1, k]
+                for k in range(2, phi_shape[2] - 3):
+                    rho_loc = rho0_edge[k]
+                    # First compute y-advection
+                    fluxz_loc[k] = 0.5 * (abs(w_loc[k] + w_loc[k]) *  rho_loc  * phi_loc[k] + abs(w_loc[k] - w_loc[k])* rho_loc * w_loc[k] * phi_loc[k  + 1])
 
-                # First compute y-advection
-                if w[i, j, k] >= 0:
-                    fluxz[i, j, k] = rho0_edge[k] * w[i, j, k] * phi[i, j, k]
-                else:
-                    fluxz[i, j, k] = rho0_edge[k] * w[i, j, k] * phi[i, j, k + 1]
-
+                fluxz[i,j,:] = fluxz_loc
     return
 
 
@@ -699,6 +784,7 @@ class ScalarWENO(ScalarAdvectionBase):
         nhalo = self._Grid.n_halo
         # Now iterate over the scalar variables
         for var in self._ScalarState.names:
+
             phi_range = 1.0
 
             # Get a scalar field (No copy done here)
@@ -706,11 +792,20 @@ class ScalarWENO(ScalarAdvectionBase):
             phi_t = self._ScalarState.get_tend(var)
             io_flux = self._flux_profiles[var]
             io_flux.fill(0)
+
             # Now compute the WENO fluxes
             if "ff" in var or "plume" in var or var in ["qc", "qr"]:
                 if phi_has_nonzero(
                     phi
                 ):  # If fields are zero everywhere no need to do any advection so skip-it!
+                    
+                    fluxx.fill(0.0)
+                    fluxy.fill(0.0)
+                    fluxz.fill(0.0)
+
+                    fluxx_low.fill(0.0)
+                    fluxy_low.fill(0.0)
+                    fluxz_low.fill(0.0)
                     phi_range = compute_phi_range(phi)
                     rescale_scalar(phi, phi_range, phi_norm)
                     # phi_norm = phi
