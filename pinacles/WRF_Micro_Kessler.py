@@ -16,7 +16,7 @@ from pinacles import parameters
 from mpi4py import MPI
 import numpy as np
 import numba
-
+import keras
 
 @numba.njit
 def compute_qvs(temp, pressure):
@@ -106,6 +106,8 @@ class MicroKessler(MicrophysicsBase):
 
         self._Timers.add_timer("MicroKessler_update")
 
+        self.keras_model = keras.models.load_model('/Users/pres026/Research/PINACLES_LDRD/PINACLES/keras_models/model1')
+
         return
 
     def update(self):
@@ -181,7 +183,7 @@ class MicroKessler(MicrophysicsBase):
         to_wrf_order(nhalo, qr, qr_wrf)
 
         rain_accum_old = np.sum(self._RAINNC)
-        kessler.module_mp_kessler.kessler(
+        kessler.module_mp_kessler.kessler_sed(
             T_wrf,
             qv_wrf,
             qc_wrf,
@@ -221,6 +223,51 @@ class MicroKessler(MicrophysicsBase):
             kts,
             kte,
         )
+
+
+        ml_x = T_wrf.flatten()
+        for a in [qv_wrf, qc_wrf, qr_wrf, rho_wrf, exner_wrf]:
+            ml_x = np.vstack((ml_x, a.flatten()))
+        ml_x = ml_x.T
+
+
+        data_range = [7.31841788e+01, 1.51490746e-02, 5.87891847e-05, 5.96968913e-06,
+ 3.43958194e-01, 1.29791625e-01]
+        data_min = [ 2.69980343e+02,  1.82400035e-03, -5.15893607e-06, -6.67320612e-07,
+  8.31002975e-01,  8.73819238e-01,]
+        
+
+        
+        qt_before = ml_x[:,1] + ml_x[:,2]+ ml_x[:,3]
+        
+
+
+
+
+        for i in range(6):
+            ml_x[:,i] = (ml_x[:,i] - data_min[i])/data_range[i]
+
+
+        data_min = [2.69930627e+02, 1.82400772e-03, 0.00000000e+00, 0.00000000e+00]
+        data_range = [7.14262384e+01, 1.89086936e-02, 9.73261357e-03, 4.65438556e-04]
+        ml_y = self.keras_model.predict(ml_x)
+        for i in range(4):
+            ml_y[:,i] = ml_y[:,i] * data_range[i] + data_min[i]
+
+
+
+        ml_y[:,2][ml_y[:,2]<1e-5] = 0
+        ml_y[:,3][ml_y[:,3]<1e-5] = 0
+
+
+        qt_after = ml_y[:,1] + ml_y[:,2]+ ml_y[:,3]
+
+        ml_y[:,1] = ml_y[:,1] - (qt_after - qt_before)
+
+        T_wrf[:,:,:] = np.reshape(ml_y[:,0],T_wrf.shape, order='F')
+        qv_wrf[:,:,:] = np.reshape(ml_y[:,1],qv_wrf.shape, order='F')
+        qc_wrf[:,:,:] = np.reshape(ml_y[:,2],qc_wrf.shape, order='F')
+        qr_wrf[:,:,:] = np.reshape(ml_y[:,3],qc_wrf.shape, order='F')
 
         to_our_order(nhalo, qv_wrf, qv)
         to_our_order(nhalo, qc_wrf, qc)
