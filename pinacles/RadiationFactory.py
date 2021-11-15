@@ -61,6 +61,7 @@ class DummyRad:
     def __init__(self):
         self.frequency = 1e20
         self.name = "DummyRad"
+        self.time_synced = False
 
     def update(self, force=False, time_loop=False):
         return
