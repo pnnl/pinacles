@@ -1,4 +1,5 @@
 from pinacles import Microphysics
+from pinacles import Microphysics_SA
 from pinacles import WRF_Micro_Kessler
 from pinacles import WRF_Micro_P3
 from pinacles import WRF_Micro_SBM
@@ -51,6 +52,16 @@ def factory(
             DiagnosticState,
             TimeSteppingController,
         )
+    elif scheme == "sa":
+            return Microphysics_SA.MicroSA(
+            Timers,
+            Grid,
+            Ref,
+            ScalarState,
+            VelocityState,
+            DiagnosticState,
+            TimeSteppingController,
+        )    
     elif scheme == "sbm":
         return WRF_Micro_SBM.MicroSBM(
             namelist,

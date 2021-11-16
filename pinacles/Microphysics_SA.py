@@ -18,6 +18,7 @@ from pinacles import parameters
 from mpi4py import MPI
 import numpy as np
 import numba
+import keras
 
 @numba.njit(fastmath=True)
 def compute_sat(temp, pressure):
@@ -118,6 +119,7 @@ class MicroSA(MicrophysicsBase):
             limit=True,
         )
 
+        self.keras_model = keras.models.load_model('/Users/pres026/Research/PINACLES_LDRD/PINACLES/keras_models/model1')
 
         self._Timers.add_timer("MicroSA_update")
         return 
@@ -145,10 +147,43 @@ class MicroSA(MicrophysicsBase):
         qc = self._ScalarState.get_field("qc")
         qr = self._ScalarState.get_field("qr")
         
+
+        qt = qc + qv
+
         p0 = self._Ref.p0
         z = self._Grid.z_local
 
-        self.compute_sa(z, p0, s, qv, qc, T)
+        z_array = np.empty_like(T)
+        z_array[np.newaxis, np.newaxis,:] = z
+
+        p0_array = np.empty_like(T)
+        p0_array[np.newaxis, np.newaxis,:] = p0
+
+        ml_x = z_array.flatten()
+        for a in [p0_array, s, qt]:
+            ml_x = np.vstack((ml_x, a.flatten()))
+        ml_x = ml_x.T
+
+
+        data_range = [4.79999466e+03, 5.52397834e+04, 7.61137367e+01, 2.13640688e-02]
+        data_min = [-3.99997743e+02,  5.61554611e+04,  2.69838585e+02,  1.36782943e-03]
+
+        for i in range(4):
+            ml_x[:,i] = (ml_x[:,i] - data_min[i])/data_range[i]
+
+        ml_y = self.keras_model.predict(ml_x)
+
+
+        data_range = [0.01860389]
+        data_min = [0.0]
+
+        for i in range(1):
+            ml_y[:,i] = ml_y[:,i] * data_range[i] + data_min[i]
+
+        ml_y[:,0][ml_y[:,0]<3e-5] = 0
+
+        qc[:,:,:] = np.reshape(ml_y, T.shape)
+
 
         self._Timers.end_timer("MicroSA_update")
 
