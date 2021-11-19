@@ -21,6 +21,7 @@ from pinacles import ForcingFactory
 from pinacles.Stats import Stats
 from pinacles import DumpFields
 from pinacles import Fields2D
+from pinacles import DumpTrainingData
 from pinacles import MicrophysicsFactory
 from pinacles import RadiationFactory
 from pinacles import Kinematics
@@ -317,6 +318,18 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.VelocityState,
             self.TimeSteppingController,
         )
+
+        self.TrainingData = DumpTrainingData.DumpCloudCondFields(
+            self._namelist,
+            self.Timers,
+            self.ModelGrid,
+            self.ScalarState,
+            self.VelocityState,
+            self.DiagnosticState,
+            self.Micro,
+            self.TimeSteppingController,
+        )
+
         self.Fields2d.add_class(self.Micro)
         self.Fields2d.add_class(self.Thermo)
         self.Fields2d.add_class(self.Plumes)

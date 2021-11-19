@@ -5,16 +5,12 @@ from mpi4py import MPI
 import json
 import datetime
 from pinacles import SimulationStandard
-from pinacles import SimulationUtilities
 
 
 def main(namelist):
 
     # Instantiate and Initialize the Simulation
     Sim = SimulationStandard.SimulationStandard(namelist)
-
-    # S_slice = SimulationUtilities.HorizontalSlice('qv_20m', height=20, frequency=10, var='s', state='ScalarState', Sim=Sim)
-    # Albedo = SimulationUtilities.Albedo(20.0, Sim)
 
     # Put all of the output classes into a list (these are just references)
 
@@ -25,6 +21,7 @@ def main(namelist):
         Sim.StatsIO,
         Sim.FieldsIO,
         Sim.Fields2d,
+        Sim.TrainingData,
         Sim.IOTower,
         Sim.Restart,
         Sim.Timers,
