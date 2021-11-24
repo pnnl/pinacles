@@ -820,7 +820,7 @@ class RRTMG:
     def name(self):
         return self._name
 
-    def restart(self, data_dict):
+    def restart(self, data_dict, **kwargs):
         """
         Here we just do checks for domain decomposition consistency with the namelist file
         # currently, we require that a restarted simulation have exactly the same domain

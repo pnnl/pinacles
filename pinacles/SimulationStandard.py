@@ -724,6 +724,18 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Fields2d.add_class(self.Thermo)
         self.Fields2d.add_class(self.Plumes)
 
+
+        self.TrainingData = DumpTrainingData.DumpCloudCondFields(
+            self._namelist,
+            self.Timers,
+            self.ModelGrid,
+            self.ScalarState,
+            self.VelocityState,
+            self.DiagnosticState,
+            self.Micro,
+            self.TimeSteppingController,
+        )
+
         # Now initialze for the output of 3D fields
         # Now initialze for the output of 3D fields
         self.FieldsIO = DumpFields.DumpFieldsFactory(

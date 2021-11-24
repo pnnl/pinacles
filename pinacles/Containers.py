@@ -441,20 +441,48 @@ class ModelState:
 
         return
 
-    def restart(self, data_dict):
+    def restart(self, data_dict, **kwargs):
 
         # Do consistency checks
         key = self.name
 
-        for att in self._restart_attributes:
-            assert self.__dict__[att] == data_dict[key][att]
+        if "restart_type" not in data_dict:
+            for att in self._restart_attributes:
+                assert self.__dict__[att] == data_dict[key][att]
 
-        # Update the internal arrays
-        self._state_array.array[:, :, :, :] = data_dict[key]["_state_array"][:, :, :, :]
-        if data_dict[key]["_tend_array"] is not None:
-            self._tend_array.array[:, :, :, :] = data_dict[key]["_tend_array"][
+            # Update the internal arrays
+            self._state_array.array[:, :, :, :] = data_dict[key]["_state_array"][
                 :, :, :, :
             ]
+            if data_dict[key]["_tend_array"] is not None:
+                self._tend_array.array[:, :, :, :] = data_dict[key]["_tend_array"][
+                    :, :, :, :
+                ]
+
+        else:
+            n = self._Grid.n
+            nh = self._Grid.n_halo
+            ls = self._Grid.local_start
+            le = self._Grid.local_end
+
+            container_dict = data_dict[self.name]
+            dofs = container_dict["_dofs"]
+
+            assert kwargs["h5_data"].attrs["nx"] == n[0]
+            assert kwargs["h5_data"].attrs["ny"] == n[1]
+            assert kwargs["h5_data"].attrs["nz"] == n[2]
+
+            for dof in dofs:
+                our_dof = self._dofs[dof]
+
+                in_var = kwargs["h5_data"][dof][
+                    ls[0] : le[0], ls[1] : le[1], ls[2] : le[2]
+                ]
+                self._state_array.array[
+                    our_dof, nh[0] : -nh[0], nh[1] : -nh[1], nh[2] : -nh[2]
+                ] = in_var
+
+            # import sys; sys.exit()
 
         return
 

@@ -211,7 +211,7 @@ def test_full_functionality(mock_full_dump, mock_full_restart):
             self.c_restart = None
             return
 
-        def restart(self, restart_data_dict):
+        def restart(self, restart_data_dict, **kwargs):
 
             self.a_restart = restart_data_dict["fake_class"]["a"]
             self.b_restart = restart_data_dict["fake_class"]["b"]
