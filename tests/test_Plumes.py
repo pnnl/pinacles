@@ -25,6 +25,8 @@ def standard_plume_mocks(tmpdir):
     namelist["restart"]["frequency"] = 10.0
     namelist["restart"]["restart_simulation"] = False
 
+    namelist["fields"] = {}
+
     namelist["grid"] = {}
     namelist["grid"]["n"] = [10, 10, 10]
     namelist["grid"]["n_halo"] = [3, 3, 3]
