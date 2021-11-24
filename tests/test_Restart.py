@@ -197,7 +197,7 @@ def mock_full_restart(tmpdir, mock_full_dump):
 
 def test_full_functionality(mock_full_dump, mock_full_restart):
     class fake_class:
-        """ This is just a helper class used to make testing easier. The important point is that it has the methods
+        """This is just a helper class used to make testing easier. The important point is that it has the methods
         restart and dump_restart that are required by any class that is to be restarted.
         """
 
@@ -268,6 +268,8 @@ def mock_namelist(tmpdir):
     )
     namelist["meta"]["unique_id"] = "not_unique"
     namelist["meta"]["wall_time"] = "12:00:00"
+
+    namelist["fields"] = {}
 
     namelist["restart"] = {}
     namelist["restart"]["frequency"] = 10.0
