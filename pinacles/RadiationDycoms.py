@@ -149,7 +149,7 @@ class RadiationDycoms:
     def io_fields2d_update(self, nc_grp):
         return
 
-    def restart(self, data_dict):
+    def restart(self, data_dict, **kwargs):
         return
 
     def dump_restart(self, data_dict):

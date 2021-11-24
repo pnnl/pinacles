@@ -960,7 +960,7 @@ class MicroSBM(MicrophysicsBase):
     def get_reffc(self):
         return self._DiagnosticState.get_field("EFFR")
 
-    def restart(self, data_dict):
+    def restart(self, data_dict, **kwargs):
         key = "SBM"
 
         for att in self._restart_attributes:

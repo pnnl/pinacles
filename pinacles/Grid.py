@@ -67,7 +67,7 @@ class GridBase:
 
         return
 
-    def restart(self):
+    def restart(self, data_dict, **kwargs):
 
         return
 
@@ -356,12 +356,15 @@ class RegularCartesian(GridBase):
         self._dxi = 1.0 / self._dx
         return
 
-    def restart(self, data_dict):
+    def restart(self, data_dict, **kwargs):
         """
         Here we just do checks for domain decomposition consistency with the namelist file
         # currently, we require that a restarted simulation have exactly the same domain
         # as the simulation from which it is being restarted.
         """
+
+        if 'restart_type' in data_dict:
+            return
 
         key = "RegularCartesianGrid"
         assert np.array_equal(self._dx, data_dict[key]["_dx"])

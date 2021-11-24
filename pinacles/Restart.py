@@ -4,6 +4,7 @@ from mpi4py import MPI
 import time
 from datetime import datetime as dt
 from pinacles import parameters
+import h5py
 
 
 class Restart:
@@ -53,7 +54,7 @@ class Restart:
         # Broadcast the directory name that was just created on rank0
         namelist["meta"]["simname"] = MPI.COMM_WORLD.bcast(namelist["meta"]["simname"])
 
-        # Set-up reastart output path
+        # Set-up restart output path
         self._path = os.path.join(
             os.path.join(
                 namelist["meta"]["output_directory"], namelist["meta"]["simname"]
@@ -130,6 +131,15 @@ class Restart:
 
         return
 
+    def read_portable(self):
+
+        with open(os.path.join(self._infile, "Restart.pkl"), "rb") as f:
+            self.data_dict = pickle.load(f)
+
+        self.h5_data = h5py.File(os.path.join(self._infile, "restart.h5"), "r")
+
+        return
+
     def add_class_to_restart(self, class_to_add):
         """This function adds a class to the list of classes that will either
         contribute to restart files or read from redstart files. These classes must contain
@@ -157,14 +167,27 @@ class Restart:
         if rank == 0:
             print("\t Restarting simulation from " + self._infile + ".")
         # First read the restart files from  disk
-        self.read()
+
+        self.h5_data = None
+
+        restart_portable = False
+        if "restart_portable" in self._namelist["restart"]:
+            restart_portable = self._namelist["restart"]["restart_portable"]
+
+        if restart_portable:
+            self.read_portable()
+        else:
+            self.read()
 
         # Now loop over the calles and call the restart method
         for item in self._classes_to_restart:
-            item.restart(self.data_dict)
+            item.restart(self.data_dict, **{"h5_data": self.h5_data})
 
         MPI.COMM_WORLD.Barrier()
         t1 = time.perf_counter()
+
+        if self.h5_data is not None:
+            self.h5_data.close()
 
         if rank == 0:
             print("\t Finished restarting simulation in " + str(t1 - t0) + "s.")

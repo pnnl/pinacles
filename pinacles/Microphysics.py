@@ -97,7 +97,7 @@ class MicrophysicsBase:
         # make consistent with default effective radius values used by P3
         return np.ones((self._Grid._ngrid_local), dtype=np.double) * 25.0e-6
 
-    def restart(self, data_dict):
+    def restart(self, data_dict, **kwargs):
         return
 
     def dump_restart(self, data_dict):

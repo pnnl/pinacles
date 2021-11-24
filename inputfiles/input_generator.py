@@ -87,7 +87,9 @@ def stable_bubble():
     input_dict[key] = {}
     input_dict[key]["frequency"] = 600.0
     input_dict[key]["restart_simulation"] = False
+    input_dict[key]["restart_portable"] = False
     input_dict[key]["infile"] = ""
+
 
     key = "stats"
     input_dict[key] = {}
@@ -208,6 +210,7 @@ def sullivan_and_patton():
     input_dict[key] = {}
     input_dict[key]["frequency"] = 600.0
     input_dict[key]["restart_simulation"] = False
+    input_dict[key]["restart_portable"] = False
     input_dict[key]["infile"] = ""
 
     key = "fields"
@@ -285,6 +288,7 @@ def bomex():
     input_dict[key] = {}
     input_dict[key]["frequency"] = 600.0
     input_dict[key]["restart_simulation"] = False
+    input_dict[key]["restart_portable"] = False
     input_dict[key]["infile"] = ""
 
     key = "fields"
@@ -357,6 +361,7 @@ def atex():
     input_dict[key] = {}
     input_dict[key]["frequency"] = 600.0
     input_dict[key]["restart_simulation"] = False
+    input_dict[key]["restart_portable"] = False
     input_dict[key]["infile"] = ""
 
     key = "fields"
@@ -429,6 +434,7 @@ def rico():
     input_dict[key] = {}
     input_dict[key]["frequency"] = 600.0
     input_dict[key]["restart_simulation"] = False
+    input_dict[key]["restart_portable"] = False
     input_dict[key]["infile"] = ""
 
     key = "fields"
@@ -497,6 +503,7 @@ def testbed():
     input_dict[key] = {}
     input_dict[key]["frequency"] = 600.0
     input_dict[key]["restart_simulation"] = False
+    input_dict[key]["restart_portable"] = False
     input_dict[key]["infile"] = ""
 
     key = "fields"

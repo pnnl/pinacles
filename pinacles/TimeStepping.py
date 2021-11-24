@@ -201,7 +201,7 @@ class TimeSteppingController:
     def time_max(self):
         return self._time_max
 
-    def restart(self, data_dict):
+    def restart(self, data_dict, **kwargs):
 
         key = "TimeStepManager"
 
