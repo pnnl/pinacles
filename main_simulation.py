@@ -14,9 +14,6 @@ def main(namelist):
 
     # Put all of the output classes into a list (these are just references)
 
-    
-
-
     io_classes = [
         Sim.StatsIO,
         Sim.FieldsIO,
@@ -25,9 +22,10 @@ def main(namelist):
         Sim.IOTower,
         Sim.Restart,
         Sim.Timers,
+        Sim.Parts,
     ]
 
-    if Sim.Rad.time_synced :
+    if Sim.Rad.time_synced:
         io_classes.append(Sim.Rad)
 
     # Determine all of the output frequencies
@@ -39,7 +37,9 @@ def main(namelist):
     # Iterate through io classes and do first IO
     for item in io_classes:
 
-        if hasattr(item, "update"):
+        if hasattr(item, "output"):
+            item.output()
+        elif hasattr(item, "update"):
             item.update()
         elif hasattr(item, "dump_restart"):
             Sim.Timers.start_timer("Restart")
@@ -60,7 +60,9 @@ def main(namelist):
         time = Sim.TimeSteppingController.time
         for idx, item in enumerate(io_classes):
             if time - io_frequencies[idx] == last_io_time[idx]:
-                if hasattr(item, "update"):
+                if hasattr(item, "output"):
+                    item.output()
+                elif hasattr(item, "update"):
                     item.update()
                 elif hasattr(item, "dump_restart"):
                     item.dump_restart(Sim.TimeSteppingController.time)

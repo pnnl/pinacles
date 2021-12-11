@@ -5,9 +5,6 @@ from pinacles import Thermodynamics, ThermodynamicsDry_impl
 from pinacles import parameters
 
 
-
-
-
 class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
     def __init__(self, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState):
         Thermodynamics.ThermodynamicsBase.__init__(
@@ -71,6 +68,8 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         if apply_buoyancy:
             ThermodynamicsDry_impl.apply_buoyancy(buoyancy, w_t)
 
+        self._DiagnosticState.remove_mean("buoyancy")
+
         self._Timers.end_timer("ThermoDynamicsDry_update")
 
         return
@@ -95,8 +94,10 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
                 ),
             )
 
-        T = self._DiagnosticState.get_field('T')
-        send_buffer[start[0]:end[0], start[1]:end[1]] = T[nh[0]:-nh[0], nh[1]:-nh[1],nh[2]]
+        T = self._DiagnosticState.get_field("T")
+        send_buffer[start[0] : end[0], start[1] : end[1]] = T[
+            nh[0] : -nh[0], nh[1] : -nh[1], nh[2]
+        ]
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
         if nc_grp is not None:
             t[:, :] = recv_buffer
@@ -104,7 +105,7 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         if nc_grp is not None:
             nc_grp.sync()
 
-        return 
+        return
 
     @staticmethod
     @numba.njit()

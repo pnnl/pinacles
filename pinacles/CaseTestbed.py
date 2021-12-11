@@ -215,7 +215,6 @@ def get_lognormal_dist(nbins, qc, nc_m3, sig1):
     return f, xl
 
 
-
 """
 CK: Here I am starting with the simplest case and assuming the start time of the forcing
 files is the same as the simulation start time. This can easily be revisited, and made 

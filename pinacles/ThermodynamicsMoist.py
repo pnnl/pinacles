@@ -4,6 +4,7 @@ import numpy as np
 import numba
 from mpi4py import MPI
 
+
 class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
     def __init__(
         self, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro
@@ -65,6 +66,9 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
 
         if apply_buoyancy:
             ThermodynamicsMoist_impl.apply_buoyancy(buoyancy, w_t)
+
+        # Remove mean from buoyancy
+        self._DiagnosticState.remove_mean("buoyancy")
 
         self._Timers.end_timer("ThermoDynamicsMoist_update")
         return
@@ -128,15 +132,16 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
                 ),
             )
 
-        T = self._DiagnosticState.get_field('T')
-        send_buffer[start[0]:end[0], start[1]:end[1]] = T[nh[0]:-nh[0], nh[1]:-nh[1],nh[2]]
+        T = self._DiagnosticState.get_field("T")
+        send_buffer[start[0] : end[0], start[1] : end[1]] = T[
+            nh[0] : -nh[0], nh[1] : -nh[1], nh[2]
+        ]
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
         if nc_grp is not None:
             t[:, :] = recv_buffer
 
         if nc_grp is not None:
             nc_grp.sync()
-
 
         # Output specific humidity
         if nc_grp is not None:
@@ -149,9 +154,11 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
                 ),
             )
 
-        qv = self._ScalarState.get_field('qv')
+        qv = self._ScalarState.get_field("qv")
         send_buffer.fill(0.0)
-        send_buffer[start[0]:end[0], start[1]:end[1]] = qv[nh[0]:-nh[0], nh[1]:-nh[1],nh[2]]
+        send_buffer[start[0] : end[0], start[1] : end[1]] = qv[
+            nh[0] : -nh[0], nh[1] : -nh[1], nh[2]
+        ]
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
         if nc_grp is not None:
             qv_var[:, :] = recv_buffer
@@ -159,4 +166,4 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         if nc_grp is not None:
             nc_grp.sync()
 
-        return 
+        return

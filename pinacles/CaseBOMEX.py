@@ -5,6 +5,7 @@ from pinacles import Surface, Surface_impl, Forcing_impl, Forcing
 from pinacles import UtilitiesParallel
 import pinacles.ThermodynamicsDry_impl as DryThermo
 
+
 def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     UtilitiesParallel.print_root("Initializing BOMEX Case")
@@ -78,6 +79,7 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     qv /= 1000.0
 
     return
+
 
 class SurfaceBOMEX(Surface.SurfaceBase):
     def __init__(

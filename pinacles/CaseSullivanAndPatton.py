@@ -6,6 +6,7 @@ from pinacles import UtilitiesParallel
 from pinacles import parameters
 import pinacles.ThermodynamicsDry_impl as DryThermo
 
+
 def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     UtilitiesParallel.print_root("Initializing Sullivan and Patton Case")
@@ -63,6 +64,7 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                 s[i, j, k] = DryThermo.s(zl[k], t)
 
     return
+
 
 class SurfaceSullivanAndPatton(Surface.SurfaceBase):
     def __init__(

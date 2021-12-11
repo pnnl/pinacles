@@ -45,3 +45,18 @@ def apply_pressure(dxs, dynp, u, v, w):
                 w[i, j, k] -= (dynp[i, j, k + 1] - dynp[i, j, k]) / dxs[2]
 
     return
+
+
+@numba.njit(fastmath=True)
+def horizontal_divergence(dxs, rho0, u, v, w, divh):
+
+    shape = divh.shape
+    for i in range(1, shape[0]):
+        for j in range(1, shape[1]):
+            for k in range(1, shape[2]):
+                divh[i, j, k] = (
+                    rho0[k] * (u[i, j, k] - u[i - 1, j, k]) / dxs[0]
+                    + (v[i, j, k] - v[i, j - 1, k]) / dxs[1]
+                )
+
+    return

@@ -53,6 +53,10 @@ class ModelState:
         return self._units[name]
 
     @property
+    def dofs(self):
+        return self._dofs
+
+    @property
     def nvars(self):
         return self._nvars
 

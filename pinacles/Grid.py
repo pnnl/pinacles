@@ -363,7 +363,7 @@ class RegularCartesian(GridBase):
         # as the simulation from which it is being restarted.
         """
 
-        if 'restart_type' in data_dict:
+        if "restart_type" in data_dict:
             return
 
         key = "RegularCartesianGrid"

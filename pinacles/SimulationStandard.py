@@ -32,6 +32,7 @@ from pinacles import TowersIO
 from pinacles import Plumes
 from pinacles import Restart
 from pinacles import UtilitiesParallel
+from pinacles import ParticlesFactory
 from pinacles import Timers
 from mpi4py import MPI
 import numpy as np
@@ -224,6 +225,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ScalarState,
             self.DiagnosticState,
             self.TimeSteppingController,
+        )
+
+        # Instantiate particles
+        self.Parts = ParticlesFactory.ParticlesFactory(
+            self._namelist,
+            self.ModelGrid,
+            self.Ref,
+            self.TimeSteppingController,
+            self.VelocityState,
+            self.ScalarState,
+            self.DiagnosticState,
         )
 
         # Instantiate surface
@@ -579,6 +591,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.TimeSteppingController,
         )
 
+        # Instantiate particles
+        self.Parts = ParticlesFactory.ParticlesFactory(
+            self._namelist,
+            self.ModelGrid,
+            self.Ref,
+            self.TimeSteppingController,
+            self.VelocityState,
+            self.ScalarState,
+            self.DiagnosticState,
+        )
+
         # Instantiate surface
         self.Surf = SurfaceFactory.factory(
             self._namelist,
@@ -724,7 +747,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Fields2d.add_class(self.Thermo)
         self.Fields2d.add_class(self.Plumes)
 
-
         self.TrainingData = DumpTrainingData.DumpCloudCondFields(
             self._namelist,
             self.Timers,
@@ -759,7 +781,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             prog_state.update_all_bcs()
 
         self.Thermo.update(apply_buoyancy=False)
-        self.Rad.update(force=True,time_loop=False)
+        self.Rad.update(force=True, time_loop=False)
         # self.PSolver.update()
 
         self.Timers.add_timer("Restart")
@@ -836,13 +858,13 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 if n == 1:
                     self.Thermo.update(apply_buoyancy=False)
-    
+
                     # We call the microphysics update at the end of the RK steps.
                     self.Micro.update()
                     if not self.Rad.time_synced:
                         self.Rad.update()
                     self.Rad.update_apply_tend()
-
+                    self.Parts.update()
                     self.Timers.start_timer("BoundaryUpdate")
                     self.ScalarState.boundary_exchange()
                     self.ScalarState.update_all_bcs()

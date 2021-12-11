@@ -38,7 +38,6 @@ class RRTMG:
         self.frequency = 1e20
         self.time_synced = False
 
-
         try:
             self._compute_radiation = namelist["radiation"]["compute_radiation"]
         except:
@@ -57,22 +56,17 @@ class RRTMG:
         if not self._compute_radiation:
             return
 
-        
- 
         try:
-            self.time_synced= namelist["radiation"]["time_synced"]
+            self.time_synced = namelist["radiation"]["time_synced"]
         except:
             self.time_synced = True
 
         try:
             self._radiation_frequency = namelist["radiation"]["update_frequency"]
         except:
-                self._radiation_frequency =30.0
+            self._radiation_frequency = 30.0
 
         self.frequency = self._radiation_frequency  # This is used for time syncing
-     
-
-
 
         #
 
@@ -108,7 +102,7 @@ class RRTMG:
         try:
             self._rrtmg_lib_path = namelist["radiation"]["rrtmg_lib_path"]
         except:
-            self._rrtmg_lib_path = './pinacles/externals/rrtmg_wrapper/'
+            self._rrtmg_lib_path = "./pinacles/externals/rrtmg_wrapper/"
         if self._rrtmg_lib_path[-1] != "/":
             self._rrtmg_lib_path += "/"
         self._lib_lw = ffi.dlopen(self._rrtmg_lib_path + "librrtmglw.so")
@@ -295,7 +289,6 @@ class RRTMG:
     def update(self, force=False):
         self._Timers.start_timer("RRTMG")
 
-      
         if not self._compute_radiation:
             return
 
@@ -316,7 +309,7 @@ class RRTMG:
             )
             or force
         ):
-        
+
             self.time_elapsed = 0.0
             # TODO: testing of this code
             self.hourz = self._hourz_init + self._TimeSteppingController.time / 3600.0
@@ -526,11 +519,11 @@ class RRTMG:
             )
 
             reliq *= 1.0e6
-            
-            reice *= 1.0e6 
+
+            reice *= 1.0e6
             # For iceflag = 3, bound the generalized effective radius
             if iceflag == 3:
-                reice *= 1.0315 
+                reice *= 1.0315
                 reice[reice < 5.0] = 5.0
                 reice[reice > 140.0] = 140.0
 
@@ -971,5 +964,3 @@ def interpolate_trace_gas(p_trace_pa, trace_vmr, p_pa):
     for i in range(nlev - 1):
         interp_vmr[i] = 9.81 / (p_pa[i] - p_pa[i + 1]) * (trpath[i + 1] - trpath[i])
     return interp_vmr
-
-
