@@ -10,9 +10,9 @@ import pinacles.ThermodynamicsDry_impl as DryThermo
 
 
 def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
-    
+
     UtilitiesParallel.print_root("Initializing ATEX Case")
-    
+
     #  Optionally set a random seed as specified in the namelist
     try:
         rank = MPI.Get_rank()
@@ -99,6 +99,7 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     qv /= 1000.0
 
     return
+
 
 class SurfaceATEX(Surface.SurfaceBase):
     def __init__(

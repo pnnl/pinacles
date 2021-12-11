@@ -18,9 +18,9 @@ CASENAMES = [
     "testbed",
 ]
 
+
 def factory(namelist):
     assert namelist["meta"]["casename"] in CASENAMES
-
 
     if namelist["meta"]["casename"] == "sullivan_and_patton":
         return CaseSullivanAndPatton.initialize
@@ -35,7 +35,9 @@ def factory(namelist):
     elif namelist["meta"]["casename"] == "testbed":
         return CaseTestbed.initialize
     else:
-        UtilitiesParallel.print_root("Caanot find initialization for: ",  namelist["meta"]["casename"] )
+        UtilitiesParallel.print_root(
+            "Caanot find initialization for: ", namelist["meta"]["casename"]
+        )
 
 
 def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):

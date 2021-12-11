@@ -6,6 +6,7 @@ from pinacles import parameters
 import pinacles.ThermodynamicsDry_impl as DryThermo
 import pinacles.UtilitiesParallel as UtilitiesParallel
 
+
 def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     UtilitiesParallel.print_root("Initializing Stable-bubble Case")
@@ -63,6 +64,7 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                 # dista[i,j,k] = dist
 
     return
+
 
 class SurfaceStableBubble(Surface.SurfaceBase):
     def __init__(

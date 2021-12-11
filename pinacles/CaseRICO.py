@@ -6,6 +6,7 @@ from pinacles.WRF_Micro_Kessler import compute_qvs
 from pinacles import UtilitiesParallel
 import pinacles.ThermodynamicsDry_impl as DryThermo
 
+
 def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     UtilitiesParallel.print_root("Initializing RICO Case")
@@ -74,6 +75,7 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     v -= Ref.v0
 
     return
+
 
 class SurfaceRICO(Surface.SurfaceBase):
     def __init__(
