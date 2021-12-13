@@ -72,7 +72,9 @@ class ParticlesBase:
             assert len(self.point_time_range) == 2
 
         if self.inject_type == "surface random":
-            assert "inject height" in self._namelist["particles"]
+            assert "inject_height" in self._namelist["particles"]
+            self.inject_height = self._namelist["particles"]["inject_height"]
+            assert type(self.inject_height) is int or type(self.inject_height) is float
 
         # Get boundary type
         assert "boundary_type" in self._namelist["particles"]
@@ -280,6 +282,7 @@ class ParticlesBase:
         nhalo,
         particle_varnames,
         particle_data,
+        inject_height,
         n,
     ):
 
@@ -302,9 +305,11 @@ class ParticlesBase:
         # Compute the grid index of each point on this rank
         iindx = (x - low_corner_local[0]) // dx[0]
         jindx = (y - low_corner_local[1]) // dx[1]
+        kindx = (inject_height - low_corner_local[2]) // dx[2]
 
         iindx = iindx.astype(int)
         jindx = jindx.astype(int)
+        kindx = int(kindx)
 
         # Get the particle  dofs for the position
         xdof = particle_varnames["x"]
@@ -324,7 +329,7 @@ class ParticlesBase:
         for i in range(len(iindx)):
             ii = int(iindx[i] * ishift)
             jj = int(jindx[i] * jshift)
-            k = 0
+            k = kindx
 
             arr = particle_data[ii + jj + k]
             n_arr = arr.shape[1]
@@ -339,7 +344,7 @@ class ParticlesBase:
                 if arr[valid, pi] == 0.0:
                     arr[xdof, pi] = x[i]
                     arr[ydof, pi] = y[i]
-                    arr[zdof, pi] = 2.0
+                    arr[zdof, pi] = inject_height
                     arr[iddof, pi] = np.random.uniform(-1e9, 1e9)
                     arr[valid, pi] = 1.0
                     arr[ndof, pi] = 0.0
@@ -764,6 +769,7 @@ class ParticlesBase:
                     self._Grid.n_halo,
                     self._particle_varnames,
                     self._particle_data,
+                    self.inject_height,
                     self._n,
                 )
 
