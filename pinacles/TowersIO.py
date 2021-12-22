@@ -21,7 +21,7 @@ class Tower:
         self._j_indx = int((loc[1] - ybnds[0]) // dx[1]) + self._Grid.n_halo[1]
 
         try:
-            self._frequency = namelist["stats"]["frequency"]
+            self._frequency = namelist["towers"]["frequency"]
         except:
             self._frequency = 1e9
 
