@@ -5,7 +5,8 @@ import numba
 from mpi4py import MPI
 import numpy as np
 from pinacles import UtilitiesParallel
-
+import zarr
+import random
 
 def DumpCloudOnlyDataFactory(namelist, Timers, Grid, TimeSteppingController):
 
@@ -170,25 +171,41 @@ class DumpCloudCondFields(DumpCloudCondFieldsBase):
         output_here = os.path.join(output_here)
 
         MPI.COMM_WORLD.barrier()
+        zarr_fname = os.path.join(
+                output_here, str(np.round(self._TimeSteppingController.time)) + ".zarr"
+            )
+        
+        
+        zarr_sync = zarr.ProcessSynchronizer(os.path.join(
+                output_here, str(np.round(self._TimeSteppingController.time)) + ".sync"
+            ))
+    
         if self._this_rank == 0:
             if not os.path.exists(output_here):
                 os.makedirs(output_here)
+                
+            root = zarr.open(zarr_fname, mode='w', synchronizer=zarr_sync)
+            
+ 
+ 
+            root.create_dataset('flat_index', shape=(n_total,), dtype='i8')
+            for state in [self._ScalerState, self._DiagnosticState, self._VelocityState]:
+                for v in state._dofs:
+                    root.create_dataset(v, shape=(n_total,))
 
         MPI.COMM_WORLD.barrier()
 
-        fx = h5py.File(
-            os.path.join(
-                output_here, str(np.round(self._TimeSteppingController.time)) + ".h5"
-            ),
-            "w",
-            driver="mpio",
-            comm=MPI.COMM_WORLD,
-        )
+        if not self._this_rank == 0:
+            root = zarr.open(zarr_fname, mode='r+', synchronizer=zarr_sync)
+
+
+        MPI.COMM_WORLD.barrier()
+
 
         # These are needed to compute the 3D indexing
-        fx.attrs["nx"] = int(self._Grid.n[0])
-        fx.attrs["ny"] = int(self._Grid.n[1])
-        fx.attrs["nz"] = int(self._Grid.n[2])
+        root.attrs["nx"] = int(self._Grid.n[0])
+        root.attrs["ny"] = int(self._Grid.n[1])
+        root.attrs["nz"] = int(self._Grid.n[2])
 
         # Compute the index
         flat_indx = np.empty((n_on_rank[MPI.COMM_WORLD.Get_rank()],), dtype=np.int)
@@ -198,30 +215,48 @@ class DumpCloudCondFields(DumpCloudCondFieldsBase):
             qc[nh[0] : -nh[0], nh[1] : -nh[1], nh[2] : -nh[2]],
             flat_indx,
         )
-        dset = fx.create_dataset(
-            "flat_indx",
-            (n_total,),
-            dtype="i",
-        )
+        
+        
+        #if self._this_rank == 0:
+        #    flat_indx = root.create_dataset('flat_indx', shape=n_total, type='i8')
+        #MPI.COMM_WORLD.barrier()
 
-        if my_start != my_end:
-            dset[my_start:my_end] = flat_indx[:]
+            
+        
+
+        
+        
+        #dset = fx.create_dataset(
+        #    "flat_indx",
+        #    (n_total,),
+        #    dtype="i",
+        #)
+
+        #if my_start != my_end:
+        #    root['flat_index'][my_start:my_end] = flat_indx[:]
 
         var_flat = np.empty((n_on_rank[MPI.COMM_WORLD.Get_rank()],), dtype=np.double)
-        for state in [self._ScalerState, self._DiagnosticState, self._VelocityState]:
+        states = [self._ScalerState, self._DiagnosticState, self._VelocityState]
+        
+        
+        list_of_vars = []
+        for i, state in enumerate(states):
             for v in state._dofs:
-                var = state.get_field(v)
+                list_of_vars.append((i, v))
+        
+        list_of_vars.append((999, 'flat_index'))
+        
+        
+        states_permute = random.sample(list_of_vars, len(list_of_vars))
+        
+        for sp in states_permute:
+            
+            if sp[0] == 999:
+                if my_start != my_end:
+                    root[sp[1]][my_start:my_end] = flat_indx[:]
 
-                dset = fx.create_dataset(
-                    v,
-                    (n_total,),
-                    dtype="d",
-                )
-
-                dset.attrs["long_names"] = state.get_long_name(v)
-                dset.attrs["units"] = state.get_units(v)
-                dset.attrs["standard_name"] = state.get_standard_name(v)
-
+            else:
+                var = states[sp[0]].get_field(sp[1])
                 self.condition_to_flat(
                     self._Grid._local_start,
                     self._Grid._n,
@@ -231,14 +266,15 @@ class DumpCloudCondFields(DumpCloudCondFieldsBase):
                 )
 
                 if my_start != my_end:
-                    dset[my_start:my_end] = var_flat[:]
+                    root[sp[1]][my_start:my_end] = var_flat[:]
+                
+                var_flat.fill(0.0)
+                MPI.COMM_WORLD.barrier()
 
-                    var_flat.fill(0.0)
 
-        fx.close()
         t1 = time.perf_counter()
         UtilitiesParallel.print_root(
-            "\t Parallel IO of 3D fields finished in: " + str(t1 - t0) + " seconds"
+            "\t Parallel of IO of conditioned fields to zarr: " + str(t1 - t0) + " seconds"
         )
         self._Timers.end_timer("DumpFields")
 
