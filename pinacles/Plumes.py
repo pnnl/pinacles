@@ -317,7 +317,7 @@ class Plumes:
 
     def io_fields2d_update(self, nc_grp):
 
-        z_index_list = [2,5,10,20,40,80]#,120,160]
+        z_index_list = [0,2,5,10,20,40,80,120,160]#,120,160]
 
         for plume_i in self._list_of_plumes:
             for z_index in self._field2d_zindex:

@@ -118,8 +118,8 @@ class Fields2D:
         send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
         recv_buffer = np.empty_like(send_buffer)
 
-        for v in ["u", "v", "w"]:
-            for k in [0,2,5,10,20,40,80,120]:
+        for v in ["u", "v"]:
+            for k in [0,2,5,10,20,40,80,120,160]:
                 z = self._Grid.z_global[nh[2]+k]
 
                 if nc_grp is not None:
@@ -143,7 +143,31 @@ class Fields2D:
 
                 if nc_grp is not None:
                     nc_grp.sync()
+        for v in ["w"]:
+            for k in [0,2,5,10,20,40,80,120]:
+                z = self._Grid.z_global[nh[2]+k]
 
+                if nc_grp is not None:
+                    var_nc = nc_grp.createVariable(
+                        v+'_'+str(z),
+                        np.double,
+                        dimensions=(
+                            "X",
+                            "Y",
+                        ),
+                    )
+
+                var = self._VelocityState.get_field(v)
+                send_buffer.fill(0.0)
+                send_buffer[start[0] : end[0], start[1] : end[1]] = np.add(
+                     var[nh[0] : -nh[0], nh[1] : -nh[1], nh[2] +k],
+                     var[nh[0] : -nh[0], nh[1] : -nh[1], nh[2] +k -1]) * 0.5
+                MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+                if nc_grp is not None:
+                    var_nc[:, :] = recv_buffer
+
+                if nc_grp is not None:
+                    nc_grp.sync()
         return
 
     def setup_directories(self):
