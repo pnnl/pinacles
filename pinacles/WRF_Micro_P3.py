@@ -802,13 +802,9 @@ class MicroP3(MicrophysicsBase):
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
         qc = self._ScalarState.get_field("qc")[nh[0] : -nh[0], nh[1] : -nh[1], :]
-<<<<<<< HEAD
         lwp_compute = np.sum(
             qc * rho0[np.newaxis, np.newaxis, 0] * self._Grid.dx[2], axis=2
         )
-=======
-        lwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis, 0], axis=2)
->>>>>>> plat_plus_rad
 
         send_buffer.fill(0.0)
         send_buffer[start[0] : end[0], start[1] : end[1]] = lwp_compute

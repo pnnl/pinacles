@@ -7,6 +7,7 @@ import pickle as pkl
 import h5py
 import tqdm
 
+os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
 
 def generate_template():
@@ -92,6 +93,9 @@ def combine_restarts(inputdict):
 
             opkl["namelist"] = _rd["namelist"]
             opkl["TimeStepManager"] = _rd["TimeStepManager"]
+
+            if "Radiation" in _rd.keys():
+                opkl["Radiation"] = _rd["Radiation"]
 
             for _c in ["ScalarState", "VelocityState", "DiagnosticState"]:
                 opkl[_c] = _rd[_c]
