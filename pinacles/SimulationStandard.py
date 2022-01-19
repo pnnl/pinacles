@@ -36,7 +36,6 @@ from pinacles import ParticlesFactory
 from pinacles import Timers
 from mpi4py import MPI
 import numpy as np
-import pylab as plt
 
 import os
 from termcolor import colored
