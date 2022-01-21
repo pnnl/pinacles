@@ -1,5 +1,4 @@
 import numpy as np
-import pylab as plt
 
 from pinacles import Kinematics_impl
 
