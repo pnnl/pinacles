@@ -20,10 +20,7 @@ class Tower:
         self._i_indx = int((loc[0] - xbnds[0]) // dx[0]) + self._Grid.n_halo[0]
         self._j_indx = int((loc[1] - ybnds[0]) // dx[1]) + self._Grid.n_halo[1]
 
-        try:
-            self._frequency = namelist["towers"]["frequency"]
-        except:
-            self._frequency = 1e9
+
 
         self._tower_on_this_rank = False
         if (
@@ -121,19 +118,24 @@ class Towers:
 
         self._list_of_towers = []
         self._Timers = Timers
+        self._Timers.add_timer("Towers")
+
+        try:
+            self._frequency = namelist["towers"]["frequency"]
+        except:
+            self._frequency = 1e9
 
         if "towers" not in namelist:
             return
 
         tower_locations = namelist["towers"]["location"]
-        self._frequency = namelist["towers"]["frequency"]
-
+   
         for loc in tower_locations:
             self._list_of_towers.append(
                 Tower(namelist, Grid, TimeSteppingController, loc=tuple(loc))
             )
 
-        self._Timers.add_timer("Towers")
+        
         return
 
     def add_state_container(self, state_container):
