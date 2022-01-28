@@ -67,7 +67,7 @@ def standard_plume_mocks(tmpdir):
     namelist["plumes"]["qv_flux"] = [1e-05, 1e-5]
     namelist["plumes"]["ql_flux"] = [0.0, 0.0]
     namelist["plumes"]["heat_flux"] = [100.0, 100.0]
-    namelist["plumes"]["boundary_outflow"] = [True, False]
+    namelist["plumes"]["boundary_outflow"] = [[True, True], [False, False]]
 
     # Generate simulations for dry cases
     base_mocks.append(SimulationStandard.SimulationStandard(copy.deepcopy(namelist)))
@@ -170,13 +170,19 @@ def test_boundary_outlfow(standard_plume_mocks):
 
             plume.update()
 
-            if plume.boundary_outflow:
+            if plume.boundary_outflow[0]:
                 # Test that the boundaries are set to zero
                 assert np.all(scalar[: n_halo[0], :, :]) == 0.0
                 assert np.all(scalar[-n_halo[0] :, :, :]) == 0.0
+            else:
+                # Test that the boundaries are set to zero
+                assert np.all(scalar[: n_halo[0], :, :]) == 1.0
+                assert np.all(scalar[-n_halo[0] :, :, :]) == 1.0
+
+            if plume.boundary_outflow[1]:
                 assert np.all(scalar[:, : n_halo[1], :]) == 0.0
                 assert np.all(scalar[:, -n_halo[1] :, :]) == 0.0
             else:
-                assert np.all(scalar == 1.0)
-
+                assert np.all(scalar[:, : n_halo[1], :]) == 1.0
+                assert np.all(scalar[:, -n_halo[1] :, :]) == 1.0
     return

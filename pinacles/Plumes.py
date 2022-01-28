@@ -19,7 +19,7 @@ class Plume:
         self._start_time = start_time
         self._plume_number = n
         self._scalar_name = "plume_" + str(self._plume_number)
-        self._boundary_outflow = [True,True]
+        self._boundary_outflow = [True, True]
 
         self._plume_flux = 0.0
         self._plume_qv_flux = 0.0
@@ -54,7 +54,6 @@ class Plume:
 
             n_halo = self._Grid.n_halo
 
-            
             if self._boundary_outflow[0]:
                 x_local = self._Grid.x_local
                 x_global = self._Grid.x_global
@@ -112,15 +111,14 @@ class Plume:
         start = self._Grid.local_start
         end = self._Grid._local_end
         nh = self._Grid.n_halo
-        z = self._Grid.z_global[nh[2]+z_index]
-
+        z = self._Grid.z_global[nh[2] + z_index]
 
         send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
         recv_buffer = np.empty_like(send_buffer)
 
         if nc_grp is not None:
             var_nc = nc_grp.createVariable(
-                self._scalar_name+'_'+str(z),
+                self._scalar_name + "_" + str(z),
                 np.double,
                 dimensions=(
                     "X",
@@ -316,8 +314,6 @@ class Plumes:
         return
 
     def io_fields2d_update(self, nc_grp):
-
-        z_index_list = [2,5,10,20,40,80]#,120,160]
 
         for plume_i in self._list_of_plumes:
             for z_index in self._field2d_zindex:

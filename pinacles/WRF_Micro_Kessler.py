@@ -242,12 +242,6 @@ class MicroKessler(MicrophysicsBase):
         # Todo preallocate
         np.multiply(liq_sed, parameters.LV / parameters.CPD, out=s_liq_sed)
 
-<<<<<<< HEAD
-=======
-        # Sedimentation source term
-        #np.subtract(s, s_liq_sed, out=s)
-
->>>>>>> plat_plus_rad
         # Convert sedimentation sources to units of tendency
         np.multiply(liq_sed, 1.0 / self._TimeSteppingController.dt, out=liq_sed)
         np.multiply(s_liq_sed, -1.0 / self._TimeSteppingController.dt, out=s_liq_sed)
@@ -348,7 +342,7 @@ class MicroKessler(MicrophysicsBase):
         lwp = UtilitiesParallel.ScalarAllReduce(lwp)
 
         # First compute liqud water path
-        lwp_lasso, npts_lasso = water_path_lasso(n_halo, dz, rho, qc+qr)
+        lwp_lasso, npts_lasso = water_path_lasso(n_halo, dz, rho, qc + qr)
         lwp_lasso = UtilitiesParallel.ScalarAllReduce(lwp_lasso)
         npts_lasso = UtilitiesParallel.ScalarAllReduce(npts_lasso)
         if npts_lasso > 0:

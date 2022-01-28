@@ -729,7 +729,7 @@ class MicroSBM(MicrophysicsBase):
         np.multiply(liq_sed, parameters.LV / parameters.CPD, out=s_tend_liq_sed)
 
         # Sedimentation source term
-        #np.subtract(s, s_tend_liq_sed, out=s)
+        # np.subtract(s, s_tend_liq_sed, out=s)
 
         # Convert sedimentation sources to units of tendency
         np.multiply(liq_sed, 1.0 / self._TimeSteppingController.dt, out=liq_sed)
@@ -784,7 +784,12 @@ class MicroSBM(MicrophysicsBase):
         v.long_name = "Rain Fraction"
         v.standard_name = "RF"
         v.units = ""
-        
+
+        v = timeseries_grp.createVariable("LWP_LASSO", np.double, dimensions=("time",))
+        v.long_name = "LASSO Liquid Water Path"
+        v.standard_name = "LWP"
+        v.units = "kg/m^2"
+
         v = timeseries_grp.createVariable("LWP_LASSO", np.double, dimensions=("time",))
         v.long_name = "LASSO Liquid Water Path"
         v.standard_name = "LWP"
@@ -861,12 +866,11 @@ class MicroSBM(MicrophysicsBase):
         lwp = UtilitiesParallel.ScalarAllReduce(lwp)
 
         # First compute liqud water path
-        lwp_lasso, npts_lasso = water_path_lasso(n_halo, dz, rho, qc+qr)
+        lwp_lasso, npts_lasso = water_path_lasso(n_halo, dz, rho, qc + qr)
         lwp_lasso = UtilitiesParallel.ScalarAllReduce(lwp_lasso)
         npts_lasso = UtilitiesParallel.ScalarAllReduce(npts_lasso)
         if npts_lasso > 0:
             lwp_lasso /= npts_lasso
-
 
         rwp = water_path(n_halo, dz, npts, rho, qr)
         rwp = UtilitiesParallel.ScalarAllReduce(rwp)

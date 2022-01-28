@@ -275,12 +275,13 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         self.PlatSim = PlatformSimulator.PlatformSimulators(
             self._namelist,
-            self.TimeSteppingController, 
+            self.TimeSteppingController,
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
             self.VelocityState,
-            self.DiagnosticState)
+            self.DiagnosticState,
+        )
 
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
@@ -507,7 +508,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ModelGrid,
             self.Ref,
             self.VelocityState,
-            self.DiagnosticState
+            self.DiagnosticState,
         )
         self.SGS = SGSFactory.factory(
             self._namelist,
@@ -648,7 +649,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.TimeSteppingController,
         )
 
-
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
         self.Restart.add_class_to_restart(self.ScalarState)
@@ -709,8 +709,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
         for state in [self.VelocityState, self.ScalarState, self.DiagnosticState]:
             self.IOTower.add_state_container(state)
         self.IOTower.initialize()
-
-        
 
         # Initialze statistical diagnostics for turbulence and clouds
         self.DiagClouds = DiagnosticsClouds.DiagnosticsClouds(
@@ -786,15 +784,15 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Now overwrite model state with restart
         self.Restart.restart()
 
-
         self.PlatSim = PlatformSimulator.PlatformSimulators(
             self._namelist,
-            self.TimeSteppingController, 
+            self.TimeSteppingController,
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
             self.VelocityState,
-            self.DiagnosticState)      
+            self.DiagnosticState,
+        )
 
         self.PlatSim.initialize()
 

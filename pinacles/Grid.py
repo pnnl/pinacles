@@ -314,6 +314,9 @@ class GridBase:
         # Get the local shape
         self._ngrid_local = self._local_shape + 2 * self._n_halo
 
+        self.rank_nx = np.array(MPI.COMM_WORLD.allgather(self._local_shape[0]))
+        self.rank_ny = np.array(MPI.COMM_WORLD.allgather(self._local_shape[1]))
+
         return
 
 

@@ -213,10 +213,6 @@ class ReferenceDry(ReferenceBase):
             self._P0_edge[nhalo - 1 : -nhalo + 1], self._T0_edge[nhalo - 1 : -nhalo + 1]
         )
 
-        # print(self._T0)
-
-        # import sys; sys.exit()
-
         # Set the ghostpoint for the reference profiles
         self.update_ref_boundaries()
 

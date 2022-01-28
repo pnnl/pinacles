@@ -138,7 +138,6 @@ class Towers:
                 Tower(namelist, Grid, TimeSteppingController, loc=tuple(loc))
             )
 
-       
         return
 
     def add_state_container(self, state_container):

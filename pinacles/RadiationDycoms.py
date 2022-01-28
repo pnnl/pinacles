@@ -37,14 +37,8 @@ class RadiationDycoms:
         self.zi_min = 0.0
         self.zi_max = 0.0
 
-<<<<<<< HEAD
         try:
             self.time_synced = namelist["radiation"]["time_synced"]
-=======
- 
-        try:
-            self.time_synced= namelist["radiation"]["time_synced"]
->>>>>>> plat_plus_rad
         except:
             self.time_synced = False
 
@@ -52,7 +46,6 @@ class RadiationDycoms:
             self._radiation_frequency = namelist["radiation"]["update_frequency"]
         except:
             if self.time_synced:
-<<<<<<< HEAD
                 sys.exit(
                     "EXITING: for time syncing of DYCOMS, a radiation update frequency must be specified in the namelist"
                 )
@@ -61,14 +54,6 @@ class RadiationDycoms:
 
         self.frequency = self._radiation_frequency  # This is used for time syncing
 
-=======
-                sys.exit('EXITING: for time syncing of DYCOMS, a radiation update frequency must be specified in the namelist')
-            else:
-                self._radiation_frequency =0.0
-
-        self.frequency = self._radiation_frequency  # This is used for time syncing
-     
->>>>>>> plat_plus_rad
         self.time_elapsed = parameters.LARGE
 
         self._restart_attributes = ["time_elapsed"]
@@ -83,13 +68,11 @@ class RadiationDycoms:
     def update(self, force=False):
         self._Timers.start_timer("RadiationDycoms")
 
-<<<<<<< HEAD
         self.time_elapsed += self._TimeSteppingController.dt
-=======
-     
+
         if not force:
             self.time_elapsed += self._TimeSteppingController.dt
->>>>>>> plat_plus_rad
+
         dTdt_rad = self._DiagnosticState.get_field("dTdt_rad")
         s = self._ScalarState.get_field("s")
         if (
@@ -102,22 +85,14 @@ class RadiationDycoms:
             )
             or force
         ):
-<<<<<<< HEAD
-            self.time_elapsed = 0.0
-=======
+
             if not force:
                 self.time_elapsed = 0.0
->>>>>>> plat_plus_rad
-            # heating_rate_lw = self._DiagnosticState.get_field('heating_rate_lw')
 
             qc = self._Micro.get_qc()
             qv = self._ScalarState.get_field("qv")
             rho = self._Ref._rho0
-<<<<<<< HEAD
 
-=======
-            
->>>>>>> plat_plus_rad
             nh = self._Grid.n_halo
 
             z = self._Grid.z_global
@@ -126,20 +101,11 @@ class RadiationDycoms:
             self.zi_mean, self.zi_min, self.zi_max = dycoms_rad_calc(
                 nh, self._Grid.dxi[2], z, z_edge, rho, qc, qv, dTdt_rad
             )
-<<<<<<< HEAD
-=======
-   
->>>>>>> plat_plus_rad
 
         self._Timers.end_timer("RadiationDycoms")
         return
 
     def update_apply_tend(self):
-<<<<<<< HEAD
-
-=======
-       
->>>>>>> plat_plus_rad
         s = self._ScalarState.get_field("s")
         dTdt_rad = self._DiagnosticState.get_field("dTdt_rad")
         dt = self._TimeSteppingController.dt
@@ -171,7 +137,6 @@ class RadiationDycoms:
         my_rank = MPI.COMM_WORLD.Get_rank()
 
         npts = self._Grid.n[0] * self._Grid.n[1]
-<<<<<<< HEAD
         zi_mean = UtilitiesParallel.ScalarAllReduce(self.zi_mean / npts)
         zi_min = UtilitiesParallel.ScalarAllReduce(self.zi_min, op=MPI.MIN)
         zi_max = UtilitiesParallel.ScalarAllReduce(self.zi_max, op=MPI.MAX)
@@ -183,33 +148,17 @@ class RadiationDycoms:
             timeseries_grp["zi_max"][-1] = zi_max
             timeseries_grp["zi_min"][-1] = zi_min
 
-=======
-        zi_mean = UtilitiesParallel.ScalarAllReduce(self.zi_mean/npts)
-        zi_min = UtilitiesParallel.ScalarAllReduce(self.zi_min, op=MPI.MIN)
-        zi_max = UtilitiesParallel.ScalarAllReduce(self.zi_max,op=MPI.MAX)
-
-        if my_rank == 0:
-            timeseries_grp = nc_grp["timeseries"]
-        
-            timeseries_grp["zi_mean"][-1] = zi_mean
-            timeseries_grp["zi_max"][-1] = zi_max
-            timeseries_grp["zi_min"][-1] = zi_min
-  
->>>>>>> plat_plus_rad
         return
 
     def io_fields2d_update(self, nc_grp):
         return
 
-<<<<<<< HEAD
     def restart(self, data_dict, **kwargs):
-=======
-    def restart(self, data_dict):
+
         key = "Radiation"
         for item in self._restart_attributes:
             self.__dict__[item] = data_dict[key][item]
 
->>>>>>> plat_plus_rad
         return
 
     def dump_restart(self, data_dict):
@@ -218,10 +167,6 @@ class RadiationDycoms:
         data_dict[key] = {}
         for item in self._restart_attributes:
             data_dict[key][item] = self.__dict__[item]
-<<<<<<< HEAD
-=======
-        
->>>>>>> plat_plus_rad
         return
 
     @property
@@ -230,11 +175,7 @@ class RadiationDycoms:
 
 
 @numba.njit()
-<<<<<<< HEAD
 def dycoms_rad_calc(nh, dzi, z, z_edge, rho, qc, qv, dT):
-=======
-def dycoms_rad_calc(nh, dzi, z, z_edge, rho,  qc, qv, dT):
->>>>>>> plat_plus_rad
     F0 = 70.0  # W m^-2
     F1 = 22.0  # W m^-2
     kappa = 85.0  # m^2 kg^-1
@@ -253,7 +194,6 @@ def dycoms_rad_calc(nh, dzi, z, z_edge, rho,  qc, qv, dT):
     zi_min = 9999.0
     for i in range(nh[0], shape[0] - nh[0]):
         for j in range(nh[1], shape[1] - nh[1]):
-<<<<<<< HEAD
             qt_index = qc[i, j, kmin] + qv[i, j, kmin]
             for k in range(kmin + 1, kmax):
                 index = k
@@ -263,41 +203,20 @@ def dycoms_rad_calc(nh, dzi, z, z_edge, rho,  qc, qv, dT):
                     break
             zi = (qt_zi - qt_indexm1) / (qt_index - qt_indexm1) / dzi + z[index - 1]
             zi_mean += zi
-=======
-            qt_index = qc[i,j,kmin] + qv[i,j,kmin]
-            for k in range(kmin+1, kmax):
-                index = k
-                qt_indexm1 = qt_index
-                qt_index = qc[i,j,k] + qv[i,j,k]
-                if qt_index < qt_zi:
-                    break
-            zi = (qt_zi - qt_indexm1)/(qt_index-qt_indexm1)/dzi + z[index-1]
-            zi_mean+=zi
->>>>>>> plat_plus_rad
             if zi > zi_max:
                 zi_max = zi
             elif zi < zi_min:
                 zi_min = zi
-<<<<<<< HEAD
 
             for k in range(kmax - 1, kmin - 1, -1):
                 qtop[k] = qtop[k + 1] + qc[i, j, k + 1] * rho[k + 1] / dzi * kappa
             for k in range(kmin, kmax + 1):
                 qbot[k] = qbot[k - 1] + qc[i, j, k] * rho[k] / dzi * kappa
 
-=======
-          
-            for k in range(kmax-1, kmin-1,-1):
-                qtop[k] = qtop[k+1] +  qc[i,j,k+1] * rho[k+1] /dzi * kappa
-            for k in range(kmin, kmax+1):
-                qbot[k] = qbot[k-1] + qc[i,j,k] * rho[k] / dzi * kappa
-               
->>>>>>> plat_plus_rad
                 lw_flux[k] = F0 * np.exp(-qtop[k]) + F1 * np.exp(-qbot[k])
                 if z_edge[k] > zi:
                     cbrt_z = (z_edge[k] - zi) ** (1.0 / 3.0)
                     lw_flux[k] += (
-<<<<<<< HEAD
                         a
                         * rho_zi
                         * D
@@ -310,14 +229,3 @@ def dycoms_rad_calc(nh, dzi, z, z_edge, rho,  qc, qv, dT):
                 )
 
     return zi_mean, zi_min, zi_max
-=======
-                        a * rho_zi * D * parameters.CPD * (0.25 * cbrt_z ** 4.0 + zi * cbrt_z)
-                    )
-
-                dT[i, j, k] = -(lw_flux[k] - lw_flux[k - 1]) * dzi / parameters.CPD / rho[k]
-    
-    return zi_mean, zi_min, zi_max
-
-
-
->>>>>>> plat_plus_rad
