@@ -19,7 +19,7 @@ class Plume:
         self._start_time = start_time
         self._plume_number = n
         self._scalar_name = "plume_" + str(self._plume_number)
-        self._boundary_outflow = True
+        self._boundary_outflow = [True, True]
 
         self._plume_flux = 0.0
         self._plume_qv_flux = 0.0
@@ -48,29 +48,29 @@ class Plume:
             return
 
         # If needed, zero the plume scalar on the boundaries
-        if self._boundary_outflow:
+        if np.any(self._boundary_outflow):
 
             plume_value = self._ScalarState.get_field(self._scalar_name)
 
             n_halo = self._Grid.n_halo
 
-            x_local = self._Grid.x_local
-            x_global = self._Grid.x_global
+            if self._boundary_outflow[0]:
+                x_local = self._Grid.x_local
+                x_global = self._Grid.x_global
+                if np.amin(x_local) == np.amin(x_global):
+                    plume_value[: n_halo[0], :, :] = 0
 
-            if np.amin(x_local) == np.amin(x_global):
-                plume_value[: n_halo[0], :, :] = 0
+                if np.amax(x_local) == np.amax(x_global):
+                    plume_value[-n_halo[0] :, :, :] = 0
+            if self._boundary_outflow[1]:
+                y_local = self._Grid.y_local
+                y_global = self._Grid.y_global
 
-            if np.amax(x_local) == np.amax(x_global):
-                plume_value[-n_halo[0] :, :, :] = 0
+                if np.amin(y_local) == np.amin(y_global):
+                    plume_value[:, : n_halo[1], :] = 0
 
-            y_local = self._Grid.y_local
-            y_global = self._Grid.y_global
-
-            if np.amin(y_local) == np.amin(y_global):
-                plume_value[:, : n_halo[1], :] = 0
-
-            if np.amax(y_local) == np.amax(y_global):
-                plume_value[:, -n_halo[1] :, :] = 0
+                if np.amax(y_local) == np.amax(y_global):
+                    plume_value[:, -n_halo[1] :, :] = 0
 
         if self._plume_on_rank:
             dxs = self._Grid.dx
@@ -106,18 +106,19 @@ class Plume:
 
         return
 
-    def io_fields2d(self, nc_grp):
+    def io_fields2d(self, nc_grp, z_index):
 
         start = self._Grid.local_start
         end = self._Grid._local_end
         nh = self._Grid.n_halo
+        z = self._Grid.z_global[nh[2] + z_index]
 
         send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
         recv_buffer = np.empty_like(send_buffer)
 
         if nc_grp is not None:
             var_nc = nc_grp.createVariable(
-                self._scalar_name,
+                self._scalar_name + "_" + str(z),
                 np.double,
                 dimensions=(
                     "X",
@@ -128,7 +129,7 @@ class Plume:
         s = self._ScalarState.get_field(self._scalar_name)
 
         send_buffer[start[0] : end[0], start[1] : end[1]] = s[
-            nh[0] : -nh[0], nh[1] : -nh[1], nh[2]
+            nh[0] : -nh[0], nh[1] : -nh[1], nh[2] + z_index
         ]
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
 
@@ -239,6 +240,11 @@ class Plumes:
             # Store the boundary treatment
             self._boundary_outflow = namelist["plumes"]["boundary_outflow"]
 
+            try:
+                self._field2d_zindex = namelist["plumes"]["fields2d_zindex"]
+            except:
+                self._field2d_zindex = [0]
+
         else:
             # If plumes are not in namelist return since there is nothing
             # to do.
@@ -310,7 +316,8 @@ class Plumes:
     def io_fields2d_update(self, nc_grp):
 
         for plume_i in self._list_of_plumes:
-            plume_i.io_fields2d(nc_grp)
+            for z_index in self._field2d_zindex:
+                plume_i.io_fields2d(nc_grp, z_index)
 
         return
 

@@ -68,7 +68,9 @@ class RadiationDycoms:
     def update(self, force=False):
         self._Timers.start_timer("RadiationDycoms")
 
-        self.time_elapsed += self._TimeSteppingController.dt
+        if not force:
+            self.time_elapsed += self._TimeSteppingController.dt
+
         dTdt_rad = self._DiagnosticState.get_field("dTdt_rad")
         s = self._ScalarState.get_field("s")
         if (
@@ -81,8 +83,8 @@ class RadiationDycoms:
             )
             or force
         ):
-            self.time_elapsed = 0.0
-            # heating_rate_lw = self._DiagnosticState.get_field('heating_rate_lw')
+            if not force:
+                self.time_elapsed = 0.0
 
             qc = self._Micro.get_qc()
             qv = self._ScalarState.get_field("qv")

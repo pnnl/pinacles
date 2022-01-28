@@ -14,6 +14,8 @@ def main(namelist):
 
     # Put all of the output classes into a list (these are just references)
 
+
+
     io_classes = [
         Sim.StatsIO,
         Sim.FieldsIO,
@@ -22,10 +24,10 @@ def main(namelist):
         Sim.IOTower,
         Sim.Restart,
         Sim.Timers,
-        Sim.Parts,
+        Sim.PlatSim
     ]
 
-    if Sim.Rad.time_synced:
+    if Sim.Rad.time_synced :
         io_classes.append(Sim.Rad)
 
     # Determine all of the output frequencies

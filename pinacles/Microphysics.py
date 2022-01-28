@@ -14,6 +14,28 @@ def water_path(n_halo, dz, npts, rho, q):
 
 
 @numba.njit()
+def water_path_lasso(n_halo, dz, rho, qc):
+    shape = qc.shape
+    npts = 0
+    lwp = 0
+
+    paths = np.zeros((shape[0], shape[1]), dtype=np.double)
+    for i in range(n_halo[0], shape[0] - n_halo[0]):
+        for j in range(n_halo[1], shape[1] - n_halo[1]):
+            for k in range(n_halo[2], shape[2] - n_halo[2]):
+                if qc[i, j, k] > 1e-7:
+                    paths[i, j] += qc[i, j, k] * rho[k] * dz
+
+    for i in range(n_halo[0], shape[0] - n_halo[0]):
+        for j in range(n_halo[1], shape[1] - n_halo[1]):
+            if paths[i, j] * 1000.0 > 1.0:
+                lwp += paths[i, j]
+                npts += 1
+
+    return lwp, npts
+
+
+@numba.njit()
 def water_fraction(n_halo, npts, q, threshold=1e-8):
     frac = 0.0
     shape = q.shape
