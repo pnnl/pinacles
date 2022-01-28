@@ -1,6 +1,7 @@
 from pinacles.Microphysics import (
     MicrophysicsBase,
     water_path,
+    water_path_lasso,
     water_fraction,
     water_fraction_profile,
 )
@@ -263,6 +264,11 @@ class MicroKessler(MicrophysicsBase):
         v.standard_name = "RF"
         v.units = ""
 
+        v = timeseries_grp.createVariable("LWP_LASSO", np.double, dimensions=("time",))
+        v.long_name = "LASSO Liquid Water Path"
+        v.standard_name = "LWP"
+        v.units = "kg/m^2"
+
         v = timeseries_grp.createVariable("LWP", np.double, dimensions=("time",))
         v.long_name = "Liquid Water Path"
         v.standard_name = "LWP"
@@ -335,6 +341,13 @@ class MicroKessler(MicrophysicsBase):
         lwp = water_path(n_halo, dz, npts, rho, qc)
         lwp = UtilitiesParallel.ScalarAllReduce(lwp)
 
+        # First compute liqud water path
+        lwp_lasso, npts_lasso = water_path_lasso(n_halo, dz, rho, qc + qr)
+        lwp_lasso = UtilitiesParallel.ScalarAllReduce(lwp_lasso)
+        npts_lasso = UtilitiesParallel.ScalarAllReduce(npts_lasso)
+        if npts_lasso > 0:
+            lwp_lasso /= npts_lasso
+
         rwp = water_path(n_halo, dz, npts, rho, qr)
         rwp = UtilitiesParallel.ScalarAllReduce(rwp)
 
@@ -368,6 +381,7 @@ class MicroKessler(MicrophysicsBase):
             timeseries_grp["CF"][-1] = cf
             timeseries_grp["RF"][-1] = rf
             timeseries_grp["LWP"][-1] = lwp
+            timeseries_grp["LWP_LASSO"][-1] = lwp_lasso
             timeseries_grp["RWP"][-1] = rwp
             timeseries_grp["VWP"][-1] = vwp
 

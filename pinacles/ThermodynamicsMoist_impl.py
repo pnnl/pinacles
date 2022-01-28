@@ -84,9 +84,16 @@ def eos(
                 T_out[i, j, k] = T(
                     z_in[k], s_in[i, j, k], ql_in[i, j, k], qi_in[i, j, k]
                 )
-                alpha_out[i, j, k] = alpha(P_in[k], T_out[i, j, k],qv_in[i,j,k], ql_in[i,j,k], qi_in[i,j,k])
-                buoyancy_out[i,j,k] = parameters.G * (alpha_out[i,j,k] - alpha0[k])/alpha0[k]
-
+                alpha_out[i, j, k] = alpha(
+                    P_in[k],
+                    T_out[i, j, k],
+                    qv_in[i, j, k],
+                    ql_in[i, j, k],
+                    qi_in[i, j, k],
+                )
+                buoyancy_out[i, j, k] = (
+                    parameters.G * (alpha_out[i, j, k] - alpha0[k]) / alpha0[k]
+                )
 
     return
 

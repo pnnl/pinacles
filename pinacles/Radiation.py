@@ -62,6 +62,11 @@ class RRTMG:
             self.time_synced = True
 
         try:
+            self.time_synced = namelist["radiation"]["time_synced"]
+        except:
+            self.time_synced = True
+
+        try:
             self._radiation_frequency = namelist["radiation"]["update_frequency"]
         except:
             self._radiation_frequency = 30.0
@@ -297,7 +302,8 @@ class RRTMG:
         s = self._ScalarState.get_field("s")
 
         dt = self._TimeSteppingController.dt
-        self.time_elapsed += dt
+        if not force:
+            self.time_elapsed += dt
 
         if (
             (self.time_elapsed > self._radiation_frequency and not self.time_synced)
@@ -309,8 +315,10 @@ class RRTMG:
             )
             or force
         ):
-
-            self.time_elapsed = 0.0
+            if not force:
+                # Don't reset time elapsed when forcing computation
+                # i.e. at the beginning of a restarted run
+                self.time_elapsed = 0.0
             # TODO: testing of this code
             self.hourz = self._hourz_init + self._TimeSteppingController.time / 3600.0
             self.dyofyr = self._dyofyr_init + np.floor_divide(
