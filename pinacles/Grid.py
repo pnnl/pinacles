@@ -314,6 +314,10 @@ class GridBase:
         # Get the local shape
         self._ngrid_local = self._local_shape + 2 * self._n_halo
 
+    
+        self.rank_nx = np.array(MPI.COMM_WORLD.allgather(self._local_shape[0]))
+        self.rank_ny = np.array(MPI.COMM_WORLD.allgather(self._local_shape[1]))
+      
         return
 
 
@@ -351,6 +355,7 @@ class RegularCartesian(GridBase):
             end = self._local_end[i] + 2 * self._n_halo[i]
             self._local_axes.append(self._global_axes[i][start:end])
             self._local_axes_edge.append(self._global_axes_edge[i][start:end])
+
 
         self._dx = np.array(dx_list)
         self._dxi = 1.0 / self._dx
