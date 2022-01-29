@@ -2,7 +2,7 @@ import numpy as np
 import netCDF4 as nc
 from mpi4py import MPI
 from pinacles.interpolation_impl import centered_second
-from UtilitiesParallel import print_root
+from pinacles import UtilitiesParallel
 import pickle
 import os
 
@@ -47,7 +47,7 @@ class PlatformSimulator:
             self._flight_path = pickle.load(f)
             self._starttime = self._flight_path["time_offset"][0]
             self._endtime = self._flight_path["time_offset"][-1]
-            print_root("PLATFORM START, END", self._starttime, self._endtime)
+            UtilitiesParallel.print_root("PLATFORM START, END", self._starttime, self._endtime)
 
         # "Fast-forward the location if the time is greater than the start time of the platform
         if (
@@ -64,7 +64,7 @@ class PlatformSimulator:
                     wrap_y=True,
                 )
 
-        print_root(
+        UtilitiesParallel.print_root(
             "initialize plaform",
             name,
             self._location[0],
