@@ -35,6 +35,7 @@ from pinacles import Restart
 from pinacles import UtilitiesParallel
 from pinacles import ParticlesFactory
 from pinacles import Timers
+from pinacles import DryDeposition
 from mpi4py import MPI
 import numpy as np
 
@@ -283,6 +284,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.DiagnosticState,
         )
 
+        self.Dep = DryDeposition.DryDeposition(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.DiagnosticState, self.Surf)
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
         self.Restart.add_class_to_restart(self.ScalarState)
@@ -889,7 +891,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
                         self.Rad.update()
                     self.Rad.update_apply_tend()
                     self.Parts.update()
+                    self.Dep.update()
                     self.Timers.start_timer("BoundaryUpdate")
+                    
                     self.ScalarState.boundary_exchange()
                     self.ScalarState.update_all_bcs()
 

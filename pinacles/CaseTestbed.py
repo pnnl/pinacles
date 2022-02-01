@@ -322,6 +322,8 @@ class SurfaceTestbed(Surface.SurfaceBase):
         self._lhf = self._forcing_lhf[0]
         self._ustar = self._forcing_ustar[0]
 
+        print('USTAR IN SURFACE', self._ustar)
+
         self._z0 = 0.0
 
         self._Timers.add_timer("SurfaceTestbed_update")
@@ -414,19 +416,8 @@ class SurfaceTestbed(Surface.SurfaceBase):
         self._ustar_sfc[:, :] = ustar_interp
         self._ustar = ustar_interp
 
-        # --------------------------------------------------------
-        # OPTION 2-- z0 from windspeed (this is rough, should be improved), then get u*
-        # Using the mean windspeed rather than pointwise, should also be interpolated to 10m
-        # Expression from ARPS based on anderson 1993, we also used this in pycles
-        # wspd_local = np.sum(self._windspeed_sfc[nh[0]:-nh[0], nh[1]:-nh[1]])/(self._Grid.n[0] * self._Grid.n[1])
-        # wspd_mean = UtilitiesParallel.ScalarAllReduce(wspd_local)
-        # self._z0 =self._compute_z0(self._Grid.dx[2]/2.0,wspd_mean)
-        # self._bflx_sfc[:,:] = (parameters.G * self._Ref.alpha0[nh[2]] * parameters.ICPD/self.T_surface
-        #                         * (shf_interp + (parameters.EPSVI -1.0) * parameters.CPD * self.T_surface * lhf_interp / parameters.LV))
-        # Surface_impl.compute_ustar_sfc(self._windspeed_sfc, self._bflx_sfc, self._z0, self._Grid.dx[2]/2.0, self._ustar_sfc)
-        # ustar_local = np.sum(self._ustar_sfc[nh[0]:-nh[0], nh[1]:-nh[1]])/(self._Grid.n[0] * self._Grid.n[1])
-        # self._ustar = UtilitiesParallel.ScalarAllReduce(ustar_local)
-
+        self._z0 = 1.0e-4
+      
         Surface_impl.tau_given_ustar(
             self._ustar_sfc,
             usfc,
