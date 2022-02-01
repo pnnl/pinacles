@@ -20,6 +20,7 @@ def main(namelist):
         Sim.StatsIO,
         Sim.FieldsIO,
         Sim.Fields2d,
+        Sim.TrainingData,
         Sim.IOTower,
         Sim.Restart,
         Sim.Timers,
