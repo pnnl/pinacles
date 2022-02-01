@@ -88,7 +88,7 @@ def compute_dry_deposition_velocity( dry_particle_diameter, T,rh, nh,z, rho0, p0
     return
 
 @numba.njit
-def compute_rh_3d(nh,p0, qv,T, rh):
+def compute_rh_3d(nh,P0, qv,T, rh):
     shape = rh.shape
     for i in range(nh[0],shape[0]-nh[0]):
         for j in range(nh[1],shape[1]-nh[1]):

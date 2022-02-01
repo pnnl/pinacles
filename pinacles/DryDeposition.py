@@ -56,7 +56,7 @@ class DryDeposition:
    
        
         DryDeposition_impl.compute_dry_deposition_velocity(self._dry_diameter, T, rh, nh, z,
-                                        self._Ref._rho0, self._Ref._P0, shf2d, lhf2d, ustar2d, z02d, vdep)
+                                        self._Ref._rho0, self._Ref.p0, shf2d, lhf2d, ustar2d, z02d, vdep)
         #vdep is positive but directed downward
         for var in self._ScalarState._dofs:
             if   'plume' in  var:
