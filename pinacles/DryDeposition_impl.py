@@ -87,6 +87,27 @@ def compute_dry_deposition_velocity( dry_particle_diameter, T,rh, nh,z, rho0, p0
                 vdep[i,j,k] = vg + 1.0/(R_aero[k]+ R_surf)
     return
 
+@numba.njit
+def compute_rh_3d(nh,p0, qv,T, rh):
+    shape = rh.shape
+    for i in range(nh[0],shape[0]-nh[0]):
+        for j in range(nh[1],shape[1]-nh[1]):
+            for k in range(nh[2],shape[2]-nh[2]):
+                pv = P0[k] *parameters.EPSVI * qv[i,j,k]/(1.0-qv[i,j,k] + parameters.EPSVI * qv[i,j,k])
+                Tcel = T[i,j,k]-273.15
+                pvsat = 610.94 * np.exp(17.625*Tcel/(Tcel+243.04))
+                rh[i,j,k] = pv/pvsat
+    return
+
+@numba.njit
+def add_deposition_tendency(vdep, phi,phi_t, nh, dxi_2):
+    shape = phi.shape
+    for i in range(nh[0],shape[0]-nh[0]):
+        for j in range(nh[1],shape[1]-nh[1]):
+            for k in range(nh[2],shape[2]-nh[2]):
+                phi_t[i,j,k] += vdep[i,j,k] *  (phi[i,j,k+1] - phi[i,j,k]) * dxi_2
+
+
 
 
 

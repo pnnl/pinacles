@@ -322,7 +322,6 @@ class SurfaceTestbed(Surface.SurfaceBase):
         self._lhf = self._forcing_lhf[0]
         self._ustar = self._forcing_ustar[0]
 
-        print('USTAR IN SURFACE', self._ustar)
 
         self._z0 = 0.0
 
