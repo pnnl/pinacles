@@ -15,6 +15,9 @@ def compute_u_fluxes(
     dudz,
     dvdx,
     dwdx,
+    s11,
+    s12,
+    s13,
     fluxx,
     fluxy,
     fluxz,
@@ -24,70 +27,51 @@ def compute_u_fluxes(
     # kz_fact = dx[2]*dx[2]/((dx[0] * dx[1]))
     shape = ut.shape
     # Compute the fluxes
-    for i in range(n_halo[0] - 1, shape[0] - n_halo[0] + 1):
-        for j in range(n_halo[1] - 1, shape[1] - n_halo[1] + 1):
-            for k in range(n_halo[2], shape[2] - n_halo[2]):
+    for i in range(1, shape[0] - 1):
+        for j in range(1, shape[1] - 1):
+            for k in range(1, shape[2] - 1):
 
-                s11 = dudx[i, j, k]
-                s12 = 0.5 * (dvdx[i, j, k] + dudy[i, j, k])
-                s13 = 0.5 * (dudz[i, j, k] + dwdx[i, j, k])
+                # s11 = dudx[i, j, k]
+                # s12 = 0.5 * (dvdx[i, j, k] + dudy[i, j, k])
+                # s13 = 0.5 * (dudz[i, j, k] + dwdx[i, j, k])
 
-                fluxx[i, j, k] = -2.0 * rho0[k] * eddy_viscosity[i, j, k] * s11
-                fluxy[i, j, k] = -2.0 * rho0[k] * eddy_viscosity[i, j, k] * s12
+                fluxx[i, j, k] = -2.0 * rho0[k] * eddy_viscosity[i, j, k] * s11[i, j, k]
+                fluxy[i, j, k] = (
+                    -0.5
+                    * rho0[k]
+                    * (
+                        eddy_viscosity[i, j, k]
+                        + eddy_viscosity[i + 1, j, k]
+                        + eddy_viscosity[i, j + 1, k]
+                        + eddy_viscosity[i + 1, j + 1, k]
+                    )
+                    * s12[i, j, k]
+                )
                 fluxz[i, j, k] = (
-                    -2.0 * rho0[k] * eddy_viscosity[i, j, k] * s13
-                )  # * kz_fact
+                    -0.5
+                    * rho0_edge[k]
+                    * (
+                        eddy_viscosity[i, j, k]
+                        + eddy_viscosity[i + 1, j, k]
+                        + eddy_viscosity[i, j, k + 1]
+                        + eddy_viscosity[i + 1, j, k + 1]
+                    )
+                    * s13[i, j, k]
+                )
 
     # Compute the flux divergences
-    for i in range(n_halo[0], shape[0] - n_halo[0]):
-        for j in range(n_halo[1], shape[1] - n_halo[1]):
-            for k in range(n_halo[2], shape[2] - n_halo[2]):
+    for i in range(1, shape[0] - 1):
+        for j in range(1, shape[1] - 1):
+            for k in range(1, shape[2] - 1):
+                bc = 1.0
+                if k <= n_halo[2]:
+                    bc = 0.0
 
                 # For u the x flux is in the correct location
                 ut[i, j, k] -= (fluxx[i + 1, j, k] - fluxx[i, j, k]) * dxi[0] / rho0[k]
-
+                ut[i, j, k] -= (fluxy[i, j, k] - fluxy[i, j - 1, k]) * dxi[1] / rho0[k]
                 ut[i, j, k] -= (
-                    0.25
-                    * (
-                        (
-                            (
-                                fluxy[i, j, k]
-                                + fluxy[i + 1, j, k]
-                                + fluxy[i, j + 1, k]
-                                + fluxy[i + 1, j + 1, k]
-                            )
-                            - (
-                                fluxy[i, j, k]
-                                + fluxy[i + 1, j, k]
-                                + fluxy[i, j - 1, k]
-                                + fluxy[i + 1, j - 1, k]
-                            )
-                        )
-                        * dxi[1]
-                    )
-                    / rho0[k]
-                )
-
-                ut[i, j, k] -= (
-                    0.25
-                    * (
-                        (
-                            (
-                                fluxz[i, j, k]
-                                + fluxz[i + 1, j, k]
-                                + fluxz[i, j, k + 1]
-                                + fluxz[i + 1, j, k + 1]
-                            )
-                            - (
-                                fluxz[i, j, k]
-                                + fluxz[i + 1, j, k]
-                                + fluxz[i, j, k - 1]
-                                + fluxz[i + 1, j, k - 1]
-                            )
-                        )
-                        * dxi[2]
-                    )
-                    / rho0[k]
+                    (fluxz[i, j, k] - bc * fluxz[i, j, k - 1]) * dxi[2] / rho0[k]
                 )
 
     return
@@ -106,6 +90,9 @@ def compute_v_fluxes(
     dvdz,
     dudy,
     dwdy,
+    s21,
+    s22,
+    s23,
     fluxx,
     fluxy,
     fluxz,
@@ -116,66 +103,46 @@ def compute_v_fluxes(
 
     # kz_fact = dx[2]*dx[2]/((dx[0] * dx[1]))
     # Compute the fluxes
-    for i in range(n_halo[0] - 1, shape[0] - n_halo[0] + 1):
-        for j in range(n_halo[1] - 1, shape[1] - n_halo[1] + 1):
-            for k in range(n_halo[2], shape[2] - n_halo[2]):
+    for i in range(1, shape[0] - 1):
+        for j in range(1, shape[1] - 1):
+            for k in range(1, shape[2] - 1):
 
-                s22 = dvdy[i, j, k]
-                s21 = 0.5 * (dvdx[i, j, k] + dudy[i, j, k])
-                s23 = 0.5 * (dvdz[i, j, k] + dwdy[i, j, k])
-
-                fluxx[i, j, k] = -2.0 * rho0[k] * eddy_viscosity[i, j, k] * s21
-                fluxy[i, j, k] = -2.0 * rho0[k] * eddy_viscosity[i, j, k] * s22
+                fluxx[i, j, k] = (
+                    -0.5
+                    * rho0[k]
+                    * (
+                        eddy_viscosity[i, j, k]
+                        + eddy_viscosity[i + 1, j, k]
+                        + eddy_viscosity[i, j + 1, k]
+                        + eddy_viscosity[i + 1, j + 1, k]
+                    )
+                    * s21[i, j, k]
+                )
+                fluxy[i, j, k] = -2.0 * rho0[k] * eddy_viscosity[i, j, k] * s22[i, j, k]
                 fluxz[i, j, k] = (
-                    -2.0 * rho0[k] * eddy_viscosity[i, j, k] * s23
+                    -0.5
+                    * rho0_edge[k]
+                    * (
+                        eddy_viscosity[i, j, k]
+                        + eddy_viscosity[i, j + 1, k]
+                        + eddy_viscosity[i, j, k + 1]
+                        + eddy_viscosity[i, j + 1, k + 1]
+                    )
+                    * s23[i, j, k]
                 )  # * kz_fact
 
     # Compute the flux divergences
-    for i in range(n_halo[0], shape[0] - n_halo[0]):
-        for j in range(n_halo[1], shape[1] - n_halo[1]):
-            for k in range(n_halo[2], shape[2] - n_halo[2]):
-                vt[i, j, k] -= (
-                    0.25
-                    * (
-                        (
-                            (
-                                fluxx[i, j, k]
-                                + fluxx[i, j + 1, k]
-                                + fluxx[i + 1, j, k]
-                                + fluxx[i + 1, j + 1, k]
-                            )
-                            - (
-                                fluxx[i, j, k]
-                                + fluxx[i, j + 1, k]
-                                + fluxx[i - 1, j, k]
-                                + fluxx[i - 1, j + 1, k]
-                            )
-                        )
-                        * dxi[0]
-                    )
-                    / rho0[k]
-                )
+    for i in range(1, shape[0] - 1):
+        for j in range(1, shape[1] - 1):
+            for k in range(1, shape[2] - 1):
+
+                bc = 1.0
+                if k <= n_halo[2]:
+                    bc = 0.0
+                vt[i, j, k] -= (fluxx[i, j, k] - fluxx[i - 1, j, k]) * dxi[0] / rho0[k]
                 vt[i, j, k] -= (fluxy[i, j + 1, k] - fluxy[i, j, k]) * dxi[1] / rho0[k]
                 vt[i, j, k] -= (
-                    0.25
-                    * (
-                        (
-                            (
-                                fluxz[i, j, k]
-                                + fluxz[i, j + 1, k]
-                                + fluxz[i, j, k + 1]
-                                + fluxz[i, j + 1, k + 1]
-                            )
-                            - (
-                                fluxz[i, j, k]
-                                + fluxz[i, j + 1, k]
-                                + fluxz[i, j, k - 1]
-                                + fluxz[i, j + 1, k - 1]
-                            )
-                        )
-                        * dxi[2]
-                    )
-                    / rho0[k]
+                    (fluxz[i, j, k] - fluxz[i, j, k - 1] * bc) * dxi[2] / rho0[k]
                 )
     return
 
@@ -193,6 +160,9 @@ def compute_w_fluxes(
     dwdz,
     dudz,
     dvdz,
+    s13,
+    s23,
+    s33,
     fluxx,
     fluxy,
     fluxz,
@@ -204,75 +174,56 @@ def compute_w_fluxes(
     # kz_fact = dx[2]*dx[2]/((dx[0] * dx[1]))
 
     # Compute the fluxes
-    for i in range(n_halo[0] - 1, shape[0] - n_halo[0] + 1):
-        for j in range(n_halo[1] - 1, shape[1] - n_halo[1] + 1):
-            for k in range(n_halo[2], shape[2] - n_halo[2]):
+    for i in range(1, shape[0] - 1):
+        for j in range(1, shape[1] - 1):
+            for k in range(1, shape[2] - 1):
 
-                s33 = dwdz[i, j, k]
-                s31 = 0.5 * (dwdx[i, j, k] + dudz[i, j, k])
-                s23 = 0.5 * (dvdz[i, j, k] + dwdy[i, j, k])
-
-                fluxx[i, j, k] = -2.0 * rho0[k] * eddy_viscosity[i, j, k] * s31
-                fluxy[i, j, k] = -2.0 * rho0[k] * eddy_viscosity[i, j, k] * s23
+                fluxx[i, j, k] = (
+                    -0.5
+                    * rho0_edge[k]
+                    * (
+                        eddy_viscosity[i, j, k]
+                        + eddy_viscosity[i + 1, j, k]
+                        + eddy_viscosity[i, j, k + 1]
+                        + eddy_viscosity[i + 1, j, k + 1]
+                    )
+                    * s13[i, j, k]
+                )
+                fluxy[i, j, k] = (
+                    -0.5
+                    * rho0_edge[k]
+                    * (
+                        eddy_viscosity[i, j, k]
+                        + eddy_viscosity[i, j + 1, k]
+                        + eddy_viscosity[i, j, k + 1]
+                        + eddy_viscosity[i, j + 1, k + 1]
+                    )
+                    * s23[i, j, k]
+                )
                 fluxz[i, j, k] = (
-                    -2.0 * rho0[k] * eddy_viscosity[i, j, k] * s33
-                )  # * kz_fact
+                    -2.0 * rho0[k + 1] * eddy_viscosity[i, j, k] * s33[i, j, k]
+                )
 
     # Compute the flux divergences
-    for i in range(n_halo[0], shape[0] - n_halo[0]):
-        for j in range(n_halo[1], shape[1] - n_halo[1]):
-            for k in range(n_halo[2], shape[2] - n_halo[2]):
+    for i in range(1, shape[0] - 1):
+        for j in range(1, shape[1] - 1):
+            for k in range(1, shape[2] - 1):
 
                 wt[i, j, k] -= (
-                    0.25
-                    * (
-                        (
-                            (
-                                fluxx[i, j, k]
-                                + fluxx[i, j, k + 1]
-                                + fluxx[i + 1, j, k]
-                                + fluxx[i + 1, j, k + 1]
-                            )
-                            - (
-                                fluxx[i, j, k]
-                                + fluxx[i, j, k + 1]
-                                + fluxx[i - 1, j, k]
-                                + fluxx[i - 1, j, k + 1]
-                            )
-                        )
-                        * dxi[0]
-                    )
-                    / rho0_edge[k]
+                    (fluxx[i, j, k] - fluxx[i - 1, j, k]) * dxi[0] / rho0_edge[k]
                 )
 
                 wt[i, j, k] -= (
-                    0.25
-                    * (
-                        (
-                            (
-                                fluxy[i, j, k]
-                                + fluxy[i, j, k + 1]
-                                + fluxy[i, j + 1, k]
-                                + fluxy[i, j + 1, k + 1]
-                            )
-                            - (
-                                fluxy[i, j, k]
-                                + fluxy[i, j, k + 1]
-                                + fluxy[i, j - 1, k]
-                                + fluxy[i, j - 1, k + 1]
-                            )
-                        )
-                        * dxi[1]
-                    )
-                    / rho0_edge[k]
+                    (fluxy[i, j, k] - fluxy[i, j - 1, k]) * dxi[1] / rho0_edge[k]
                 )
 
+                bc = 1.0
+                if k <= n_halo[2]:
+                    bc = 0.0
+
                 wt[i, j, k] -= (
-                    (fluxz[i, j, k + 1] - fluxz[i, j, k]) * dxi[2] / rho0_edge[k]
+                    (fluxz[i, j, k + 1] - bc * fluxz[i, j, k]) * dxi[2] / rho0_edge[k]
                 )
-                # wt[i,j,k] -= ((fluxx[i+1,j,k] - fluxx[i,j,k])*dxi[0]
-                #    + (fluxy[i,j+1,k] - fluxy[i,j,k])*dxi[1]
-                #    + (fluxz[i,j,k+1] - fluxz[i,j,k])*dxi[2])/ rho0_edge[k]
 
     return
 
@@ -330,6 +281,15 @@ class MomentumDiffusion:
         dwdy = self._Kine._dwdy
         dwdz = self._Kine._dwdz
 
+        s11 = self._Kine._s11
+        s12 = self._Kine._s12
+        s13 = self._Kine._s13
+
+        s22 = self._Kine._s22
+        s23 = self._Kine._s23
+
+        s33 = self._Kine._s33
+
         compute_u_fluxes(
             n_halo,
             dx,
@@ -342,6 +302,9 @@ class MomentumDiffusion:
             dudz,
             dvdx,
             dwdx,
+            s11,
+            s12,
+            s13,
             fluxx,
             fluxy,
             fluxz,
@@ -360,6 +323,9 @@ class MomentumDiffusion:
             dvdz,
             dudy,
             dwdy,
+            s12,
+            s22,
+            s23,
             fluxx,
             fluxy,
             fluxz,
@@ -378,6 +344,9 @@ class MomentumDiffusion:
             dwdz,
             dudz,
             dvdz,
+            s13,
+            s23,
+            s33,
             fluxx,
             fluxy,
             fluxz,
