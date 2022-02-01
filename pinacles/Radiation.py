@@ -69,6 +69,11 @@ class RRTMG:
             self.time_synced = True
 
         try:
+            self.time_synced = namelist["radiation"]["time_synced"]
+        except:
+            self.time_synced = True
+
+        try:
             self._radiation_frequency = namelist["radiation"]["update_frequency"]
         except:
                 self._radiation_frequency =30.0
@@ -322,7 +327,7 @@ class RRTMG:
             or force
         ):
             if not force:
-                # Don't reset time elapsed when forcing computation 
+                # Don't reset time elapsed when forcing computation
                 # i.e. at the beginning of a restarted run
                 self.time_elapsed = 0.0
             # TODO: testing of this code

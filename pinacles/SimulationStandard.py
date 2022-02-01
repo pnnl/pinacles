@@ -21,7 +21,6 @@ from pinacles import ForcingFactory
 from pinacles.Stats import Stats
 from pinacles import DumpFields
 from pinacles import Fields2D
-from pinacles import DumpTrainingData
 from pinacles import MicrophysicsFactory
 from pinacles import RadiationFactory
 from pinacles import Kinematics
@@ -37,7 +36,6 @@ from pinacles import ParticlesFactory
 from pinacles import Timers
 from mpi4py import MPI
 import numpy as np
-import pylab as plt
 
 import os
 from termcolor import colored
@@ -276,12 +274,13 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         self.PlatSim = PlatformSimulator.PlatformSimulators(
             self._namelist,
-            self.TimeSteppingController, 
+            self.TimeSteppingController,
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
             self.VelocityState,
-            self.DiagnosticState)
+            self.DiagnosticState,
+        )
 
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
@@ -340,17 +339,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.VelocityState,
             self.TimeSteppingController,
         )
-
-        #self.TrainingData = DumpTrainingData.DumpCloudCondFields(
-        #    self._namelist,
-        #    #self.Timers,
-        #     self.ModelGrid,
-        #    self.ScalarState,
-        #    self.VelocityState,
-        #    self.DiagnosticState,
-        #    self.Micro,
-        #    self.TimeSteppingController,
-        #)
 
         self.Fields2d.add_class(self.Micro)
         self.Fields2d.add_class(self.Thermo)
@@ -762,17 +750,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Fields2d.add_class(self.Thermo)
         self.Fields2d.add_class(self.Plumes)
 
-        #self.TrainingData = DumpTrainingData.DumpCloudCondFields(
-        #    self._namelist,
-        #    self.Timers,
-        #    self.ModelGrid,
-        #    self.ScalarState,
-        #    self.VelocityState,
-        #    self.DiagnosticState,
-        #    self.Micro,
-        #    self.TimeSteppingController,
-        #)
-
         # Now initialze for the output of 3D fields
         # Now initialze for the output of 3D fields
         self.FieldsIO = DumpFields.DumpFieldsFactory(
@@ -787,15 +764,15 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Now overwrite model state with restart
         self.Restart.restart()
 
-
         self.PlatSim = PlatformSimulator.PlatformSimulators(
             self._namelist,
-            self.TimeSteppingController, 
+            self.TimeSteppingController,
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
             self.VelocityState,
-            self.DiagnosticState)      
+            self.DiagnosticState,
+        )
 
         self.PlatSim.initialize()
 

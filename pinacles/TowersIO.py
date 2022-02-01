@@ -129,13 +129,11 @@ class Towers:
             return
 
         tower_locations = namelist["towers"]["location"]
-   
         for loc in tower_locations:
             self._list_of_towers.append(
                 Tower(namelist, Grid, TimeSteppingController, loc=tuple(loc))
             )
 
-        
         return
 
     def add_state_container(self, state_container):

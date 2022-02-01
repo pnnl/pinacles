@@ -19,13 +19,13 @@ def T(z, s, ql, qi):
 
 
 @numba.njit(fastmath=True)
-def rho(P, T):
-    return P / (parameters.RD * T)
+def alpha(P, T, qv, ql, qi):
+    return parameters.RD * T / P * (1.0 - (qv + ql + qi) + parameters.EPSVI * qv)
 
 
 @numba.njit(fastmath=True)
-def alpha(P, T):
-    return 1.0 / rho(P, T)
+def rho(P, T, qv, ql, qi):
+    return 1.0 / alpha(P, T, qv, ql, qi)
 
 
 @numba.njit(fastmath=True)
@@ -55,7 +55,7 @@ def compute_bvf(n_halo, theta_ref, exner, T, qv, ql, qi, dz, thetav, bvf):
                 * (thetav[i, j, k + 1] - thetav[i, j, k])
                 / (dz)
             )
-            for k in range(n_halo[2] + 2, shape[2] - n_halo[2]):
+            for k in range(n_halo[2] + 1, shape[2] - n_halo[2]):
                 bvf[i, j, k] = (
                     parameters.G
                     / theta_ref[k]
@@ -84,14 +84,15 @@ def eos(
                 T_out[i, j, k] = T(
                     z_in[k], s_in[i, j, k], ql_in[i, j, k], qi_in[i, j, k]
                 )
-                alpha_out[i, j, k] = alpha(P_in[k], T_out[i, j, k])
-                p_prime = parameters.RD / alpha0[k] * tref[k]
-                buoyancy_out[i, j, k] = parameters.G * (
-                    T_out[i, j, k] / tref[k]
-                    + 0.608 * qv_in[i, j, k]
-                    - ql_in[i, j, k]
-                    - qi_in[i, j, k]
-                    - p_prime / P_in[k]
+                alpha_out[i, j, k] = alpha(
+                    P_in[k],
+                    T_out[i, j, k],
+                    qv_in[i, j, k],
+                    ql_in[i, j, k],
+                    qi_in[i, j, k],
+                )
+                buoyancy_out[i, j, k] = (
+                    parameters.G * (alpha_out[i, j, k] - alpha0[k]) / alpha0[k]
                 )
 
     return

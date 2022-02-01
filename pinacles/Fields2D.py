@@ -23,6 +23,12 @@ class Fields2D:
         except:
             self._frequency = namelist["stats"]["frequency"]
 
+        # specify vertical levels (indices) at which to output velocity planes
+        try:
+            self._output_levels = namelist["fields2d"]["output_levels"]
+        except:
+            self._output_levels = [0]
+
         self._output_root = str(namelist["meta"]["output_directory"])
         self._casename = str(namelist["meta"]["simname"])
 
@@ -119,7 +125,7 @@ class Fields2D:
         recv_buffer = np.empty_like(send_buffer)
 
         for v in ["u", "v"]:
-            for k in [0,2,5,10,20,40,80,120,160]:
+            for k in self._output_levels:
                 z = self._Grid.z_global[nh[2]+k]
 
                 if nc_grp is not None:
@@ -135,7 +141,7 @@ class Fields2D:
                 var = self._VelocityState.get_field(v)
                 send_buffer.fill(0.0)
                 send_buffer[start[0] : end[0], start[1] : end[1]] = var[
-                nh[0] : -nh[0], nh[1] : -nh[1], nh[2] +k
+                    nh[0] : -nh[0], nh[1] : -nh[1], nh[2] + k
                 ]
                 MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
                 if nc_grp is not None:
@@ -144,7 +150,7 @@ class Fields2D:
                 if nc_grp is not None:
                     nc_grp.sync()
         for v in ["w"]:
-            for k in [0,2,5,10,20,40,80,120]:
+            for k in self._output_levels:
                 z = self._Grid.z_global[nh[2]+k]
 
                 if nc_grp is not None:

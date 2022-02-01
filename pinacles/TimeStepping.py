@@ -86,7 +86,7 @@ class TimeSteppingController:
         try:
             self.diff_num_target = namelist["time"]["diff_num"]
         except:
-            self.diff_num_target = 0.8
+            self.diff_num_target = 0.25
 
         self._time_max = namelist["time"]["time_max"]
         self._time = 0.0

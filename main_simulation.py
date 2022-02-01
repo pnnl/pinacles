@@ -14,15 +14,15 @@ def main(namelist):
 
     # Put all of the output classes into a list (these are just references)
 
+
+
     io_classes = [
         Sim.StatsIO,
         Sim.FieldsIO,
         Sim.Fields2d,
-        #Sim.TrainingData,
         Sim.IOTower,
         Sim.Restart,
         Sim.Timers,
-        Sim.Parts,
         Sim.PlatSim
     ]
 

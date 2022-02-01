@@ -1,3 +1,7 @@
+import numba
+import numpy as np
+
+
 class ThermodynamicsBase:
     def __init__(
         self, Timer, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro
@@ -30,6 +34,13 @@ class ThermodynamicsBase:
             "buoyancy", units="m s^{-1}", latex_name="b", long_name="buoyancy"
         )
 
+        self._DiagnosticState.add_variable(
+            "buoyancy_gradient_mag",
+            units="1/s^{-2}",
+            latex_name="b",
+            long_name="buoyancy",
+        )
+
         self.name = "ThermodynamicsBase"
 
         return
@@ -39,6 +50,22 @@ class ThermodynamicsBase:
 
     def get_qi(self):
         return np.zeros((self._Grid.ngrid_local), dtype=np.double)
+
+    @staticmethod
+    @numba.njit(fastmath=True)
+    def compute_buoyancy_gradient(dxi, b, buoyancy_gradient_mag):
+
+        shape = b.shape
+        for i in range(1, shape[0]-1):
+            for j in range(1, shape[1]-1):
+                for k in range(1, shape[2]-1):
+                    buoyancy_gradient_mag[i, j, k] = np.sqrt(
+                        ((b[i + 1, j, k] - b[i - 1, j, k]) * 0.5 * dxi[0]) ** 2.0
+                        + ((b[i, j + 1, k] - b[i, j - 1, k]) * 0.5 * dxi[1]) ** 2.0
+                        + ((b[i, j, k + 1] - b[i, j, k - 1]) * 0.5 * dxi[2]) ** 2.0
+                    )
+
+        return
 
 
 from pinacles import ThermodynamicsDry

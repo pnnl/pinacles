@@ -46,6 +46,13 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         # ref_init_type = 'integrate'
 
 
+    try:
+        ref_init_type = namelist["testbed"]["reference_init_type"]
+    except:
+        UtilitiesParallel.print_root("must specify init_type")
+        sys.exit()
+        # ref_init_type = 'integrate'
+
     data = nc.Dataset(file, "r")
     try:
         init_data = data.groups["initialization_sonde"]
@@ -63,17 +70,17 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     v0 = init_data.variables["reference_v0"][0]
 
     Ref.set_surface(Psfc=psfc, Tsfc=tsfc, u0=u0, v0=v0)
-    if ref_init_type == 'integrate':
+    if ref_init_type == "integrate":
         Ref.integrate()
-    elif ref_init_type == 'specify':
+    elif ref_init_type == "specify":
         p = init_data["pressure"]
         tdry = init_data["temperature"]
         alt = init_data.variables["z"][:]
         qv = init_data.variables["vapor_mixing_ratio"]
-        Ref.specify(alt,p,tdry, qv)
+        Ref.specify(alt, p, tdry, qv)
 
     else:
-        UtilitiesParallel.print_root('Unrecognized init type, exiting.')
+        UtilitiesParallel.print_root("Unrecognized init type, exiting.")
         sys.exit()
 
     u = VelocityState.get_field("u")

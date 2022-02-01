@@ -345,7 +345,11 @@ class MicroKessler(MicrophysicsBase):
         lwp = UtilitiesParallel.ScalarAllReduce(lwp)
 
         # First compute liqud water path
+<<<<<<< HEAD
         lwp_lasso, npts_lasso = water_path_lasso(n_halo, dz, rho, qc+qr)
+=======
+        lwp_lasso, npts_lasso = water_path_lasso(n_halo, dz, rho, qc + qr)
+>>>>>>> eba90d5e67414b02ad0e98a08bf48ac086b77d6b
         lwp_lasso = UtilitiesParallel.ScalarAllReduce(lwp_lasso)
         npts_lasso = UtilitiesParallel.ScalarAllReduce(npts_lasso)
         if npts_lasso > 0:

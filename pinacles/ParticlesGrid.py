@@ -1,6 +1,5 @@
 import numpy as np
 import numba
-import pylab as plt
 from numba.core import types
 from numba.typed import Dict, List
 import time

@@ -40,9 +40,14 @@ def apply_subsidence(wsub, idz, phi, phi_t):
         for j in range(1, phi_shape[1] - 1):
             for k in range(1, phi_shape[2] - 1):
                 phi_t[i, j, k] -= (
-                   0.5 * (wsub[k] -np.abs(wsub[k])) * (phi[i, j, k + 1] - phi[i, j, k]) * idz
-                   +
-                   0.5 * (wsub[k] + np.abs(wsub[k])) * (phi[i, j, k ] - phi[i, j, k-1]) * idz
+                    0.5
+                    * (wsub[k] - np.abs(wsub[k]))
+                    * (phi[i, j, k + 1] - phi[i, j, k])
+                    * idz
+                    + 0.5
+                    * (wsub[k] + np.abs(wsub[k]))
+                    * (phi[i, j, k] - phi[i, j, k - 1])
+                    * idz
                 )
 
     return

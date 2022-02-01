@@ -5,7 +5,7 @@ import numba
 
 @numba.njit(fastmath=True)
 def compute_visc(
-    dx, z, strain_rate_mag, bvf, cs, pr, eddy_viscosity, eddy_diffusivity, tke_sgs
+    n_halo, dx, z, strain_rate_mag, bvf, cs, pr, eddy_viscosity, eddy_diffusivity, tke_sgs
 ):
 
     shape = eddy_viscosity.shape
@@ -19,7 +19,7 @@ def compute_visc(
                 # filt_scale  = np.sqrt(1.0/(1.0/((dx[0] * dx[1] * dx[2] )**(1.0/3.0))**2.0 + 1.0/(0.4 * z[k])**2.0))
                 # Compute the stratification correction
                 fb = 1
-                if bvf[i, j, k] > 0 and strain_rate_mag[i, j, k] > 0.0:
+                if bvf[i, j, k] > 0 and strain_rate_mag[i, j, k] > 1e-10:
                     fb = (
                         max(
                             0.0,
@@ -36,12 +36,15 @@ def compute_visc(
                 eddy_viscosity[i, j, k] = (cs * filt_scale) ** 2.0 * (
                     fb * strain_rate_mag[i, j, k]
                 )
-
+                
+                
                 tke_sgs[i, j, k] = (eddy_viscosity[i, j, k] / (filt_scale * 0.1)) ** 2.0
                 # Compute the eddy diffusivty from the  eddy viscosity using an assumed
                 # inverse SGS Prandtl number tune this using
                 eddy_diffusivity[i, j, k] = eddy_viscosity[i, j, k] * pri
 
+    eddy_viscosity[:,:,n_halo[2]-1] = eddy_viscosity[:,:,n_halo[2]]
+    eddy_diffusivity[:,:,n_halo[2]-1] = eddy_diffusivity[:,:,n_halo[2]]
     return
 
 
@@ -95,6 +98,7 @@ class Smagorinsky(SGSBase):
         # Get the grid spacing from the Grid class
         dx = self._Grid.dx
         z = self._Grid.z_local
+        n_halo = self._Grid.n_halo
 
         # Get the necessary 3D fields from the field containers
         strain_rate_mag = self._DiagnosticState.get_field("strain_rate_mag")
@@ -105,6 +109,7 @@ class Smagorinsky(SGSBase):
 
         # Compute the viscosity
         compute_visc(
+            n_halo,
             dx,
             z,
             strain_rate_mag,
