@@ -1,11 +1,8 @@
 #!/bin/tcsh 
 #SBATCH --job-name template
-#SBATCH  -N 1 -n 40   
-#XXSBATCH -C knl
-#SBATCH --time=1:30:00
-#XXSBATCH -p debug
-#XXSBATCH -p regular
+#SBATCH  --ntasks-per-node 40 --nodes 1   
+#SBATCH --time=24:00:00
 #SBATCH -A e3sm 
 
-mpirun --mca btl_openib_allow_ib 1 python main.py inputfiles/domain_test.json 
-#mpirun  python -u main.py ./inputfiles/domain_test.json 
+#mpirun --mca btl_openib_allow_ib 1 python main.py inputfiles/domain_test.json 
+mpirun python -u main_simulation.py ./inputfiles/sullivan_and_patton.json 
