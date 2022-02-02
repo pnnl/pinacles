@@ -23,16 +23,16 @@ class Kinematics:
             "Q_criterion", long_name="Q criterion", latex_name="Q", units="m^2 s^-2"
         )
 
-        DiagnosticState.add_variable(
-            "vertical_vorticity",
-            long_name="Vertical Component of Vorticity",
-            latex_name="Q",
-            units="s^{-1}",
-        )
+        # DiagnosticState.add_variable(
+        #     "vertical_vorticity",
+        #     long_name="Vertical Component of Vorticity",
+        #     latex_name="Q",
+        #     units="s^{-1}",
+        # )
 
-        DiagnosticState.add_variable(
-            "helicity", long_name="helicity", latex_name="helicity", units="m s^{-2}"
-        )
+        # DiagnosticState.add_variable(
+        #     "helicity", long_name="helicity", latex_name="helicity", units="m s^{-2}"
+        # )
 
         nl = self._Grid.ngrid_local
 
@@ -73,8 +73,8 @@ class Kinematics:
 
         strain_rate_mag = self._DiagnosticState.get_field("strain_rate_mag")
         Q_mag = self._DiagnosticState.get_field("Q_criterion")
-        vertical_vorticity = self._DiagnosticState.get_field("vertical_vorticity")
-        helicity = self._DiagnosticState.get_field("helicity")
+        # vertical_vorticity = self._DiagnosticState.get_field("vertical_vorticity")
+        # helicity = self._DiagnosticState.get_field("helicity")
 
         # Get grid spacing
         dxi = self._Grid.dxi
@@ -118,8 +118,8 @@ class Kinematics:
             self._dwdy,
             self._dwdz,
             Q_mag,
-            vertical_vorticity,
-            helicity,
+            # vertical_vorticity,
+            # helicity,
         )
 
         self._Timers.end_timer("Kinematics_update")

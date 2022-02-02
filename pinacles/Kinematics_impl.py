@@ -146,8 +146,8 @@ def q_criterion(
     dwdy,
     dwdz,
     qcrit,
-    vertical_vorticity,
-    helicity,
+    # vertical_vorticity,
+    # helicity,
 ):
     shape = qcrit.shape
     for i in range(1, shape[0]):
@@ -216,11 +216,11 @@ def q_criterion(
                     - np.sqrt(s11 + s22 + s33 + s12 + s21 + s13 + s31 + s23 + s32)
                 )
 
-                vertical_vorticity[i, j, k] = dvdx_ - dudy_
-                helicity[i, j, k] = 0.5 * (
-                    (dwdy_ - dvdz_) * 0.5 * (u[i, j, k] + u[i - 1, j, k])
-                    + (dudz_ - dwdx_) * 0.5 * (v[i, j - 1, k] + v[i, j, k])
-                    + (dvdx_ - dudy_) * 0.5 * (w[i, j, k] + w[i, j, k - 1])
-                )
+                # vertical_vorticity[i, j, k] = dvdx_ - dudy_
+                # helicity[i, j, k] = 0.5 * (
+                #     (dwdy_ - dvdz_) * 0.5 * (u[i, j, k] + u[i - 1, j, k])
+                #     + (dudz_ - dwdx_) * 0.5 * (v[i, j - 1, k] + v[i, j, k])
+                #     + (dvdx_ - dudy_) * 0.5 * (w[i, j, k] + w[i, j, k - 1])
+                # )
 
     return

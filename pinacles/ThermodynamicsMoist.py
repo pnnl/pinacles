@@ -55,7 +55,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         buoyancy = self._DiagnosticState.get_field("buoyancy")
         bvf = self._DiagnosticState.get_field("bvf")
         w_t = self._VelocityState.get_tend("w")
-        buoyancy_gradient_mag = self._DiagnosticState.get_field("buoyancy_gradient_mag")
+        # buoyancy_gradient_mag = self._DiagnosticState.get_field("buoyancy_gradient_mag")
 
         ThermodynamicsMoist_impl.eos(
             z, p0, alpha0, s, qv, ql, qi, T, tref, alpha, buoyancy
@@ -72,7 +72,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         # Remove mean from buoyancy
         self._DiagnosticState.remove_mean("buoyancy")
 
-        self.compute_buoyancy_gradient(dxi, buoyancy, buoyancy_gradient_mag)
+        # self.compute_buoyancy_gradient(dxi, buoyancy, buoyancy_gradient_mag)
 
         self._Timers.end_timer("ThermoDynamicsMoist_update")
         return

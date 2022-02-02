@@ -3,11 +3,7 @@ from pinacles.Microphysics import (
     water_path,
     water_fraction,
     water_fraction_profile,
-<<<<<<< HEAD
-    water_path_lasso
-=======
     water_path_lasso,
->>>>>>> eba90d5e67414b02ad0e98a08bf48ac086b77d6b
 )
 from pinacles.externals.wrf_p3_wrapper import p3_via_cffi
 from pinacles import UtilitiesParallel
@@ -682,20 +678,11 @@ class MicroP3(MicrophysicsBase):
         lwp = UtilitiesParallel.ScalarAllReduce(lwp)
 
         # First compute liqud water path
-<<<<<<< HEAD
-        lwp_lasso, npts_lasso = water_path_lasso(n_halo, dz, rho, qc+qr)
-=======
         lwp_lasso, npts_lasso = water_path_lasso(n_halo, dz, rho, qc + qr)
->>>>>>> eba90d5e67414b02ad0e98a08bf48ac086b77d6b
         lwp_lasso = UtilitiesParallel.ScalarAllReduce(lwp_lasso)
         npts_lasso = UtilitiesParallel.ScalarAllReduce(npts_lasso)
         if npts_lasso > 0:
             lwp_lasso /= npts_lasso
-<<<<<<< HEAD
-    
-=======
-
->>>>>>> eba90d5e67414b02ad0e98a08bf48ac086b77d6b
         rwp = water_path(n_halo, dz, npts, rho, qr)
         rwp = UtilitiesParallel.ScalarAllReduce(rwp)
 

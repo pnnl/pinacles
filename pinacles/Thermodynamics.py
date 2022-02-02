@@ -34,12 +34,12 @@ class ThermodynamicsBase:
             "buoyancy", units="m s^{-1}", latex_name="b", long_name="buoyancy"
         )
 
-        self._DiagnosticState.add_variable(
-            "buoyancy_gradient_mag",
-            units="1/s^{-2}",
-            latex_name="b",
-            long_name="buoyancy",
-        )
+        # self._DiagnosticState.add_variable(
+        #     "buoyancy_gradient_mag",
+        #     units="1/s^{-2}",
+        #     latex_name="b",
+        #     long_name="buoyancy",
+        # )
 
         self.name = "ThermodynamicsBase"
 

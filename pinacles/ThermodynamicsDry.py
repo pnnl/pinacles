@@ -60,7 +60,7 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         thetav = self._DiagnosticState.get_field("thetav")
         bvf = self._DiagnosticState.get_field("bvf")
         w_t = self._VelocityState.get_tend("w")
-        buoyancy_gradient_mag = self._DiagnosticState.get_field("buoyancy_gradient_mag")
+        # buoyancy_gradient_mag = self._DiagnosticState.get_field("buoyancy_gradient_mag")
 
         ThermodynamicsDry_impl.eos(z, p0, alpha0, s, qv, T, tref, alpha, buoyancy)
         ThermodynamicsDry_impl.compute_bvf(
@@ -72,7 +72,7 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
 
         self._DiagnosticState.remove_mean("buoyancy")
 
-        self.compute_buoyancy_gradient(dxi, buoyancy, buoyancy_gradient_mag)
+        # self.compute_buoyancy_gradient(dxi, buoyancy, buoyancy_gradient_mag)
 
         self._Timers.end_timer("ThermoDynamicsDry_update")
 
