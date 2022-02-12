@@ -83,6 +83,7 @@ class RadiationDycoms:
             )
             or force
         ):
+
             if not force:
                 self.time_elapsed = 0.0
 
@@ -103,7 +104,6 @@ class RadiationDycoms:
         return
 
     def update_apply_tend(self):
-
         s = self._ScalarState.get_field("s")
         dTdt_rad = self._DiagnosticState.get_field("dTdt_rad")
         dt = self._TimeSteppingController.dt
@@ -152,6 +152,11 @@ class RadiationDycoms:
         return
 
     def restart(self, data_dict, **kwargs):
+
+        key = "Radiation"
+        for item in self._restart_attributes:
+            self.__dict__[item] = data_dict[key][item]
+
         return
 
     def dump_restart(self, data_dict):

@@ -5,7 +5,16 @@ import numba
 
 @numba.njit(fastmath=True)
 def compute_visc(
-    n_halo, dx, z, strain_rate_mag, bvf, cs, pr, eddy_viscosity, eddy_diffusivity, tke_sgs
+    n_halo,
+    dx,
+    z,
+    strain_rate_mag,
+    bvf,
+    cs,
+    pr,
+    eddy_viscosity,
+    eddy_diffusivity,
+    tke_sgs,
 ):
 
     shape = eddy_viscosity.shape
@@ -36,15 +45,14 @@ def compute_visc(
                 eddy_viscosity[i, j, k] = (cs * filt_scale) ** 2.0 * (
                     fb * strain_rate_mag[i, j, k]
                 )
-                
-                
+
                 tke_sgs[i, j, k] = (eddy_viscosity[i, j, k] / (filt_scale * 0.1)) ** 2.0
                 # Compute the eddy diffusivty from the  eddy viscosity using an assumed
                 # inverse SGS Prandtl number tune this using
                 eddy_diffusivity[i, j, k] = eddy_viscosity[i, j, k] * pri
 
-    eddy_viscosity[:,:,n_halo[2]-1] = eddy_viscosity[:,:,n_halo[2]]
-    eddy_diffusivity[:,:,n_halo[2]-1] = eddy_diffusivity[:,:,n_halo[2]]
+    eddy_viscosity[:, :, n_halo[2] - 1] = eddy_viscosity[:, :, n_halo[2]]
+    eddy_diffusivity[:, :, n_halo[2] - 1] = eddy_diffusivity[:, :, n_halo[2]]
     return
 
 

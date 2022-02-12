@@ -61,10 +61,7 @@ class RRTMG:
         except:
             self.time_synced = True
 
-        try:
-            self.time_synced = namelist["radiation"]["time_synced"]
-        except:
-            self.time_synced = True
+
 
         try:
             self._radiation_frequency = namelist["radiation"]["update_frequency"]
@@ -72,8 +69,6 @@ class RRTMG:
             self._radiation_frequency = 30.0
 
         self.frequency = self._radiation_frequency  # This is used for time syncing
-
-        #
 
         ffi.cdef("void c_rrtmg_lw_init(double cpdair);", override=True)
         ffi.cdef("void c_rrtmg_sw_init(double cpdair);", override=True)

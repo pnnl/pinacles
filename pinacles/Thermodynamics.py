@@ -56,9 +56,9 @@ class ThermodynamicsBase:
     def compute_buoyancy_gradient(dxi, b, buoyancy_gradient_mag):
 
         shape = b.shape
-        for i in range(1, shape[0]-1):
-            for j in range(1, shape[1]-1):
-                for k in range(1, shape[2]-1):
+        for i in range(1, shape[0] - 1):
+            for j in range(1, shape[1] - 1):
+                for k in range(1, shape[2] - 1):
                     buoyancy_gradient_mag[i, j, k] = np.sqrt(
                         ((b[i + 1, j, k] - b[i - 1, j, k]) * 0.5 * dxi[0]) ** 2.0
                         + ((b[i, j + 1, k] - b[i, j - 1, k]) * 0.5 * dxi[1]) ** 2.0
