@@ -790,6 +790,7 @@ class MicroSBM(MicrophysicsBase):
         v.standard_name = "LWP"
         v.units = "kg/m^2"
 
+
         v = timeseries_grp.createVariable("LWP", np.double, dimensions=("time",))
         v.long_name = "Liquid Water Path"
         v.standard_name = "LWP"

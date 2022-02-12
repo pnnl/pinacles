@@ -59,6 +59,10 @@ class ParticlesBase:
         assert "inject_type" in self._namelist["particles"]
         self.inject_type = self._namelist["particles"]["inject_type"]
 
+        # Set surface_action
+        assert "surface_action" in self._namelist["particles"]
+        self.surface_action = self._namelist["particles"]["surface_action"]
+
         if self.inject_type == "point":
             assert "point_location" in self._namelist["particles"]
             self.point_location = self._namelist["particles"]["point_location"]
@@ -111,6 +115,7 @@ class ParticlesBase:
         self.add_particle_variable("w")
         self.add_particle_variable("dummy")
         self.add_particle_variable("n_particles")  # Number of particles
+        self.add_particle_variable("bounce_flag")
 
         n = 0
         if MPI.COMM_WORLD.Get_rank() == 0:
@@ -317,6 +322,7 @@ class ParticlesBase:
         valid = particle_varnames["valid"]
         ndof = particle_varnames["n_particles"]
         iddof = particle_varnames["id"]
+        bfdof = particle_varnames["bounce_flag"]
 
         # Now let check an see if we need to allocate more memory
         assert len(iindx) == len(jindx)
@@ -347,6 +353,7 @@ class ParticlesBase:
                     arr[iddof, pi] = np.random.uniform(-1e9, 1e9)
                     arr[valid, pi] = 1.0
                     arr[ndof, pi] = 0.0
+                    arr[bfdof, pi] = 0
                     n[iindx[i], jindx[i], k] += 1
 
                     # if n[ii, jj, k] >= n_total:
@@ -392,6 +399,7 @@ class ParticlesBase:
         valid = particle_varnames["valid"]
         ndof = particle_varnames["n_particles"]
         iddof = particle_varnames["id"]
+        bfdof = particle_varnames["bounce_flag"]
 
         # Now let check an see if we need to allocate more memory
         if n_arr < n_total:
@@ -416,6 +424,7 @@ class ParticlesBase:
                     )
                     arr[iddof, pi] = np.random.uniform(-1e9, 1e9)
                     arr[valid, pi] = 1.0
+                    arr[bfdof, pi] = 0
 
                     arr[ndof, pi] = 0.0
                     n[i, j, k] += 1
@@ -488,10 +497,16 @@ class ParticlesBase:
         )
 
         # Bounce particles at the surface
-
-        self._surface_bounce(
-            local_shape, self._n, self._particle_varnames, self._particle_data
-        )
+        if self.surface_action == "bounce":
+            self._surface_bounce(
+                local_shape, self._n, self._particle_varnames, self._particle_data
+            )
+        elif self.surface_action == "sink":
+            self._surface_sink(
+                local_shape, self._n, self._particle_varnames, self._particle_data
+            )
+        else:
+            print("unrecognized surface action")
 
         if MPI.COMM_WORLD.Get_size() == 0:
             if self.boundary_type == "exit":
@@ -884,6 +899,7 @@ class ParticlesBase:
     def _surface_bounce(local_shape, n, particle_varnames, particle_data):
         zdof = particle_varnames["z"]
         valid = particle_varnames["valid"]
+        bfdof = particle_varnames["bounce_flag"]
         ishift = local_shape[1] * local_shape[2]
         jshift = local_shape[2]
         for i in range(local_shape[0]):
@@ -894,8 +910,32 @@ class ParticlesBase:
                     if n[i, j, k] > 0:
                         arr = particle_data[ii + jj + k]
                         for p in range(arr.shape[1]):
-                            if arr[valid, p] != 0.0:
+                            arr[bfdof, p] = 0
+                            if arr[valid, p] != 0.0 and arr[zdof, p] < 0.0:
                                 arr[zdof, p] = np.abs(arr[zdof, p])
+                                arr[bfdof, p] = 1
+        return
+
+    @staticmethod
+    @numba.njit()
+    def _surface_sink(local_shape, n, particle_varnames, particle_data):
+        zdof = particle_varnames["z"]
+        valid = particle_varnames["valid"]
+        bfdof = particle_varnames["bounce_flag"]
+        ishift = local_shape[1] * local_shape[2]
+        jshift = local_shape[2]
+        for i in range(local_shape[0]):
+            ii = i * ishift
+            for j in range(local_shape[1]):
+                jj = j * jshift
+                for k in range(local_shape[2]):
+                    if n[i, j, k] > 0:
+                        arr = particle_data[ii + jj + k]
+                        for p in range(arr.shape[1]):
+                            arr[bfdof, p] = 0
+                            if arr[valid, p] != 0.0 and arr[zdof, p] < 0.0:
+                                arr[valid, p] = 0.0
+                                n[i, j, k] -= 1
         return
 
     @staticmethod
@@ -1596,7 +1636,7 @@ class ParticlesSimple(ParticlesBase):
 
         fx.attrs["time"] = self._TimeSteppingController.time
 
-        for v in ["id", "x", "y", "z", "u", "v", "w", "n_particles"]:
+        for v in ["id", "x", "y", "z", "u", "v", "w", "n_particles", "bounce_flag"]:
 
             dset = fx.create_dataset(
                 v,
@@ -1643,7 +1683,7 @@ class ParticlesSimple(ParticlesBase):
             )
             dset[my_start:my_end] = var_local
 
-        for v in ["T", "buoyancy", "horizontal divergence"]:
+        for v in ["T", "buoyancy", "horizontal divergence", "helicity", "grad_ri"]:
             dset = fx.create_dataset(
                 v,
                 (n_total,),
