@@ -10,40 +10,17 @@ from pinacles.Microphysics import (
 )
 from pinacles import ThermodynamicsMoist_impl
 from pinacles import UtilitiesParallel
+from pinacles import parameters
+
+
 
 
 @numba.njit(fastmath=True)
-def compute_sat(temp, pressure):
-    ep2 = 287.0 / 461.6
-    svp1 = 0.6112
-    svp2 = 17.67
-    svp3 = 29.65
-    svpt0 = 273.15
-    _es = 1000.0 * svp1 * np.exp(svp2 * (temp - svpt0) / (temp - svp3))
-    qvs = ep2 * _es / (pressure - _es)
-
-    return _es, qvs
-
-
-@numba.njit(fastmath=True)
-def compute_qvs(temp, pressure):
-    ep2 = 287.0 / 461.6
-    svp1 = 0.6112
-    svp2 = 17.67
-    svp3 = 29.65
-    svpt0 = 273.15
-    _es = 1000.0 * svp1 * np.exp(svp2 * (temp - svpt0) / (temp - svp3))
-    qvs = ep2 * _es / (pressure - _es)
-
-    return qvs
-
-
-@numba.njit(fastmath=True)
-def sa(z, p, s_in, qv_in, ql_in):
+def sa(z, rho0, p, s_in, qv_in, ql_in):
 
     T_1 = ThermodynamicsMoist_impl.T(z, s_in, ql_in, 0.0)
 
-    qvs = compute_qvs(T_1, p)
+    qvs = ThermodynamicsMoist_impl.compute_qvs(T_1, rho0, p)
 
     qt_in = qv_in + ql_in
     if qt_in <= qvs:
@@ -59,7 +36,7 @@ def sa(z, p, s_in, qv_in, ql_in):
     qv_star_2 = 0
     sigma_2 = -1.0
     while delta_T >= 1e-4 or sigma_2 < 0.0:
-        qv_star_2 = compute_qvs(T_2, p)
+        qv_star_2 = ThermodynamicsMoist_impl.compute_qvs(T_2, rho0, p)
         sigma_2 = qt_in - qv_star_2
         s_2 = ThermodynamicsMoist_impl.s(z, T_2, sigma_2, 0.0)
         f_2 = s_in - s_2
@@ -76,8 +53,8 @@ def sa(z, p, s_in, qv_in, ql_in):
 
 
 @numba.njit
-def compute_rh(qv, temp, pressure):
-    return qv / compute_qvs(temp, pressure)
+def compute_rh(qv, rho0, temp, pressure):
+    return qv / ThermodynamicsMoist_impl.compute_qvs(temp, rho0, pressure)
 
 
 class MicroSA(MicrophysicsBase):
@@ -129,14 +106,14 @@ class MicroSA(MicrophysicsBase):
 
     @staticmethod
     @numba.njit()
-    def compute_sa(_z, _p, _s, _qv, _ql, _T):
+    def compute_sa(_z, _rho0, _p, _s, _qv, _ql, _T):
 
         shape = _qv.shape
         for i in range(shape[0]):
             for j in range(shape[1]):
                 for k in range(shape[2]):
                     _T[i, j, k], _qv[i, j, k], _ql[i, j, k] = sa(
-                        _z[k], _p[k], _s[i, j, k], _qv[i, j, k], _ql[i, j, k]
+                        _z[k], _rho0[k], _p[k], _s[i, j, k], _qv[i, j, k], _ql[i, j, k]
                     )
 
     def update(self):
@@ -149,9 +126,10 @@ class MicroSA(MicrophysicsBase):
         _qr = self._ScalarState.get_field("qr")
 
         _p0 = self._Ref.p0
+        _rho0 = self._Ref.rho0
         _z = self._Grid.z_local
 
-        self.compute_sa(_z, _p0, _s, _qv, _qc, _T)
+        self.compute_sa(_z, _rho0, _p0, _s, _qv, _qc, _T)
 
         self._Timers.end_timer("MicroSA_update")
 

@@ -1,5 +1,32 @@
 import numba
 from pinacles import parameters
+import numpy as np
+
+
+@numba.njit(fastmath=True)
+def compute_sat(temp, rho0, pressure):
+    ep2 = 287.0 / 461.6
+    svp1 = 0.6112
+    svp2 = 17.67
+    svp3 = 29.65
+    svpt0 = 273.15
+    _es = 1000.0 * svp1 * np.exp(svp2 * (temp - svpt0) / (temp - svp3))
+    # qvs = ep2 * _es / (pressure - _es)
+    rhov = _es / (parameters.RV * temp)
+    return _es, rhov / rho0
+
+
+@numba.njit(fastmath=True)
+def compute_qvs(temp, rho0, pressure):
+    ep2 = 287.0 / 461.6
+    svp1 = 0.6112
+    svp2 = 17.67
+    svp3 = 29.65
+    svpt0 = 273.15
+    _es = 1000.0 * svp1 * np.exp(svp2 * (temp - svpt0) / (temp - svp3))
+    rhov = _es / (parameters.RV * temp)
+
+    return rhov / rho0
 
 
 @numba.njit(fastmath=True)
@@ -34,9 +61,9 @@ def buoyancy(alpha0, alpha):
 
 
 @numba.njit(fastmath=True)
-def compute_bvf(n_halo, theta_ref, exner, T, qv, ql, qi, dz, thetav, bvf):
+def compute_thetav(T, exner, qv, ql, qi, thetav):
 
-    shape = bvf.shape
+    shape = thetav.shape
     for i in range(shape[0]):
         for j in range(shape[1]):
             for k in range(shape[2]):
@@ -46,29 +73,138 @@ def compute_bvf(n_halo, theta_ref, exner, T, qv, ql, qi, dz, thetav, bvf):
                     * (1.0 + 0.61 * qv[i, j, k] - ql[i, j, k] - qi[i, j, k])
                 )
 
+    return
+
+
+@numba.njit(fastmath=True)
+def gamma_m(qv, T):
+    """
+    Moist-adiabatic lapse rate computed consistent with:
+    https://glossary.ametsoc.org/wiki/Adiabatic_lapse_rate
+
+    """
+
+    gm = (
+        parameters.G
+        * (1 + (parameters.LV * qv) / (parameters.RD * T))
+        / (
+            parameters.CPD
+            + (parameters.LV ** 2.0 * qv * parameters.EPSV) / (parameters.RD * T ** 2.0)
+        )
+    )
+    return gm
+
+
+@numba.njit(fastmath=True)
+def compute_moist_bvf(dz, n_halo, p0, rho0, T, qv, ql, qi, bvf):
+
+    """
+
+    For cloudy conditions we compute equation 5 in Durran and Klemp (1982). Here we have assumed
+    the equivalence of mixing ratios and mass-fractions.
+
+    For cloud free conditions we compute equation 1a in Durran and Klemp (1982), with an additional
+    term accounting for virtual temperature effects. The virtual temperature term is the last term on the
+    right hand size of equation 6 in the Durran and Klemp paper.
+
+    """
+
+    shape = bvf.shape
+
     for i in range(shape[0]):
         for j in range(shape[1]):
+
+            # Lower boundary
             k = n_halo[2]
-            bvf[i, j, k] = (
-                parameters.G
-                / theta_ref[k]
-                * (thetav[i, j, k + 1] - thetav[i, j, k])
-                / (dz)
-            )
-            for k in range(n_halo[2] + 1, shape[2] - n_halo[2]):
+            if ql[i, j, k] + qi[i, j, k] < 1e-8:
                 bvf[i, j, k] = (
                     parameters.G
-                    / theta_ref[k]
-                    * (thetav[i, j, k + 1] - thetav[i, j, k - 1])
-                    / (2.0 * dz)
+                    / (T[i, j, k])
+                    * (
+                        (T[i, j, k + 1] - T[i, j, k]) / dz
+                        + parameters.G / parameters.CPD
+                    )
+                    - parameters.G
+                    / (1.0 + qv[i, j, k])
+                    * (qv[i, j, k + 1] - qv[i, j, k])
+                    / dz
                 )
+            else:
+                qt_up = qv[i, j, k + 1] + ql[i, j, k + 1] + qi[i, j, k + 1]
+                qt = qv[i, j, k] + ql[i, j, k] + qi[i, j, k]
+                qs = compute_qvs(T[i, j, k], rho0[k], p0[k])
+                bvf[i, j, k] = (
+                    parameters.G
+                    / (T[i, j, k])
+                    * (
+                        (T[i, j, k + 1] - T[i, j, k]) / dz
+                        + gamma_m(qv[i, j, k], T[i, j, k])
+                    )
+                    * (1.0 + parameters.LV * qs / (parameters.RD * T[i, j, k]))
+                    - parameters.G / (1.0 + qt) * (qt_up - qt) / dz
+                )
+
+            # non-boundary
+            for k in range(n_halo[2] + 1, shape[2] - n_halo[2]):
+                if ql[i, j, k] + qi[i, j, k] < 1e-8:
+                    bvf[i, j, k] = (
+                        parameters.G
+                        / (T[i, j, k])
+                        * (
+                            0.5 * (T[i, j, k + 1] - T[i, j, k - 1]) / dz
+                            + parameters.G / parameters.CPD
+                        )
+                        - parameters.G
+                        / (1.0 + qv[i, j, k])
+                        * 0.5
+                        * (qv[i, j, k + 1] - qv[i, j, k - 1])
+                        / dz
+                    )
+                else:
+                    qt_up = qv[i, j, k + 1] + ql[i, j, k + 1] + qi[i, j, k + 1]
+                    qt = qv[i, j, k] + ql[i, j, k] + qi[i, j, k]
+                    qt_down = qv[i, j, k - 1] + ql[i, j, k - 1] + qi[i, j, k - 1]
+                    qs = compute_qvs(T[i, j, k], rho0[k], p0[k])
+                    bvf[i, j, k] = (
+                        parameters.G
+                        / (T[i, j, k])
+                        * (
+                            0.5 * (T[i, j, k + 1] - T[i, j, k - 1]) / dz
+                            + gamma_m(qv[i, j, k], T[i, j, k])
+                        )
+                        * (1.0 + parameters.LV * qs / (parameters.RD * T[i, j, k]))
+                        - parameters.G / (1.0 + qt) * 0.5 * (qt_up - qt_down) / dz
+                    )
+
+            # upper boundary
             k = shape[2] - n_halo[2] - 1
-            bvf[i, j, k] = (
-                parameters.G
-                / theta_ref[k]
-                * (thetav[i, j, k] - thetav[i, j, k - 1])
-                / (dz)
-            )
+            if ql[i, j, k] + qi[i, j, k] < 1e-8:
+                bvf[i, j, k] = (
+                    parameters.G
+                    / (T[i, j, k])
+                    * (
+                        (T[i, j, k] - T[i, j, k - 1]) / dz
+                        + parameters.G / parameters.CPD
+                    )
+                    - parameters.G
+                    / (1.0 + qv[i, j, k])
+                    * (qv[i, j, k] - qv[i, j, k - 1])
+                    / dz
+                )
+            else:
+                qt = qv[i, j, k] + ql[i, j, k] + qi[i, j, k]
+                qt_down = qv[i, j, k - 1] + ql[i, j, k - 1] + qi[i, j, k - 1]
+                qs = compute_qvs(T[i, j, k], rho0[k], p0[k])
+                bvf[i, j, k] = (
+                    parameters.G
+                    / (T[i, j, k])
+                    * (
+                        (T[i, j, k] - T[i, j, k - 1]) / dz
+                        + gamma_m(qv[i, j, k], T[i, j, k])
+                    )
+                    * (1.0 + parameters.LV * qs / (parameters.RD * T[i, j, k]))
+                    - parameters.G / (1.0 + qt) * (qt - qt_down) / dz
+                )
 
     return
 

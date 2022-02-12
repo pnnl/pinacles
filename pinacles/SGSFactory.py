@@ -1,10 +1,11 @@
 from pinacles import SGS
 from pinacles import SGSSmagorinsky
+from pinacles import SGSTKE
 
 from mpi4py import MPI
 
 
-def factory(namelist, Timers, Grid, Ref, VelocityState, DiagnosticState):
+def factory(namelist, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState):
     try:
         sgs_model = namelist["sgs"]["model"]
     except:
@@ -17,4 +18,8 @@ def factory(namelist, Timers, Grid, Ref, VelocityState, DiagnosticState):
     elif sgs_model == "smagorinsky":
         return SGSSmagorinsky.Smagorinsky(
             namelist, Timers, Grid, Ref, VelocityState, DiagnosticState
+        )
+    elif sgs_model == 'tke':
+        return SGSTKE.SGSTKE(
+            namelist, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState
         )

@@ -1,3 +1,4 @@
+# from PINACLES.pinacles.ThermodynamicsMoist_impl import rho
 from pinacles.Microphysics import (
     MicrophysicsBase,
     water_path,
@@ -17,6 +18,43 @@ from pinacles import parameters
 from mpi4py import MPI
 import numpy as np
 import numba
+
+
+@numba.njit(fastmath=True)
+def compute_w_from_q(rho0, rhod, p, qv, T, wv, wc, wr):
+
+    shape = qv.shape
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            for k in range(shape[2]):
+                qt = wv[i,j,k] + wc[i,j,k] + wr[i,j,k]
+                pd  = p[i,j,k] * (1.0 - qt) / ( 1.0 - qt  + parameters.EPSVI * wv[i,j,k])
+                
+                rhod[i,j,k]= pd/(parameters.RD * T[i,j,k])
+                
+                factor = (rho0[i,j,k]) / rhod[i,j,k]
+
+                wv[i, j, k] *= factor
+                wc[i, j, k] *= factor
+                wr[i, j, k] *= factor
+
+    return
+
+
+@numba.njit(fastmath=True)
+def compute_q_from_w(rho0, rhod, qv, qc, qr):
+    shape = qv.shape
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            for k in range(shape[2]):
+
+                factor = rhod[i,j,k] / (rho0[i,j,k])
+
+                qv[i, j, k] *= factor
+                qc[i, j, k] *= factor
+                qr[i, j, k] *= factor
+
+    return
 
 
 @numba.njit
@@ -130,7 +168,9 @@ class MicroKessler(MicrophysicsBase):
 
         # Some of the memory allocation could be done at init (TODO)
         rho_wrf = np.empty(self._wrf_dims, dtype=np.double, order="F")
+        rhod_wrf = np.empty_like(rho_wrf)
         exner_wrf = np.empty_like(rho_wrf)
+        p_wrf = np.empty_like(rho_wrf)
         T_wrf = np.empty_like(rho_wrf)
         liq_sed_wrf = np.empty_like(rho_wrf)
         qv_wrf = np.empty_like(rho_wrf)
@@ -143,7 +183,8 @@ class MicroKessler(MicrophysicsBase):
         dz_wrf.fill(self._Grid.dx[2])
         z[:, :, :] = self._Grid.z_global[np.newaxis, nhalo[2] : -nhalo[2], np.newaxis]
         rho_wrf[:, :, :] = self._Ref.rho0[np.newaxis, nhalo[2] : -nhalo[2], np.newaxis]
-        exner_wrf[:, :, :] = exner[np.newaxis, nhalo[2] : -nhalo[2], np.newaxis]
+        p_wrf[:, :, :] = self._Ref.p0[np.newaxis, nhalo[2] : -nhalo[2], np.newaxis]
+        # exner_wrf[:, :, :] = exner[np.newaxis, nhalo[2] : -nhalo[2], np.newaxis]
 
         # TODO Need to fill these
         dt = self._TimeSteppingController.dt
@@ -175,11 +216,13 @@ class MicroKessler(MicrophysicsBase):
         jte = jme
         kte = kme
 
-        to_wrf_order(nhalo, T / self._Ref.exner[np.newaxis, np.newaxis, :], T_wrf)
+        to_wrf_order(nhalo, T, T_wrf)
 
         to_wrf_order(nhalo, qv, qv_wrf)
         to_wrf_order(nhalo, qc, qc_wrf)
         to_wrf_order(nhalo, qr, qr_wrf)
+
+        compute_w_from_q(rho_wrf, rhod_wrf, p_wrf, qv_wrf, T_wrf, qv_wrf, qc_wrf, qr_wrf)
 
         rain_accum_old = np.sum(self._RAINNC)
         kessler.module_mp_kessler.kessler(
@@ -187,8 +230,8 @@ class MicroKessler(MicrophysicsBase):
             qv_wrf,
             qc_wrf,
             qr_wrf,
-            rho_wrf,
-            exner_wrf,
+            rhod_wrf,
+            p_wrf,
             dt,
             z,
             xlv,
@@ -222,6 +265,8 @@ class MicroKessler(MicrophysicsBase):
             kts,
             kte,
         )
+        
+        compute_q_from_w(rho_wrf, rhod_wrf, qv_wrf, qc_wrf, qr_wrf)
 
         to_our_order(nhalo, qv_wrf, qv)
         to_our_order(nhalo, qc_wrf, qc)
@@ -229,7 +274,8 @@ class MicroKessler(MicrophysicsBase):
         to_our_order(nhalo, liq_sed_wrf, liq_sed)
 
         # Update the energy (TODO Move this to numba)
-        T_wrf *= self._Ref.exner[np.newaxis, nhalo[2] : -nhalo[2], np.newaxis]
+        # T_wrf *= self._Ref.exner[np.newaxis, nhalo[2] : -nhalo[2], np.newaxis]
+
         s_wrf = (
             T_wrf
             + (parameters.G * z - parameters.LV * (qc_wrf + qr_wrf)) * parameters.ICPD
