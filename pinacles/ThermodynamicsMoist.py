@@ -40,6 +40,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         dxi = self._Grid.dxi
         p0 = self._Ref.p0
         alpha0 = self._Ref.alpha0
+        rho0 = self._Ref.rho0
         tref = self._Ref.T0
         exner = self._Ref.exner
         theta_ref = self._Ref.T0 / self._Ref.exner
@@ -62,9 +63,11 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         )
 
         # Compute the buoyancy frequency
-        ThermodynamicsMoist_impl.compute_bvf(
-            n_halo, theta_ref, exner, T, qv, ql, qi, dz, thetav, bvf
+        ThermodynamicsMoist_impl.compute_moist_bvf(
+            dz, n_halo, p0, rho0, T, qv, ql, qi, bvf
         )
+
+        ThermodynamicsMoist_impl.compute_thetav(T, exner, qv, ql, qi, thetav)
 
         if apply_buoyancy:
             ThermodynamicsMoist_impl.apply_buoyancy(buoyancy, w_t)

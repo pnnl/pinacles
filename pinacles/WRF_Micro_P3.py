@@ -19,6 +19,53 @@ import numba
 import numpy as np
 
 
+@numba.njit(fastmath=True)
+def compute_w_from_q(rho0, rhod, p, qv, T, wv, wc, wr, wnc, wi1, wni1, wir1, wib1):
+
+    shape = qv.shape
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            for k in range(shape[2]):
+                qt = wv[i,j,k] + wc[i,j,k] + wr[i,j,k]
+                pd  = p[i,j,k] * (1.0 - qt) / ( 1.0 - qt  + parameters.EPSVI * wv[i,j,k])
+                
+                rhod[i,j,k]= pd/(parameters.RD * T[i,j,k])
+                
+                factor = (rho0[i,j,k]) / rhod[i,j,k]
+
+                wv[i, j, k] *= factor
+                wc[i, j, k] *= factor
+                wr[i, j, k] *= factor
+                wnc[i, j, k] *= factor
+                wi1[i, j, k] *= factor
+                wni1[i, j, k] *= factor
+                wir1[i, j, k] *= factor
+                wib1[i, j, k] *= factor
+
+    return
+
+
+@numba.njit(fastmath=True)
+def compute_q_from_w(rho0, rhod, qv, qc, qr, qnc, qi1, qni1, qir1, qib1):
+    shape = qv.shape
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            for k in range(shape[2]):
+
+                factor = rhod[i,j,k] / (rho0[i,j,k])
+
+                qv[i, j, k] *= factor
+                qc[i, j, k] *= factor
+                qr[i, j, k] *= factor
+                qnc[i, j, k] *= factor
+                qi1[i, j, k] *= factor
+                qni1[i, j, k] *= factor
+                qir1[i, j, k] *= factor
+                qib1[i, j, k] *= factor
+
+    return
+
+
 class MicroP3(MicrophysicsBase):
     def __init__(
         self,
@@ -280,6 +327,7 @@ class MicroP3(MicrophysicsBase):
         for v in [
             "s_wrf",
             "rho_wrf",
+            "rhod_wrf",
             "exner_wrf",
             "p0_wrf",
             "T_wrf",
@@ -349,6 +397,7 @@ class MicroP3(MicrophysicsBase):
 
         s_wrf = self._s_wrf
         rho_wrf = self._rho_wrf
+        rhod_wrf = self._rhod_wrf
         exner_wrf = self._exner_wrf
         p0_wrf = self._p0_wrf
         T_wrf = self._T_wrf
@@ -406,7 +455,7 @@ class MicroP3(MicrophysicsBase):
         kte = kme
 
         # Reorder arrays
-        to_wrf_order(nhalo, T / self._Ref.exner[np.newaxis, np.newaxis, :], T_wrf)
+        to_wrf_order(nhalo, T, T_wrf)
         to_wrf_order(nhalo, qv, qv_wrf)
         to_wrf_order(nhalo, qc, qc_wrf)
         to_wrf_order(nhalo, qr, qr_wrf)
@@ -420,6 +469,23 @@ class MicroP3(MicrophysicsBase):
 
         np.copyto(th_old, T_wrf, casting="no")
         np.copyto(qv_old, qv_wrf, casting="no")
+
+        # Do conversions between specific humidity and mixing ratio
+        compute_w_from_q(
+            rho_wrf,
+            rhod_wrf, 
+            p0_wrf,
+            qv_wrf,
+            T_wrf,
+            qv_wrf,
+            qc_wrf,
+            qr_wrf,
+            nc_wrf,
+            qi1_wrf,
+            qni1_wrf,
+            qir1_wrf,
+            qib1_wrf,
+        )
 
         n_iceCat = 1
 
@@ -533,6 +599,20 @@ class MicroP3(MicrophysicsBase):
                 n_iceCat,
             )
 
+        # Do conversions between specific humidity and mixing ratio
+        compute_q_from_w(
+            rho_wrf,
+            rhod_wrf,
+            qv_wrf,
+            qc_wrf,
+            qr_wrf,
+            nc_wrf,
+            qi1_wrf,
+            qni1_wrf,
+            qir1_wrf,
+            qib1_wrf,
+        )
+
         # Update prognosed fields
         to_our_order(nhalo, qv_wrf, qv)
         to_our_order(nhalo, qc_wrf, qc)
@@ -553,7 +633,7 @@ class MicroP3(MicrophysicsBase):
 
         # Update the energys (TODO Move this to numba)
         # T_wrf *= self._Ref.exner[np.newaxis, nhalo[2] : -nhalo[2], np.newaxis]
-        self._update_static_energy(exner_wrf, z, T_wrf, s_wrf, qc_wrf, qr_wrf, qi1_wrf)
+        self._update_static_energy(z, T_wrf, s_wrf, qc_wrf, qr_wrf, qi1_wrf)
 
         # s_wrf = (
         #    T_wrf
@@ -730,13 +810,13 @@ class MicroP3(MicrophysicsBase):
 
     @staticmethod
     @numba.njit
-    def _update_static_energy(exner_wrf, z, T_wrf, s_wrf, qc_wrf, qr_wrf, qi1_wrf):
+    def _update_static_energy(z, T_wrf, s_wrf, qc_wrf, qr_wrf, qi1_wrf):
         shape = T_wrf.shape
         # Fortran ordered so we need to loop differently
         for k in range(shape[2]):
             for j in range(shape[1]):
                 for i in range(shape[0]):
-                    _T = T_wrf[i, j, k] * exner_wrf[i, j, k]
+                    _T = T_wrf[i, j, k]
                     T_wrf[i, j, k] = _T
                     s_wrf[i, j, k] = (
                         _T
