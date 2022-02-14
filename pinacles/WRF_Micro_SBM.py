@@ -28,6 +28,28 @@ from pinacles.WRFUtil import (
 module_mp_fast_sbm = module_mp_fast_sbm_warm
 
 
+@numba.njit(fastmath=True)
+def compute_factor(rho0, rhod, p, exner, T, qv, qc, qr, factor):
+
+    shape = factor.shape
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            for k in range(shape[2]):
+
+                qt = qv[i, j, k] + qc[i, j, k] + qr[i, j, k]
+                pd = (
+                    p[i, j, k]
+                    * (1.0 - qt)
+                    / (1.0 - qt + parameters.EPSVI * qv[i, j, k])
+                )
+
+                rhod[i, j, k] = pd / (parameters.RD * T[i, j, k] * exner[i,j,k])
+
+                factor[i, j, k] = (rho0[i, j, k]) / rhod[i, j, k]
+
+    return
+
+
 class MicroSBM(MicrophysicsBase):
     def __init__(
         self,
@@ -218,6 +240,12 @@ class MicroSBM(MicrophysicsBase):
 
         self._th_old = np.zeros(self._wrf_dims, order="F", dtype=np.double)
         self._qv_old = np.zeros(self._wrf_dims, order="F", dtype=np.double)
+
+        # This factor is used for converting from mass-fraction to mixing ratio
+        self._factor = np.zeros(self._wrf_dims, order="F", dtype=np.double)
+
+        # Density of dry air
+        self._rhod = np.zeros(self._wrf_dims, order="F", dtype=np.double)
 
         self._RAINNC = np.zeros(
             (self._wrf_dims[0], self._wrf_dims[2]), dtype=np.double, order="F"
@@ -630,6 +658,29 @@ class MicroSBM(MicrophysicsBase):
 
         rain_accum_old = np.sum(self._RAINNC)
 
+        # Do conversions to mixing-ratio
+        compute_factor(
+            self._wrf_vars["rho_phy"],
+            self._rhod,
+            self._wrf_vars["p_phy"],
+            self._wrf_vars["pi_phy"],
+            self._wrf_vars["th_phy"],
+            self._wrf_vars["qv"],
+            self._wrf_vars["qc"],
+            self._wrf_vars["qr"],
+            self._factor,
+        )
+
+        # Now do conversion for wrf_chem_array
+        np.multiply(
+            self._wrf_vars["chem_new"],
+            self._factor[:, :, :, np.newaxis],
+            out=self._wrf_vars["chem_new"],
+        )
+
+        for v in ["qv", "qc", "qr", "qv_old", "qnc", "qnr", "qna", "qna_nucl"]:
+            np.multiply(self._wrf_vars[v], self._factor[:, :, :], out=self._wrf_vars[v])
+
         self._Timers.start_timer("FastSBMfortran")
         module_mp_fast_sbm.module_mp_warm_sbm.warm_sbm(
             self._wrf_vars["w"],
@@ -642,7 +693,7 @@ class MicroSBM(MicrophysicsBase):
             self._Grid.dx[0],
             self._Grid.dx[1],
             self._wrf_vars["dz8w"],
-            self._wrf_vars["rho_phy"],
+            self._rhod,
             self._wrf_vars["p_phy"],
             self._wrf_vars["pi_phy"],
             self._wrf_vars["th_phy"],
@@ -697,6 +748,17 @@ class MicroSBM(MicrophysicsBase):
         self._RAINNC[:, :] = self._wrf_vars["RAINNC"][:, :]
         self._RAINNCV[:, :] = self._wrf_vars["RAINNCV"][:, :]
         self._rain_rate = (np.sum(self._RAINNC) - rain_accum_old) / dt
+
+        # Return from mixing ratio to PINACLES mass fraction
+        np.divide(
+            self._wrf_vars["chem_new"],
+            self._factor[:, :, :, np.newaxis],
+            out=self._wrf_vars["chem_new"],
+        )
+
+        for v in ["qv", "qc", "qr", "qv_old", "qnc", "qnr", "qna", "qna_nucl"]:
+            np.divide(self._wrf_vars[v], self._factor[:, :, :], out=self._wrf_vars[v])
+
         # Now we need to map back to map back from WRF indexes to PINNACLE indexes
         to_our_order_4d(nhalo, self._wrf_vars["chem_new"], chem_new)
 
@@ -789,7 +851,6 @@ class MicroSBM(MicrophysicsBase):
         v.long_name = "LASSO Liquid Water Path"
         v.standard_name = "LWP"
         v.units = "kg/m^2"
-
 
         v = timeseries_grp.createVariable("LWP", np.double, dimensions=("time",))
         v.long_name = "Liquid Water Path"
