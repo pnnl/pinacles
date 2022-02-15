@@ -32,18 +32,23 @@ class LateralBCsRecycle(LateralBCsBase):
         ls = self._Grid._local_start
         le = self._Grid._local_end
         
-        if not self.count%2 == 0:
-            self.count += 1
-            return
-        self.count = 0
+        #if not self.count%2 == 0:
+        #    self.count += 1
+        #    return
+        #self.count = 0
 
         for var_name in self._State._dofs:
+            
+            
+            
             # Compute the domain mean of the variables
             x_low, x_high, y_low, y_high = self.get_vars_on_boundary(var_name)
+
 
             slab_x = self._State.get_slab_x(
                 var_name, (self._ix_recycle_plane, self._ix_recycle_plane + 1)
             )
+
 
             x_low[nh[1] : -nh[1], nh[2] : -nh[2]] = slab_x[0, ls[1] : le[1], :]
 

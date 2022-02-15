@@ -372,6 +372,9 @@ class GridBase:
         self._low_rank = tuple(self._low_rank)
         self._high_rank = tuple(self._high_rank)
 
+
+        print(self.low_rank, self.high_rank)
+
         return
 
     def _get_local_grid_indicies(self):

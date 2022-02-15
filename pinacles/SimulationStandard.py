@@ -1020,6 +1020,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     # Get a consistant temperature for io
                     self.Thermo.update(apply_buoyancy=False)
 
+            self.LBC.update()
+
             self.Timers.finish_timestep()
             self.TimeSteppingController._time += self.TimeSteppingController._dt
 
