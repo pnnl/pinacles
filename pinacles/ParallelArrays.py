@@ -1,7 +1,6 @@
 from pinacles import Grid
 import numpy as np
 from mpi4py import MPI
-import pylab as plt
 
 
 class GhostArrayBase:

@@ -37,8 +37,10 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         n_halo = self._Grid.n_halo
         z = self._Grid.z_global
         dz = self._Grid.dx[2]
+        dxi = self._Grid.dxi
         p0 = self._Ref.p0
         alpha0 = self._Ref.alpha0
+        rho0 = self._Ref.rho0
         tref = self._Ref.T0
         exner = self._Ref.exner
         theta_ref = self._Ref.T0 / self._Ref.exner
@@ -54,26 +56,34 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         buoyancy = self._DiagnosticState.get_field("buoyancy")
         bvf = self._DiagnosticState.get_field("bvf")
         w_t = self._VelocityState.get_tend("w")
+        buoyancy_gradient_mag = self._DiagnosticState.get_field("buoyancy_gradient_mag")
 
-        ThermodynamicsMoist_impl.eos_sam(
+        ThermodynamicsMoist_impl.eos(
             z, p0, alpha0, s, qv, ql, qi, T, tref, alpha, buoyancy
         )
 
         # Compute the buoyancy frequency
-        ThermodynamicsMoist_impl.compute_bvf(
-            n_halo, theta_ref, exner, T, qv, ql, dz, thetav, bvf
+        ThermodynamicsMoist_impl.compute_moist_bvf(
+            dz, n_halo, p0, rho0, T, qv, ql, qi, bvf
         )
+
+        ThermodynamicsMoist_impl.compute_thetav(T, exner, qv, ql, qi, thetav)
 
         if apply_buoyancy:
             ThermodynamicsMoist_impl.apply_buoyancy(buoyancy, w_t)
             self._VelocityState.remove_mean("w", tend=True)
+
+        # Remove mean from buoyancy
+        self._DiagnosticState.remove_mean("buoyancy")
+
+        self.compute_buoyancy_gradient(dxi, buoyancy, buoyancy_gradient_mag)
 
         self._Timers.end_timer("ThermoDynamicsMoist_update")
         return
 
     @staticmethod
     @numba.njit()
-    def compute_thetali(exner, T, thetali, qc):
+    def compute_thetali(exner, T, thetali, qc, qi):
         shape = T.shape
         for i in range(shape[0]):
             for j in range(shape[1]):
@@ -83,8 +93,10 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
                         / exner[k]
                         * (
                             1.0
-                            - parameters.LV
-                            * qc[i, j, k]
+                            - (
+                                parameters.LV * qc[i, j, k]
+                                + parameters.LS * qi[i, j, k]
+                            )
                             / (parameters.CPD * T[i, j, k])
                         )
                     )
@@ -94,13 +106,13 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         exner = self._Ref.exner
         T = self._DiagnosticState.get_field("T")
         qc = self._Micro.get_qc()
+        qi = self._Micro.get_qi()
         thetali = np.empty_like(T)
-        self.compute_thetali(exner, T, thetali, qc)
+        self.compute_thetali(exner, T, thetali, qc, qi)
 
         return thetali
 
     def get_qt(self):
-        # Todo optimize
 
         qv = self._ScalarState.get_field("qv")
         qc = self._Micro.get_qc()
@@ -128,15 +140,16 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
                 ),
             )
 
-        T = self._DiagnosticState.get_field('T')
-        send_buffer[start[0]:end[0], start[1]:end[1]] = T[nh[0]:-nh[0], nh[1]:-nh[1],nh[2]]
+        T = self._DiagnosticState.get_field("T")
+        send_buffer[start[0] : end[0], start[1] : end[1]] = T[
+            nh[0] : -nh[0], nh[1] : -nh[1], nh[2]
+        ]
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
         if nc_grp is not None:
             t[:, :] = recv_buffer
 
         if nc_grp is not None:
             nc_grp.sync()
-
 
         # Output specific humidity
         if nc_grp is not None:
@@ -149,9 +162,11 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
                 ),
             )
 
-        qv = self._ScalarState.get_field('qv')
+        qv = self._ScalarState.get_field("qv")
         send_buffer.fill(0.0)
-        send_buffer[start[0]:end[0], start[1]:end[1]] = qv[nh[0]:-nh[0], nh[1]:-nh[1],nh[2]]
+        send_buffer[start[0] : end[0], start[1] : end[1]] = qv[
+            nh[0] : -nh[0], nh[1] : -nh[1], nh[2]
+        ]
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
         if nc_grp is not None:
             qv_var[:, :] = recv_buffer
@@ -159,4 +174,4 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         if nc_grp is not None:
             nc_grp.sync()
 
-        return 
+        return

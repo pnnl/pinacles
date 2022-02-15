@@ -28,7 +28,7 @@ def buoyancy(alpha0, alpha):
 
 
 @numba.njit()
-def eos_sam(z_in, P_in, alpha0, s_in, qv_in, T_out, tref, alpha_out, buoyancy_out):
+def eos(z_in, P_in, alpha0, s_in, qv_in, T_out, tref, alpha_out, buoyancy_out):
     shape = s_in.shape
     for i in range(shape[0]):
         for j in range(shape[1]):

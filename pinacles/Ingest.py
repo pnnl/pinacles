@@ -13,6 +13,9 @@ class IngestBase:
 
         return
 
+    def initialize(self):
+        
+        return
 
 class IngestEra5:
 
@@ -591,3 +594,8 @@ class IngestE3SM(IngestBase):
 
 
         return
+    
+    
+def IngestFactory(namelist, Grid, TimeSteppingController):
+    #if namelist['lbc']['type'] == 'periodic':
+    return None

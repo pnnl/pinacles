@@ -3,6 +3,7 @@ from pinacles.Microphysics import (
     water_path,
     water_fraction,
     water_fraction_profile,
+    water_path_lasso,
 )
 from pinacles.externals.wrf_p3_wrapper import p3_via_cffi
 from pinacles import UtilitiesParallel
@@ -16,6 +17,53 @@ from pinacles import parameters
 from mpi4py import MPI
 import numba
 import numpy as np
+
+
+@numba.njit(fastmath=True)
+def compute_w_from_q(rho0, rhod, p, qv, T, wv, wc, wr, wnc, wi1, wni1, wir1, wib1):
+
+    shape = qv.shape
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            for k in range(shape[2]):
+                qt = wv[i,j,k] + wc[i,j,k] + wr[i,j,k]
+                pd  = p[i,j,k] * (1.0 - qt) / ( 1.0 - qt  + parameters.EPSVI * wv[i,j,k])
+                
+                rhod[i,j,k]= pd/(parameters.RD * T[i,j,k])
+                
+                factor = (rho0[i,j,k]) / rhod[i,j,k]
+
+                wv[i, j, k] *= factor
+                wc[i, j, k] *= factor
+                wr[i, j, k] *= factor
+                wnc[i, j, k] *= factor
+                wi1[i, j, k] *= factor
+                wni1[i, j, k] *= factor
+                wir1[i, j, k] *= factor
+                wib1[i, j, k] *= factor
+
+    return
+
+
+@numba.njit(fastmath=True)
+def compute_q_from_w(rho0, rhod, qv, qc, qr, qnc, qi1, qni1, qir1, qib1):
+    shape = qv.shape
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            for k in range(shape[2]):
+
+                factor = rhod[i,j,k] / (rho0[i,j,k])
+
+                qv[i, j, k] *= factor
+                qc[i, j, k] *= factor
+                qr[i, j, k] *= factor
+                qnc[i, j, k] *= factor
+                qi1[i, j, k] *= factor
+                qni1[i, j, k] *= factor
+                qir1[i, j, k] *= factor
+                qib1[i, j, k] *= factor
+
+    return
 
 
 class MicroP3(MicrophysicsBase):
@@ -279,6 +327,7 @@ class MicroP3(MicrophysicsBase):
         for v in [
             "s_wrf",
             "rho_wrf",
+            "rhod_wrf",
             "exner_wrf",
             "p0_wrf",
             "T_wrf",
@@ -348,6 +397,7 @@ class MicroP3(MicrophysicsBase):
 
         s_wrf = self._s_wrf
         rho_wrf = self._rho_wrf
+        rhod_wrf = self._rhod_wrf
         exner_wrf = self._exner_wrf
         p0_wrf = self._p0_wrf
         T_wrf = self._T_wrf
@@ -405,7 +455,7 @@ class MicroP3(MicrophysicsBase):
         kte = kme
 
         # Reorder arrays
-        to_wrf_order(nhalo, T / self._Ref.exner[np.newaxis, np.newaxis, :], T_wrf)
+        to_wrf_order(nhalo, T, T_wrf)
         to_wrf_order(nhalo, qv, qv_wrf)
         to_wrf_order(nhalo, qc, qc_wrf)
         to_wrf_order(nhalo, qr, qr_wrf)
@@ -419,6 +469,23 @@ class MicroP3(MicrophysicsBase):
 
         np.copyto(th_old, T_wrf, casting="no")
         np.copyto(qv_old, qv_wrf, casting="no")
+
+        # Do conversions between specific humidity and mixing ratio
+        compute_w_from_q(
+            rho_wrf,
+            rhod_wrf, 
+            p0_wrf,
+            qv_wrf,
+            T_wrf,
+            qv_wrf,
+            qc_wrf,
+            qr_wrf,
+            nc_wrf,
+            qi1_wrf,
+            qni1_wrf,
+            qir1_wrf,
+            qib1_wrf,
+        )
 
         n_iceCat = 1
 
@@ -532,6 +599,20 @@ class MicroP3(MicrophysicsBase):
                 n_iceCat,
             )
 
+        # Do conversions between specific humidity and mixing ratio
+        compute_q_from_w(
+            rho_wrf,
+            rhod_wrf,
+            qv_wrf,
+            qc_wrf,
+            qr_wrf,
+            nc_wrf,
+            qi1_wrf,
+            qni1_wrf,
+            qir1_wrf,
+            qib1_wrf,
+        )
+
         # Update prognosed fields
         to_our_order(nhalo, qv_wrf, qv)
         to_our_order(nhalo, qc_wrf, qc)
@@ -552,7 +633,7 @@ class MicroP3(MicrophysicsBase):
 
         # Update the energys (TODO Move this to numba)
         # T_wrf *= self._Ref.exner[np.newaxis, nhalo[2] : -nhalo[2], np.newaxis]
-        self._update_static_energy(exner_wrf, z, T_wrf, s_wrf, qc_wrf, qr_wrf, qi1_wrf)
+        self._update_static_energy(z, T_wrf, s_wrf, qc_wrf, qr_wrf, qi1_wrf)
 
         # s_wrf = (
         #    T_wrf
@@ -568,8 +649,6 @@ class MicroP3(MicrophysicsBase):
         # Compute and apply sedimentation sources of static energy
         np.multiply(liq_sed, parameters.LV / parameters.CPD, out=s_tend_liq_sed)
         np.multiply(ice_sed, parameters.LS / parameters.CPD, out=s_tend_ice_sed)
-        #np.subtract(s, s_tend_liq_sed, out=s)
-        #np.subtract(s, s_tend_ice_sed, out=s)
 
         # Convert sedimentation sources to units of tendency
         np.multiply(liq_sed, 1.0 / self._TimeSteppingController.dt, out=liq_sed)
@@ -609,6 +688,11 @@ class MicroP3(MicrophysicsBase):
         v.standard_name = "LWP"
         v.units = "kg/m^2"
 
+        v = timeseries_grp.createVariable("LWP_LASSO", np.double, dimensions=("time",))
+        v.long_name = "LASSO Liquid Water Path"
+        v.standard_name = "LWP"
+        v.units = "kg/m^2"
+
         v = timeseries_grp.createVariable("RWP", np.double, dimensions=("time",))
         v.long_name = "Rain Water Path"
         v.standard_name = "RWP"
@@ -630,12 +714,26 @@ class MicroP3(MicrophysicsBase):
         v.latex_name = "rainncv"
 
         # Now add cloud fraction and rain fraction profiles
-        v = profiles_grp.createVariable("CF", np.double, dimensions=("time", "z",))
+        v = profiles_grp.createVariable(
+            "CF",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "Cloud Fraction"
         v.standard_name = "CF"
         v.units = ""
 
-        profiles_grp.createVariable("RF", np.double, dimensions=("time", "z",))
+        profiles_grp.createVariable(
+            "RF",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "Rain Fraction"
         v.standard_name = "RF"
         v.units = ""
@@ -658,6 +756,13 @@ class MicroP3(MicrophysicsBase):
         # First compute liqud water path
         lwp = water_path(n_halo, dz, npts, rho, qc)
         lwp = UtilitiesParallel.ScalarAllReduce(lwp)
+
+        # First compute liqud water path
+        lwp_lasso, npts_lasso = water_path_lasso(n_halo, dz, rho, qc + qr)
+        lwp_lasso = UtilitiesParallel.ScalarAllReduce(lwp_lasso)
+        npts_lasso = UtilitiesParallel.ScalarAllReduce(npts_lasso)
+        if npts_lasso > 0:
+            lwp_lasso /= npts_lasso
 
         rwp = water_path(n_halo, dz, npts, rho, qr)
         rwp = UtilitiesParallel.ScalarAllReduce(rwp)
@@ -691,6 +796,7 @@ class MicroP3(MicrophysicsBase):
             timeseries_grp["CF"][-1] = cf
             timeseries_grp["RF"][-1] = rf
             timeseries_grp["LWP"][-1] = lwp
+            timeseries_grp["LWP_LASSO"][-1] = lwp_lasso
             timeseries_grp["RWP"][-1] = rwp
             timeseries_grp["VWP"][-1] = vwp
 
@@ -704,13 +810,13 @@ class MicroP3(MicrophysicsBase):
 
     @staticmethod
     @numba.njit
-    def _update_static_energy(exner_wrf, z, T_wrf, s_wrf, qc_wrf, qr_wrf, qi1_wrf):
+    def _update_static_energy(z, T_wrf, s_wrf, qc_wrf, qr_wrf, qi1_wrf):
         shape = T_wrf.shape
         # Fortran ordered so we need to loop differently
         for k in range(shape[2]):
             for j in range(shape[1]):
                 for i in range(shape[0]):
-                    _T = T_wrf[i, j, k] * exner_wrf[i, j, k]
+                    _T = T_wrf[i, j, k]
                     T_wrf[i, j, k] = _T
                     s_wrf[i, j, k] = (
                         _T
@@ -740,13 +846,12 @@ class MicroP3(MicrophysicsBase):
                     "Y",
                 ),
             )
-        
-        send_buffer[start[0]:end[0], start[1]:end[1]] = self._RAINNC
-        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)        
+
+        send_buffer[start[0] : end[0], start[1] : end[1]] = self._RAINNC
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
 
         if nc_grp is not None:
             rainnc[:, :] = recv_buffer
-
 
         if nc_grp is not None:
             rainncv = nc_grp.createVariable(
@@ -759,11 +864,10 @@ class MicroP3(MicrophysicsBase):
             )
 
         send_buffer.fill(0.0)
-        send_buffer[start[0]:end[0], start[1]:end[1]] = self._RAINNCV
+        send_buffer[start[0] : end[0], start[1] : end[1]] = self._RAINNCV
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
         if nc_grp is not None:
             rainncv[:, :] = recv_buffer
-
 
         # Compute and output the LWP
         if nc_grp is not None:
@@ -777,11 +881,13 @@ class MicroP3(MicrophysicsBase):
             )
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
-        qc = self._ScalarState.get_field('qc')[nh[0]:-nh[0], nh[1]:-nh[1],:]
-        lwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis,0] , axis=2) * self._Grid.dx[0]
+        qc = self._ScalarState.get_field("qc")[nh[0] : -nh[0], nh[1] : -nh[1], :]
+        lwp_compute = np.sum(
+            qc * rho0[np.newaxis, np.newaxis, 0] * self._Grid.dx[2], axis=2
+        )
 
         send_buffer.fill(0.0)
-        send_buffer[start[0]:end[0], start[1]:end[1]] = lwp_compute
+        send_buffer[start[0] : end[0], start[1] : end[1]] = lwp_compute
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
         if nc_grp is not None:
             lwp[:, :] = recv_buffer
@@ -799,15 +905,14 @@ class MicroP3(MicrophysicsBase):
 
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
-        qc = self._ScalarState.get_field('qi1')[nh[0]:-nh[0], nh[1]:-nh[1],:]
-        iwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis,0] , axis=2) * self._Grid.dx[0]
+        qc = self._ScalarState.get_field("qi1")[nh[0] : -nh[0], nh[1] : -nh[1], :]
+        iwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis, 0], axis=2)
 
         send_buffer.fill(0.0)
-        send_buffer[start[0]:end[0], start[1]:end[1]] = iwp_compute
+        send_buffer[start[0] : end[0], start[1] : end[1]] = iwp_compute
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
         if nc_grp is not None:
             iwp[:, :] = recv_buffer
-
 
         if nc_grp is not None:
             nc_grp.sync()

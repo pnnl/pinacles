@@ -4,6 +4,7 @@ from mpi4py import MPI
 import time
 from datetime import datetime as dt
 from pinacles import parameters
+import h5py
 
 
 class Restart:
@@ -53,7 +54,7 @@ class Restart:
         # Broadcast the directory name that was just created on rank0
         namelist["meta"]["simname"] = MPI.COMM_WORLD.bcast(namelist["meta"]["simname"])
 
-        # Set-up reastart output path
+        # Set-up restart output path
         self._path = os.path.join(
             os.path.join(
                 namelist["meta"]["output_directory"], namelist["meta"]["simname"]
@@ -73,8 +74,8 @@ class Restart:
         return
 
     def create_path(self):
-        """ Function that check to see if the restart path exists, if it does not, 
-        create it. 
+        """Function that check to see if the restart path exists, if it does not,
+        create it.
         """
 
         if MPI.COMM_WORLD.Get_rank() == 0:
@@ -86,9 +87,9 @@ class Restart:
         return
 
     def dump(self, out_time):
-        """ This function creates a restart file on each rank, and the writes data dict to it.
+        """This function creates a restart file on each rank, and the writes data dict to it.
         Args:
-            out_time {float}: the model time. This is used to for the output directory name. 
+            out_time {float}: the model time. This is used to for the output directory name.
         """
         t0 = time.perf_counter()
 
@@ -130,8 +131,17 @@ class Restart:
 
         return
 
+    def read_portable(self):
+
+        with open(os.path.join(self._infile, "Restart.pkl"), "rb") as f:
+            self.data_dict = pickle.load(f)
+
+        self.h5_data = h5py.File(os.path.join(self._infile, "restart.h5"), "r")
+
+        return
+
     def add_class_to_restart(self, class_to_add):
-        """ This function adds a class to the list of classes that will either 
+        """This function adds a class to the list of classes that will either
         contribute to restart files or read from redstart files. These classes must contain
         the class methods restart and dump_restart.
 
@@ -149,8 +159,7 @@ class Restart:
         return
 
     def restart(self):
-        """[summary]
-        """
+        """[summary]"""
 
         t0 = time.perf_counter()
         rank = MPI.COMM_WORLD.Get_rank()
@@ -158,14 +167,27 @@ class Restart:
         if rank == 0:
             print("\t Restarting simulation from " + self._infile + ".")
         # First read the restart files from  disk
-        self.read()
+
+        self.h5_data = None
+
+        restart_portable = False
+        if "restart_portable" in self._namelist["restart"]:
+            restart_portable = self._namelist["restart"]["restart_portable"]
+
+        if restart_portable:
+            self.read_portable()
+        else:
+            self.read()
 
         # Now loop over the calles and call the restart method
         for item in self._classes_to_restart:
-            item.restart(self.data_dict)
+            item.restart(self.data_dict, **{"h5_data": self.h5_data})
 
         MPI.COMM_WORLD.Barrier()
         t1 = time.perf_counter()
+
+        if self.h5_data is not None:
+            self.h5_data.close()
 
         if rank == 0:
             print("\t Finished restarting simulation in " + str(t1 - t0) + "s.")
@@ -173,8 +195,8 @@ class Restart:
         return
 
     def dump_restart(self, time):
-        """ This is the top level method that actually writes the restart files. 
-        
+        """This is the top level method that actually writes the restart files.
+
         1) It iterates through all of the classes that will be restarted calling dump_restart which adds data
         to data_dict for each of the classes
 
@@ -195,15 +217,15 @@ class Restart:
         return
 
     def purge_data_dict(self):
-        """ This method frees memory associated with the dictionary (dict_data) used to store data that is
-        then writte to the restart files. 
+        """This method frees memory associated with the dictionary (dict_data) used to store data that is
+        then writte to the restart files.
         """
         self.data_dict = {}
         return
 
     @property
     def frequency(self):
-        """ Returns the frequency with which restart files are to be output. 
+        """Returns the frequency with which restart files are to be output.
 
         Returns:
             float: frequency in seconds
@@ -212,7 +234,7 @@ class Restart:
 
     @property
     def path(self):
-        """ Returns the top-level path where restart files will be written.
+        """Returns the top-level path where restart files will be written.
 
         Returns:
             str: restart path
@@ -221,8 +243,8 @@ class Restart:
 
     @property
     def infile(self):
-        """ Returns the input file path for a restarted simulation. If the simulation 
-        is not to be restarted then the default value of None is returned.  
+        """Returns the input file path for a restarted simulation. If the simulation
+        is not to be restarted then the default value of None is returned.
 
         Returns:
             str: path to the restart file
@@ -231,7 +253,7 @@ class Restart:
 
     @property
     def restart_simulation(self):
-        """ Returns a bool indicating if this simulation is or was to be restarted. 
+        """Returns a bool indicating if this simulation is or was to be restarted.
 
         Returns:
             bool: True if simulation is to restarted
@@ -240,7 +262,7 @@ class Restart:
 
     @property
     def n_classes(self):
-        """ Returns the number of classes that are to be restated. 
+        """Returns the number of classes that are to be restated.
 
         Returns:
             integer: number of classes to be restarted

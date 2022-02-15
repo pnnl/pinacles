@@ -1,4 +1,5 @@
-from pinacles.Radiation import RRTMG, RadiationDycoms
+from pinacles.Radiation import RRTMG
+from pinacles.RadiationDycoms import RadiationDycoms
 from mpi4py import MPI
 
 
@@ -60,6 +61,7 @@ class DummyRad:
     def __init__(self):
         self.frequency = 1e20
         self.name = "DummyRad"
+        self.time_synced = False
 
     def update(self, force=False, time_loop=False):
         return
@@ -79,7 +81,7 @@ class DummyRad:
     def io_fields2d_update(self, nc_grp):
         return
 
-    def restart(self, data_dict):
+    def restart(self, data_dict, **kwargs):
         return
 
     def dump_restart(self, data_dict):

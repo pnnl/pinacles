@@ -1,5 +1,4 @@
 import numpy as np
-import pylab as plt
 
 from pinacles import Kinematics_impl
 
@@ -19,8 +18,24 @@ class Kinematics:
             latex_name="|S_{i,j}|",
             units="s^{-1}",
         )
+
         DiagnosticState.add_variable(
             "Q_criterion", long_name="Q criterion", latex_name="Q", units="m^2 s^-2"
+        )
+
+        DiagnosticState.add_variable(
+            "vertical_vorticity",
+            long_name="Vertical Component of Vorticity",
+            latex_name="Q",
+            units="s^{-1}",
+        )
+
+        DiagnosticState.add_variable(
+            "helicity", long_name="helicity", latex_name="helicity", units="m s^{-2}"
+        )
+
+        DiagnosticState.add_variable(
+            "grad_ri", long_name="gradient Richardson", latex_name="Ri_g", units="[-]}"
         )
 
         nl = self._Grid.ngrid_local
@@ -40,6 +55,14 @@ class Kinematics:
         self._dwdy = np.zeros_like(self._dudx)
         self._dwdz = np.zeros_like(self._dudx)
 
+        self._s11 = np.zeros_like(self._dudx)
+        self._s22 = np.zeros_like(self._dudx)
+        self._s33 = np.zeros_like(self._dudx)
+
+        self._s12 = np.zeros_like(self._dudx)
+        self._s13 = np.zeros_like(self._dudx)
+        self._s23 = np.zeros_like(self._dudx)
+
         self._Timers.add_timer("Kinematics_update")
 
         return
@@ -54,6 +77,10 @@ class Kinematics:
 
         strain_rate_mag = self._DiagnosticState.get_field("strain_rate_mag")
         Q_mag = self._DiagnosticState.get_field("Q_criterion")
+        vertical_vorticity = self._DiagnosticState.get_field("vertical_vorticity")
+        helicity = self._DiagnosticState.get_field("helicity")
+        bvf = self._DiagnosticState.get_field("bvf")
+        grad_ri = self._DiagnosticState.get_field("grad_ri")
 
         # Get grid spacing
         dxi = self._Grid.dxi
@@ -64,7 +91,7 @@ class Kinematics:
         Kinematics_impl.w_gradients(dxi, w, self._dwdx, self._dwdy, self._dwdz)
 
         # Compute the strain rate mag
-        Kinematics_impl.strain_rate_max(
+        Kinematics_impl.strain_rate(
             self._dudx,
             self._dudy,
             self._dudz,
@@ -74,10 +101,19 @@ class Kinematics:
             self._dwdx,
             self._dwdy,
             self._dwdz,
+            self._s11,
+            self._s22,
+            self._s33,
+            self._s12,
+            self._s13,
+            self._s23,
             strain_rate_mag,
         )
 
         Kinematics_impl.q_criterion(
+            u,
+            v,
+            w,
             self._dudx,
             self._dudy,
             self._dudz,
@@ -87,7 +123,11 @@ class Kinematics:
             self._dwdx,
             self._dwdy,
             self._dwdz,
+            bvf,
             Q_mag,
+            vertical_vorticity,
+            helicity,
+            grad_ri,
         )
 
         self._Timers.end_timer("Kinematics_update")

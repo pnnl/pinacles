@@ -7,19 +7,6 @@ import time
 from pinacles import UtilitiesParallel
 
 
-def DumpFieldsFactory(namelist, Timers, Grid, TimeSteppingController):
-
-    assert "fields" in namelist
-    if "io_type" not in namelist["fields"]:
-        return DumpFields(namelist, Timers, Grid, TimeSteppingController)
-    elif namelist["fields"]["io_type"].upper() == "NETCDF":
-        return DumpFields(namelist, Timers, Grid, TimeSteppingController)
-    elif namelist["fields"]["io_type"].upper() == "HDF5":
-        return DumpFields_hdf(namelist, Timers, Grid, TimeSteppingController)
-
-    return
-
-
 class DumpFields_hdf:
     def __init__(self, namelist, Timers, Grid, TimeSteppingController):
 
@@ -33,6 +20,9 @@ class DumpFields_hdf:
                 self.collective = namelist["fields"]["hdf5"]["collective"]
         except:
             pass
+
+        self.compression = "gzip"
+        self.shuffle = True
 
         self._this_rank = MPI.COMM_WORLD.Get_rank()
         self._output_root = str(namelist["meta"]["output_directory"])
@@ -84,9 +74,21 @@ class DumpFields_hdf:
 
         MPI.COMM_WORLD.barrier()
 
+        s = self._TimeSteppingController.time
+        days = s // 86400
+        s = s - (days * 86400)
+        hours = s // 3600
+        s = s - (hours * 3600)
+        minutes = s // 60
+        seconds = s - (minutes * 60)
+
         fx = h5py.File(
             os.path.join(
-                output_here, str(np.round(self._TimeSteppingController.time)) + ".h5"
+                output_here,
+                "{:02}d-{:02}h-{:02}m-{:02}s".format(
+                    int(days), int(hours), int(minutes), int(seconds)
+                )
+                + ".h5",
             ),
             "w",
             driver="mpio",
@@ -101,25 +103,40 @@ class DumpFields_hdf:
             dset.make_scale()
             if MPI.COMM_WORLD.rank == 0:
                 dset[:] = self._Grid._global_axes[i][nhalo[i] : -nhalo[i]]
+        dset = fx.create_dataset("time", 1, dtype="d")
+        dset.make_scale()
+        dset[:] = self._TimeSteppingController.time
 
+        # import sys; sys.exit()
         for ac in self._classes:
             # Loop over all variables
             ac = self._classes[ac]
-            for v in ac._dofs:
 
-                if "ff" not in v:
+            for v in ac._dofs:
+                if "ff8" not in v:
 
                     dset = fx.create_dataset(
                         v,
-                        (self._Grid.n[0], self._Grid.n[1], self._Grid.n[2]),
-                        dtype="d",
+                        (1, self._Grid.n[0], self._Grid.n[1], self._Grid.n[2]),
+                        dtype=np.double,
+                        compression=self.compression,
+                        shuffle=self.shuffle,
+                        chunks=(
+                            1,
+                            np.max(self._Grid.rank_nx),
+                            np.max(self._Grid.rank_ny),
+                            self._Grid.n[2],
+                        ),
                     )
-                    for i, d in enumerate(["X", "Y", "Z"]):
+
+                    for i, d in enumerate(["time", "X", "Y", "Z"]):
                         dset.dims[i].attach_scale(fx[d])
 
                     if self.collective:
+
                         with dset.collective:
                             dset[
+                                0,
                                 local_start[0] : local_end[0],
                                 local_start[1] : local_end[1],
                                 :,
@@ -128,6 +145,7 @@ class DumpFields_hdf:
                                 nhalo[1] : -nhalo[1],
                                 nhalo[2] : -nhalo[2],
                             ]
+
                     else:
                         dset[
                             local_start[0] : local_end[0],
@@ -143,6 +161,8 @@ class DumpFields_hdf:
                     dset.attrs["long_name"] = ac.get_long_name(v)
                     dset.attrs["standar_name"] = ac.get_standard_name(v)
 
+                MPI.COMM_WORLD.barrier()
+
         fx.close()
         t1 = time.perf_counter()
         UtilitiesParallel.print_root(
@@ -150,26 +170,3 @@ class DumpFields_hdf:
         )
         self._Timers.end_timer("DumpFields")
         return
-
-
-import time
-from pinacles import UtilitiesParallel
-
-
-def DumpFieldsFactory(namelist, Timers, Grid, TimeSteppingController):
-
-    assert "fields" in namelist
-    if "io_type" not in namelist["fields"]:
-        from pinacles.DumpFieldsNetCDF import DumpFields
-
-        return DumpFields(namelist, Timers, Grid, TimeSteppingController)
-    elif namelist["fields"]["io_type"].upper() == "NETCDF":
-        from pinacles.DumpFieldsNetCDF import DumpFields
-
-        return DumpFields(namelist, Timers, Grid, TimeSteppingController)
-    elif namelist["fields"]["io_type"].upper() == "HDF5":
-        from pinacles.DumpFieldsHDF5 import DumpFields_hdf
-
-        return DumpFields_hdf(namelist, Timers, Grid, TimeSteppingController)
-
-    return

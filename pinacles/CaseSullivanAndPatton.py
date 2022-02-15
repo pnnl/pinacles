@@ -5,6 +5,66 @@ from mpi4py import MPI
 from pinacles import Surface, Surface_impl, Forcing_impl, Forcing
 from pinacles import UtilitiesParallel
 from pinacles import parameters
+import pinacles.ThermodynamicsDry_impl as DryThermo
+
+
+def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
+
+    UtilitiesParallel.print_root("Initializing Sullivan and Patton Case")
+
+    #  Optionally set a random seed as specified in the namelist
+    try:
+        rank = MPI.Get_rank()
+        np.random.seed(namelist["meta"]["random_seed"] + rank)
+    except:
+        pass
+
+    # Integrate the reference profile.
+    Ref.set_surface(Tsfc=300.0, u0=1.0, v0=0.0)
+    Ref.integrate()
+
+    u = VelocityState.get_field("u")
+    v = VelocityState.get_field("v")
+    w = VelocityState.get_field("w")
+    s = ScalarState.get_field("s")
+
+    xl = ModelGrid.x_local
+    yl = ModelGrid.y_local
+    zl = ModelGrid.z_local
+    xg = ModelGrid.x_global
+    yg = ModelGrid.y_global
+
+    exner = Ref.exner
+
+    # Wind is uniform initiall
+    u.fill(1.0)
+    v.fill(0.0)
+    w.fill(0.0)
+
+    u -= Ref.u0
+    v -= Ref.v0
+
+    shape = s.shape
+    perts = np.random.uniform(-0.001, 0.001, (shape[0], shape[1], shape[2]))
+
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            for k in range(shape[2]):
+                t = 0.0
+                if zl[k] < 974.0:
+                    t = 300.0
+                    t *= exner[k]
+                elif 974.0 <= zl[k] and zl[k] < 1074.0:
+                    t = 300.0 + (zl[k] - 974.0) * 0.08
+                    t *= exner[k]
+                else:
+                    t = 308.0 + (zl[k] - 1074.0) * 0.0034
+                    t *= exner[k]
+                if zl[k] < 200.0:
+                    t += perts[i, j, k]
+                s[i, j, k] = DryThermo.s(zl[k], t)
+
+    return
 
 
 class SurfaceSullivanAndPatton(Surface.SurfaceBase):

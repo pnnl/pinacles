@@ -3,6 +3,82 @@ from mpi4py import MPI
 from pinacles import parameters
 from pinacles import Surface, Surface_impl, Forcing_impl, Forcing
 from pinacles import UtilitiesParallel
+import pinacles.ThermodynamicsDry_impl as DryThermo
+
+
+def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
+
+    UtilitiesParallel.print_root("Initializing BOMEX Case")
+
+    #  Optionally set a random seed as specified in the namelist
+    try:
+        rank = MPI.Get_rank()
+        np.random.seed(namelist["meta"]["random_seed"] + rank)
+    except:
+        pass
+
+    # Integrate the reference profile.
+    Ref.set_surface(Psfc=1015e2, Tsfc=300.4, u0=-8.75, v0=0.0)
+    Ref.integrate()
+
+    u = VelocityState.get_field("u")
+    v = VelocityState.get_field("v")
+    w = VelocityState.get_field("w")
+    s = ScalarState.get_field("s")
+    qv = ScalarState.get_field("qv")
+
+    xl = ModelGrid.x_local
+    yl = ModelGrid.y_local
+    zl = ModelGrid.z_local
+    xg = ModelGrid.x_global
+    yg = ModelGrid.y_global
+
+    exner = Ref.exner
+
+    # Wind is uniform initiall
+    u.fill(0.0)
+    v.fill(0.0)
+    w.fill(0.0)
+
+    shape = s.shape
+
+    perts = np.random.uniform(-0.01, 0.01, (shape[0], shape[1], shape[2])) * 10.0
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            u700 = 0
+            for k in range(shape[2]):
+                t = 0.0
+                z = zl[k]
+                if z < 520.0:
+                    t = 298.7
+                    qv[i, j, k] = 17.0 + z * (16.3 - 17.0) / 520.0
+                elif z >= 520.0 and z <= 1480.0:
+                    t = 298.7 + (z - 520) * (302.4 - 298.7) / (1480.0 - 520.0)
+                    qv[i, j, k] = 16.3 + (z - 520.0) * (10.7 - 16.3) / (1480.0 - 520.0)
+                elif z > 1480.0 and z <= 2000:
+                    t = 302.4 + (z - 1480.0) * (308.2 - 302.4) / (2000.0 - 1480.0)
+                    qv[i, j, k] = 10.7 + (z - 1480.0) * (4.2 - 10.7) / (2000.0 - 1480.0)
+                elif z > 2000.0:
+                    t = 308.2 + (z - 2000.0) * (311.85 - 308.2) / (3000.0 - 2000.0)
+                    qv[i, j, k] = 4.2 + (z - 2000.0) * (3.0 - 4.2) / (3000.0 - 2000.0)
+
+                t *= exner[k]
+                if zl[k] < 400.0:
+                    t += perts[i, j, k]
+                s[i, j, k] = DryThermo.s(zl[k], t)
+
+                if z <= 700.0:
+                    u[i, j, k] = -8.75
+                else:
+                    u[i, j, k] = -8.75 + (z - 700.0) * 1.8e-3
+
+    u -= Ref.u0
+    v -= Ref.v0
+
+    # u.fill(0.0)
+    qv /= 1000.0
+
+    return
 
 
 class SurfaceBOMEX(Surface.SurfaceBase):

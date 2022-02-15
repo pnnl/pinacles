@@ -1,6 +1,7 @@
 from pinacles import ThermodynamicsDry_impl, parameters
 import numpy as np
 from scipy.integrate import odeint
+from scipy import interpolate
 import numba
 
 
@@ -176,6 +177,46 @@ class ReferenceDry(ReferenceBase):
     def __init__(self, namelist, Grid):
 
         ReferenceBase.__init__(self, Grid)
+
+        return
+
+    def specify(self, z_in, pressure_in, temperature_in, qv_in):
+
+        nhalo = self._Grid.n_halo[2]
+
+        z = self._Grid.z_global[nhalo:-nhalo]
+        z_edge = self._Grid.z_edge_global[nhalo - 1 : -nhalo + 1]
+
+        z_in -= np.amin(z_in)
+
+        interp_p = interpolate.Akima1DInterpolator(z_in, pressure_in)
+        self._P0[nhalo:-nhalo] = interp_p(z)
+        self._P0_edge[nhalo - 1 : -nhalo + 1] = interp_p(z_edge)
+
+        interp_T = interpolate.Akima1DInterpolator(z_in, temperature_in)
+        self._T0[nhalo:-nhalo] = interp_T(z)
+        self._T0_edge[nhalo - 1 : -nhalo + 1] = interp_T(z_edge)
+
+        self._rho0[nhalo:-nhalo] = ThermodynamicsDry_impl.rho(
+            self._P0[nhalo:-nhalo], self._T0[nhalo:-nhalo]
+        )
+
+        self._rho0_edge[nhalo - 1 : -nhalo + 1] = ThermodynamicsDry_impl.rho(
+            self._P0_edge[nhalo - 1 : -nhalo + 1], self._T0_edge[nhalo - 1 : -nhalo + 1]
+        )
+
+        # Compute reference specifi volume profiles
+        self._alpha0[nhalo:-nhalo] = ThermodynamicsDry_impl.alpha(
+            self._P0[nhalo:-nhalo], self._T0[nhalo:-nhalo]
+        )
+        self._alpha0_edge[nhalo - 1 : -nhalo + 1] = ThermodynamicsDry_impl.alpha(
+            self._P0_edge[nhalo - 1 : -nhalo + 1], self._T0_edge[nhalo - 1 : -nhalo + 1]
+        )
+
+        # Set the ghostpoint for the reference profiles
+        self.update_ref_boundaries()
+
+        self._compute_exner()
 
         return
 

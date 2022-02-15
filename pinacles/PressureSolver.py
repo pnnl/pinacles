@@ -1,3 +1,4 @@
+from pinacles.PressureSolver_impl import horizontal_divergence
 import numpy as np
 from pinacles.PressureSolver_impl import divergence, fill_pressure, apply_pressure
 from pinacles.TDMA import Thomas, PressureTDMA
@@ -24,6 +25,13 @@ class PressureSolver:
             long_name="Dynamic Pressure",
             units="Pa",
             latex_name="p^*",
+        )
+
+        self._DiagnosticState.add_variable(
+            "horizontal divergence",
+            long_name="Horizontal Divergence",
+            units="kg/(m^3 s)",
+            latex_name="div(\rho u_h)",
         )
 
         # Setup the Fourier Transform
@@ -98,6 +106,9 @@ class PressureSolver:
         self._VelocityState.update_all_bcs()
 
         self._Timers.end_timer("PressureSolver_update")
+
+        divh = self._DiagnosticState.get_field("horizontal divergence")
+        horizontal_divergence(dxs, rho0, u, v, w, divh)
 
         return
 

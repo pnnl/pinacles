@@ -29,15 +29,15 @@ from pinacles import DiagnosticsTurbulence
 from pinacles import DiagnosticsClouds
 from pinacles import TowersIO
 from pinacles import Plumes
+from pinacles import PlatformSimulator
 from pinacles import Restart
 from pinacles import UtilitiesParallel
-#from pinacles import Nest
+from pinacles import ParticlesFactory
 from pinacles import Timers
 from pinacles import LateralBCsFactory
 from pinacles import Ingest
 from mpi4py import MPI
 import numpy as np
-import pylab as plt
 import os
 from termcolor import colored
 
@@ -96,7 +96,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
 
         # Ingest data
-        self.Ingest =  Ingest.IngestEra5(self._namelist, self.ModelGrid, self.TimeSteppingController)
+        self.Ingest =  Ingest.IngestFactory(self._namelist, self.ModelGrid, self.TimeSteppingController)
 
         self.Timers = Timers.Timer(self._namelist, self.TimeSteppingController)
 
@@ -151,6 +151,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Timers,
             self.ModelGrid,
             self.Ref,
+            self.ScalarState,
             self.VelocityState,
             self.DiagnosticState,
         )
@@ -239,6 +240,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.TimeSteppingController,
         )
 
+        # Instantiate particles
+        self.Parts = ParticlesFactory.ParticlesFactory(
+            self._namelist,
+            self.ModelGrid,
+            self.Ref,
+            self.TimeSteppingController,
+            self.VelocityState,
+            self.ScalarState,
+            self.DiagnosticState,
+        )
+
         # Instantiate surface
         self.Surf = SurfaceFactory.factory(
             self._namelist,
@@ -277,14 +289,15 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.TimeSteppingController,
         )
 
-        # Instantiate nest
-        #self.Nest = Nest.Nest(
-        #    self._namelist,
-        #    self.TimeSteppingController,
-        #    self.ModelGrid,
-        #    self.ScalarState,
-        #    self.VelocityState,
-        #)
+        self.PlatSim = PlatformSimulator.PlatformSimulators(
+            self._namelist,
+            self.TimeSteppingController,
+            self.ModelGrid,
+            self.Ref,
+            self.ScalarState,
+            self.VelocityState,
+            self.DiagnosticState,
+        )
 
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
@@ -325,7 +338,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self._namelist, self.ModelGrid, self.VelocityState, self.VelocityState, self.TimeSteppingController, self.Ingest, 
                 NestState = ParentNest.VelocityState
             )
-        self.Ingest.initialize()
+        
+        if self.Ingest is not None:
+            self.Ingest.initialize()
 
         # Do case sepcific initalizations the initial profiles are integrated here
         Initializaiton.initialize(
@@ -367,10 +382,16 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
 
         self.Fields2d = Fields2D.Fields2D(
-            self._namelist, self.ModelGrid, self.Ref, self.VelocityState, self.TimeSteppingController
+            self._namelist,
+            self.ModelGrid,
+            self.Ref,
+            self.VelocityState,
+            self.TimeSteppingController,
         )
+
         self.Fields2d.add_class(self.Micro)
         self.Fields2d.add_class(self.Thermo)
+        self.Fields2d.add_class(self.Plumes)
 
         # Instantiate optional TowerIO
         self.IOTower = TowersIO.Towers(
@@ -381,6 +402,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
         for state in [self.VelocityState, self.ScalarState, self.DiagnosticState]:
             self.IOTower.add_state_container(state)
         self.IOTower.initialize()
+
+        self.PlatSim.initialize()
 
         # Initialze statistical diagnostics for turbulence and clouds
         self.DiagClouds = DiagnosticsClouds.DiagnosticsClouds(
@@ -530,7 +553,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Announce that this is a restart simulation
         if MPI.COMM_WORLD.Get_rank() == 0:
             print("This is a restared simulation!")
-            print("Simulation is being restarted from: ", self.Restart.path)
+            print("Simulation is being restarted from: ", self.Restart.infile)
 
         # Instantiate required classes, this setsup the classes that will be need by the simulations.
         # Much of the data in many of these classes will be overwritten by the restart.
@@ -669,7 +692,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
 
         # Instantiate the pressure solver
-        self.PSolver = PressureSolver.factory(
+        self.PSolver = PressureSolverFactory.factory(
             self._namelist,
             self.Timers,
             self.ModelGrid,
@@ -689,6 +712,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ScalarState,
             self.DiagnosticState,
             self.TimeSteppingController,
+        )
+
+        # Instantiate particles
+        self.Parts = ParticlesFactory.ParticlesFactory(
+            self._namelist,
+            self.ModelGrid,
+            self.Ref,
+            self.TimeSteppingController,
+            self.VelocityState,
+            self.ScalarState,
+            self.DiagnosticState,
         )
 
         # Instantiate surface
@@ -826,10 +860,23 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Now iniitalzie the IO field
         self.StatsIO.initialize()
 
+        self.Fields2d = Fields2D.Fields2D(
+            self._namelist,
+            self.ModelGrid,
+            self.Ref,
+            self.VelocityState,
+            self.TimeSteppingController,
+        )
+        self.Fields2d.add_class(self.Micro)
+        self.Fields2d.add_class(self.Thermo)
+        self.Fields2d.add_class(self.Plumes)
+
         # Now initialze for the output of 3D fields
-        self.FieldsIO = DumpFields.DumpFields(
+        # Now initialze for the output of 3D fields
+        self.FieldsIO = DumpFields.DumpFieldsFactory(
             self._namelist, self.Timers, self.ModelGrid, self.TimeSteppingController
         )
+
         # Add container classes that will dump 3D fields
         self.FieldsIO.add_class(self.ScalarState)
         self.FieldsIO.add_class(self.VelocityState)
@@ -838,7 +885,18 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Now overwrite model state with restart
         self.Restart.restart()
 
-        
+        self.PlatSim = PlatformSimulator.PlatformSimulators(
+            self._namelist,
+            self.TimeSteppingController,
+            self.ModelGrid,
+            self.Ref,
+            self.ScalarState,
+            self.VelocityState,
+            self.DiagnosticState,
+        )
+
+        self.PlatSim.initialize()
+
         # These boundary updates are probably not necessary, but just to be safe we will do them.
         # At this point the model is basically initalized, however we should also do boundary exchanges to insure
         # the halo regions are set and the to a pressure solver to insure that the velocity field is initially satifies
@@ -865,7 +923,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         v = self.VelocityState.get_field("v")
         s = self.ScalarState.get_field("s")
 
-        """ This function integrates the model forward by integrate_by_dt seconds. """
+        """This function integrates the model forward by integrate_by_dt seconds."""
         # Compute the startime and endtime for this integration
         start_time = self.TimeSteppingController.time
         end_time = start_time + integrate_by_dt
@@ -946,18 +1004,21 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 if n == 1:
                     self.Thermo.update(apply_buoyancy=False)
+
                     # We call the microphysics update at the end of the RK steps.
                     self.Micro.update()
+                    if not self.Rad.time_synced:
+                        self.Rad.update()
                     self.Rad.update_apply_tend()
+                    self.Parts.update()
+                    self.Timers.start_timer("BoundaryUpdate")
+                    self.ScalarState.boundary_exchange()
+                    self.ScalarState.update_all_bcs()
 
-                self.Timers.start_timer("BoundaryUpdate")
-                self.ScalarState.boundary_exchange()
+                    self.Timers.end_timer("BoundaryUpdate")
 
-                self.LBC.update()
-
-                self.Timers.end_timer("BoundaryUpdate")
-
-
+                    # Get a consistant temperature for io
+                    self.Thermo.update(apply_buoyancy=False)
 
             self.Timers.finish_timestep()
             self.TimeSteppingController._time += self.TimeSteppingController._dt

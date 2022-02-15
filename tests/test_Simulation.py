@@ -47,6 +47,8 @@ def standard_mocks(tmpdir):
     namelist["restart"]["frequency"] = 10.0
     namelist["restart"]["restart_simulation"] = False
 
+    namelist["fields"] = {}
+
     namelist["grid"] = {}
     namelist["grid"]["n"] = [6, 6, 6]
     namelist["grid"]["n_halo"] = [3, 3, 3]
@@ -115,8 +117,8 @@ def test_simulation_standard_attributes(standard_mocks):
 
 
 def test_simulation_standard_files_created(standard_mocks):
-    """ Test to make sure that each simulation creates the correct output files 
-        in the correct directory hieararchy."""
+    """Test to make sure that each simulation creates the correct output files
+    in the correct directory hieararchy."""
 
     for sim in standard_mocks:
 

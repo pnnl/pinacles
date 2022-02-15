@@ -1,7 +1,8 @@
-from pinacles import Thermodynamics, ThermodynamicsDry_impl
-from pinacles import parameters
 import numpy as np
 import numba
+from mpi4py import MPI
+from pinacles import Thermodynamics, ThermodynamicsDry_impl
+from pinacles import parameters
 
 
 class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
@@ -42,6 +43,7 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         n_halo = self._Grid.n_halo
         z = self._Grid.z_global
         dz = self._Grid.dx[2]
+        dxi = self._Grid.dxi
         p0 = self._Ref.p0
         alpha0 = self._Ref.alpha0
         T0 = self._Ref.T0
@@ -58,8 +60,9 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         thetav = self._DiagnosticState.get_field("thetav")
         bvf = self._DiagnosticState.get_field("bvf")
         w_t = self._VelocityState.get_tend("w")
+        buoyancy_gradient_mag = self._DiagnosticState.get_field("buoyancy_gradient_mag")
 
-        ThermodynamicsDry_impl.eos_sam(z, p0, alpha0, s, qv, T, tref, alpha, buoyancy)
+        ThermodynamicsDry_impl.eos(z, p0, alpha0, s, qv, T, tref, alpha, buoyancy)
         ThermodynamicsDry_impl.compute_bvf(
             n_halo, theta_ref, exner, T, qv, dz, thetav, bvf
         )
@@ -68,7 +71,44 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
             ThermodynamicsDry_impl.apply_buoyancy(buoyancy, w_t)
             #self._VelocityState.remove_mean("w", tend=True)
 
+        self._DiagnosticState.remove_mean("buoyancy")
+
+        self.compute_buoyancy_gradient(dxi, buoyancy, buoyancy_gradient_mag)
+
         self._Timers.end_timer("ThermoDynamicsDry_update")
+
+        return
+
+    def io_fields2d_update(self, nc_grp):
+
+        start = self._Grid.local_start
+        end = self._Grid._local_end
+        nh = self._Grid.n_halo
+
+        send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
+        recv_buffer = np.empty_like(send_buffer)
+
+        # Output Temperature
+        if nc_grp is not None:
+            t = nc_grp.createVariable(
+                "T",
+                np.double,
+                dimensions=(
+                    "X",
+                    "Y",
+                ),
+            )
+
+        T = self._DiagnosticState.get_field("T")
+        send_buffer[start[0] : end[0], start[1] : end[1]] = T[
+            nh[0] : -nh[0], nh[1] : -nh[1], nh[2]
+        ]
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        if nc_grp is not None:
+            t[:, :] = recv_buffer
+
+        if nc_grp is not None:
+            nc_grp.sync()
 
         return
 
