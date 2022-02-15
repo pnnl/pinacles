@@ -311,7 +311,7 @@ def mock_namelist(tmpdir):
     list_of_mock_namelists.append(copy.deepcopy(namelist))
 
     # Generate simulations for moist cases
-    for casename in ["bomex", "rico"]:
+    for casename in ["bomex", "rico", "dycoms"]:
 
         namelist["Thermodynamics"] = {}
         namelist["Thermodynamics"]["type"] = "moist"
