@@ -868,8 +868,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     if not self.Rad.time_synced:
                         self.Rad.update()
                     self.Rad.update_apply_tend()
-                    self.Parts.update()
                     self.Dep.update()
+                    self.Parts.update()
+                    
                     self.Timers.start_timer("BoundaryUpdate")
                     
                     self.ScalarState.boundary_exchange()

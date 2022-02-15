@@ -14,6 +14,24 @@ class DryDeposition:
         self._DiagnosticState = DiagnosticState
         self._Surface = Surface
 
+        # check if we want to compute the deposition velocity
+        try:
+            self._compute_vdep = namelist['dry_deposition']['compute_vdep']
+        except:
+            self._compute_vdep = False
+    
+        if not self._compute_vdep:
+            return
+
+        try:
+            self._vdep_type = namelist['dry_deposition']['vdep_type']
+        except:
+            self._vdep_type = 'gravitational'
+
+        # check if we want to apply the deposition velocity to an eulerian scalar field
+        # we may want to compute the deposition velocity to use on Lagrangian particles or
+        # just as a diagnostic...
+
         try:
             self._apply_deposition = namelist['dry_deposition']['apply_deposition']
         except:
@@ -21,8 +39,7 @@ class DryDeposition:
         
         
         
-        if not self._apply_deposition:
-            return
+    
         
         try:
             self._dry_diameter = namelist['dry_deposition']['particle_diameter']
@@ -35,7 +52,7 @@ class DryDeposition:
         return
     
     def update(self):
-        if not self._apply_deposition:
+        if not self._compute_vdep:
             return
         T = self._DiagnosticState.get_field('T')
         rh = self._DiagnosticState.get_field('rh')
@@ -58,11 +75,12 @@ class DryDeposition:
         DryDeposition_impl.compute_dry_deposition_velocity(self._dry_diameter, T, rh, nh, z,
                                         self._Ref._rho0, self._Ref.p0, shf2d, lhf2d, ustar2d, z02d, vdep)
         #vdep is positive but directed downward
-        for var in self._ScalarState._dofs:
-            if   'plume' in  var:
-                phi = self._ScalarState.get_field(var)
-                phi_t = self._ScalarState.get_tend(var)
-                DryDeposition_impl.add_deposition_tendency(vdep, phi,phi_t, nh, self._Grid.dxi[2])
+        if self._apply_deposition:
+            for var in self._ScalarState._dofs:
+                if   'plume' in  var:
+                    phi = self._ScalarState.get_field(var)
+                    phi_t = self._ScalarState.get_tend(var)
+                    DryDeposition_impl.add_deposition_tendency(vdep, phi,phi_t, nh, self._Grid.dxi[2])
         
         return
         

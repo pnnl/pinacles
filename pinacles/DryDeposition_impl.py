@@ -45,9 +45,19 @@ def r_surface(particle_diameter, air_density, temperature, vg, ustar):
     beta = 2.0
     E_im = (St/(alpha + St))** beta
     return 1.0/3.0/ustar/(E_b + E_im)
-# compute dry deposition velocity for a given particle size and density
+
+''' 
+compute dry deposition velocity for a given particle size and density, using parameterization of:
+Leiming Zhang, Sunling Gong, Jacob Padro, Len Barrie,
+A size-segregated particle dry deposition scheme for an atmospheric aerosol module,
+Atmospheric Environment,
+Volume 35, Issue 3,
+2001,
+Pages 549-560,
+ISSN 1352-2310,
+https://doi.org/10.1016/S1352-2310(00)00326-5.''' 
 @numba.njit
-def compute_dry_deposition_velocity( dry_particle_diameter, T,rh, nh,z, rho0, p0,shf, lhf, ustar, z0, vdep):
+def compute_dry_deposition_velocity_zhang( dry_particle_diameter, T,rh, nh,z, rho0, p0,shf, lhf, ustar, z0, vdep):
     shape = T.shape
     R_aero = np.zeros_like(rho0)
     particle_density = 2165.0 #kg/m^3, assuming sea-salt
@@ -86,6 +96,29 @@ def compute_dry_deposition_velocity( dry_particle_diameter, T,rh, nh,z, rho0, p0
                 R_surf = r_surface(particle_diameter, rho0[k], T[i,j,k], vg, ustar[i,j])
                 vdep[i,j,k] = vg + 1.0/(R_aero[k]+ R_surf)
     return
+
+''' 
+compute dry deposition velocity for a given particle size and density using only the gravitational component''' 
+@numba.njit
+def compute_dry_deposition_velocity_gravitational( dry_particle_diameter, T,rh, nh, rho0, p0, vdep):
+    shape = T.shape
+   
+    particle_density = 2165.0 #kg/m^3, assuming sea-salt
+    C1 = 0.7674
+    C2 = 3.079
+    C3 = 2.573e-11
+    C4 = -1.424
+    for i in range(nh[0], shape[0]-nh[0]):
+        for j in range(nh[1],shape[1]-nh[1]):    
+            for k in range(nh[2],shape[2]-nh[2]+1):
+                rd = dry_particle_diameter * 0.5
+                particle_diameter = 2.0 * (C1*rd**C2/(C3*rd**C4- np.log(rh[i,j,k])) + rd**3.0 )
+                vg = v_gravitational(particle_density, particle_diameter, T[i,j,k], rho0[k],p0[k])
+                vdep[i,j,k] = vg 
+    return
+
+
+
 
 @numba.njit
 def compute_rh_3d(nh,P0, qv,T, rh):
