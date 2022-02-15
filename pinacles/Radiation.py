@@ -61,10 +61,7 @@ class RRTMG:
         except:
             self.time_synced = True
 
-        try:
-            self.time_synced = namelist["radiation"]["time_synced"]
-        except:
-            self.time_synced = True
+
 
         try:
             self.time_synced = namelist["radiation"]["time_synced"]

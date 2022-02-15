@@ -74,9 +74,21 @@ class DumpFields_hdf:
 
         MPI.COMM_WORLD.barrier()
 
+        s = self._TimeSteppingController.time
+        days = s // 86400
+        s = s - (days * 86400)
+        hours = s // 3600
+        s = s - (hours * 3600)
+        minutes = s // 60
+        seconds = s - (minutes * 60)
+
         fx = h5py.File(
             os.path.join(
-                output_here, str(np.round(self._TimeSteppingController.time)) + ".h5"
+                output_here,
+                "{:02}d-{:02}h-{:02}m-{:02}s".format(
+                    int(days), int(hours), int(minutes), int(seconds)
+                )
+                + ".h5",
             ),
             "w",
             driver="mpio",
@@ -91,6 +103,9 @@ class DumpFields_hdf:
             dset.make_scale()
             if MPI.COMM_WORLD.rank == 0:
                 dset[:] = self._Grid._global_axes[i][nhalo[i] : -nhalo[i]]
+        dset = fx.create_dataset("time", 1, dtype="d")
+        dset.make_scale()
+        dset[:] = self._TimeSteppingController.time
 
         # import sys; sys.exit()
         for ac in self._classes:
@@ -102,24 +117,26 @@ class DumpFields_hdf:
 
                     dset = fx.create_dataset(
                         v,
-                        (self._Grid.n[0], self._Grid.n[1], self._Grid.n[2]),
+                        (1, self._Grid.n[0], self._Grid.n[1], self._Grid.n[2]),
                         dtype=np.double,
                         compression=self.compression,
                         shuffle=self.shuffle,
                         chunks=(
+                            1,
                             np.max(self._Grid.rank_nx),
                             np.max(self._Grid.rank_ny),
                             self._Grid.n[2],
                         ),
                     )
 
-                    for i, d in enumerate(["X", "Y", "Z"]):
+                    for i, d in enumerate(["time", "X", "Y", "Z"]):
                         dset.dims[i].attach_scale(fx[d])
 
                     if self.collective:
 
                         with dset.collective:
                             dset[
+                                0,
                                 local_start[0] : local_end[0],
                                 local_start[1] : local_end[1],
                                 :,

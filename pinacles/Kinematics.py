@@ -34,6 +34,10 @@ class Kinematics:
             "helicity", long_name="helicity", latex_name="helicity", units="m s^{-2}"
         )
 
+        DiagnosticState.add_variable(
+            "grad_ri", long_name="gradient Richardson", latex_name="Ri_g", units="[-]}"
+        )
+
         nl = self._Grid.ngrid_local
 
         # Gradients of u
@@ -75,6 +79,8 @@ class Kinematics:
         Q_mag = self._DiagnosticState.get_field("Q_criterion")
         vertical_vorticity = self._DiagnosticState.get_field("vertical_vorticity")
         helicity = self._DiagnosticState.get_field("helicity")
+        bvf = self._DiagnosticState.get_field("bvf")
+        grad_ri = self._DiagnosticState.get_field("grad_ri")
 
         # Get grid spacing
         dxi = self._Grid.dxi
@@ -117,9 +123,11 @@ class Kinematics:
             self._dwdx,
             self._dwdy,
             self._dwdz,
+            bvf,
             Q_mag,
             vertical_vorticity,
             helicity,
+            grad_ri,
         )
 
         self._Timers.end_timer("Kinematics_update")
