@@ -63,6 +63,9 @@ class ParticlesBase:
         assert "surface_action" in self._namelist["particles"]
         self.surface_action = self._namelist["particles"]["surface_action"]
 
+        assert "do_deposition" in self._namelist["particles"]
+        self.do_deposition = self._namelist["particles"]["do_deposition"]
+
         if self.inject_type == "point":
             assert "point_location" in self._namelist["particles"]
             self.point_location = self._namelist["particles"]["point_location"]
@@ -485,6 +488,21 @@ class ParticlesBase:
 
         l = self._Grid.l
 
+        if self.do_deposition:
+            vdep = self._DiagnosticState.get_field("v_deposition")
+            self.apply_deposition(
+                local_shape,
+                vdep[
+                    n_halo[0] : -n_halo[0],
+                    n_halo[1] : -n_halo[1],
+                    n_halo[2] : -n_halo[2],
+                ],
+                self._n,
+                self._particle_varnames,
+                self._particle_data,
+                self._TimeSteppingController.dt,
+            )
+
         self.compute_new_position(
             local_shape,
             tke_sgs[
@@ -891,6 +909,43 @@ class ParticlesBase:
                                 arr[zdof, p] += (arr[wdof, p]) * dt + np.random.normal(
                                     loc=0.0, scale=0.67 * np.sqrt(tke_sgs[i, j, k])
                                 ) * dt
+
+        return
+
+    @staticmethod
+    @numba.njit()
+    def apply_deposition(local_shape, vdep, n, particle_varnames, particle_data, dt):
+
+        # xdof = particle_varnames["x"]
+        # ydof = particle_varnames["y"]
+        zdof = particle_varnames["z"]
+        valid = particle_varnames["valid"]
+
+        # udof = particle_varnames["u"]
+        # vdof = particle_varnames["v"]
+        # wdof = particle_varnames["w"]
+
+        ishift = local_shape[1] * local_shape[2]
+        jshift = local_shape[2]
+        for i in range(local_shape[0]):
+            ii = i * ishift
+            for j in range(local_shape[1]):
+                jj = j * jshift
+                for k in range(local_shape[2]):
+                    if n[i, j, k] > 0:
+                        arr = particle_data[ii + jj + k]
+                        for p in range(arr.shape[1]):
+                            if arr[valid, p] != 0.0:
+                                # arr[xdof, p] += (arr[udof, p]) * dt + np.random.normal(
+                                #     loc=0.0, scale=0.67 * np.sqrt(tke_sgs[i, j, k])
+                                # ) * dt
+                                # arr[ydof, p] += (arr[vdof, p]) * dt + np.random.normal(
+                                #     loc=0.0, scale=0.67 * np.sqrt(tke_sgs[i, j, k])
+                                # ) * dt
+                                arr[zdof, p] -= vdep[i, j, k] * dt
+                                if arr[zdof, p] < 0.0:
+                                    arr[valid, p] = 0.0
+                                    n[i, j, k] -= 1
 
         return
 
