@@ -531,7 +531,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.LBC.update()
         self.LBCVel.update(normal=False)
 
-
+        for prog_state in [self.ScalarState, self.VelocityState]:
+            prog_state.boundary_exchange()
+            prog_state.update_all_bcs()
 
        # plt.plot(u[:,5,5])
        # plt.show()
@@ -981,6 +983,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.VelocityTimeStepping.update()
 
                 self.VelocityState.boundary_exchange()
+                self.VelocityState.update_all_bcs()
 
                 self.LBCVel.update()
 
@@ -989,6 +992,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 for lbcs in [self.LBC, self.LBCVel]:
                     lbcs.set_vars_on_boundary(ParentNest=ParentNest)
+                
                 self.LBCVel.update(normal=False)
 
                 self.Timers.start_timer("ScalarLimiter")
@@ -998,6 +1002,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 # Update boundary conditions
                 self.Timers.start_timer("BoundaryUpdate")
 
+
+                self.ScalarState.boundary_exchange()
                 self.ScalarState.update_all_bcs()
 
                 self.Timers.end_timer("BoundaryUpdate")

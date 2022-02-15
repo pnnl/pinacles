@@ -19,7 +19,7 @@ def compute_visc(
 
     shape = eddy_viscosity.shape
 
-    filt_scale = dx[2] #(dx[0] * dx[1] * dx[2]) ** (1.0 / 3.0)
+    filt_scale = (dx[0] * dx[1] * dx[2]) ** (1.0 / 3.0)
     pri = 1.0 / pr
 
     for i in range(shape[0]):
@@ -50,6 +50,7 @@ def compute_visc(
                 # Compute the eddy diffusivty from the  eddy viscosity using an assumed
                 # inverse SGS Prandtl number tune this using
                 eddy_diffusivity[i, j, k] = eddy_viscosity[i, j, k] * pri
+
 
     eddy_viscosity[:, :, n_halo[2] - 1] = eddy_viscosity[:, :, n_halo[2]]
     eddy_diffusivity[:, :, n_halo[2] - 1] = eddy_diffusivity[:, :, n_halo[2]]
@@ -114,6 +115,7 @@ class Smagorinsky(SGSBase):
         eddy_diffusivity = self._DiagnosticState.get_field("eddy_diffusivity")
         tke_sgs = self._DiagnosticState.get_field("tke_sgs")
         bvf = self._DiagnosticState.get_field("bvf")
+
 
         # Compute the viscosity
         compute_visc(
