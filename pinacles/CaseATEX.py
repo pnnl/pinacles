@@ -21,7 +21,7 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         pass
 
     # Integrate the reference profile.
-    Ref.set_surface(Psfc=1.0154e5, Tsfc=295.750, u0=-8.0, v0=-1.0)
+    Ref.set_surface(Psfc=1.0154e5, Tsfc=295.750, u0=-3.5, v0=0.38)
     Ref.integrate()
 
     u = VelocityState.get_field("u")
@@ -45,7 +45,8 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     shape = s.shape
     temp = np.empty(shape[2], dtype=np.double)
-    perts = np.random.uniform(-0.01, 0.01, (shape[0], shape[1], shape[2]))
+    perts = np.random.uniform(-0.1, 0.1, (shape[0], shape[1], shape[2]))
+    pertsqt = np.random.uniform(-0.025, 0.025, (shape[0], shape[1], shape[2]))
     for i in range(shape[0]):
         for j in range(shape[1]):
             for k in range(shape[2]):
@@ -88,8 +89,9 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                     v[i, j, k] = 0.18 + (z - 1650.0) * (2.75 - 0.18) / dz
                 temp[k] = qv[i, j, k]
                 t *= exner[k]
-                if zl[k] < 200.0:
+                if zl[k] < 810.0:
                     t += perts[i, j, k]
+                    qv[i, j, k] += pertsqt[i, j, k]
                 s[i, j, k] = DryThermo.s(zl[k], t)
 
     u -= Ref.u0
@@ -120,7 +122,7 @@ class SurfaceATEX(Surface.SurfaceBase):
         self._ustar = 0.30
         self._ch = (
             0.0013
-            * (np.log(10.0 / 0.015) / np.log((self._Grid.dx[2] / 2.0) / (0.015))) ** 2.0
+            * (np.log(10.0 / 0.015e-2) / np.log((self._Grid.dx[2] / 2.0) / (0.015e-2))) ** 2.0
         )
         self._cq = self._ch
 
@@ -279,27 +281,27 @@ class ForcingATEX(Forcing.ForcingBase):
         for k in range(self._ug.shape[0]):
             z = zl[k]
             if z <= 150.0:
-                self._ug[k] = max(-11.0 + z * (-10.55 - -11.00) / 150.0, -8.0)
+                self._ug[k] = -11.0 + z * (-10.55 - -11.00) / 150.0
                 self._vg[k] = -2.0 + z * (-1.90 - -2.0) / 150.0
             elif z > 150.0 and z <= 700.0:
                 dz = 700.0 - 150.0
-                self._ug[k] = max(-10.55 + (z - 150.0) * (-8.90 - -10.55) / dz, -8.0)
+                self._ug[k] = -10.55 + (z - 150.0) * (-8.90 - -10.55) / dz
                 self._vg[k] = -1.90 + (z - 150.0) * (-1.10 - -1.90) / dz
             elif z > 700.0 and z <= 750.0:
                 dz = 750.0 - 700.0
-                self._ug[k] = max(-8.90 + (z - 700.0) * (-8.75 - -8.90) / dz, -8.0)
+                self._ug[k] = -8.90 + (z - 700.0) * (-8.75 - -8.90) / dz
                 self._vg[k] = -1.10 + (z - 700.0) * (-1.00 - -1.10) / dz
             elif z > 750.0 and z <= 1400.0:
                 dz = 1400.0 - 750.0
-                self._ug[k] = max(-8.75 + (z - 750.0) * (-6.80 - -8.75) / dz, -8.0)
+                self._ug[k] = -8.75 + (z - 750.0) * (-6.80 - -8.75) / dz
                 self._vg[k] = -1.00 + (z - 750.0) * (-0.14 - -1.00) / dz
             elif z > 1400.0 and z <= 1650.0:
                 dz = 1650.0 - 1400.0
-                self._ug[k] = max(-6.80 + (z - 1400.0) * (-6.80 - -5.75) / dz, -8.0)
+                self._ug[k] = -6.80 + (z - 1400.0) * (-5.75 - -6.80) / dz
                 self._vg[k] = -0.14 + (z - 1400.0) * (0.18 - -0.14) / dz
             elif z > 1650.0:
                 dz = 4000.0 - 1650.0
-                self._ug[k] = max(-5.75 + (z - 1650.0) * (1.00 - -5.75) / dz, -8.0)
+                self._ug[k] = -5.75 + (z - 1650.0) * (1.00 - -5.75) / dz
                 self._vg[k] = 0.18 + (z - 1650.0) * (2.75 - 0.18) / dz
 
         self._Timers.add_timer("ForcingATEX_update")
@@ -336,7 +338,9 @@ class ForcingATEX(Forcing.ForcingBase):
         qv_mean_prof = self._ScalarState.mean("qv")
 
         qv_above = np.where(qv_mean_prof > 6.5 / 1000.0)
+        #print(qv_above[0])
         n_above = qv_above[0][-1]
+        print(n_above)
 
         dqvdz = (qv_mean_prof[n_above + 1] - qv_mean_prof[n_above]) * dxi[2]
         extrap_z = ((6.5 / 1000.0) - qv_mean_prof[n_above]) / dqvdz
@@ -348,32 +352,34 @@ class ForcingATEX(Forcing.ForcingBase):
             self._ug, self._vg, self._f, u, v, self._Ref.u0, self._Ref.v0, ut, vt
         )
 
-        # Compute subsidence
-        subsidence = np.zeros_like(qv_mean_prof)
-        free_subsidence = -6.5 / 1000.0
-        for k in range(subsidence.shape[0]):
-            if zl[k] < zi:
-                subsidence[k] = (free_subsidence / zi) * zl[k]
-            else:
-                subsidence[k] = free_subsidence
-
-        Forcing_impl.apply_subsidence(subsidence, self._Grid.dxi[2], s, st)
-        Forcing_impl.apply_subsidence(subsidence, self._Grid.dxi[2], qv, qvt)
-
-        # Todo becareful about applying subsidence to velocity fields
-        Forcing_impl.apply_subsidence(subsidence, self._Grid.dxi[2], u, ut)
-        Forcing_impl.apply_subsidence(subsidence, self._Grid.dxi[2], v, vt)
-
-        # Heating rates
         if self._TimeSteppingController.time > 5400.0:
+
+            # Compute subsidence
+            subsidence = np.zeros_like(qv_mean_prof)
             dqtdt = np.zeros_like(subsidence)
             dtdt = np.zeros_like(subsidence)
+            free_subsidence = -6.5 / 1000.0
             for k in range(subsidence.shape[0]):
-                dqtdt[k] = -1.58e-8 * (1.0 - zl[k] / zi)
-                dtdt[k] = -1.1575e-5 * (3.0 - zl[k] / zi) * exner[k]
+                if zl[k] < zi:
+                    subsidence[k] = (free_subsidence / zi) * zl[k]
+                    dqtdt[k] = -1.58e-8 * (1.0 - zl[k] / zi)
+                    dtdt[k] = -1.1575e-5 * (3.0 - zl[k] / zi) * exner[k]
+                elif zl[k] < zi + 300.0:
+                    subsidence[k] = free_subsidence * (300.0 - zl[k] + zi) / 300.0
+                    dtdt[k] = -1.1575e-5 * 2.0 * exner[k] * (300.0 - zl[k] + zi) / 300.0
+
+            Forcing_impl.apply_subsidence(subsidence, self._Grid.dxi[2], s, st)
+            Forcing_impl.apply_subsidence(subsidence, self._Grid.dxi[2], qv, qvt)
+
+            # Todo becareful about applying subsidence to velocity fields
+            Forcing_impl.apply_subsidence(subsidence, self._Grid.dxi[2], u, ut)
+            Forcing_impl.apply_subsidence(subsidence, self._Grid.dxi[2], v, vt)
+
+            # Heating rates
 
             qvt += dqtdt[np.newaxis, np.newaxis, :]
             st += dtdt[np.newaxis, np.newaxis, :]
+            
         dz = dx[2]
 
         st_old = np.copy(st)
