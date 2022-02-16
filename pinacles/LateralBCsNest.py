@@ -4,8 +4,9 @@ from mpi4py import MPI
 class LateralBCsNest(LateralBCsBase):
 
     def __init__(self, namelist, Grid, State, VelocityState, NestState):   
+        print('B4 Base init')
         LateralBCsBase.__init__(self, Grid, State, VelocityState)
-
+        print('After Base init')
         assert "nest" in namelist
         nest_namelist = namelist['nest']
         assert "factor" in nest_namelist

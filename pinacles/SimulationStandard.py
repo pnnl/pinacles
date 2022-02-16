@@ -330,6 +330,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self._namelist, self.ModelGrid, self.VelocityState, self.VelocityState, self.TimeSteppingController, self.Ingest,
             )
         else:
+            print('Initing Nest')
             self.LBC = LateralBCsFactory.LateralBCsFactory(
                 self._namelist, self.ModelGrid, self.ScalarState, self.VelocityState, self.TimeSteppingController, self.Ingest,
                  NestState = ParentNest.ScalarState
