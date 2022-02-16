@@ -103,6 +103,7 @@ class SurfaceBOMEX(Surface.SurfaceBase):
         self._theta_surface = 299.1  # K
         self.T_surface = 299.1
         self.bflux_from_thflux()
+        self._z0 = 1.0e-4 #estimate; need z0 for deposition scheme
 
         nl = self._Grid.ngrid_local
 
