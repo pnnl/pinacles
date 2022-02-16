@@ -13,6 +13,8 @@ def main(casename):
         input_dict = stable_bubble()
     elif casename == "bomex":
         input_dict = bomex()
+    elif casename == "dycoms":
+        input_dict = dycoms()    
     elif casename == "rico":
         input_dict = rico()
     elif casename == "atex":
@@ -297,6 +299,82 @@ def bomex():
 
     return input_dict
 
+def dycoms():
+    input_dict = {}
+
+    key = "meta"
+    input_dict[key] = {}
+    input_dict[key]["casename"] = "dycoms"
+    input_dict[key]["simname"] = input_dict[key]["casename"]
+    input_dict[key]["output_directory"] = "./"
+    input_dict[key]["random_seed"] = 1
+
+    key = "grid"
+    input_dict[key] = {}
+    # Set the number of grid points in the domain
+    input_dict[key]["n"] = [128, 128, 300]
+    # Set the number of halo points in each direct
+    input_dict[key]["n_halo"] = [3, 3, 3]
+    # Set the domain length, dx will be determined from n and L
+    input_dict[key]["l"] = [6400.0, 6400.0, 1500.0]
+
+    key = "scalar_advection"
+    input_dict[key] = {}
+    input_dict[key]["type"] = "weno5"
+
+    key = "momentum_advection"
+    input_dict[key] = {}
+    input_dict[key]["type"] = "weno5"
+
+    key = "sgs"
+    input_dict[key] = {}
+    input_dict[key]["model"] = "smagorinsky"
+    input_dict[key][input_dict[key]["model"]] = {}
+    input_dict[key][input_dict[key]["model"]]["cs"] = 0.17
+    input_dict[key][input_dict[key]["model"]]["prt"] = 1.0 / 3.0
+
+    key = "microphysics"
+    input_dict[key] = {}
+    input_dict[key]["scheme"] = "kessler"
+
+    key = "damping"
+    input_dict[key] = {}
+    input_dict[key]["vars"] = ["u", "v", "w", "s"]
+    input_dict[key]["depth"] = 500.0
+    input_dict[key]["timescale"] = 60.0
+
+    key = "time"
+    input_dict[key] = {}
+    input_dict[key]["cfl"] = 0.6
+    input_dict[key]["time_max"] = 3600.0 * 6.0
+
+    key = "stats"
+    input_dict[key] = {}
+    input_dict[key]["frequency"] = 60.0
+    input_dict[key]["modules"] = []
+
+    key = "towers"
+    input_dict[key] = {}
+    input_dict[key]["location"] = []
+    input_dict[key]["frequency"] = 600.0
+
+    key = "restart"
+    input_dict[key] = {}
+    input_dict[key]["frequency"] = 600.0
+    input_dict[key]["restart_simulation"] = False
+    input_dict[key]["restart_portable"] = False
+    input_dict[key]["infile"] = ""
+
+    key = "fields"
+    input_dict[key] = {}
+    input_dict[key]["frequency"] = 600.0
+    input_dict[key]["io_type"] = "HDF5"
+
+    key = "radiation"
+    input_dict[key] = {}
+    input_dict[key]["type"] = "dycoms"
+    
+    return input_dict
 
 def atex():
     input_dict = {}
@@ -529,6 +607,7 @@ LIST_OF_CASES = [
     "stable_bubble",
     "sullivan_and_patton",
     "bomex",
+    "dycoms",
     "rico",
     "atex",
     "testbed",

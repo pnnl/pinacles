@@ -1,5 +1,6 @@
 from pinacles import CaseSullivanAndPatton
 from pinacles import CaseBOMEX
+from pinacles import CaseDYCOMS
 from pinacles import CaseRICO
 from pinacles import CaseATEX
 from pinacles import CaseTestbed
@@ -24,6 +25,10 @@ def factory(
         )
     elif casename == "bomex":
         return CaseBOMEX.ForcingBOMEX(
+            namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+        )
+    elif casename == "dycoms":
+        return CaseDYCOMS.ForcingDYCOMS(
             namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
     elif casename == "rico":
