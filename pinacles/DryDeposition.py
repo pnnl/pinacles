@@ -69,7 +69,7 @@ class DryDeposition:
         DryDeposition_impl.compute_rh_3d(nh, self._Ref._P0, qv, T, rh)
 
         if self._vdep_type == "gravitational":
-            DryDeposition_impl.compute_dry_deposition_velocity_zhang(
+            DryDeposition_impl.compute_dry_deposition_velocity_gravitational(
                 self._dry_diameter, T, rh, nh, self._Ref._rho0, self._Ref.p0, vdep
             )
 
