@@ -16,7 +16,7 @@ def main(namelist):
     # Put this the outermost domain in the zero-location of a Python LIst
     ListOfSims = [Sim]
 
-    #Get the toal number of lists
+    #Get the total number of nests
     n_nests = namelist['nests']['n']
     
     # Now we create a class for each of the nests
