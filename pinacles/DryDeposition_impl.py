@@ -86,7 +86,7 @@ def compute_dry_deposition_velocity_zhang(
     C3 = 2.573e-11
     C4 = -1.424
     for i in range(nh[0] - 1, shape[0] - nh[0] + 1):
-        for j in range(nh[1], shape[1] - nh[1] + 1):
+        for j in range(nh[1]-1, shape[1] - nh[1] + 1):
             # Aerodynamic resistance depends on stability condition
             bflux = (
                 parameters.G / parameters.CPD / T[i, j, nh[2]] * shf[i, j]
