@@ -312,7 +312,7 @@ def dycoms():
     key = "grid"
     input_dict[key] = {}
     # Set the number of grid points in the domain
-    input_dict[key]["n"] = [128, 128, 75]
+    input_dict[key]["n"] = [128, 128, 300]
     # Set the number of halo points in each direct
     input_dict[key]["n_halo"] = [3, 3, 3]
     # Set the domain length, dx will be determined from n and L
