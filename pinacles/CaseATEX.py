@@ -122,7 +122,8 @@ class SurfaceATEX(Surface.SurfaceBase):
         self._ustar = 0.30
         self._ch = (
             0.0013
-            * (np.log(10.0 / 0.015e-2) / np.log((self._Grid.dx[2] / 2.0) / (0.015e-2))) ** 2.0
+            * (np.log(10.0 / 0.015e-2) / np.log((self._Grid.dx[2] / 2.0) / (0.015e-2)))
+            ** 2.0
         )
         self._cq = self._ch
 
@@ -338,14 +339,11 @@ class ForcingATEX(Forcing.ForcingBase):
         qv_mean_prof = self._ScalarState.mean("qv")
 
         qv_above = np.where(qv_mean_prof > 6.5 / 1000.0)
-        #print(qv_above[0])
         n_above = qv_above[0][-1]
-        print(n_above)
 
-        dqvdz = (qv_mean_prof[n_above + 1] - qv_mean_prof[n_above]) * dxi[2]
-        extrap_z = ((6.5 / 1000.0) - qv_mean_prof[n_above]) / dqvdz
-
-        zi = zl[n_above] + extrap_z
+        zi = zl[n_above] + dxi[2] * ((6.5 / 1000.0) - qv_mean_prof[n_above]) / (
+            qv_mean_prof[n_above + 1] - qv_mean_prof[n_above]
+        )
 
         # Apply pressure gradient
         Forcing_impl.large_scale_pgf(
@@ -379,7 +377,7 @@ class ForcingATEX(Forcing.ForcingBase):
 
             qvt += dqtdt[np.newaxis, np.newaxis, :]
             st += dtdt[np.newaxis, np.newaxis, :]
-            
+
         dz = dx[2]
 
         st_old = np.copy(st)
