@@ -1742,7 +1742,7 @@ class ParticlesSimple(ParticlesBase):
         else:
             diagnostic_list = ["T", "buoyancy", "horizontal divergence", "helicity", "grad_ri"]
 
-        for v in ["T", "buoyancy", "horizontal divergence", "helicity", "grad_ri"]:
+        for v in diagnostic_list:
             dset = fx.create_dataset(
                 v,
                 (n_total,),
