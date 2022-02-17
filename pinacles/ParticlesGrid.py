@@ -1737,6 +1737,10 @@ class ParticlesSimple(ParticlesBase):
                 var_local,
             )
             dset[my_start:my_end] = var_local
+        if self.do_deposition:
+            diagnostic_list = ["T", "buoyancy", "horizontal divergence", "helicity", "grad_ri", "v_deposition"]
+        else:
+            diagnostic_list = ["T", "buoyancy", "horizontal divergence", "helicity", "grad_ri"]
 
         for v in ["T", "buoyancy", "horizontal divergence", "helicity", "grad_ri"]:
             dset = fx.create_dataset(
