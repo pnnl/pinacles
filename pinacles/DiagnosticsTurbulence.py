@@ -64,6 +64,43 @@ class DiagnosticsTurbulence:
         v.latex_name = "\overline{w^\prime w^\prime}"
         v.units = "m^2 s^{-2}"
 
+        #Cross-correlations
+        v = profiles_grp.createVariable(
+            "uv",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
+        v.long_name = "cross-correlation of u and v velocity"
+        v.latex_name = "\overline{u^\prime v^\prime}"
+        v.units = "m^2 s^{-2}"
+
+        v = profiles_grp.createVariable(
+            "uw",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
+        v.long_name = "cross-correlation of u and w velocity"
+        v.latex_name = "\overline{u^\prime w^\prime}"
+        v.units = "m^2 s^{-2}"
+
+        v = profiles_grp.createVariable(
+            "vw",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
+        v.long_name = "cross-correlation of v and w velocity"
+        v.latex_name = "\overline{v^\prime w^\prime}"
+        v.units = "m^2 s^{-2}"
+
         v = profiles_grp.createVariable(
             "tke",
             np.double,
@@ -393,6 +430,9 @@ class DiagnosticsTurbulence:
         uu,
         vv,
         ww,
+        uv,
+        uw,
+        vw,    
         uuu,
         vvv,
         www,
@@ -416,6 +456,11 @@ class DiagnosticsTurbulence:
                     uu[k] += up * up
                     vv[k] += vp * vp
                     ww[k] += wp * wp
+
+                    # Cross-correlation
+                    uv[k] += up * vp
+                    uw[k] += up * wp
+                    vw[k] += vp * wp
 
                     # Third central moment
                     uuu[k] += up * up * up
@@ -480,6 +525,10 @@ class DiagnosticsTurbulence:
         vv = np.zeros_like(vmean)
         ww = np.zeros_like(wmean)
 
+        uv = np.zeros_like(umean)
+        uw = np.zeros_like(vmean)
+        vw = np.zeros_like(wmean)
+
         uuu = np.zeros_like(umean)
         vvv = np.zeros_like(vmean)
         www = np.zeros_like(wmean)
@@ -499,6 +548,9 @@ class DiagnosticsTurbulence:
             uu,
             vv,
             ww,
+            uv,
+            uw,
+            vw,
             uuu,
             vvv,
             www,
@@ -510,6 +562,10 @@ class DiagnosticsTurbulence:
         uu = UtilitiesParallel.ScalarAllReduce(uu / npts)
         vv = UtilitiesParallel.ScalarAllReduce(vv / npts)
         ww = UtilitiesParallel.ScalarAllReduce(ww / npts)
+
+        uv = UtilitiesParallel.ScalarAllReduce(uv / npts)
+        uw = UtilitiesParallel.ScalarAllReduce(uw / npts)
+        vw = UtilitiesParallel.ScalarAllReduce(vw / npts)
 
         uuu = UtilitiesParallel.ScalarAllReduce(uuu / npts)
         vvv = UtilitiesParallel.ScalarAllReduce(vvv / npts)
@@ -527,6 +583,11 @@ class DiagnosticsTurbulence:
             profiles_grp["u2"][-1, :] = uu[n_halo[2] : -n_halo[2]]
             profiles_grp["v2"][-1, :] = vv[n_halo[2] : -n_halo[2]]
             profiles_grp["w2"][-1, :] = ww[n_halo[2] : -n_halo[2]]
+
+            profiles_grp["uv"][-1, :] = uv[n_halo[2] : -n_halo[2]]
+            profiles_grp["uw"][-1, :] = uw[n_halo[2] : -n_halo[2]]
+            profiles_grp["vw"][-1, :] = vw[n_halo[2] : -n_halo[2]]
+            
             profiles_grp["tke"][-1, :] = 0.5 * (
                 uu[n_halo[2] : -n_halo[2]]
                 + vv[n_halo[2] : -n_halo[2]]
