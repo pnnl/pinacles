@@ -43,7 +43,7 @@ def compute_factor(rho0, rhod, p, exner, T, qv, qc, qr, factor):
                     / (1.0 - qt + parameters.EPSVI * qv[i, j, k])
                 )
 
-                rhod[i, j, k] = pd / (parameters.RD * T[i, j, k] * exner[i,j,k])
+                rhod[i, j, k] = pd / (parameters.RD * T[i, j, k] * exner[i, j, k])
 
                 factor[i, j, k] = (rho0[i, j, k]) / rhod[i, j, k]
 
