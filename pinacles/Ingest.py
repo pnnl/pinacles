@@ -37,6 +37,9 @@ class IngestEra5:
         self.end_time = self.start_time + np.timedelta64(int(namelist["time"]["time_max"]), 's')
 
 
+        self.sfc_data_file = 'ERA5.sfc.nc'
+        self.atm_data_file = 'ERA5.atm.nc'
+
         return
 
     def initialize(self):
@@ -58,8 +61,8 @@ class IngestEra5:
 
             print('Reading in timedata data from input files.')
 
-            sfc_data = xr.open_dataset(os.path.join(self._real_data, 'sfc_data_to_pinacles.nc'))
-            atm_data = xr.open_dataset(os.path.join(self._real_data, 'atm_data_to_pinacles.nc'))
+            sfc_data = xr.open_dataset(os.path.join(self._real_data, self.sfc_data_file))
+            atm_data = xr.open_dataset(os.path.join(self._real_data, self.atm_data_file ))
 
             self.time_atm = atm_data.time.values
             self.time_sfc = sfc_data.time.values
@@ -96,12 +99,12 @@ class IngestEra5:
     def get_u(self, shift=0):
 
         if MPI.COMM_WORLD.Get_rank() == 0:
-            sfc_data = xr.open_dataset(os.path.join(self._real_data, 'sfc_data_to_pinacles.nc'))
-            atm_data = xr.open_dataset(os.path.join(self._real_data, 'atm_data_to_pinacles.nc'))
+            sfc_data = xr.open_dataset(os.path.join(self._real_data, self.sfc_data_file))
+            atm_data = xr.open_dataset(os.path.join(self._real_data, self.atm_data_file))
 
-            u10 = np.array(sfc_data.u10[self.sfc_timeindx + shift, :, :])
+            #u10 = np.array(sfc_data.u10[self.sfc_timeindx + shift, :, :])
             u = np.array(atm_data.u[self.atm_timeindx + shift, ::-1, :, :])
-            u = np.concatenate((u10.reshape(1,u10.shape[0], u10.shape[1]), u), axis=0)
+            #u = np.concatenate((u10.reshape(1,u10.shape[0], u10.shape[1]), u), axis=0)
 
             lat = sfc_data.latitude.values
             lon = sfc_data.longitude.values
@@ -125,6 +128,7 @@ class IngestEra5:
         assert(lat_shape == lon_shape)
 
         lon_hgt, lat_hgt, hgt = self.get_hgt(shift=shift)
+        lon_hgt = ((lon_hgt+180)%360)-180.0
         lon_hgt_grid, lat_hgt_grid = np.meshgrid(lon_hgt, lat_hgt)
         
         lon_hgt_grid = lon_hgt_grid.flatten()
@@ -156,6 +160,7 @@ class IngestEra5:
         assert(len(np.shape(height)) == 1)
 
         lon_T, lat_T, T = self.get_T(shift=shift)
+        lon_T = ((lon_T+180)%360)-180.0
         lon_T_grid, lat_T_grid = np.meshgrid(lon_T, lat_T)
         
         lon_T_grid = lon_T_grid.flatten()
@@ -189,7 +194,9 @@ class IngestEra5:
             for j in range(T_horizontal.shape[2]):
 
                 z = hgt_horizontal_interp[:,i,j]
-                z = np.concatenate(([2.0], z))
+                #z = np.concatenate(([2.0], z))
+
+                #print(z)
 
                 interp = interpolate.Akima1DInterpolator(z, T_horizontal[:,i,j])
                 Ti[i,j,:] =  np.pad(interp.__call__(height[nh[2]:-nh[2]]), 3, mode='edge')
@@ -207,6 +214,7 @@ class IngestEra5:
         assert(len(np.shape(height)) == 1)
 
         lon_qv, lat_qv, qv = self.get_qv(shift=shift)
+        lon_qv = ((lon_qv+180)%360)-180.0
         lon_qv_grid, lat_qv_grid = np.meshgrid(lon_qv, lat_qv)
         
         lon_qv_grid = lon_qv_grid.flatten()
@@ -259,11 +267,12 @@ class IngestEra5:
         assert(len(np.shape(height)) == 1)
 
         lon_u, lat_u, u = self.get_u(shift=shift)
+        lon_u = ((lon_u+180)%360)-180.0
         lon_u_grid, lat_u_grid = np.meshgrid(lon_u, lat_u)
         
         lon_v, lat_v, v = self.get_v(shift=shift)
-        uu, vv = self._Grid.MapProj.rotate_wind(lon_u_grid, u, v)
-        u[:,:,:] = uu[:,:,:]
+        #uu, vv =  #self._Grid.MapProj.rotate_wind(lon_u_grid, u, v)
+        u[:,:,:] = u  #uu[:,:,:]
 
         lon_u_grid = lon_u_grid.flatten()
         lat_u_grid = lat_u_grid.flatten()
@@ -301,9 +310,9 @@ class IngestEra5:
             for j in range(u_horizontal.shape[2]):
 
                 z = hgt_horizontal_interp[:,i,j]
-                z = np.concatenate(([10.0], z))
+                #z = np.concatenate(([10.0], z))
 
-                interp = interpolate.Akima1DInterpolator(z[1:], u_horizontal[1:,i,j])
+                interp = interpolate.Akima1DInterpolator(z[:], u_horizontal[:,i,j])
                 ui[i,j,:] =  np.pad(interp.__call__(height[nh[2]:-nh[2]]), 3, mode='edge')
 
 
@@ -319,9 +328,12 @@ class IngestEra5:
         assert(len(np.shape(height)) == 1)
 
         lon_v, lat_v, v = self.get_v(shift=shift)
+        lon_v = ((lon_v+180)%360)-180.0
         lon_v_grid, lat_v_grid = np.meshgrid(lon_v, lat_v)
         
         lon_u, lat_u, u = self.get_u(shift=shift)
+        
+        
         uu, vv = self._Grid.MapProj.rotate_wind(lon_v_grid, u, v)
 
         #import pylab as plt
@@ -329,7 +341,9 @@ class IngestEra5:
         #plt.colorbar()
         #plt.show()
 
-        v[:,:,:] = vv[:,:,:]
+        v[:,:,:] = v[:,:,:]
+
+
 
         lon_v_grid = lon_v_grid.flatten()
         lat_v_grid = lat_v_grid.flatten()
@@ -364,12 +378,12 @@ class IngestEra5:
             for j in range(v_horizontal.shape[2]):
 
                 z = hgt_horizontal_interp[:,i,j]
-                z = np.concatenate(([10.0], z))
+                #z = np.concatenate(([10.0], z))
 
-                interp = interpolate.Akima1DInterpolator(z[1:], v_horizontal[1:,i,j])
+                interp = interpolate.Akima1DInterpolator(z[:], v_horizontal[:,i,j])
                 vi[i,j,:] = np.pad(interp.__call__(height[nh[2]:-nh[2]]), 3, mode='edge')
 
-
+        #print('V', np.amax(vi), np.amax(vi))
         return vi
 
 
@@ -377,12 +391,12 @@ class IngestEra5:
     def get_v(self, shift=0):
         
         if MPI.COMM_WORLD.Get_rank() == 0:
-            sfc_data = xr.open_dataset(os.path.join(self._real_data, 'sfc_data_to_pinacles.nc'))
-            atm_data = xr.open_dataset(os.path.join(self._real_data, 'atm_data_to_pinacles.nc'))
+            sfc_data = xr.open_dataset(os.path.join(self._real_data, self.sfc_data_file))
+            atm_data = xr.open_dataset(os.path.join(self._real_data, self.atm_data_file))
 
-            v10 = np.array(sfc_data.v10[self.sfc_timeindx + shift, :, :])
+            #v10 = np.array(sfc_data.v10[self.sfc_timeindx + shift, :, :])
             v = np.array(atm_data.v[self.atm_timeindx + shift, ::-1, :, :])
-            v = np.concatenate((v10.reshape(1, v10.shape[0], v10.shape[1]), v), axis=0)
+            #v = np.concatenate((v10.reshape(1, v10.shape[0], v10.shape[1]), v), axis=0)
 
             lat = sfc_data.latitude.values
             lon = sfc_data.longitude.values
@@ -402,15 +416,15 @@ class IngestEra5:
 
     def get_T(self, shift=0):
         if MPI.COMM_WORLD.Get_rank() == 0:
-            sfc_data = xr.open_dataset(os.path.join(self._real_data, 'sfc_data_to_pinacles.nc'))
-            atm_data = xr.open_dataset(os.path.join(self._real_data, 'atm_data_to_pinacles.nc'))
+            sfc_data = xr.open_dataset(os.path.join(self._real_data, self.sfc_data_file))
+            atm_data = xr.open_dataset(os.path.join(self._real_data, self.atm_data_file))
 
-            t2m = np.array(sfc_data.t2m[self.sfc_timeindx + shift, :, :])
+            #t2m = np.array(atm_data.t[self.sfc_timeindx + shift, -1, :, :]) #np.array(sfc_data.t2m[self.sfc_timeindx + shift, :, :])
             t = np.array(atm_data.t[self.sfc_timeindx + shift, ::-1, :, :])
 
-            t2m = t2m.reshape(1, t2m.shape[0], t2m.shape[1])
+            #t2m = t2m.reshape(1, t2m.shape[0], t2m.shape[1])
 
-            t = np.concatenate((t2m,t), axis=0)
+            #t = np.concatenate((t2m,t), axis=0)
 
             lat = sfc_data.latitude.values
             lon = sfc_data.longitude.values
@@ -431,8 +445,8 @@ class IngestEra5:
     def get_qv(self, shift=0):
         if MPI.COMM_WORLD.Get_rank() == 0:
             
-            sfc_data = xr.open_dataset(os.path.join(self._real_data, 'sfc_data_to_pinacles.nc'))
-            atm_data = xr.open_dataset(os.path.join(self._real_data, 'atm_data_to_pinacles.nc'))
+            sfc_data = xr.open_dataset(os.path.join(self._real_data, self.sfc_data_file))
+            atm_data = xr.open_dataset(os.path.join(self._real_data, self.atm_data_file))
 
             q = np.array(atm_data.q[self.sfc_timeindx + shift, ::-1, :, :])
             lat = sfc_data.latitude.values
@@ -451,12 +465,15 @@ class IngestEra5:
 
     def get_hgt(self, shift=0):
         if MPI.COMM_WORLD.Get_rank() == 0:
-            sfc_data = xr.open_dataset(os.path.join(self._real_data, 'sfc_data_to_pinacles.nc'))
-            atm_data = xr.open_dataset(os.path.join(self._real_data, 'atm_data_to_pinacles.nc'))
+            sfc_data = xr.open_dataset(os.path.join(self._real_data, self.sfc_data_file))
+            atm_data = xr.open_dataset(os.path.join(self._real_data, self.atm_data_file))
 
-            hgt = np.array(atm_data.hgt[self.sfc_timeindx + shift, ::-1, :, :])
+            hgt = atm_data.z.values[self.sfc_timeindx + shift, ::-1, :, :]/9.80665  
+            
+            hgt = hgt - hgt[0,:,:]
             lat = sfc_data.latitude.values
             lon = sfc_data.longitude.values
+            
 
         else:
             lon = None
@@ -471,7 +488,7 @@ class IngestEra5:
 
     def get_skin_T(self, shift=0):
         if MPI.COMM_WORLD.Get_rank() == 0:
-            sfc_data = xr.open_dataset(os.path.join(self._real_data, 'sfc_data_to_pinacles.nc'))
+            sfc_data = xr.open_dataset(os.path.join(self._real_data, self.sfc_data_file))
             skin_T = sfc_data.skt.values[self.sfc_timeindx + shift,:,:]
             lon = sfc_data.longitude.values 
             lat = sfc_data.latitude.values 
@@ -489,7 +506,7 @@ class IngestEra5:
     def get_slp(self, shift=0):
 
         if MPI.COMM_WORLD.Get_rank() == 0:
-            sfc_data = xr.open_dataset(os.path.join(self._real_data, 'sfc_data_to_pinacles.nc'))
+            sfc_data = xr.open_dataset(os.path.join(self._real_data, self.sfc_data_file))
             slp = sfc_data.sp.values[self.sfc_timeindx + shift,:,:]
             lon = sfc_data.longitude.values
             lat = sfc_data.latitude.values
@@ -598,4 +615,4 @@ class IngestE3SM(IngestBase):
     
 def IngestFactory(namelist, Grid, TimeSteppingController):
     #if namelist['lbc']['type'] == 'periodic':
-    return None
+    return IngestEra5(namelist, Grid, TimeSteppingController) #None

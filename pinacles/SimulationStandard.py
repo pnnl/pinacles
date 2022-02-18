@@ -479,14 +479,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         u = self.VelocityState.get_field("u")
         v = self.VelocityState.get_field("v")
         s = self.ScalarState.get_field("s")
-
-        #import pylab as plt
-        #plt.figure(figsize=(8,16))
-        #plt.subplot(2,1,1)
-        #plt.contour(u[:,:,5].T, 100)
-        #plt.subplot(2,1,2)
-        #plt.contour(u[:,:,5].T, 100)
-        #plt.show()
+        qv = self.ScalarState.get_field("qv")
 
         #import pylab as plt
         #plt.subplot(311)
@@ -506,7 +499,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Update thermo this is mostly for IO at time 0
         self.Thermo.update(apply_buoyancy=False)
-        self.Rad.update(force=True)
+        #self.Rad.update(force=True)
         self.PSolver.update()
 
         #import pylab as plt
@@ -942,7 +935,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
             # Loop over the Runge-Kutta steps
             for n in range(self.ScalarTimeStepping.n_rk_step):
-
                 # Adjust the timestep at the beginning of the step
                 self.TimeSteppingController.adjust_timestep(n, end_time)
 

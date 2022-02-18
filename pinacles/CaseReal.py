@@ -67,6 +67,8 @@ class SurfaceReanalysis(Surface.SurfaceBase):
             # Compute reference profiles
             lon, lat, skin_T = self._Ingest.get_skin_T(shift=shift)
 
+            lon = ((lon+180)%360)-180.0
+
             lon_grid, lat_grid = np.meshgrid(lon, lat)
             lon_lat = (lon_grid.flatten(), lat_grid.flatten())
 
@@ -270,6 +272,7 @@ class InitializeReanalysis:
 
         # Compute reference profiles
         lon, lat, skin_T = self._Ingest.get_skin_T()
+        lon = ((lon+180)%360)-180.0
 
         lon_grid, lat_grid = np.meshgrid(lon, lat)
         lon_lat = (lon_grid.flatten(), lat_grid.flatten())
@@ -281,8 +284,9 @@ class InitializeReanalysis:
             method="cubic",
         )
 
-        lon, lat, slp = self._Ingest.get_slp()
 
+        lon, lat, slp = self._Ingest.get_slp()
+        lon = ((lon+180)%360)-180.0
         SLP = interpolate.griddata(
             lon_lat,
             slp.flatten(),
