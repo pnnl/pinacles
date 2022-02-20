@@ -323,6 +323,13 @@ class InitializeReanalysis:
             * (parameters.G)
             / parameters.CPD
         )
+        
+        random = np.random.uniform(-0.1, 0.1, size=(s.shape[0], s.shape[1], 3))
+        s[:,:,nhalo[2]:nhalo[2]+3]  += random 
+        
+        
+        
+        
 
         if MPI.COMM_WORLD.Get_rank() == 0:
             print("Initizliaing specific humidity")
