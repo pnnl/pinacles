@@ -324,19 +324,19 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         if ParentNest is None:
             self.LBC = LateralBCsFactory.LateralBCsFactory(
-                self._namelist, self.ModelGrid, self.ScalarState, self.VelocityState, self.TimeSteppingController, self.Ingest, 
+                self._namelist, self.ModelGrid, self.Ref, self.DiagnosticState, self.ScalarState, self.VelocityState, self.TimeSteppingController, self.Ingest, 
             )
             self.LBCVel = LateralBCsFactory.LateralBCsFactory(
-                self._namelist, self.ModelGrid, self.VelocityState, self.VelocityState, self.TimeSteppingController, self.Ingest,
+                self._namelist, self.ModelGrid, self.Ref, self.DiagnosticState, self.VelocityState, self.VelocityState, self.TimeSteppingController, self.Ingest,
             )
         else:
             print('Initing Nest')
             self.LBC = LateralBCsFactory.LateralBCsFactory(
-                self._namelist, self.ModelGrid, self.ScalarState, self.VelocityState, self.TimeSteppingController, self.Ingest,
+                self._namelist, self.ModelGrid, self.Ref, self.DiagnosticState, self.ScalarState, self.VelocityState, self.TimeSteppingController, self.Ingest,
                  NestState = ParentNest.ScalarState
             )
             self.LBCVel = LateralBCsFactory.LateralBCsFactory(
-                self._namelist, self.ModelGrid, self.VelocityState, self.VelocityState, self.TimeSteppingController, self.Ingest, 
+                self._namelist, self.ModelGrid, self.Ref,  self.DiagnosticState, self.VelocityState, self.VelocityState, self.TimeSteppingController, self.Ingest, 
                 NestState = ParentNest.VelocityState
             )
         

@@ -253,7 +253,112 @@ class IngestEra5:
                 interp = interpolate.Akima1DInterpolator(z, qv_horizontal[:,i,j])
                 qvi[i,j,:] =  np.pad(interp.__call__(height[nh[2]:-nh[2]]), 3, mode='edge')
 
+        qvi[qvi<0] = 1e-10
 
+        return qvi 
+    
+    def interp_qc(self, lon, lat, height, shift=0):
+
+        hgt_horizontal_interp = self.interp_height(self._Grid.lon_local, self._Grid.lat_local)
+
+        lat_shape = lat.shape
+        lon_shape = lon.shape
+        assert(lat_shape == lon_shape)
+        assert(len(np.shape(height)) == 1)
+
+        lon_qv, lat_qv, qv = self.get_qc(shift=shift)
+        lon_qv = ((lon_qv+180)%360)-180.0
+        lon_qv_grid, lat_qv_grid = np.meshgrid(lon_qv, lat_qv)
+        
+        lon_qv_grid = lon_qv_grid.flatten()
+        lat_qv_grid = lat_qv_grid.flatten()
+
+
+        # Mask data to make interpolation more efficient
+        mask = (lon_qv_grid >= np.amin(lon) - 1.0) & (lon_qv_grid <= np.amax(lon) + 1.0)
+        
+        mask = mask & (lat_qv_grid >= np.amin(lat) - 1.0) & (lat_qv_grid <= np.amax(lat) + 1.0)
+        lon_lat = (lon_qv_grid[mask], lat_qv_grid[mask])
+
+
+        qv_horizontal = np.empty((qv.shape[0], lon.shape[0], lon.shape[1]), dtype=np.double)
+        for i in range(qv.shape[0]):
+
+            lat_lon_array = np.vstack(lon_lat).T
+
+            rbf = interpolate.RBFInterpolator(lat_lon_array, qv[i,:,:].flatten()[mask], neighbors=16)
+            field = rbf(np.vstack((lon.flatten(), lat.flatten())).T)
+
+
+            qv_horizontal[i,:,:] = field.reshape(qv_horizontal[i,:,:].shape)
+                                  #interpolate.griddata(lon_lat, 
+                                   #         qv[i,:,:].flatten()[mask],
+                                   #         (lon, lat), method='linear')
+
+
+        qvi = np.empty((lon.shape[0], lon.shape[1], height.shape[0]), dtype=np.double) 
+        nh = self._Grid.n_halo
+        for i in range(qv_horizontal.shape[1]):
+            for j in range(qv_horizontal.shape[2]):
+
+                z = hgt_horizontal_interp[:,i,j]
+
+                interp = interpolate.Akima1DInterpolator(z, qv_horizontal[:,i,j])
+                qvi[i,j,:] =  np.pad(interp.__call__(height[nh[2]:-nh[2]]), 3, mode='edge')
+
+        qvi[qvi<0] = 0.0
+        return qvi 
+
+    def interp_qi(self, lon, lat, height, shift=0):
+
+        hgt_horizontal_interp = self.interp_height(self._Grid.lon_local, self._Grid.lat_local)
+
+        lat_shape = lat.shape
+        lon_shape = lon.shape
+        assert(lat_shape == lon_shape)
+        assert(len(np.shape(height)) == 1)
+
+        lon_qv, lat_qv, qv = self.get_qi(shift=shift)
+        lon_qv = ((lon_qv+180)%360)-180.0
+        lon_qv_grid, lat_qv_grid = np.meshgrid(lon_qv, lat_qv)
+        
+        lon_qv_grid = lon_qv_grid.flatten()
+        lat_qv_grid = lat_qv_grid.flatten()
+
+
+        # Mask data to make interpolation more efficient
+        mask = (lon_qv_grid >= np.amin(lon) - 1.0) & (lon_qv_grid <= np.amax(lon) + 1.0)
+        
+        mask = mask & (lat_qv_grid >= np.amin(lat) - 1.0) & (lat_qv_grid <= np.amax(lat) + 1.0)
+        lon_lat = (lon_qv_grid[mask], lat_qv_grid[mask])
+
+
+        qv_horizontal = np.empty((qv.shape[0], lon.shape[0], lon.shape[1]), dtype=np.double)
+        for i in range(qv.shape[0]):
+
+            lat_lon_array = np.vstack(lon_lat).T
+
+            rbf = interpolate.RBFInterpolator(lat_lon_array, qv[i,:,:].flatten()[mask], neighbors=16)
+            field = rbf(np.vstack((lon.flatten(), lat.flatten())).T)
+
+
+            qv_horizontal[i,:,:] = field.reshape(qv_horizontal[i,:,:].shape)
+                                  #interpolate.griddata(lon_lat, 
+                                   #         qv[i,:,:].flatten()[mask],
+                                   #         (lon, lat), method='linear')
+
+
+        qvi = np.empty((lon.shape[0], lon.shape[1], height.shape[0]), dtype=np.double) 
+        nh = self._Grid.n_halo
+        for i in range(qv_horizontal.shape[1]):
+            for j in range(qv_horizontal.shape[2]):
+
+                z = hgt_horizontal_interp[:,i,j]
+
+                interp = interpolate.Akima1DInterpolator(z, qv_horizontal[:,i,j])
+                qvi[i,j,:] =  np.pad(interp.__call__(height[nh[2]:-nh[2]]), 3, mode='edge')
+
+        qvi[qvi<0] = 0.0
         return qvi 
 
 
@@ -440,6 +545,62 @@ class IngestEra5:
         t = MPI.COMM_WORLD.bcast(t)
 
         return lon , lat, t
+    
+    
+    def get_qc(self, shift=0):
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            sfc_data = xr.open_dataset(os.path.join(self._real_data, self.sfc_data_file))
+            atm_data = xr.open_dataset(os.path.join(self._real_data, self.atm_data_file))
+
+            #t2m = np.array(atm_data.t[self.sfc_timeindx + shift, -1, :, :]) #np.array(sfc_data.t2m[self.sfc_timeindx + shift, :, :])
+            t = np.array(atm_data.rho_l[self.sfc_timeindx + shift, ::-1, :, :])
+
+            #t2m = t2m.reshape(1, t2m.shape[0], t2m.shape[1])
+
+            #t = np.concatenate((t2m,t), axis=0)
+
+            lat = sfc_data.latitude.values
+            lon = sfc_data.longitude.values
+
+
+        else:
+            t = None
+            lat = None
+            lon = None
+
+        lon = MPI.COMM_WORLD.bcast(lon)
+        lat = MPI.COMM_WORLD.bcast(lat)
+        t = MPI.COMM_WORLD.bcast(t)
+
+        return lon , lat, t
+
+    def get_qi(self, shift=0):
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            sfc_data = xr.open_dataset(os.path.join(self._real_data, self.sfc_data_file))
+            atm_data = xr.open_dataset(os.path.join(self._real_data, self.atm_data_file))
+
+            #t2m = np.array(atm_data.t[self.sfc_timeindx + shift, -1, :, :]) #np.array(sfc_data.t2m[self.sfc_timeindx + shift, :, :])
+            t = np.array(atm_data.rho_i[self.sfc_timeindx + shift, ::-1, :, :])
+
+            #t2m = t2m.reshape(1, t2m.shape[0], t2m.shape[1])
+
+            #t = np.concatenate((t2m,t), axis=0)
+
+            lat = sfc_data.latitude.values
+            lon = sfc_data.longitude.values
+
+
+        else:
+            t = None
+            lat = None
+            lon = None
+
+        lon = MPI.COMM_WORLD.bcast(lon)
+        lat = MPI.COMM_WORLD.bcast(lat)
+        t = MPI.COMM_WORLD.bcast(t)
+
+        return lon , lat, t
+
 
 
     def get_qv(self, shift=0):
@@ -448,7 +609,7 @@ class IngestEra5:
             sfc_data = xr.open_dataset(os.path.join(self._real_data, self.sfc_data_file))
             atm_data = xr.open_dataset(os.path.join(self._real_data, self.atm_data_file))
 
-            q = np.array(atm_data.q[self.sfc_timeindx + shift, ::-1, :, :])
+            q = np.array(atm_data.rho_v[self.sfc_timeindx + shift, ::-1, :, :])
             lat = sfc_data.latitude.values
             lon = sfc_data.longitude.values
 

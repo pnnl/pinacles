@@ -245,6 +245,17 @@ def exchange_coefficients_byun(Ri, zb, z0):#, cm, ch):
     ch = cu * cth 
     return cm, ch
 
+@numba.njit
+def exchange_coefficients_charnock(Ri, zb, z0, windspeed):
+    
+    for i in range(10):
+        cm, ch = exchange_coefficients_byun(Ri, zb, z0)
+        u_star = np.sqrt(cm) * windspeed
+        z0 = 0.015  * u_star * u_star / parameters.G 
+    
+    return cm, ch
+
+
 
 @numba.njit()
 def compute_exchange_coefficients(Ri, zb, z0, cm, ch):
@@ -252,6 +263,16 @@ def compute_exchange_coefficients(Ri, zb, z0, cm, ch):
     for i in range(1, shape[0]):
         for j in range(1, shape[1]):
             cm[i, j], ch[i, j] = exchange_coefficients_byun(Ri[i, j], zb, z0[i, j])#, cm[i,j], ch[i,j])
+    return 
+
+
+
+@numba.njit()
+def compute_exchange_coefficients_charnock(Ri, zb, z0, windspeed, cm, ch):
+    shape = cm.shape
+    for i in range(1, shape[0]):
+        for j in range(1, shape[1]):
+            cm[i, j], ch[i, j] = exchange_coefficients_charnock(Ri[i, j], zb, z0[i, j], windspeed[i,j])#, cm[i,j], ch[i,j])
     return 
 
 
