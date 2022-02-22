@@ -106,7 +106,7 @@ class Plume:
 
         return
 
-    def io_fields2d(self, nc_grp, z_index):
+    def io_fields2d(self, fx, z_index):
 
         start = self._Grid.local_start
         end = self._Grid._local_end
@@ -116,15 +116,18 @@ class Plume:
         send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
         recv_buffer = np.empty_like(send_buffer)
 
-        if nc_grp is not None:
-            var_nc = nc_grp.createVariable(
-                self._scalar_name + "_" + str(z),
-                np.double,
-                dimensions=(
-                    "X",
-                    "Y",
-                ),
-            )
+
+        # Compute and output the LWP
+        if fx is not None:
+            var_nc = fx.create_dataset(
+                        self._scalar_name + "_" + str(z),
+                        (1, self._Grid.n[0], self._Grid.n[1]),
+                        dtype=np.double,
+                    )
+
+            for i, d in enumerate(["time", "X", "Y"]):
+                var_nc.dims[i].attach_scale(fx[d])
+                
 
         s = self._ScalarState.get_field(self._scalar_name)
 
@@ -133,12 +136,9 @@ class Plume:
         ]
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
 
-        if nc_grp is not None:
+        if fx is not None:
             var_nc[:, :] = recv_buffer
-
-        if nc_grp is not None:
-            nc_grp.sync()
-
+            
         return
 
     @property
@@ -313,11 +313,11 @@ class Plumes:
         self._Timers.end_timer("Plumes_update")
         return
 
-    def io_fields2d_update(self, nc_grp):
+    def io_fields2d_update(self, fx):
 
         for plume_i in self._list_of_plumes:
             for z_index in self._field2d_zindex:
-                plume_i.io_fields2d(nc_grp, z_index)
+                plume_i.io_fields2d(fx, z_index)
 
         return
 

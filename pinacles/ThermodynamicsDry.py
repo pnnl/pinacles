@@ -78,7 +78,7 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
 
         return
 
-    def io_fields2d_update(self, nc_grp):
+    def io_fields2d_update(self, fx):
 
         start = self._Grid.local_start
         end = self._Grid._local_end
@@ -88,26 +88,24 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         recv_buffer = np.empty_like(send_buffer)
 
         # Output Temperature
-        if nc_grp is not None:
-            t = nc_grp.createVariable(
-                "T",
-                np.double,
-                dimensions=(
-                    "X",
-                    "Y",
-                ),
-            )
+        if fx is not None:
+            t = fx.create_dataset(
+                        "T",
+                        (1, self._Grid.n[0], self._Grid.n[1]),
+                        dtype=np.double,
+                    )
+
+            for i, d in enumerate(["time", "X", "Y"]):
+                t.dims[i].attach_scale(fx[d])
+                
 
         T = self._DiagnosticState.get_field("T")
         send_buffer[start[0] : end[0], start[1] : end[1]] = T[
             nh[0] : -nh[0], nh[1] : -nh[1], nh[2]
         ]
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
-        if nc_grp is not None:
+        if fx is not None:
             t[:, :] = recv_buffer
-
-        if nc_grp is not None:
-            nc_grp.sync()
 
         return
 

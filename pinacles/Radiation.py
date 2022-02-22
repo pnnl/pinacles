@@ -807,7 +807,7 @@ class RRTMG:
             profiles_grp["r_eff_cloud"][-1, :] = re_prof[:]
         return
 
-    def io_fields2d_update(self, nc_grp):
+    def io_fields2d_update(self, fx):
         return
 
     @property
