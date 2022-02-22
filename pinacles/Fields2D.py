@@ -1,5 +1,5 @@
 import numpy as np
-import netCDF4 as nc
+import h5py
 import time
 import os
 from mpi4py import MPI
@@ -72,40 +72,56 @@ class Fields2D:
 
         t0 = time.perf_counter()
 
-        output_here = os.path.join(
-            self._output_path, str(np.round(self._TimeSteppingController.time))
-        )
+        output_here = self._output_path #os.path.join(
+        #    self._output_path, str(np.round(self._TimeSteppingController.time))
+        #)
+        
         MPI.COMM_WORLD.barrier()
         if self._this_rank == 0:
             if not os.path.exists(output_here):
                 os.makedirs(output_here)
         MPI.COMM_WORLD.barrier()
 
-        rt_grp = None
+        fx = None
         if MPI.COMM_WORLD.Get_rank() == 0:
-            rt_grp = nc.Dataset(
-                os.path.join(output_here, str(self._this_rank) + ".nc"),
-                "w",
-                format="NETCDF4_CLASSIC",
+            
+            
+            s = self._TimeSteppingController.time
+            days = s // 86400
+            s = s - (days * 86400)
+            hours = s // 3600
+            s = s - (hours * 3600)
+            minutes = s // 60
+            seconds = s - (minutes * 60)
+            
+            fx = h5py.File(
+                os.path.join(
+                    output_here,
+                    "{:02}d-{:02}h-{:02}m-{:02}s".format(
+                        int(days), int(hours), int(minutes), int(seconds)
+                    )
+                    + ".h5",
+                ),
+                "w"
             )
+            
 
             # Add some metadata
-            rt_grp.unique_id = self._namelist["meta"]["unique_id"]
-            rt_grp.wall_time = self._namelist["meta"]["wall_time"]
-            rt_grp.fequency = self.frequency
+            fx.attrs["unique_id"] = self._namelist["meta"]["unique_id"]
+            fx.attrs["wall_time"] = self._namelist["meta"]["wall_time"]
+            fx.attrs["fequency"] = self.frequency
 
-            self.setup_nc_dims(rt_grp)
+            self.setup_dims(fx)
 
         for aclass in self._classes:
-            self._classes[aclass].io_fields2d_update(rt_grp)
+            self._classes[aclass].io_fields2d_update(fx)
 
-        self.output_velocities(rt_grp)
+        self.output_velocities(fx)
 
-        # Sync and closue netcdf file
-        if rt_grp is not None:
-            rt_grp.sync()
-            rt_grp.close()
-
+        # Sync and close netcdf file
+        if fx is not None:
+            fx.close()
+            
         self._last_io_time = self._TimeSteppingController._time
 
         t1 = time.perf_counter()
@@ -115,7 +131,7 @@ class Fields2D:
 
         return
 
-    def output_velocities(self, nc_grp):
+    def output_velocities(self, fx):
 
         start = self._Grid.local_start
         end = self._Grid._local_end
@@ -128,15 +144,15 @@ class Fields2D:
             for k in self._output_levels:
                 z = self._Grid.z_global[nh[2] + k]
 
-                if nc_grp is not None:
-                    var_nc = nc_grp.createVariable(
-                        v + "_" + str(z),
-                        np.double,
-                        dimensions=(
-                            "X",
-                            "Y",
-                        ),
-                    )
+                if fx is not None:
+                    var_fx = fx.create_dataset(
+                                v + "_" + str(z),
+                                (1, self._Grid.n[0], self._Grid.n[1]),
+                                dtype=np.double,
+                            )
+
+                    for i, d in enumerate(["time", "X", "Y"]):
+                        var_fx.dims[i].attach_scale(fx[d])
 
                 var = self._VelocityState.get_field(v)
                 send_buffer.fill(0.0)
@@ -144,11 +160,9 @@ class Fields2D:
                     nh[0] : -nh[0], nh[1] : -nh[1], nh[2] + k
                 ]
                 MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
-                if nc_grp is not None:
-                    var_nc[:, :] = recv_buffer
+                if fx is not None:
+                    var_fx[:, :] = recv_buffer
 
-                if nc_grp is not None:
-                    nc_grp.sync()
 
         return
 
@@ -160,31 +174,20 @@ class Fields2D:
 
         return
 
-    def setup_nc_dims(self, rt_grp):
-
-        rt_grp.createDimension("time", size=1)
-        rt_grp.createDimension("X", size=self._Grid.n[0])
-        rt_grp.createDimension("Y", size=self._Grid.n[1])
-        rt_grp.createDimension("Z", size=self._Grid.n[2])
+    def setup_dims(self, fx):
 
         nhalo = self._Grid.n_halo
+        local_start = self._Grid._local_start
+        local_end = self._Grid._local_end
+        for i, v in enumerate(["X", "Y", "Z"]):
+            dset = fx.create_dataset(v, (self._Grid.n[i],), dtype="d")
+            dset.make_scale()
+            if MPI.COMM_WORLD.rank == 0:
+                dset[:] = self._Grid._global_axes[i][nhalo[i] : -nhalo[i]]
+                
+        dset = fx.create_dataset("time", 1, dtype="d")
+        dset.make_scale()
+        dset[:] = self._TimeSteppingController.time
 
-        T = rt_grp.createVariable("time", np.double, dimensions=("time"))
-        T[0] = self._TimeSteppingController.time
-        T.units = "s"
-        T.long_name = "time"
-        T.standard_name = "t"
-
-        X = rt_grp.createVariable("X", np.double, dimensions=("X"))
-        X.units = "m"
-        X.long_name = "x-coordinate"
-        X.standard_name = "x"
-        X[:] = self._Grid.x_global[nhalo[0] : -nhalo[0]]
-
-        Y = rt_grp.createVariable("Y", np.double, dimensions=("Y"))
-        Y.units = "m"
-        Y.long_name = "y-coordinate"
-        Y.standard_name = "y"
-        Y[:] = self._Grid.y_global[nhalo[1] : -nhalo[1]]
-
+                
         return
