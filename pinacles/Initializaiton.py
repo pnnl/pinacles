@@ -10,6 +10,7 @@ from pinacles import UtilitiesParallel
 import pinacles.CaseSullivanAndPatton as CaseSullivanAndPatton
 import pinacles.CaseStableBubble as CaseStableBubble
 import pinacles.CaseBOMEX as CaseBomex
+import pinacles.CaseDYCOMS as CaseDycoms
 import pinacles.CaseRICO as CaseRico
 import pinacles.CaseATEX as CaseATEX
 import pinacles.CaseTestbed as CaseTestbed
@@ -18,6 +19,7 @@ CASENAMES = [
     "sullivan_and_patton",
     "stable_bubble",
     "bomex",
+    "dycoms",
     "rico",
     "atex",
     "testbed",
@@ -42,6 +44,8 @@ def factory(namelist):
         return CaseStableBubble.initialize
     elif namelist["meta"]["casename"] == "bomex":
         return CaseBomex.initialize
+    elif namelist["meta"]["casename"] == "dycoms":
+        return CaseDycoms.initialize
     elif namelist["meta"]["casename"] == "rico":
         return CaseRico.initialize
     elif namelist["meta"]["casename"] == "atex":

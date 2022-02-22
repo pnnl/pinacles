@@ -60,8 +60,6 @@ class RRTMG:
         except:
             self.time_synced = True
 
-
-
         try:
             self._radiation_frequency = namelist["radiation"]["update_frequency"]
         except:

@@ -73,7 +73,7 @@ def standard_plume_mocks(tmpdir):
     base_mocks.append(SimulationStandard.SimulationStandard(copy.deepcopy(namelist)))
 
     # Generate simulations for moist cases
-    for casename in ["bomex", "rico"]:
+    for casename in ["bomex", "rico", "dycoms"]:
 
         namelist["Thermodynamics"] = {}
         namelist["Thermodynamics"]["type"] = "moist"

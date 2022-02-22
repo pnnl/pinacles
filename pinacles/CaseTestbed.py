@@ -46,6 +46,7 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         sys.exit()
         # ref_init_type = 'integrate'
 
+
     data = nc.Dataset(file, "r")
     try:
         init_data = data.groups["initialization_sonde"]
@@ -619,12 +620,12 @@ class ForcingTestbed(Forcing.ForcingBase):
                 assume_sorted=True,
             )(zl)
 
-        z_top = self._Grid.l[2]
+        # z_top = self._Grid.l[2]k
         # Performing relaxation nudging over the same depth as damping, this is an assumption to revisit
-        _depth = namelist["damping"]["depth"]
-        znudge = z_top - _depth
-        # Assume nudging timescale of 1 hour, again this is an assumption that could be revisited
-        self._compute_relaxation_coefficient(znudge, 3600.0)
+        # _depth = namelist["damping"]["depth"]
+        # znudge = z_top - _depth
+        # Assume nudging timescale of 30 min, again this is an assumption that could be revisited
+        self._compute_relaxation_coefficient(1800.0)
 
         self._Timers.add_timer("ForcingTestBed_update")
 
@@ -788,17 +789,17 @@ class ForcingTestbed(Forcing.ForcingBase):
 
         return
 
-    def _compute_relaxation_coefficient(self, znudge, timescale):
+    def _compute_relaxation_coefficient(self, timescale):
 
         self._relaxation_coefficient = np.zeros(self._Grid.ngrid[2], dtype=np.double)
 
-        z = self._Grid.z_global
+        # z = self._Grid.z_global
 
         for k in range(self._Grid.ngrid[2]):
             self._relaxation_coefficient[k] = 1.0 / timescale
-            if z[k] < znudge:
-                self._relaxation_coefficient[k] *= (
-                    np.sin((np.pi / 2.0) * (1.0 - (znudge - z[k]) / znudge)) ** 2.0
-                )
+            # if z[k] < znudge:
+            #     self._relaxation_coefficient[k] *= (
+            #         np.sin((np.pi / 2.0) * (1.0 - (znudge - z[k]) / znudge)) ** 2.0
+            #     )
 
         return
