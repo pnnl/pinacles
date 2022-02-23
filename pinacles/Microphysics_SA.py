@@ -206,7 +206,7 @@ class MicroSA(MicrophysicsBase):
 
             profiles_grp["CF"][-1, :] = _cf_prof[_n_halo[2] : -_n_halo[2]]
 
-    def io_fields2d_update(self, nc_grp):
+    def io_fields2d_update(self, fx):
 
         start = self._Grid.local_start
         end = self._Grid._local_end
@@ -214,15 +214,16 @@ class MicroSA(MicrophysicsBase):
         recv_buffer = np.empty_like(send_buffer)
 
         # Compute and output the LWP
-        if nc_grp is not None:
-            lwp = nc_grp.createVariable(
-                "LWP",
-                np.double,
-                dimensions=(
-                    "X",
-                    "Y",
-                ),
-            )
+        if fx is not None:
+            lwp = fx.create_dataset(
+                        "LWP",
+                        (1, self._Grid.n[0], self._Grid.n[1]),
+                        dtype=np.double,
+                    )
+
+            for i, d in enumerate(["time", "X", "Y"]):
+                lwp.dims[i].attach_scale(fx[d])
+
 
         _nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
@@ -234,11 +235,9 @@ class MicroSA(MicrophysicsBase):
         send_buffer.fill(0.0)
         send_buffer[start[0] : end[0], start[1] : end[1]] = lwp_compute
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
-        if nc_grp is not None:
+        
+        if fx is not None:
             lwp[:, :] = recv_buffer
-
-        if nc_grp is not None:
-            nc_grp.sync()
 
     def get_qc(self):
         return self._ScalarState.get_field("qc") + self._ScalarState.get_field("qr")

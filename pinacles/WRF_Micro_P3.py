@@ -830,55 +830,56 @@ class MicroP3(MicrophysicsBase):
 
         return
 
-    def io_fields2d_update(self, nc_grp):
+    def io_fields2d_update(self, fx):
 
         start = self._Grid.local_start
         end = self._Grid._local_end
         send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
         recv_buffer = np.empty_like(send_buffer)
 
-        if nc_grp is not None:
-            rainnc = nc_grp.createVariable(
-                "RAINNC",
-                np.double,
-                dimensions=(
-                    "X",
-                    "Y",
-                ),
-            )
+        if fx is not None:
+            rainnc = fx.create_dataset(
+                        "RAINNC",
+                        (1, self._Grid.n[0], self._Grid.n[1]),
+                        dtype=np.double,
+                    )
+
+            for i, d in enumerate(["time", "X", "Y"]):
+                rainnc.dims[i].attach_scale(fx[d])
 
         send_buffer[start[0] : end[0], start[1] : end[1]] = self._RAINNC
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
 
-        if nc_grp is not None:
+        if fx is not None:
             rainnc[:, :] = recv_buffer
 
-        if nc_grp is not None:
-            rainncv = nc_grp.createVariable(
-                "RAINNCV",
-                np.double,
-                dimensions=(
-                    "X",
-                    "Y",
-                ),
-            )
+        if fx is not None:
+            rainncv = fx.create_dataset(
+                        "RAINNCV",
+                        (1, self._Grid.n[0], self._Grid.n[1]),
+                        dtype=np.double,
+                    )
 
+            for i, d in enumerate(["time", "X", "Y"]):
+                rainncv.dims[i].attach_scale(fx[d])
+                
         send_buffer.fill(0.0)
         send_buffer[start[0] : end[0], start[1] : end[1]] = self._RAINNCV
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
-        if nc_grp is not None:
+        if fx is not None:
             rainncv[:, :] = recv_buffer
 
         # Compute and output the LWP
-        if nc_grp is not None:
-            lwp = nc_grp.createVariable(
-                "LWP",
-                np.double,
-                dimensions=(
-                    "X",
-                    "Y",
-                ),
-            )
+        if fx is not None:
+            lwp = fx.create_dataset(
+                        "LWP",
+                        (1, self._Grid.n[0], self._Grid.n[1]),
+                        dtype=np.double,
+                    )
+
+            for i, d in enumerate(["time", "X", "Y"]):
+                lwp.dims[i].attach_scale(fx[d])
+                
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
         qc = self._ScalarState.get_field("qc")[nh[0] : -nh[0], nh[1] : -nh[1], :]
@@ -889,19 +890,20 @@ class MicroP3(MicrophysicsBase):
         send_buffer.fill(0.0)
         send_buffer[start[0] : end[0], start[1] : end[1]] = lwp_compute
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
-        if nc_grp is not None:
+        if fx is not None:
             lwp[:, :] = recv_buffer
 
         # Compute and output the LWP
-        if nc_grp is not None:
-            iwp = nc_grp.createVariable(
-                "IWP",
-                np.double,
-                dimensions=(
-                    "X",
-                    "Y",
-                ),
-            )
+        if fx is not None:
+            iwp = fx.create_dataset(
+                        "IWP",
+                        (1, self._Grid.n[0], self._Grid.n[1]),
+                        dtype=np.double,
+                    )
+
+            for i, d in enumerate(["time", "X", "Y"]):
+                iwp.dims[i].attach_scale(fx[d])
+                
 
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
@@ -911,11 +913,8 @@ class MicroP3(MicrophysicsBase):
         send_buffer.fill(0.0)
         send_buffer[start[0] : end[0], start[1] : end[1]] = iwp_compute
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
-        if nc_grp is not None:
+        if fx is not None:
             iwp[:, :] = recv_buffer
-
-        if nc_grp is not None:
-            nc_grp.sync()
 
         return
 
