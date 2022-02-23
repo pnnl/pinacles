@@ -729,8 +729,8 @@ class LateralBCsReanalysis(LateralBCsBase):
                             shift=shift,
                         ).squeeze() 
                         
-                        qc[:,:] = qc[:,:]/self._Ref.rho0[np.newaxis,:]
-                        qi[:,:] = qi[:,:]/self._Ref.rho0[np.newaxis,:]
+                        qc[:,:] = 0.0 #qc[:,:]/self._Ref.rho0[np.newaxis,:]
+                        qi[:,:] = 0.0 #qi[:,:]/self._Ref.rho0[np.newaxis,:]
                     
                     
                         T = self._Ingest.interp_T(
@@ -781,7 +781,7 @@ class LateralBCsReanalysis(LateralBCsBase):
 
                         bdy_data[var][bdy][:, :] =  qv
                         print(np.amax(bdy_data[var][bdy][:, :]), np.amin(bdy_data[var][bdy][:, :]))
-                    elif var == "qc":
+                    elif False: #var == "qc":
                         
                         qc = self._Ingest.interp_qc(
                             self.bdy_lons["scalar"][bdy],
@@ -797,7 +797,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                         bdy_data[var][bdy][:, :] = qc     
                         print(np.amax(bdy_data[var][bdy][:, :]), np.amin(bdy_data[var][bdy][:, :]))        
                         
-                    elif var == "qi" or var == 'qi1':
+                    elif False: #var == "qi" or var == 'qi1':
                         
                         qi = self._Ingest.interp_qi(
                             self.bdy_lons["scalar"][bdy],
@@ -1082,7 +1082,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                 #     - w[2 * nh[1] : -2 * nh[1], start - 1 : end - 1, :]
                 # ) * weight[np.newaxis, ::-1, np.newaxis]
 
-            elif var == "s" or var == "qc" or var=="qi" or var == 'qi1':
+            elif var == "s" or var == "qv":# or var == "qc" or var=="qi" or var == 'qi1':
 
                 phi = self._State.get_field(var)
                 phi_t = self._State.get_tend(var)
