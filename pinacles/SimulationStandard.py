@@ -622,6 +622,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Timers,
             self.ModelGrid,
             self.Ref,
+            self.ScalarState,
             self.VelocityState,
             self.DiagnosticState,
         )
