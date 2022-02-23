@@ -595,8 +595,8 @@ class LateralBCsReanalysis(LateralBCsBase):
                             shift=shift,
                         ).squeeze() 
                         
-                        qc[:,:] = qc[:,:]/self._Ref.rho0[np.newaxis,:]
-                        qi[:,:] = qi[:,:]/self._Ref.rho0[np.newaxis,:]
+                        qc[:,:] = 0.0 #qc[:,:]/self._Ref.rho0[np.newaxis,:]
+                        qi[:,:] = 0.0 #qi[:,:]/self._Ref.rho0[np.newaxis,:]
                         
                         
                         T = self._Ingest.interp_T(
@@ -650,7 +650,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                         
                         
                         print(np.amax(bdy_data[var][bdy][:, :]), np.amin(bdy_data[var][bdy][:, :]))
-                    elif var == "qc":
+                    elif False:# var == "qc":
                         
                         qc = self._Ingest.interp_qc(
                             self.bdy_lons["scalar"][bdy],
@@ -666,7 +666,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                         bdy_data[var][bdy][:, :] = qc     
                         print(np.amax(bdy_data[var][bdy][:, :]), np.amin(bdy_data[var][bdy][:, :]))        
                         
-                    elif var == "qi" or var == 'qi1':
+                    elif False: #var == "qi" or var == 'qi1':
                         
                         qi = self._Ingest.interp_qi(
                             self.bdy_lons["scalar"][bdy],
