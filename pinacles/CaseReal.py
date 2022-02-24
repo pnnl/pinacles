@@ -693,127 +693,126 @@ class LateralBCsReanalysis(LateralBCsBase):
 
         bdy_data = self._post_bdy
         shift = self.presvious_shift
-        for bdy_data, shift in zip([self._previous_bdy, self._post_bdy], [0, 1]):
-            for bdy in ["x_low", "x_high", "y_low", "y_high"]:
-                for var in self._State._dofs:
-                    MPI.COMM_WORLD.Barrier()
-                    if MPI.COMM_WORLD.Get_rank() == 0:
-                        print("Setting boundaries for: ", var, bdy)
-                    if var == "u":
-                        bdy_data[var][bdy][:, :] = self._Ingest.interp_u(
-                            self.bdy_lons[var][bdy],
-                            self.bdy_lats[var][bdy],
-                            self._Grid.z_local,
-                            shift=shift,
-                        ).squeeze()
-                    elif var == "v":
-                        bdy_data[var][bdy][:, :] = self._Ingest.interp_v(
-                            self.bdy_lons[var][bdy],
-                            self.bdy_lats[var][bdy],
-                            self._Grid.z_local,
-                            shift=shift,
-                        ).squeeze()
-                    elif var == "s":
-                        
-                        qc = self._Ingest.interp_qc(
-                            self.bdy_lons["scalar"][bdy],
-                            self.bdy_lats["scalar"][bdy],
-                            self._Grid.z_local,
-                            shift=shift,
-                        ).squeeze() 
-                        
-                        qi = self._Ingest.interp_qi(
-                            self.bdy_lons["scalar"][bdy],
-                            self.bdy_lats["scalar"][bdy],
-                            self._Grid.z_local,
-                            shift=shift,
-                        ).squeeze() 
-                        
-                        qc[:,:] = 0.0 #qc[:,:]/self._Ref.rho0[np.newaxis,:]
-                        qi[:,:] = 0.0 #qi[:,:]/self._Ref.rho0[np.newaxis,:]
+        for bdy in ["x_low", "x_high", "y_low", "y_high"]:
+            for var in self._State._dofs:
+                MPI.COMM_WORLD.Barrier()
+                if MPI.COMM_WORLD.Get_rank() == 0:
+                    print("Setting boundaries for: ", var, bdy)
+                if var == "u":
+                    bdy_data[var][bdy][:, :] = self._Ingest.interp_u(
+                        self.bdy_lons[var][bdy],
+                        self.bdy_lats[var][bdy],
+                        self._Grid.z_local,
+                        shift=shift,
+                    ).squeeze()
+                elif var == "v":
+                    bdy_data[var][bdy][:, :] = self._Ingest.interp_v(
+                        self.bdy_lons[var][bdy],
+                        self.bdy_lats[var][bdy],
+                        self._Grid.z_local,
+                        shift=shift,
+                    ).squeeze()
+                elif var == "s":
                     
+                    qc = self._Ingest.interp_qc(
+                        self.bdy_lons["scalar"][bdy],
+                        self.bdy_lats["scalar"][bdy],
+                        self._Grid.z_local,
+                        shift=shift,
+                    ).squeeze() 
                     
-                        T = self._Ingest.interp_T(
-                                self.bdy_lons["scalar"][bdy],
-                                self.bdy_lats["scalar"][bdy],
-                                self._Grid.z_local,
-                                shift=shift,
-                            ).squeeze()
-                        
-                        bdy_data[var][bdy][:, :] = (
-                            T
-                            +(self._Grid.z_local[np.newaxis, :]
-                            * (parameters.G) - parameters.LV * qc - parameters.LS * qi)
-                            / parameters.CPD
-                        )
-                        
-                        bdy_data['T'][bdy][:, :] = T
+                    qi = self._Ingest.interp_qi(
+                        self.bdy_lons["scalar"][bdy],
+                        self.bdy_lats["scalar"][bdy],
+                        self._Grid.z_local,
+                        shift=shift,
+                    ).squeeze() 
                     
-                        print(np.amax(bdy_data[var][bdy][:, :]), np.amin(bdy_data[var][bdy][:, :]))
-                    elif var == "qv":
-                        
-                        
-                        # qc = self._Ingest.interp_qc(
-                        #     self.bdy_lons["scalar"][bdy],
-                        #     self.bdy_lats["scalar"][bdy],
-                        #     self._Grid.z_local,
-                        #     shift=shift,
-                        # ).squeeze() 
-                        
-                        # qi = self._Ingest.interp_qi(
-                        #     self.bdy_lons["scalar"][bdy],
-                        #     self.bdy_lats["scalar"][bdy],
-                        #     self._Grid.z_local,
-                        #     shift=shift,
-                        # ).squeeze() 
-                        
+                    qc[:,:] = 0.0 #qc[:,:]/self._Ref.rho0[np.newaxis,:]
+                    qi[:,:] = 0.0 #qi[:,:]/self._Ref.rho0[np.newaxis,:]
                 
-                        qv = self._Ingest.interp_qv(
+                
+                    T = self._Ingest.interp_T(
                             self.bdy_lons["scalar"][bdy],
                             self.bdy_lats["scalar"][bdy],
                             self._Grid.z_local,
                             shift=shift,
-                        ).squeeze() 
-                        
-                        #qc[:,:] = qc[:,:]/self._Ref.rho0[np.newaxis,:]
-                        #qi[:,:] = qi[:,:]/self._Ref.rho0[np.newaxis,:]
-                        qv[:,:] = qv[:,:]/self._Ref.rho0[np.newaxis,:]
+                        ).squeeze()
+                    
+                    bdy_data[var][bdy][:, :] = (
+                        T
+                        +(self._Grid.z_local[np.newaxis, :]
+                        * (parameters.G) - parameters.LV * qc - parameters.LS * qi)
+                        / parameters.CPD
+                    )
+                    
+                    bdy_data['T'][bdy][:, :] = T
+                
+                    print(np.amax(bdy_data[var][bdy][:, :]), np.amin(bdy_data[var][bdy][:, :]))
+                elif var == "qv":
+                    
+                    
+                    # qc = self._Ingest.interp_qc(
+                    #     self.bdy_lons["scalar"][bdy],
+                    #     self.bdy_lats["scalar"][bdy],
+                    #     self._Grid.z_local,
+                    #     shift=shift,
+                    # ).squeeze() 
+                    
+                    # qi = self._Ingest.interp_qi(
+                    #     self.bdy_lons["scalar"][bdy],
+                    #     self.bdy_lats["scalar"][bdy],
+                    #     self._Grid.z_local,
+                    #     shift=shift,
+                    # ).squeeze() 
+                    
+            
+                    qv = self._Ingest.interp_qv(
+                        self.bdy_lons["scalar"][bdy],
+                        self.bdy_lats["scalar"][bdy],
+                        self._Grid.z_local,
+                        shift=shift,
+                    ).squeeze() 
+                    
+                    #qc[:,:] = qc[:,:]/self._Ref.rho0[np.newaxis,:]
+                    #qi[:,:] = qi[:,:]/self._Ref.rho0[np.newaxis,:]
+                    qv[:,:] = qv[:,:]/self._Ref.rho0[np.newaxis,:]
 
-                        bdy_data[var][bdy][:, :] =  qv
-                        print(np.amax(bdy_data[var][bdy][:, :]), np.amin(bdy_data[var][bdy][:, :]))
-                    elif False: #var == "qc":
-                        
-                        qc = self._Ingest.interp_qc(
-                            self.bdy_lons["scalar"][bdy],
-                            self.bdy_lats["scalar"][bdy],
-                            self._Grid.z_local,
-                            shift=shift,
-                        ).squeeze() 
-                        
-                        qc[qc < 0.0] = 0.0
-                        
-                        qc[:,:] = qc[:,:]/self._Ref.rho0[np.newaxis,:]
-                        
-                        bdy_data[var][bdy][:, :] = qc     
-                        print(np.amax(bdy_data[var][bdy][:, :]), np.amin(bdy_data[var][bdy][:, :]))        
-                        
-                    elif False: #var == "qi" or var == 'qi1':
-                        
-                        qi = self._Ingest.interp_qi(
-                            self.bdy_lons["scalar"][bdy],
-                            self.bdy_lats["scalar"][bdy],
-                            self._Grid.z_local,
-                            shift=shift,
-                        ).squeeze() 
-                        
-                        qi[:,:] = qi[:,:]/self._Ref.rho0[np.newaxis,:]
-                        
-                        qi[qi < 0.0] = 0.0
-                        
-                        bdy_data[var][bdy][:, :] = qi
-                        print(np.amax(bdy_data[var][bdy][:, :]), np.amin(bdy_data[var][bdy][:, :]))
-                    else:
-                        bdy_data[var][bdy].fill(0.0)
+                    bdy_data[var][bdy][:, :] =  qv
+                    print(np.amax(bdy_data[var][bdy][:, :]), np.amin(bdy_data[var][bdy][:, :]))
+                elif False: #var == "qc":
+                    
+                    qc = self._Ingest.interp_qc(
+                        self.bdy_lons["scalar"][bdy],
+                        self.bdy_lats["scalar"][bdy],
+                        self._Grid.z_local,
+                        shift=shift,
+                    ).squeeze() 
+                    
+                    qc[qc < 0.0] = 0.0
+                    
+                    qc[:,:] = qc[:,:]/self._Ref.rho0[np.newaxis,:]
+                    
+                    bdy_data[var][bdy][:, :] = qc     
+                    print(np.amax(bdy_data[var][bdy][:, :]), np.amin(bdy_data[var][bdy][:, :]))        
+                    
+                elif False: #var == "qi" or var == 'qi1':
+                    
+                    qi = self._Ingest.interp_qi(
+                        self.bdy_lons["scalar"][bdy],
+                        self.bdy_lats["scalar"][bdy],
+                        self._Grid.z_local,
+                        shift=shift,
+                    ).squeeze() 
+                    
+                    qi[:,:] = qi[:,:]/self._Ref.rho0[np.newaxis,:]
+                    
+                    qi[qi < 0.0] = 0.0
+                    
+                    bdy_data[var][bdy][:, :] = qi
+                    print(np.amax(bdy_data[var][bdy][:, :]), np.amin(bdy_data[var][bdy][:, :]))
+                else:
+                    bdy_data[var][bdy].fill(0.0)
 
         return
 
