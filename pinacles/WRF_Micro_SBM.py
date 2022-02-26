@@ -116,6 +116,7 @@ class MicroSBM(MicrophysicsBase):
             "saturation",
             "n_reg_ccn",
             "EFFR",
+            "c_RV",
         ]
 
         long_names = {
@@ -129,19 +130,21 @@ class MicroSBM(MicrophysicsBase):
             "saturation": "Saturaiton Ratio",
             "n_reg_ccn": "Aerosol Regeneration Rate",
             "EFFR": "cloud droplet effective radius",
+            "c_RV": "cloud droplet mean-volume radius",
         }
 
         units = {
             "MA": "",
             "LH_rate": "K s^{-1}",
             "CE_rate": "kg kg^{-1} s^{-1}",
-            "CldNucl_rate": "kg kg^{-1} s^{-1}",
+            "CldNucl_rate": "# kg^{-1} s^{-1}",
             "difful_tend": "kg kg^{-1} s^{-1}",
             "diffur_tend": "kg kg^{-1} s^{-1}",
             "tempdiffl": "K s^{-1}",
             "saturation": "",
             "n_reg_ccn": "",
             "EFFR": "m",
+            "c_RV": "m",
         }
 
         for var in self._io_fields:
@@ -385,7 +388,6 @@ class MicroSBM(MicrophysicsBase):
 
         meta.append(("kg^-1", "cloud water autoconversion number"))
         meta.append(("kg kg^-1", "cloud water autoconversion mass"))
-
         meta.append(("kg kg^-1", "rain water autoconversion mass"))
         meta.append(("kg^-1", "rain water autoconversion number"))
         meta.append(("kg kg^-1", "water vapor autoconversion mass"))
@@ -543,6 +545,7 @@ class MicroSBM(MicrophysicsBase):
             self._wrf_dims, order="F", dtype=np.double
         )
         self._wrf_vars["EFFR"] = np.zeros(self._wrf_dims, order="F", dtype=np.double)
+        self._wrf_vars["c_RV"] = np.zeros(self._wrf_dims, order="F", dtype=np.double)
 
         self._wrf_vars["s_wrf"] = np.zeros(self._wrf_dims, order="F", dtype=np.double)
 
@@ -738,6 +741,7 @@ class MicroSBM(MicrophysicsBase):
             self._wrf_vars["diffur_tend"],
             self._wrf_vars["tempdiffl"],
             self._wrf_vars["EFFR"],
+            self._wrf_vars["c_RV"],
             diagflag=self._wrf_vars["diagflag"],
             rainnc=self._wrf_vars["RAINNC"],
             rainncv=self._wrf_vars["RAINNCV"],
@@ -880,25 +884,13 @@ class MicroSBM(MicrophysicsBase):
 
         timeseries_grp.createVariable("rain_rate", np.double, dimensions=("time",))
         # Now add cloud fraction and rain fraction profiles
-        v = profiles_grp.createVariable(
-            "CF",
-            np.double,
-            dimensions=(
-                "time",
-                "z",
-            ),
-        )
+        v = profiles_grp.createVariable("CF", np.double, dimensions=("time","z",),)
         v.long_name = "Cloud Fraction"
         v.standard_name = "CF"
         v.units = ""
 
         profiles_grp.createVariable(
-            "RF",
-            np.double,
-            dimensions=(
-                "time",
-                "z",
-            ),
+            "RF", np.double, dimensions=("time","z",),
         )
         v.long_name = "Rain Fraction"
         v.standard_name = "RF"
