@@ -885,8 +885,11 @@ class LateralBCsReanalysis(LateralBCsBase):
         nudge_width = self.nudge_width
         # weight =  1.0/(2.0 * self._TimeSteppingController.dt)  / (1.0 + np.arange(nudge_width))
         weight = (1.0 - np.tanh(np.arange(self.nudge_width) / 2)) / (
-            10.0 * self._TimeSteppingController.dt
+            4.0 * self._TimeSteppingController.dt
         )
+        
+        #weight = 1.0/(100.0 * self._TimeSteppingController.dt) * np.arange(self.nudge_width,0,-1)/self.nudge_width
+        
         # weight = (1.0 + np.cos(np.arange(self.nudge_width) * np.pi / self.nudge_width)/2.0) /(4.0 * self._TimeSteppingController.dt)
 
         for var in self._State._dofs:
