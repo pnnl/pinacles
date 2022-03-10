@@ -1,0 +1,87 @@
+Jan 2018 (bloss):
+ + Adding back the capability to run with separate vapor
+   and cloud water mass mixing ratios in SAM, so that
+   each variable is advected and diffused.  This also means
+   that saturation adjustment will occur within 
+   module_mp_graupel.f90, rather than outside.
+
+Sept 2015 (bloss): 
+ + Moved most namelist and control parameters (e.g., Nc0) to
+  micro_params module within micro_params.f90.
+
+ + Added in an abbreviated version of module_wrf_error.f90
+  so that the differences between module_mp_graupel in SAM
+  and WRF can be minimized.
+
+ + Added coupling between microphysics and radiation so that more
+  sophisticated routines for cloud optical properties from CAM5 can be
+  used.  This change also makes snow radiatively active.  This is now
+  the default behavior in SAM.
+
+  To revert to the old behavior, in which snow is not radiatively
+  active and the cloud liquid/ice effective radii from
+  module_mp_graupel are converted to cloud optical properties using
+  the lookup tables within RRTMG, set
+
+     dorrtm_cloud_optics_from_effrad_LegacyOption = .true.
+
+  in the MICRO_M2005 namelist.
+
+ + Added coupling to QUICKBEAM cloud radar simulator.  With namelist
+  options, the orientation (surface/satellite), frequency, etc. can 
+  be set and fed into the radar simulator.  To turn on the radar
+  simulator, set 
+
+   doreflectivity_cloudradar = .true.
+
+  in the MICRO_M2005 namelist.  Note that QUICKBEAM is really
+  expensive to run, so that it will only be computed once or twice
+  every nstat steps, rather than nstatfrq for the other statistics.
+  The outputs are a 3D field of radar reflectivity, along with 
+  statistics outputs for cloud fraction (dBZ>-40 and dBZ>-30) and
+  a histogram of reflectivity as a function of time/height (output
+  as frequencies in individual bins, e.g., -5 < dBZ < 0).  The
+  histogram output can be controlled in the namelist.
+
+  Note that neither of the microphysics-radiation coupling nor the
+  QUICKBEAM reflectivities have been used in published work yet, but
+  both seem to be functioning properly.  If you encounter trouble,
+  contact Peter Blossey and Marat.
+
+Jan 2015 (bloss): Updated module_mp_graupel.f90 to Hugh Morrison's
+  Version 3.5 Release.
+
+Apr 2009 (bloss):
+
+ + Modified scheme to use total water (vapor + cloud liquid) as a
+prognostic variable in place of separate vapor and cloud liquid
+variables.  This should reduce the cost associated with scalar
+advection.  With this scheme, saturation adjustment occurs before
+calling the microphysics, so that a consistent set of temperature,
+water vapor and cloud liquid values can be input to the microphysics.
+This saturation adjustment could be more expensive than the old one
+within the microphysics, since you do not have a reference value of
+cloud liquid to start from.
+
+ + The latent heating due to the microphysics is not readily
+accessible with the total water formulation, so that it is no longer
+output in the statistics.
+
+ + The EFFRQ* effective radius outputs in the past were susceptible to
+errors due to non-uniformity of hydrometeor fractions across
+processors or time steps.  As a result, these outputs have been
+eliminated.  In their place, a new output Q*OEFFR which represents a
+scaled version of the layer optical depth has been added.  This can be
+used to compute a consistent effective radius from the averaged
+optical depth and mixing ratio.  For example, the cloud liquid
+effective radius may be computed as:
+
+  EFFRC = QC / QCOEFFR
+
+where QC is in g/kg, QCOEFFR is in g/kg/micron and EFFRC is in
+microns.
+
+ + The default setting for dopredictNc was changed to .false.
+Now, by default, the cloud liquid droplet concentration will be set to
+Nc0 which itself has a default value of 100./cm3.
+
