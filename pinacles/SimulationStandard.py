@@ -34,6 +34,7 @@ from pinacles import Restart
 from pinacles import UtilitiesParallel
 from pinacles import ParticlesFactory
 from pinacles import Timers
+from pinacles import Canopy
 from mpi4py import MPI
 import numpy as np
 
@@ -203,6 +204,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Kine,
             self.VelocityState,
         )
+
+        self.Canopy = Canopy.Canopy(self.ModelGrid, self.Ref, self.VelocityState, self.ScalarAdv, self.DiagnosticState, self.TimeSteppingController)
 
         # Instantiate the pressure solver
         self.PSolver = PressureSolver.factory(
@@ -560,6 +563,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ScalarState,
         )
 
+
         self.MomDiff = MomentumDiffusion.MomentumDiffusion(
             self._namelist,
             self.Timers,
@@ -839,6 +843,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 # Do Damping
                 self.RayleighDamping.update()
+
+                #Do Canopy
+                self.Canopy.update()
 
                 # Do time stepping
                 self.ScalarTimeStepping.update()
