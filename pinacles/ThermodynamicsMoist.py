@@ -25,6 +25,12 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
             latex_name="\theta_v",
             units="K",
         )
+        DiagnosticState.add_variable(
+            "qt",
+            long_name="Total water specific humidty",
+            latex_name="q_t",
+            units="kg/kg",
+        )
 
         self._Timers.add_timer("ThermoDynamicsMoist_update")
 
@@ -49,6 +55,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         qv = self._ScalarState.get_field("qv")
         ql = self._Micro.get_qc()
         qi = self._Micro.get_qi()
+        qt = self._DiagnosticState.get_field("qt")
 
         T = self._DiagnosticState.get_field("T")
         thetav = self._DiagnosticState.get_field("thetav")
@@ -76,7 +83,9 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         self._DiagnosticState.remove_mean("buoyancy")
 
         self.compute_buoyancy_gradient(dxi, buoyancy, buoyancy_gradient_mag)
-
+        
+        qt[:,:,:] = self.get_qt()
+        
         self._Timers.end_timer("ThermoDynamicsMoist_update")
         return
 
