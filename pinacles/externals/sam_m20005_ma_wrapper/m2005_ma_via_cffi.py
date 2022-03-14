@@ -92,27 +92,23 @@ class M2005_MA:
         kts,
         kte,
         th_3d,
-        qv_3d,
-        qc_3d,
-        qr_3d,
-        qnr_3d,
-        diag_zdbz_3d,
-        diag_effc_3d,
-        diag_effi_3d,
-        diag_vmi_3d,
-        diag_di_3d,
-        diag_rhopo_3d,
+        s_3d,
+        microfield_4d,
         th_old_3d,
         qv_old_3d,
-        qi1_3d,
-        qni1_3d,
-        qir1_3d,
-        qib1_3d,
         n_diag_3d,
         diag_3d,
         LIQUID_SEDIMENTATION,
         ICE_SEDIMENTATION,
-        nc_3d,
+        Nacc_sct_3d,
+        Nait_sct_3d,
+        Nait2a_ct_3d,
+        Mait2a_ct_3d,
+        relhum_3d,
+        diag_effc_3d,
+        diag_effr_3d,
+        diag_effi_3d,
+        diag_effs_3d,
         pii,
         p,
         dz,
@@ -125,6 +121,7 @@ class M2005_MA:
         dt,
         itimestep,
         n_iceCat,
+        nmicrofields,
     ):
 
         self._lib_m2005_ma.c_m2005_ma_main(
@@ -147,27 +144,23 @@ class M2005_MA:
             kts,
             kte,
             self.as_pointer(th_3d),
-            self.as_pointer(qv_3d),
-            self.as_pointer(qc_3d),
-            self.as_pointer(qr_3d),
-            self.as_pointer(qnr_3d),
-            self.as_pointer(diag_zdbz_3d),
-            self.as_pointer(diag_effc_3d),
-            self.as_pointer(diag_effi_3d),
-            self.as_pointer(diag_vmi_3d),
-            self.as_pointer(diag_di_3d),
-            self.as_pointer(diag_rhopo_3d),
+            self.as_pointer(s_3d),
+            self.as_pointer(microfield_4d),
             self.as_pointer(th_old_3d),
             self.as_pointer(qv_old_3d),
-            self.as_pointer(qi1_3d),
-            self.as_pointer(qni1_3d),
-            self.as_pointer(qir1_3d),
-            self.as_pointer(qib1_3d),
             n_diag_3d,
             self.as_pointer(diag_3d),
             self.as_pointer(LIQUID_SEDIMENTATION),
             self.as_pointer(ICE_SEDIMENTATION),
-            self.as_pointer(nc_3d),
+            self.as_pointer(Nacc_sct_3d),
+            self.as_pointer(Nait_sct_3d),
+            self.as_pointer(Nait2a_sct_3d),
+            self.as_pointer(Mait2a_sct_3d),
+            self.as_pointer(relhum_3d),
+            self.as_pointer(diag_effc_3d),
+            self.as_pointer(diag_effr_3d),
+            self.as_pointer(diag_effi_3d),
+            self.as_pointer(diag_effs_3d),
             self.as_pointer(pii),
             self.as_pointer(p),
             self.as_pointer(dz),
@@ -180,118 +173,10 @@ class M2005_MA:
             dt,
             itimestep,
             n_iceCat,
+            nmicrofields,
         )
 
         return
-
-    def update_1mom(
-        self,
-        ids,
-        ide,
-        jds,
-        jde,
-        kds,
-        kde,
-        ims,
-        ime,
-        jms,
-        jme,
-        kms,
-        kme,
-        its,
-        ite,
-        jts,
-        jte,
-        kts,
-        kte,
-        th_3d,
-        qv_3d,
-        qc_3d,
-        qr_3d,
-        qnr_3d,
-        diag_zdbz_3d,
-        diag_effc_3d,
-        diag_effi_3d,
-        diag_vmi_3d,
-        diag_di_3d,
-        diag_rhopo_3d,
-        th_old_3d,
-        qv_old_3d,
-        qi1_3d,
-        qni1_3d,
-        qir1_3d,
-        qib1_3d,
-        n_diag_3d,
-        diag_3d,
-        LIQUID_SEDIMENTATION,
-        ICE_SEDIMENTATION,
-        pii,
-        p,
-        dz,
-        w,
-        RAINNC,
-        RAINNCV,
-        SR,
-        SNOWNC,
-        SNOWNCV,
-        dt,
-        itimestep,
-        n_iceCat,
-    ):
-
-        self._lib_m2005_ma.c_m2005_ma_main_1mom(
-            ids,
-            ide,
-            jds,
-            jde,
-            kds,
-            kde,
-            ims,
-            ime,
-            jms,
-            jme,
-            kms,
-            kme,
-            its,
-            ite,
-            jts,
-            jte,
-            kts,
-            kte,
-            self.as_pointer(th_3d),
-            self.as_pointer(qv_3d),
-            self.as_pointer(qc_3d),
-            self.as_pointer(qr_3d),
-            self.as_pointer(qnr_3d),
-            self.as_pointer(diag_zdbz_3d),
-            self.as_pointer(diag_effc_3d),
-            self.as_pointer(diag_effi_3d),
-            self.as_pointer(diag_vmi_3d),
-            self.as_pointer(diag_di_3d),
-            self.as_pointer(diag_rhopo_3d),
-            self.as_pointer(th_old_3d),
-            self.as_pointer(qv_old_3d),
-            self.as_pointer(qi1_3d),
-            self.as_pointer(qni1_3d),
-            self.as_pointer(qir1_3d),
-            self.as_pointer(qib1_3d),
-            n_diag_3d,
-            self.as_pointer(diag_3d),
-            self.as_pointer(LIQUID_SEDIMENTATION),
-            self.as_pointer(ICE_SEDIMENTATION),
-            self.as_pointer(pii),
-            self.as_pointer(p),
-            self.as_pointer(dz),
-            self.as_pointer(w),
-            self.as_pointer(RAINNC),
-            self.as_pointer(RAINNCV),
-            self.as_pointer(SR),
-            self.as_pointer(SNOWNC),
-            self.as_pointer(SNOWNCV),
-            dt,
-            itimestep,
-            n_iceCat,
-        )
 
     # function creates cdata variables of a type "double *" from a numpy array
     # additionally checks if the array is contiguous
@@ -330,31 +215,30 @@ def main():
     shape_3d = (ime, kme, jme)
 
     th_3d = np.zeros(shape_3d, dtype=np.double, order="F") + 300.0
-    qv_3d = np.zeros_like(th_3d) + 1e-5
-    qc_3d = np.zeros_like(th_3d)
-    qr_3d = np.zeros_like(th_3d)
-    qnr_3d = np.zeros_like(th_3d)
-    diag_zdbz_3d = np.zeros_like(th_3d)
-    diag_effc_3d = np.zeros_like(th_3d)
-    diag_effi_3d = np.zeros_like(th_3d)
-    diag_vmi_3d = np.zeros_like(th_3d)
-    diag_di_3d = np.zeros_like(th_3d)
-    diag_rhopo_3d = np.zeros_like(th_3d)
+    s_3d = np.zeros_like(th_3d) + 300.0
     th_old_3d = np.zeros_like(th_3d) + 300.0
     qv_old_3d = np.zeros_like(th_3d) + 1e-5
-    qi1_3d = np.zeros_like(th_3d)
-    qni1_3d = np.zeros_like(th_3d)
-    qir1_3d = np.zeros_like(th_3d)
-    qib1_3d = np.zeros_like(th_3d)
-    nc_3d = np.zeros_like(th_3d)
+    LIQUID_SEDIMENTATION = np.zeros_like(th_3d)
+    ICE_SEDIMENTATION = np.zeros_like(th_3d)
+    Nacc_sct_3d = np.zeros_like(th_3d)
+    Nait_sct_3d = np.zeros_like(th_3d)
+    Nait2a_sct_3d = np.zeros_like(th_3d)
+    Mait2a_sct_3d = np.zeros_like(th_3d)
+    relhum_3d = np.zeros_like(th_3d)
+    diag_effc_3d = np.zeros_like(th_3d)
+    diag_effr_3d = np.zeros_like(th_3d)
+    diag_effi_3d = np.zeros_like(th_3d)
+    diag_effs_3d = np.zeros_like(th_3d)
     pii = np.zeros_like(th_3d) + 1.0
     p = np.zeros_like(th_3d) + 1e5
     dz = np.zeros_like(th_3d) + 5.0
     w = np.zeros_like(th_3d)
 
-    LIQUID_SEDIMENTATION = np.zeros_like(th_3d)
-    ICE_SEDIMENTATION = np.zeros_like(th_3d)
-
+    nmicrofields = 10
+    microfield_4d = np.zeros(
+        (shape_3d[0], shape_3d[1], shape_3d[2], nmicrofields), order="F", dtype=np.double
+    )
+    
     n_diag_3d = 5
     diag_3d = np.zeros(
         (shape_3d[0], shape_3d[1], shape_3d[2], n_diag_3d), order="F", dtype=np.double
