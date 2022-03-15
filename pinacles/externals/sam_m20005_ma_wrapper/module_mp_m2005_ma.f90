@@ -1,9 +1,9 @@
-module microphysics
+module module_mp_m2005_ma
 
 ! main interface to Morrison microphysics.
 ! original implementation by Peter Blossey, UW
 
-use params, only: rgas, rv, cp, lcond, lsub, fac_cond, fac_sub, ggr, &
+use params, only: rgas, rv, cp, lcond, lsub, fac_cond, fac_sub, &
      doprecip, docloud, donudging_aerosol
 
 use src_scavenging, only: memory, init_scavenging, m2011_scavenging, scav_cloud_2m
@@ -594,7 +594,7 @@ end subroutine micro_setparm
 !
 ! this one is guaranteed to be called by SAM at the 
 !   beginning of each run, initial or restart:
-subroutine micro_init()
+subroutine m2005_ma_init()
 
   implicit none
   
@@ -1380,7 +1380,7 @@ end subroutine micro_flux
 ! proceses is the liquid/ice water static energy: t = tabs + gz - Lc (qc+qr) - Ls (qi+qs+qg) 
 ! It should not be changed during all of your point microphysical processes!
 
-subroutine micro_proc()
+subroutine mp_m2005_ma_wrapper_sam()
 
 implicit none
 
