@@ -19,6 +19,7 @@ def main(namelist):
         Sim.StatsIO,
         Sim.FieldsIO,
         Sim.Fields2d,
+        Sim.CoarseGrain,
         Sim.IOTower,
         Sim.Restart,
         Sim.Timers,

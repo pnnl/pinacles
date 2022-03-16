@@ -36,6 +36,7 @@ from pinacles import ParticlesFactory
 from pinacles import Timers
 from pinacles import LateralBCsFactory
 from pinacles import Ingest
+from pinacles import DiagnosticsCoarseGrain
 from mpi4py import MPI
 import numpy as np
 import os
@@ -456,6 +457,22 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.FieldsIO.add_class(self.ScalarState)
         self.FieldsIO.add_class(self.VelocityState)
         self.FieldsIO.add_class(self.DiagnosticState)
+
+        # Set up coarse grainers
+        # Set up coarse grainers
+        self.CoarseGrain = DiagnosticsCoarseGrain.CoarseGrainFactory(
+            self._namelist,
+            self.Timers,
+            self.ModelGrid,
+            self.TimeSteppingController,
+            self.ScalarState,
+            self.VelocityState,
+            self.DiagnosticState,
+            self.Micro,
+        )
+        self.CoarseGrain.add_class(self.ScalarState)
+        self.CoarseGrain.add_class(self.VelocityState)
+        self.CoarseGrain.add_class(self.DiagnosticState)
 
         # At this point the model is basically initalized, however we should also do boundary exchanges to insure
         # the halo regions are set and the to a pressure solver to insure that the velocity field is initially satifies
@@ -878,6 +895,21 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.FieldsIO.add_class(self.ScalarState)
         self.FieldsIO.add_class(self.VelocityState)
         self.FieldsIO.add_class(self.DiagnosticState)
+
+        # Set up coarse grainers
+        self.CoarseGrain = DiagnosticsCoarseGrain.CoarseGrainFactory(
+            self._namelist,
+            self.Timers,
+            self.ModelGrid,
+            self.TimeSteppingController,
+            self.ScalarState,
+            self.VelocityState,
+            self.DiagnosticState,
+            self.Micro,
+        )
+        self.CoarseGrain.add_class(self.ScalarState)
+        self.CoarseGrain.add_class(self.VelocityState)
+        self.CoarseGrain.add_class(self.DiagnosticState)
 
         # Now overwrite model state with restart
         self.Restart.restart()
