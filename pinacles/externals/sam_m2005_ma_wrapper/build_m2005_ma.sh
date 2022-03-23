@@ -1,0 +1,3 @@
+gfortran -fPIC -O3 -c  -ffixed-line-length-none -freal-4-real-8 aqueous_chemistry.f90 cam_cldaero.f90 cam_modal_aero_coag.f90 cam_modal_aero_gasaerexch.f90 coagulation.f90 derfi.f gas_chemistry.f90 gas_uptake.f90 hoppel_transfer.f90 micro_params.f90 mirage_wateruptake.f90 module_mp_graupel.f90 src_scavenging.f90 wrf_debug.f90
+gfortran -fPIC -O3 -c  -ffixed-line-length-none -freal-4-real-8 module_mp_m2005_ma.f90
+gfortran -shared -fPIC -O3 -freal-4-real-8 module_mp_m2005_ma.o aqueous_chemistry.o cam_cldaero.o cam_modal_aero_coag.o cam_modal_aero_gasaerexch.o coagulation.o derfi.o gas_chemistry.o gas_uptake.o hoppel_transfer.o micro_params.o mirage_wateruptake.o module_mp_graupel.o src_scavenging.o wrf_debug.o m2005_ma_wrapper.F90
