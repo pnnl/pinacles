@@ -659,6 +659,8 @@ class MicroSBM(MicrophysicsBase):
             v_diag = self._DiagnosticState.get_field(key)
             v_diag[:, :, :] = v[:, :, :]
 
+        self._wrf_vars["RAINNCV"].fill(0.0)
+        self._wrf_vars["RAINNC"][:, :] = self._RAINNC[:, :]
         rain_accum_old = np.sum(self._RAINNC)
 
         # Do conversions to mixing-ratio
@@ -884,13 +886,25 @@ class MicroSBM(MicrophysicsBase):
 
         timeseries_grp.createVariable("rain_rate", np.double, dimensions=("time",))
         # Now add cloud fraction and rain fraction profiles
-        v = profiles_grp.createVariable("CF", np.double, dimensions=("time","z",),)
+        v = profiles_grp.createVariable(
+            "CF",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "Cloud Fraction"
         v.standard_name = "CF"
         v.units = ""
 
         profiles_grp.createVariable(
-            "RF", np.double, dimensions=("time","z",),
+            "RF",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
         )
         v.long_name = "Rain Fraction"
         v.standard_name = "RF"
@@ -973,10 +987,10 @@ class MicroSBM(MicrophysicsBase):
 
         if fx is not None:
             rainnc = fx.create_dataset(
-                        "RAINNC",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "RAINNC",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 rainnc.dims[i].attach_scale(fx[d])
@@ -989,10 +1003,10 @@ class MicroSBM(MicrophysicsBase):
 
         if fx is not None:
             rainncv = fx.create_dataset(
-                        "RAINNCV",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "RAINNCV",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 rainncv.dims[i].attach_scale(fx[d])
@@ -1006,14 +1020,14 @@ class MicroSBM(MicrophysicsBase):
         # Compute and output the LWP
         if fx is not None:
             lwp = fx.create_dataset(
-                        "LWP",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "LWP",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 lwp.dims[i].attach_scale(fx[d])
-                
+
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
         qc = self._ScalarState.get_field("qc")[nh[0] : -nh[0], nh[1] : -nh[1], :]
