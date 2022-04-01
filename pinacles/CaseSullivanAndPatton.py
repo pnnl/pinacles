@@ -20,7 +20,7 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         pass
 
     # Integrate the reference profile.
-    Ref.set_surface(Tsfc=300.0, u0=1.0, v0=0.0)
+    Ref.set_surface(Tsfc=300.0, u0=0.0, v0=0.0)
     Ref.integrate()
 
     u = VelocityState.get_field("u")
@@ -37,7 +37,7 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     exner = Ref.exner
 
     # Wind is uniform initiall
-    u.fill(1.0)
+    u.fill(5.0)
     v.fill(0.0)
     w.fill(0.0)
 
@@ -277,7 +277,7 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
 
         self._f = 1.0e-4
 
-        self._ug = np.zeros_like(self._Grid.z_global) + 4.0
+        self._ug = np.zeros_like(self._Grid.z_global) + 5.0
         self._vg = np.zeros_like(self._ug)
 
         self._Timers.add_timer("ForcingSullivanAndPatton_update")
@@ -297,7 +297,7 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
         u0 = self._Ref.u0
         v0 = self._Ref.v0
 
-        # Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, u0, v0, vt, ut)
+        Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, u0, v0, vt, ut)
 
         self._Timers.end_timer("ForcingSullivanAndPatton_update")
         return

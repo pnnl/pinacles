@@ -53,10 +53,9 @@ def factory(namelist):
     elif namelist["meta"]["casename"] == "atex":
         return CaseATEX.initialize
     elif namelist["meta"]["casename"] == "testbed":
-        return testbed
+        return CaseTestbed.initialize
     elif namelist["meta"]["casename"] == "real":
         return real
-        return CaseTestbed.initialize
     else:
         UtilitiesParallel.print_root(
             "Caanot find initialization for: ", namelist["meta"]["casename"]
@@ -65,8 +64,12 @@ def factory(namelist):
 
 def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest=None):
     init_function = factory(namelist)
-    if Ingest is None:
+
+    try:
+        UtilitiesParallel.print_root('\t Initializing without ingest option')
         init_function(namelist, ModelGrid, Ref, ScalarState, VelocityState)
-    else:
+    except:
+        UtilitiesParallel.print_root('\t Initializing with ingest option')
         init_function(namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest)
+    
     return
