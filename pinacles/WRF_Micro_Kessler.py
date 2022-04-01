@@ -27,12 +27,16 @@ def compute_w_from_q(rho0, rhod, p, qv, T, wv, wc, wr):
     for i in range(shape[0]):
         for j in range(shape[1]):
             for k in range(shape[2]):
-                qt = wv[i,j,k] + wc[i,j,k] + wr[i,j,k]
-                pd  = p[i,j,k] * (1.0 - qt) / ( 1.0 - qt  + parameters.EPSVI * wv[i,j,k])
-                
-                rhod[i,j,k]= pd/(parameters.RD * T[i,j,k])
-                
-                factor = (rho0[i,j,k]) / rhod[i,j,k]
+                qt = wv[i, j, k] + wc[i, j, k] + wr[i, j, k]
+                pd = (
+                    p[i, j, k]
+                    * (1.0 - qt)
+                    / (1.0 - qt + parameters.EPSVI * wv[i, j, k])
+                )
+
+                rhod[i, j, k] = pd / (parameters.RD * T[i, j, k])
+
+                factor = (rho0[i, j, k]) / rhod[i, j, k]
 
                 wv[i, j, k] *= factor
                 wc[i, j, k] *= factor
@@ -48,7 +52,7 @@ def compute_q_from_w(rho0, rhod, qv, qc, qr):
         for j in range(shape[1]):
             for k in range(shape[2]):
 
-                factor = rhod[i,j,k] / (rho0[i,j,k])
+                factor = rhod[i, j, k] / (rho0[i, j, k])
 
                 qv[i, j, k] *= factor
                 qc[i, j, k] *= factor
@@ -143,6 +147,8 @@ class MicroKessler(MicrophysicsBase):
 
         self._rain_rate = 0.0
 
+        self._restart_attributes = ["_RAINNC"]
+
         self._Timers.add_timer("MicroKessler_update")
 
         return
@@ -222,7 +228,9 @@ class MicroKessler(MicrophysicsBase):
         to_wrf_order(nhalo, qc, qc_wrf)
         to_wrf_order(nhalo, qr, qr_wrf)
 
-        compute_w_from_q(rho_wrf, rhod_wrf, p_wrf, qv_wrf, T_wrf, qv_wrf, qc_wrf, qr_wrf)
+        compute_w_from_q(
+            rho_wrf, rhod_wrf, p_wrf, qv_wrf, T_wrf, qv_wrf, qc_wrf, qr_wrf
+        )
 
         rain_accum_old = np.sum(self._RAINNC)
         kessler.module_mp_kessler.kessler(
@@ -265,7 +273,7 @@ class MicroKessler(MicrophysicsBase):
             kts,
             kte,
         )
-        
+
         compute_q_from_w(rho_wrf, rhod_wrf, qv_wrf, qc_wrf, qr_wrf)
 
         to_our_order(nhalo, qv_wrf, qv)
@@ -449,10 +457,10 @@ class MicroKessler(MicrophysicsBase):
 
         if fx is not None:
             rainnc = fx.create_dataset(
-                        "RAINNC",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "RAINNC",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 rainnc.dims[i].attach_scale(fx[d])
@@ -465,10 +473,10 @@ class MicroKessler(MicrophysicsBase):
 
         if fx is not None:
             rainncv = fx.create_dataset(
-                        "RAINNCV",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "RAINNCV",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 rainncv.dims[i].attach_scale(fx[d])
@@ -479,14 +487,13 @@ class MicroKessler(MicrophysicsBase):
         if fx is not None:
             rainncv[:, :] = recv_buffer
 
-
         # Compute and output the LWP
         if fx is not None:
             lwp = fx.create_dataset(
-                        "LWP",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "LWP",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 lwp.dims[i].attach_scale(fx[d])
@@ -526,3 +533,24 @@ class MicroKessler(MicrophysicsBase):
     def get_reffi(self):
         qc = self._ScalarState.get_field("qc")
         return np.zeros_like(qc)
+
+    def restart(self, data_dict, **kwargs):
+        key = "KESSLER"
+
+        for att in self._restart_attributes:
+            self.__dict__[att] = data_dict[key][att]
+
+        return
+
+    def dump_restart(self, data_dict):
+        # Get the name of this particualr container and create a dictionary for it in the
+        # restart data dict.
+
+        key = "KESSLER"
+        data_dict[key] = {}
+
+        # Loop over the restart_attributes and add it to the data_dict
+        for att in self._restart_attributes:
+            data_dict[key][att] = self.__dict__[att]
+
+        return

@@ -26,12 +26,16 @@ def compute_w_from_q(rho0, rhod, p, qv, T, wv, wc, wr, wnc, wi1, wni1, wir1, wib
     for i in range(shape[0]):
         for j in range(shape[1]):
             for k in range(shape[2]):
-                qt = wv[i,j,k] + wc[i,j,k] + wr[i,j,k]
-                pd  = p[i,j,k] * (1.0 - qt) / ( 1.0 - qt  + parameters.EPSVI * wv[i,j,k])
-                
-                rhod[i,j,k]= pd/(parameters.RD * T[i,j,k])
-                
-                factor = (rho0[i,j,k]) / rhod[i,j,k]
+                qt = wv[i, j, k] + wc[i, j, k] + wr[i, j, k]
+                pd = (
+                    p[i, j, k]
+                    * (1.0 - qt)
+                    / (1.0 - qt + parameters.EPSVI * wv[i, j, k])
+                )
+
+                rhod[i, j, k] = pd / (parameters.RD * T[i, j, k])
+
+                factor = (rho0[i, j, k]) / rhod[i, j, k]
 
                 wv[i, j, k] *= factor
                 wc[i, j, k] *= factor
@@ -52,7 +56,7 @@ def compute_q_from_w(rho0, rhod, qv, qc, qr, qnc, qi1, qni1, qir1, qib1):
         for j in range(shape[1]):
             for k in range(shape[2]):
 
-                factor = rhod[i,j,k] / (rho0[i,j,k])
+                factor = rhod[i, j, k] / (rho0[i, j, k])
 
                 qv[i, j, k] *= factor
                 qc[i, j, k] *= factor
@@ -360,6 +364,8 @@ class MicroP3(MicrophysicsBase):
                 np.empty(tuple(self._wrf_dims), order="F", dtype=np.double),
             )
 
+        self._restart_attributes = ["_RAINNC"]
+
         self._Timers.add_timer("MicroP3_update")
         return
 
@@ -473,7 +479,7 @@ class MicroP3(MicrophysicsBase):
         # Do conversions between specific humidity and mixing ratio
         compute_w_from_q(
             rho_wrf,
-            rhod_wrf, 
+            rhod_wrf,
             p0_wrf,
             qv_wrf,
             T_wrf,
@@ -839,10 +845,10 @@ class MicroP3(MicrophysicsBase):
 
         if fx is not None:
             rainnc = fx.create_dataset(
-                        "RAINNC",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "RAINNC",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 rainnc.dims[i].attach_scale(fx[d])
@@ -855,14 +861,14 @@ class MicroP3(MicrophysicsBase):
 
         if fx is not None:
             rainncv = fx.create_dataset(
-                        "RAINNCV",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "RAINNCV",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 rainncv.dims[i].attach_scale(fx[d])
-                
+
         send_buffer.fill(0.0)
         send_buffer[start[0] : end[0], start[1] : end[1]] = self._RAINNCV
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
@@ -872,14 +878,14 @@ class MicroP3(MicrophysicsBase):
         # Compute and output the LWP
         if fx is not None:
             lwp = fx.create_dataset(
-                        "LWP",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "LWP",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 lwp.dims[i].attach_scale(fx[d])
-                
+
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
         qc = self._ScalarState.get_field("qc")[nh[0] : -nh[0], nh[1] : -nh[1], :]
@@ -896,14 +902,13 @@ class MicroP3(MicrophysicsBase):
         # Compute and output the LWP
         if fx is not None:
             iwp = fx.create_dataset(
-                        "IWP",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "IWP",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 iwp.dims[i].attach_scale(fx[d])
-                
 
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
@@ -933,3 +938,24 @@ class MicroP3(MicrophysicsBase):
 
     def get_reffi(self):
         return self._DiagnosticState.get_field("diag_effi_3d")
+
+    def restart(self, data_dict, **kwargs):
+        key = "P3"
+
+        for att in self._restart_attributes:
+            self.__dict__[att] = data_dict[key][att]
+
+        return
+
+    def dump_restart(self, data_dict):
+        # Get the name of this particualr container and create a dictionary for it in the
+        # restart data dict.
+
+        key = "P3"
+        data_dict[key] = {}
+
+        # Loop over the restart_attributes and add it to the data_dict
+        for att in self._restart_attributes:
+            data_dict[key][att] = self.__dict__[att]
+
+        return
