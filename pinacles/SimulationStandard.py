@@ -294,6 +294,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Restart.add_class_to_restart(self.Surf)
         self.Restart.add_class_to_restart(self.Micro)
         self.Restart.add_class_to_restart(self.Rad)
+        self.Restart.add_class_to_restart(self.Parts)
 
         # Allocate memory for storage arrays in container classes. This should come after most classes are instantiated becuase the
         # containter must know how much memory to allocate
@@ -666,6 +667,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Restart.add_class_to_restart(self.Surf)
         self.Restart.add_class_to_restart(self.Micro)
         self.Restart.add_class_to_restart(self.Rad)
+        self.Restart.add_class_to_restart(self.Parts)
 
         # Allocate memory for storage arrays in container classes. This should come after most classes are instantiated becuase the
         # containter must know how much memory to allocate
