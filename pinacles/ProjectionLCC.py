@@ -23,7 +23,7 @@ class LambertConformal:
             np.tan(np.pi / 4.0 + self.phi_2 / 2.0)
             / np.tan(np.pi / 4.0 + self.phi_1 / 2.0)
         )
-        
+
         return
 
     def _compute_F(self):
@@ -33,12 +33,10 @@ class LambertConformal:
             / self.n
         )
 
-
         return
 
     def _compute_rho0(self):
         self.rho0 = self.R * self.F / (np.tan(np.pi / 4.0 + self.phi_0 / 2.0) ** self.n)
-
 
         return
 
@@ -69,7 +67,7 @@ class LambertConformal:
             theta = np.arctan(x / (self.rho0 - y))
         else:
             theta = np.arctan(-x / (-self.rho0 + y))
-        lam = theta / self.n + self.lam_0 
+        lam = theta / self.n + self.lam_0
 
         phi = 2.0 * np.arctan((self.R * self.F / rho) ** (1.0 / self.n)) - np.pi / 2.0
 
@@ -82,9 +80,9 @@ class LambertConformal:
         diff[diff < -180] = diff[diff < -180] + 360.0
 
         if self.phi_0 < 0.0:
-            alpha = diff * self.n * np.pi/180.0 * -1
+            alpha = diff * self.n * np.pi / 180.0 * -1
         else:
-            alpha = diff * self.n * np.pi/180.0
+            alpha = diff * self.n * np.pi / 180.0
 
         return alpha
 
@@ -99,10 +97,10 @@ class LambertConformal:
             vrot = v * cos_alpha - u * sin_alpha
         elif len(shape) == 3:
             try:
-                urot = v * sin_alpha[:,:,np.newaxis] + u * cos_alpha[:,:,np.newaxis]
-                vrot = v * cos_alpha[:,:,np.newaxis] - u * sin_alpha[:,:,np.newaxis]
+                urot = v * sin_alpha[:, :, np.newaxis] + u * cos_alpha[:, :, np.newaxis]
+                vrot = v * cos_alpha[:, :, np.newaxis] - u * sin_alpha[:, :, np.newaxis]
             except:
-                urot = v * sin_alpha[np.newaxis,:,:] + u * cos_alpha[np.newaxis,:,:]
-                vrot = v * cos_alpha[np.newaxis,:,:] - u * sin_alpha[np.newaxis,:,:]          
+                urot = v * sin_alpha[np.newaxis, :, :] + u * cos_alpha[np.newaxis, :, :]
+                vrot = v * cos_alpha[np.newaxis, :, :] - u * sin_alpha[np.newaxis, :, :]
 
         return urot, vrot

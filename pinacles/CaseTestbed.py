@@ -46,7 +46,6 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         sys.exit()
         # ref_init_type = 'integrate'
 
-
     data = nc.Dataset(file, "r")
     try:
         init_data = data.groups["initialization_sonde"]

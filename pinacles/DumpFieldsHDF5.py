@@ -94,8 +94,8 @@ class DumpFields_hdf:
             driver="mpio",
             comm=MPI.COMM_WORLD,
         )
-        fx.attrs['dt'] = self._TimeSteppingController.dt
-        
+        fx.attrs["dt"] = self._TimeSteppingController.dt
+
         nhalo = self._Grid.n_halo
         local_start = self._Grid._local_start
         local_end = self._Grid._local_end

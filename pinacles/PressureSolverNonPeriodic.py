@@ -18,7 +18,7 @@ from scipy.fft import dctn, idctn
 
 class PressureSolverNonPeriodic:
     def __init__(self, Grid, Ref, VelocityState, DiagnosticState):
-        """ Contructor for non-periodic pressure solver
+        """Contructor for non-periodic pressure solver
 
         Args:
             Grid (class): PINACLES Grid class
@@ -68,7 +68,7 @@ class PressureSolverNonPeriodic:
         return
 
     def _fft_local_starts(self):
-        """ compute the number of global number of modified wave numbers and the starting point
+        """compute the number of global number of modified wave numbers and the starting point
         in the global array
         """
         div = mpi4py_fft.DistArray(self._Grid.n, self._Grid.subcomms, dtype=np.complex)
@@ -166,7 +166,7 @@ class PressureSolverNonPeriodic:
 
         rho0 = self._Ref.rho0
         dx = self._Grid.dx
-    
+
         leak = 0
 
         # Compute the amount of mass entering the system
@@ -176,16 +176,18 @@ class PressureSolverNonPeriodic:
                     u[ibl_edge[0], nh[1] : -nh[1], nh[2] : -nh[2]]
                     * rho0[np.newaxis, nh[2] : -nh[2]]
                 )
-                *dx[1]*dx[2]
+                * dx[1]
+                * dx[2]
             )
 
         if high_rank[0]:
             leak += (
                 np.sum(
-                    u[ibu_edge[0]+1, nh[1] : -nh[1], nh[2] : -nh[2]]
+                    u[ibu_edge[0] + 1, nh[1] : -nh[1], nh[2] : -nh[2]]
                     * rho0[np.newaxis, nh[2] : -nh[2]]
                 )
-                *dx[1]*dx[2]
+                * dx[1]
+                * dx[2]
             )
 
         if low_rank[1]:
@@ -194,19 +196,24 @@ class PressureSolverNonPeriodic:
                     v[nh[0] : -nh[0], ibl_edge[1], nh[2] : -nh[2]]
                     * rho0[np.newaxis, nh[2] : -nh[2]]
                 )
-                *dx[0]*dx[2]
+                * dx[0]
+                * dx[2]
             )
 
         if high_rank[1]:
             leak += (
                 np.sum(
-                    v[nh[0] : -nh[0], ibu_edge[1]+1, nh[2] : -nh[2]]
+                    v[nh[0] : -nh[0], ibu_edge[1] + 1, nh[2] : -nh[2]]
                     * rho0[np.newaxis, nh[2] : -nh[2]]
                 )
-                *dx[0]*dx[2]
+                * dx[0]
+                * dx[2]
             )
 
-        linear_mass = (2 * self._Grid.l[0] * self._Grid.l[2] + 2 * self._Grid.l[1] * self._Grid.l[2])
+        linear_mass = (
+            2 * self._Grid.l[0] * self._Grid.l[2]
+            + 2 * self._Grid.l[1] * self._Grid.l[2]
+        )
 
         u_fix_leak_local = np.array([leak / linear_mass])
         u_fix_leak_global = np.empty_like(u_fix_leak_local)
@@ -214,22 +221,22 @@ class PressureSolverNonPeriodic:
         u_fix_leak = u_fix_leak_global[0]
 
         if low_rank[0]:
-            u[
-                : ibl_edge[0] + 1, :, :
-            ] += u_fix_leak / rho0[np.newaxis, np.newaxis, :] # / rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
+            u[: ibl_edge[0] + 1, :, :] += (
+                u_fix_leak / rho0[np.newaxis, np.newaxis, :]
+            )  # / rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
         if high_rank[0]:
-            u[
-                ibu_edge[0] :, :, :
-            ] -= u_fix_leak / rho0[np.newaxis, np.newaxis, :] # / rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
+            u[ibu_edge[0] :, :, :] -= (
+                u_fix_leak / rho0[np.newaxis, np.newaxis, :]
+            )  # / rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
 
         if low_rank[1]:
-            v[
-                :, : ibl_edge[1] + 1, :
-            ] += u_fix_leak / rho0[np.newaxis, np.newaxis, :] # /  rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
+            v[:, : ibl_edge[1] + 1, :] += (
+                u_fix_leak / rho0[np.newaxis, np.newaxis, :]
+            )  # /  rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
         if high_rank[1]:
-            v[
-                :, ibu_edge[1] :, :
-            ] -= u_fix_leak / rho0[np.newaxis, np.newaxis, :] # /  rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
+            v[:, ibu_edge[1] :, :] -= (
+                u_fix_leak / rho0[np.newaxis, np.newaxis, :]
+            )  # /  rho0[np.newaxis, np.newaxis, nh[2]:-nh[2]]
 
         # if low_rank[0]:
         #   np.add(u[:ibl_edge[0]+1, ibl[1] : ibu[1], nh[2]:-nh[2]],  u_fix_leak,out=u[:ibl_edge[0]+1, ibl[1] : ibu[1], nh[2]:-nh[2]])
@@ -244,8 +251,6 @@ class PressureSolverNonPeriodic:
         #   np.add(v[ibl[0]:ibu[0], ibu_edge[1]:, nh[2]:-nh[2]],-u_fix_leak, v[ibl[0]:ibu[0], ibu_edge[1]:, nh[2]:-nh[2]])
 
         return
-
-
 
     def _make_non_homogeneous(self, rho0, div, p, dynp):
 
@@ -302,7 +307,6 @@ class PressureSolverNonPeriodic:
         w[:, :, n_halo[2] - 1] = 0.0
         w[:, :, ibu_edge[2]] = 0.0
 
-
         dynp = self._DiagnosticState.get_field("dynamic pressure")
 
         rho0 = self._Ref.rho0
@@ -355,6 +359,6 @@ class PressureSolverNonPeriodic:
         self._VelocityState.boundary_exchange()
         self._VelocityState.update_all_bcs()
 
-        #self._VelocityState.remove_mean("w")
+        # self._VelocityState.remove_mean("w")
 
         return

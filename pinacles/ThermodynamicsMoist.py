@@ -4,6 +4,7 @@ import numpy as np
 import numba
 from mpi4py import MPI
 
+
 class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
     def __init__(
         self, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Micro
@@ -33,7 +34,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
 
         self._Timers.add_timer("ThermoDynamicsMoist_update")
 
-        self.name = 'ThermodynamicsMoist'
+        self.name = "ThermodynamicsMoist"
         return
 
     def update(self, apply_buoyancy=True):
@@ -84,9 +85,9 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         self._DiagnosticState.remove_mean("buoyancy")
 
         self.compute_buoyancy_gradient(dxi, buoyancy, buoyancy_gradient_mag)
-        
-        qt[:,:,:] = self.get_qt()
-        
+
+        qt[:, :, :] = self.get_qt()
+
         self._Timers.end_timer("ThermoDynamicsMoist_update")
         return
 
@@ -141,10 +142,10 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         # Output Temperature
         if fx is not None:
             t = fx.create_dataset(
-                        "T",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "T",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 t.dims[i].attach_scale(fx[d])
@@ -160,10 +161,10 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         # Output specific humidity
         if fx is not None:
             qv_var = fx.create_dataset(
-                        "qv",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "qv",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 qv_var.dims[i].attach_scale(fx[d])
@@ -177,5 +178,4 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         if fx is not None:
             qv_var[:, :] = recv_buffer
 
- 
         return

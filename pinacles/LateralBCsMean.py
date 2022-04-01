@@ -1,10 +1,11 @@
 import numpy as np
 from pinacles.LateralBCs import LateralBCsBase
 
+
 class LateralBCsMean(LateralBCsBase):
     def __init__(self, Grid, State, VelocityState):
         LateralBCsBase.__init__(self, Grid, State, VelocityState)
-        
+
         return
 
     def set_vars_on_boundary(self, **kwargs):
@@ -21,4 +22,3 @@ class LateralBCsMean(LateralBCsBase):
             y_high[:, :] = var_mean[np.newaxis, :]
 
         return
-

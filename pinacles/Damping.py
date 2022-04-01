@@ -55,9 +55,8 @@ class Rayleigh(Damping):
 
                     mean = state.mean(var)
 
-                    if var == 'w':
+                    if var == "w":
                         mean.fill(0.0)
-    
 
                         if loc == "c":
                             Damping_impl.rayleigh(

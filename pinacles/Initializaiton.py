@@ -23,14 +23,16 @@ CASENAMES = [
     "rico",
     "atex",
     "testbed",
-    "real"
+    "real",
 ]
+
 
 def real(namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest):
 
-    init_class = InitializeReanalysis(namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest)
+    init_class = InitializeReanalysis(
+        namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest
+    )
     init_class.initialize()
-
 
     return
 

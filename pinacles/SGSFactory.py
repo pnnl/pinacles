@@ -19,7 +19,7 @@ def factory(namelist, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticS
         return SGSSmagorinsky.Smagorinsky(
             namelist, Timers, Grid, Ref, VelocityState, DiagnosticState
         )
-    elif sgs_model == 'tke':
+    elif sgs_model == "tke":
         return SGSTKE.SGSTKE(
             namelist, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState
         )

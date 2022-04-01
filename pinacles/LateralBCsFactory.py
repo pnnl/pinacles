@@ -5,7 +5,18 @@ from pinacles.LateralBCsRecycle import LateralBCsRecycle
 from pinacles.LateralBCsNest import LateralBCsNest
 from pinacles.CaseReal import LateralBCsReanalysis
 
-def LateralBCsFactory(namelist, Grid, Ref, DiagnosticState, State, VelocityState, TimeSteppingController, Ingest, **kwargs):
+
+def LateralBCsFactory(
+    namelist,
+    Grid,
+    Ref,
+    DiagnosticState,
+    State,
+    VelocityState,
+    TimeSteppingController,
+    Ingest,
+    **kwargs
+):
     try:
         lbc = namelist["lbc"]
     except:
@@ -23,10 +34,21 @@ def LateralBCsFactory(namelist, Grid, Ref, DiagnosticState, State, VelocityState
                 lbc_class = LateralBCsRecycle(namelist, Grid, State, VelocityState)
                 UtilitiesParallel.print_root("Using recycle boundary conditions.")
             if boundary_treatment.lower() == "nest":
-                lbc_class = LateralBCsNest(namelist, Grid, State, VelocityState, NestState=kwargs['NestState'])
+                lbc_class = LateralBCsNest(
+                    namelist, Grid, State, VelocityState, NestState=kwargs["NestState"]
+                )
                 UtilitiesParallel.print_root("Using nested boundary conditions")
-            if boundary_treatment.lower() == 'reanalysis':
-                lbc_class = LateralBCsReanalysis(namelist, Grid, Ref, DiagnosticState, State, VelocityState, TimeSteppingController, Ingest)
+            if boundary_treatment.lower() == "reanalysis":
+                lbc_class = LateralBCsReanalysis(
+                    namelist,
+                    Grid,
+                    Ref,
+                    DiagnosticState,
+                    State,
+                    VelocityState,
+                    TimeSteppingController,
+                    Ingest,
+                )
                 UtilitiesParallel.print_root("Using reanalysis boundary conditions")
         except:
             UtilitiesParallel.print_root("Usinge mean boundary treatment.")

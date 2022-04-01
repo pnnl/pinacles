@@ -3,6 +3,7 @@ import numpy as np
 import numba
 from pinacles import UtilitiesParallel
 
+
 class LateralBCsDummy:
     def __init__(self):
         return
@@ -45,7 +46,7 @@ class LateralBCsBase:
         return
 
     def init_vars_on_boundary(self):
-        """ Allocate memory to store large scale conditions to set lateral boundary conditions under inflow conditions. 
+        """Allocate memory to store large scale conditions to set lateral boundary conditions under inflow conditions.
         These can be taken from reanalysis, prescribed, or taken from a nest.
         """
         ng = self._Grid.ngrid_local
@@ -70,9 +71,8 @@ class LateralBCsBase:
     def set_vars_on_boundary(self, **kwargs):
         return
 
-
     def get_vars_on_boundary(self, var_name):
-        """ Return arrays pointing to the externally prescribed boundary data
+        """Return arrays pointing to the externally prescribed boundary data
 
         Args:
             var_name (string): variable field name
@@ -124,7 +124,9 @@ class LateralBCsBase:
             elif normal:
                 # Set the lbc on the normal velocity component
                 self.normal_x_impl_low(
-                    ibl_edge, u, self._var_on_boundary[var_name]["x_low"],
+                    ibl_edge,
+                    u,
+                    self._var_on_boundary[var_name]["x_low"],
                 )
 
         ibu = self._Grid.ibu[0]
@@ -230,7 +232,9 @@ class LateralBCsBase:
             elif normal:
                 # Set the lbc on the normal velocity component
                 self.normal_y_impl_low(
-                    ibl_edge, v, self._var_on_boundary[var_name]["y_low"],
+                    ibl_edge,
+                    v,
+                    self._var_on_boundary[var_name]["y_low"],
                 )
 
         ibu = self._Grid.ibu[1]

@@ -4,8 +4,8 @@ import numba
 
 @numba.njit(fastmath=True)
 def Thomas(x, a, b, c):
-    """ a generic Thomas algorithm tridiagonal solver. 
-    
+    """a generic Thomas algorithm tridiagonal solver.
+
     Arguments:
         x {[type]} -- [description]
         a {[type]} -- [description]
@@ -151,10 +151,10 @@ class PressureTDMA:
             )
 
         # Remove the odd-ball
-       # if self._wavenumber_substarts[0] == 0:
-       #     self._kx2[0] = 0.0
-       # if self._wavenumber_substarts[1] == 0:
-       #     self._ky2[0] = 0.0
+        # if self._wavenumber_substarts[0] == 0:
+        #     self._kx2[0] = 0.0
+        # if self._wavenumber_substarts[1] == 0:
+        #     self._ky2[0] = 0.0
 
         return
 

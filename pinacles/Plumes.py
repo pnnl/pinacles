@@ -125,18 +125,16 @@ class Plume:
         send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
         recv_buffer = np.empty_like(send_buffer)
 
-
         # Compute and output the LWP
         if fx is not None:
             var_nc = fx.create_dataset(
-                        self._scalar_name + "_" + str(z),
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                self._scalar_name + "_" + str(z),
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 var_nc.dims[i].attach_scale(fx[d])
-                
 
         s = self._ScalarState.get_field(self._scalar_name)
 
@@ -147,7 +145,7 @@ class Plume:
 
         if fx is not None:
             var_nc[:, :] = recv_buffer
-            
+
         return
 
     @property

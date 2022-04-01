@@ -1,15 +1,15 @@
 import numpy as np
 from pinacles.LateralBCs import LateralBCsBase
 
-class LateralBCsRecycle(LateralBCsBase):
 
+class LateralBCsRecycle(LateralBCsBase):
     def __init__(self, namelist, Grid, State, VelocityState):
-        
+
         LateralBCsBase.__init__(self, Grid, State, VelocityState)
 
         assert "lbc" in namelist
         lbc = namelist["lbc"]
-        
+
         assert "type" in namelist["lbc"]
         assert "recycle_plane_pct" in namelist["lbc"]
 
@@ -31,24 +31,20 @@ class LateralBCsRecycle(LateralBCsBase):
         nl = self._Grid.nl
         ls = self._Grid._local_start
         le = self._Grid._local_end
-        
-        #if not self.count%2 == 0:
+
+        # if not self.count%2 == 0:
         #    self.count += 1
         #    return
-        #self.count = 0
+        # self.count = 0
 
         for var_name in self._State._dofs:
-            
-            
-            
+
             # Compute the domain mean of the variables
             x_low, x_high, y_low, y_high = self.get_vars_on_boundary(var_name)
-
 
             slab_x = self._State.get_slab_x(
                 var_name, (self._ix_recycle_plane, self._ix_recycle_plane + 1)
             )
-
 
             x_low[nh[1] : -nh[1], nh[2] : -nh[2]] = slab_x[0, ls[1] : le[1], :]
 
@@ -63,4 +59,3 @@ class LateralBCsRecycle(LateralBCsBase):
             y_high[nh[0] : -nh[0], nh[2] : -nh[2]] = slab_y[ls[0] : le[0], 0, :]
 
         return
-        

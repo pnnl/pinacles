@@ -923,7 +923,6 @@ class MicroP3(MicrophysicsBase):
 
         return
 
-
     def get_qc(self):
         return self._ScalarState.get_field("qc") + self._ScalarState.get_field("qr")
 

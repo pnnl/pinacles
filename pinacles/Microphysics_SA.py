@@ -13,8 +13,6 @@ from pinacles import UtilitiesParallel
 from pinacles import parameters
 
 
-
-
 @numba.njit(fastmath=True)
 def sa(z, rho0, p, s_in, qv_in, ql_in):
 
@@ -216,14 +214,13 @@ class MicroSA(MicrophysicsBase):
         # Compute and output the LWP
         if fx is not None:
             lwp = fx.create_dataset(
-                        "LWP",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "LWP",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 lwp.dims[i].attach_scale(fx[d])
-
 
         _nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
@@ -235,7 +232,7 @@ class MicroSA(MicrophysicsBase):
         send_buffer.fill(0.0)
         send_buffer[start[0] : end[0], start[1] : end[1]] = lwp_compute
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
-        
+
         if fx is not None:
             lwp[:, :] = recv_buffer
 

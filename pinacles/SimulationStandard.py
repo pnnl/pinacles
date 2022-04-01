@@ -44,7 +44,9 @@ from termcolor import colored
 
 
 class SimulationStandard(SimulationBase.SimulationBase):
-    def __init__(self, namelist, llx=0.0, lly=0.0, llz=0.0, ParentNest=None, nest_num=0):
+    def __init__(
+        self, namelist, llx=0.0, lly=0.0, llz=0.0, ParentNest=None, nest_num=0
+    ):
 
         self._ll_corner = (llx, lly, llz)
 
@@ -79,17 +81,22 @@ class SimulationStandard(SimulationBase.SimulationBase):
             llz=self._ll_corner[2],
         )
 
-
         # Instantiate variables for storing containers
-        self.ScalarState = Containers.ModelState(self._namelist,
-            self.ModelGrid, container_name="ScalarState", prognostic=True
+        self.ScalarState = Containers.ModelState(
+            self._namelist,
+            self.ModelGrid,
+            container_name="ScalarState",
+            prognostic=True,
         )
-        self.VelocityState = Containers.ModelState(self._namelist,
-            self.ModelGrid, container_name="VelocityState", prognostic=True
+        self.VelocityState = Containers.ModelState(
+            self._namelist,
+            self.ModelGrid,
+            container_name="VelocityState",
+            prognostic=True,
         )
 
-        self.DiagnosticState = Containers.ModelState(self._namelist,
-            self.ModelGrid, container_name="DiagnosticState"
+        self.DiagnosticState = Containers.ModelState(
+            self._namelist, self.ModelGrid, container_name="DiagnosticState"
         )
 
         self.TimeSteppingController = TimeStepping.TimeSteppingController(
@@ -97,7 +104,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
 
         # Ingest data
-        self.Ingest =  Ingest.IngestFactory(self._namelist, self.ModelGrid, self.TimeSteppingController)
+        self.Ingest = Ingest.IngestFactory(
+            self._namelist, self.ModelGrid, self.TimeSteppingController
+        )
 
         self.Timers = Timers.Timer(self._namelist, self.TimeSteppingController)
 
@@ -261,8 +270,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.VelocityState,
             self.ScalarState,
             self.DiagnosticState,
-            self.TimeSteppingController, 
-            self.Ingest
+            self.TimeSteppingController,
+            self.Ingest,
         )
 
         # Instatiate plumes if there are any
@@ -321,26 +330,52 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.ScalarTimeStepping.initialize()
         self.VelocityTimeStepping.initialize()
 
-
-
         if ParentNest is None:
             self.LBC = LateralBCsFactory.LateralBCsFactory(
-                self._namelist, self.ModelGrid, self.Ref, self.DiagnosticState, self.ScalarState, self.VelocityState, self.TimeSteppingController, self.Ingest, 
+                self._namelist,
+                self.ModelGrid,
+                self.Ref,
+                self.DiagnosticState,
+                self.ScalarState,
+                self.VelocityState,
+                self.TimeSteppingController,
+                self.Ingest,
             )
             self.LBCVel = LateralBCsFactory.LateralBCsFactory(
-                self._namelist, self.ModelGrid, self.Ref, self.DiagnosticState, self.VelocityState, self.VelocityState, self.TimeSteppingController, self.Ingest,
+                self._namelist,
+                self.ModelGrid,
+                self.Ref,
+                self.DiagnosticState,
+                self.VelocityState,
+                self.VelocityState,
+                self.TimeSteppingController,
+                self.Ingest,
             )
         else:
-            print('Initing Nest')
+            print("Initing Nest")
             self.LBC = LateralBCsFactory.LateralBCsFactory(
-                self._namelist, self.ModelGrid, self.Ref, self.DiagnosticState, self.ScalarState, self.VelocityState, self.TimeSteppingController, self.Ingest,
-                 NestState = ParentNest.ScalarState
+                self._namelist,
+                self.ModelGrid,
+                self.Ref,
+                self.DiagnosticState,
+                self.ScalarState,
+                self.VelocityState,
+                self.TimeSteppingController,
+                self.Ingest,
+                NestState=ParentNest.ScalarState,
             )
             self.LBCVel = LateralBCsFactory.LateralBCsFactory(
-                self._namelist, self.ModelGrid, self.Ref,  self.DiagnosticState, self.VelocityState, self.VelocityState, self.TimeSteppingController, self.Ingest, 
-                NestState = ParentNest.VelocityState
+                self._namelist,
+                self.ModelGrid,
+                self.Ref,
+                self.DiagnosticState,
+                self.VelocityState,
+                self.VelocityState,
+                self.TimeSteppingController,
+                self.Ingest,
+                NestState=ParentNest.VelocityState,
             )
-        
+
         if self.Ingest is not None:
             self.Ingest.initialize()
 
@@ -351,14 +386,13 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Ref,
             self.ScalarState,
             self.VelocityState,
-            self.Ingest
+            self.Ingest,
         )
 
         self.LBC.init_vars_on_boundary()
         self.LBCVel.init_vars_on_boundary()
 
-    
-        #import sys; sys.exit()
+        # import sys; sys.exit()
         self.Surf.initialize()
 
         # Initialize any work arrays for the microphysics package
@@ -381,7 +415,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Ref,
             self.TimeSteppingController,
         )
-
 
         self.Fields2d = Fields2D.Fields2D(
             self._namelist,
@@ -446,12 +479,10 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Now iniitalzie the IO field
         self.StatsIO.initialize()
 
-
         # Now initialze for the output of 3D fields
         self.FieldsIO = DumpFields.DumpFieldsFactory(
             self._namelist, self.Timers, self.ModelGrid, self.TimeSteppingController
         )
-
 
         # Add container classes that will dump 3D fields
         self.FieldsIO.add_class(self.ScalarState)
@@ -477,7 +508,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # At this point the model is basically initalized, however we should also do boundary exchanges to insure
         # the halo regions are set and the to a pressure solver to insure that the velocity field is initially satifies
         # the anelastic continuity equation
-        
+
         self.ScalarState.boundary_exchange()
         self.VelocityState.update_all_bcs()
         self.ScalarState.update_all_bcs()
@@ -485,7 +516,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         for lbc in [self.LBC, self.LBCVel]:
             # lbc.set_vars_on_boundary_to_mean()
             lbc.set_vars_on_boundary(ParentNest=ParentNest)
-        
+
         for prog_state in [self.ScalarState, self.VelocityState]:
             prog_state.boundary_exchange()
             prog_state.update_all_bcs()
@@ -498,38 +529,36 @@ class SimulationStandard(SimulationBase.SimulationBase):
         s = self.ScalarState.get_field("s")
         qv = self.ScalarState.get_field("qv")
 
-        #import pylab as plt
-        #plt.subplot(311)
-        #plt.plot(u[:,5,5],'.')
-        #plt.plot(u[5,:,5],'.')
-        #plt.subplot(312)
-        #plt.plot(v[:,5,5],'.')
-        #plt.plot(v[5,:,5],'.')
-        #plt.subplot(313)
-        #plt.plot(s[:,5,5], '.')
-        #plt.plot(s[5,:,5], '.')
-        #plt.show()
+        # import pylab as plt
+        # plt.subplot(311)
+        # plt.plot(u[:,5,5],'.')
+        # plt.plot(u[5,:,5],'.')
+        # plt.subplot(312)
+        # plt.plot(v[:,5,5],'.')
+        # plt.plot(v[5,:,5],'.')
+        # plt.subplot(313)
+        # plt.plot(s[:,5,5], '.')
+        # plt.plot(s[5,:,5], '.')
+        # plt.show()
 
-
-       # import pylab as plt
-       # plt.plot(u[:,5,5])
+        # import pylab as plt
+        # plt.plot(u[:,5,5])
 
         # Update thermo this is mostly for IO at time 0
         self.Thermo.update(apply_buoyancy=False)
-        #self.Rad.update(force=True)
+        # self.Rad.update(force=True)
         self.PSolver.update()
 
-        #import pylab as plt
-        #plt.subplot(311)
-        #plt.plot(u[:,5,5],'.')
-        #plt.subplot(312)
-        #plt.plot(v[:,5,5],'.')
-        #plt.subplot(313)
-        #plt.plot(s[:,5,5], '.')
-        #plt.show()
+        # import pylab as plt
+        # plt.subplot(311)
+        # plt.plot(u[:,5,5],'.')
+        # plt.subplot(312)
+        # plt.plot(v[:,5,5],'.')
+        # plt.subplot(313)
+        # plt.plot(s[:,5,5], '.')
+        # plt.show()
 
-
-        #for prog_state in [self.ScalarState, self.VelocityState]:
+        # for prog_state in [self.ScalarState, self.VelocityState]:
         #    prog_state.boundary_exchange()
         #    prog_state.update_all_bcs()
 
@@ -537,8 +566,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.VelocityState.update_all_bcs()
         self.ScalarState.update_all_bcs()
 
-
-        #for lbc in [self.LBC, self.LBCVel]:
+        # for lbc in [self.LBC, self.LBCVel]:
         self.LBC.update()
         self.LBCVel.update(normal=False)
 
@@ -546,9 +574,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
             prog_state.boundary_exchange()
             prog_state.update_all_bcs()
 
-       # plt.plot(u[:,5,5])
-       # plt.show()
-
+        # plt.plot(u[:,5,5])
+        # plt.show()
 
         # Initialize timers
         self.Timers.add_timer("Restart")
@@ -556,8 +583,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Timers.add_timer("BoundaryUpdate")
         self.Timers.add_timer("main")
         self.Timers.initialize()
-
-
 
         return
 
@@ -575,14 +600,20 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.ModelGrid = Grid.RegularCartesian(self._namelist)
 
         # Instantiate variables for storing containers
-        self.ScalarState = Containers.ModelState(self._namelist,
-            self.ModelGrid, container_name="ScalarState", prognostic=True
+        self.ScalarState = Containers.ModelState(
+            self._namelist,
+            self.ModelGrid,
+            container_name="ScalarState",
+            prognostic=True,
         )
-        self.VelocityState = Containers.ModelState(self._namelist,
-            self.ModelGrid, container_name="VelocityState", prognostic=True
+        self.VelocityState = Containers.ModelState(
+            self._namelist,
+            self.ModelGrid,
+            container_name="VelocityState",
+            prognostic=True,
         )
-        self.DiagnosticState = Containers.ModelState(self._namelist,
-            self.ModelGrid, container_name="DiagnosticState"
+        self.DiagnosticState = Containers.ModelState(
+            self._namelist, self.ModelGrid, container_name="DiagnosticState"
         )
 
         self.TimeSteppingController = TimeStepping.TimeSteppingController(
@@ -749,7 +780,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ScalarState,
             self.DiagnosticState,
             self.TimeSteppingController,
-            self.Ingest
+            self.Ingest,
         )
 
         # Instatiate plumes if there are any
@@ -958,7 +989,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         end_time = start_time + integrate_by_dt
 
         # Update boundaries for nest if this is Simulation is a nest
-        #if ParentNest is not None:
+        # if ParentNest is not None:
         #    self.Nest.update_boundaries(ParentNest)
 
         while self.TimeSteppingController.time < end_time:
@@ -1001,7 +1032,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.LBC.lateral_nudge()
                 self.LBCVel.lateral_nudge()
 
-                #if ParentNest is not None:
+                # if ParentNest is not None:
                 #    self.Nest.update(ParentNest)
 
                 # Do time stepping
@@ -1018,7 +1049,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 for lbcs in [self.LBC, self.LBCVel]:
                     lbcs.set_vars_on_boundary(ParentNest=ParentNest)
-                
+
                 self.LBCVel.update(normal=False)
 
                 self.Timers.start_timer("ScalarLimiter")
@@ -1027,7 +1058,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 # Update boundary conditions
                 self.Timers.start_timer("BoundaryUpdate")
-
 
                 self.ScalarState.boundary_exchange()
                 self.ScalarState.update_all_bcs()
@@ -1087,7 +1117,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     integrate_by_dt=self.TimeSteppingController._dt,
                     ParentNest=ListOfSims[self._nest_num],
                 )
-                
+
         return
 
     def walltime_restart(self):

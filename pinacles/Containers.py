@@ -5,7 +5,9 @@ from mpi4py import MPI
 
 
 class ModelState:
-    def __init__(self, namelist, Grid, container_name, prognostic=False, identical_bcs=False):
+    def __init__(
+        self, namelist, Grid, container_name, prognostic=False, identical_bcs=False
+    ):
 
         self._Grid = Grid  # The grid to use for this ModelState container
 
@@ -25,12 +27,12 @@ class ModelState:
         self._loc = {}
         self._limit = {}
         self._identical_bcs = identical_bcs
-        
+
         self.name = container_name
-        assert('lbc' in namelist)
-        assert('type' in namelist['lbc'])
-        self._lbc_type = namelist['lbc']['type']
-        assert(self._lbc_type in ['open', 'periodic'])
+        assert "lbc" in namelist
+        assert "type" in namelist["lbc"]
+        self._lbc_type = namelist["lbc"]["type"]
+        assert self._lbc_type in ["open", "periodic"]
 
         self._restart_attributes = [
             "_prognostic",
@@ -59,7 +61,7 @@ class ModelState:
     @property
     def lbc_type(self):
         return self._lbc_type
-    
+
     @property
     def dofs(self):
         return self._dofs
@@ -114,12 +116,16 @@ class ModelState:
         # Todo add error handling here, for example check to see if memory is already allocated.
 
         # Allocate tendency array
-        self._state_array = ParallelArrays.GhostArray(self._Grid, self.lbc_type, ndof=self._nvars)
+        self._state_array = ParallelArrays.GhostArray(
+            self._Grid, self.lbc_type, ndof=self._nvars
+        )
         self._state_array.zero()
 
         # Only allocate tendency array if this is a container for prognostic variables
         if self._prognostic:
-            self._tend_array = ParallelArrays.GhostArray(self._Grid, self.lbc_type, ndof=self._nvars)
+            self._tend_array = ParallelArrays.GhostArray(
+                self._Grid, self.lbc_type, ndof=self._nvars
+            )
             self._tend_array.zero()
         return
 

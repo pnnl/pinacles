@@ -5,6 +5,7 @@ from numba import stencil
 from mpi4py_fft.pencil import Subcomm
 from pinacles import ProjectionLCC
 
+
 class GridBase:
     def __init__(self, namelist, llx, lly, llz):
 
@@ -13,7 +14,7 @@ class GridBase:
 
         self._ll_corner = (llx, lly, llz)
 
-        #print(self._ll_corner)
+        # print(self._ll_corner)
         # The total number of points in the domain NOT including halo/ghost points
         self._n = np.array(namelist["grid"]["n"], dtype=np.int)
         self._restart_attributes.append("_n")
@@ -75,7 +76,7 @@ class GridBase:
 
     def _compute_index_bounds(self):
 
-        """ compute the local indicies of the non-halo grid points. For the case of vairables defined on 
+        """compute the local indicies of the non-halo grid points. For the case of vairables defined on
         the grid edges, the indicies include the variabiles on the domain boundary.
         """
 
@@ -268,7 +269,6 @@ class GridBase:
         end = self._local_end[0] + 2 * self._n_halo[0]
         return np.copy(self._global_axes[0][start:end])
 
-
     @property
     def y_local(self):
         """Copy here is forced to keep _global_axes externally immutable,
@@ -288,7 +288,6 @@ class GridBase:
         start = self._local_start[2]
         end = self._local_end[2] + 2 * self._n_halo[2]
         return np.copy(self._local_axes[2][start:end])
-
 
     @property
     def local_axes(self):
@@ -372,7 +371,6 @@ class GridBase:
         self._low_rank = tuple(self._low_rank)
         self._high_rank = tuple(self._high_rank)
 
-
         print(self.low_rank, self.high_rank)
 
         return
@@ -401,11 +399,11 @@ class GridBase:
 
     @stencil
     def upt_to_vpt(u):
-        return 0.25 * (u[0,0,0] + u[1,0,0] +u[0,-1,0] + u[1,-1,0])
+        return 0.25 * (u[0, 0, 0] + u[1, 0, 0] + u[0, -1, 0] + u[1, -1, 0])
 
     @stencil
     def vpt_to_upt(v):
-        return 0.25 * (v[0,0,0] + v[0,1,0] + v[-1,0,0] + v[-1,1,0])
+        return 0.25 * (v[0, 0, 0] + v[0, 1, 0] + v[-1, 0, 0] + v[-1, 1, 0])
 
 
 class RegularCartesian(GridBase):
@@ -415,76 +413,99 @@ class RegularCartesian(GridBase):
 
         self._compute_globalcoordiantes()
 
+        if "center_latlon" in namelist["grid"]:
+            self._center_latlon = tuple(namelist["grid"]["center_latlon"])
+            self._conic_intersection = tuple(namelist["grid"]["conic_intersection"])
 
-        if 'center_latlon' in namelist['grid']:
-            self._center_latlon = tuple(namelist['grid']['center_latlon'])
-            self._conic_intersection = tuple(namelist['grid']['conic_intersection'])
-
-            self.MapProj = ProjectionLCC.LambertConformal(6.3781e6, 
-             self._conic_intersection[0], self._conic_intersection[1],
-             self._center_latlon[0], self._center_latlon[1])
+            self.MapProj = ProjectionLCC.LambertConformal(
+                6.3781e6,
+                self._conic_intersection[0],
+                self._conic_intersection[1],
+                self._center_latlon[0],
+                self._center_latlon[1],
+            )
 
             self.compute_latlon()
-        
 
         return
 
     def compute_latlon(self):
 
-        #Compute domain half width
-        halfwidth = (self.l[0]/2.0, self.l[1]/2.0)
+        # Compute domain half width
+        halfwidth = (self.l[0] / 2.0, self.l[1] / 2.0)
 
         local_axis = self._local_axes
         local_axis_edge = self._local_axes_edge
 
-        x_global_mesh, y_global_mesh = np.meshgrid(self.x_global[:]-halfwidth[0], self.y_global[:]-halfwidth[1],indexing='ij')
+        x_global_mesh, y_global_mesh = np.meshgrid(
+            self.x_global[:] - halfwidth[0],
+            self.y_global[:] - halfwidth[1],
+            indexing="ij",
+        )
 
+        x_local_mesh, y_local_mesh = np.meshgrid(
+            local_axis[0] - halfwidth[0], local_axis[1] - halfwidth[1], indexing="ij"
+        )
 
-        
-        x_local_mesh, y_local_mesh = np.meshgrid(local_axis[0]-halfwidth[0], local_axis[1]-halfwidth[1],indexing='ij')
-
-
-        #print(np.shape(x_local_mesh), np.shape(local_axis[0]))
-        #import sys; sys.exit()
+        # print(np.shape(x_local_mesh), np.shape(local_axis[0]))
+        # import sys; sys.exit()
 
         # Longitude-Latitude at the u point
-        x_local_mesh_edge_x, y_local_mesh_edge_x = np.meshgrid(local_axis_edge[0]-halfwidth[0], local_axis[1]-halfwidth[1],indexing='ij')
-        
+        x_local_mesh_edge_x, y_local_mesh_edge_x = np.meshgrid(
+            local_axis_edge[0] - halfwidth[0],
+            local_axis[1] - halfwidth[1],
+            indexing="ij",
+        )
+
         # Longitude-Latitude at the v point
-        x_local_mesh_edge_y, y_local_mesh_edge_y = np.meshgrid(local_axis[0]-halfwidth[0], local_axis_edge[1]-halfwidth[1],indexing='ij')
+        x_local_mesh_edge_y, y_local_mesh_edge_y = np.meshgrid(
+            local_axis[0] - halfwidth[0],
+            local_axis_edge[1] - halfwidth[1],
+            indexing="ij",
+        )
 
+        self.lon_global, self.lat_global = self.MapProj.compute_latlon(
+            x_global_mesh, y_global_mesh
+        )
+        self.lon_local, self.lat_local = self.MapProj.compute_latlon(
+            x_local_mesh, y_local_mesh
+        )
+        self.lon_local_edge_x, self.lat_local_edge_x = self.MapProj.compute_latlon(
+            x_local_mesh_edge_x, y_local_mesh_edge_x
+        )
+        self.lon_local_edge_y, self.lat_local_edge_y = self.MapProj.compute_latlon(
+            x_local_mesh_edge_y, y_local_mesh_edge_y
+        )
 
-        self.lon_global, self.lat_global = self.MapProj.compute_latlon(x_global_mesh, y_global_mesh)
-        self.lon_local, self.lat_local = self.MapProj.compute_latlon(x_local_mesh, y_local_mesh)
-        self.lon_local_edge_x, self.lat_local_edge_x = self.MapProj.compute_latlon(x_local_mesh_edge_x, y_local_mesh_edge_x)
-        self.lon_local_edge_y, self.lat_local_edge_y = self.MapProj.compute_latlon(x_local_mesh_edge_y, y_local_mesh_edge_y)
+        # u = np.ones_like(self.lon_local)
+        # v = np.zeros_like(self.lon_local)
 
+        # u = np.ones((3,3,3))
 
-        #u = np.ones_like(self.lon_local)
-        #v = np.zeros_like(self.lon_local)
-        
-        #u = np.ones((3,3,3))
+        # uv = self.upt_to_vpt(u)
+        # print(uv)
 
-        #uv = self.upt_to_vpt(u)
-        #print(uv)
+        # urot, vrot = self.MapProj.rotate_wind(self.lon_local, u, v)
+        # import pylab as plt
+        # plt.quiver(self.lon_local, self.lat_local, urot, vrot)
+        # plt.colorbar()
+        # plt.show()
 
+        self.lon_max = MPI.COMM_WORLD.allreduce(
+            np.max(self.lon_local_edge_x), op=MPI.MAX
+        )
+        self.lon_min = MPI.COMM_WORLD.allreduce(
+            np.min(self.lon_local_edge_x), op=MPI.MIN
+        )
 
-        #urot, vrot = self.MapProj.rotate_wind(self.lon_local, u, v)
-        #import pylab as plt
-        #plt.quiver(self.lon_local, self.lat_local, urot, vrot)
-        #plt.colorbar()
-        #plt.show()
-
-        self.lon_max = MPI.COMM_WORLD.allreduce(np.max(self.lon_local_edge_x), op=MPI.MAX)
-        self.lon_min = MPI.COMM_WORLD.allreduce(np.min(self.lon_local_edge_x), op=MPI.MIN)
-       
-
-        self.lat_max = MPI.COMM_WORLD.allreduce(np.max(self.lat_local_edge_y), op=MPI.MAX)
-        self.lat_min = MPI.COMM_WORLD.allreduce(np.min(self.lat_local_edge_y), op=MPI.MIN)
-
+        self.lat_max = MPI.COMM_WORLD.allreduce(
+            np.max(self.lat_local_edge_y), op=MPI.MAX
+        )
+        self.lat_min = MPI.COMM_WORLD.allreduce(
+            np.min(self.lat_local_edge_y), op=MPI.MIN
+        )
 
         return
-
 
     def _compute_globalcoordiantes(self):
 
@@ -522,7 +543,6 @@ class RegularCartesian(GridBase):
     @property
     def ll_corner(self):
         return self._ll_corner
-
 
     def restart(self, data_dict, **kwargs):
         """

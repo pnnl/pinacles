@@ -18,8 +18,6 @@ class GhostArray(GhostArrayBase):
         self._n_halo = self._Grid.n_halo
         self.array = np.empty(self._shape, dtype=np.double)
 
-
-
         return
 
     @property
@@ -114,22 +112,26 @@ class GhostArray(GhostArrayBase):
                         send_buf = np.copy(self.array[:, -2 * nh : -nh, :, :])
                         recv_buf = np.empty_like(send_buf)
                         comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                        if not self._Grid.low_rank[0] or self.lbc_type == 'periodic':
+                        if not self._Grid.low_rank[0] or self.lbc_type == "periodic":
                             self.array[:, :nh, :, :] = recv_buf
                     else:
-                        if not self._Grid.low_rank[0] or self.lbc_type == 'periodic':
-                            self.array[:, :nh, :, :] = self.array[:, -2 * nh : -nh, :, :]
+                        if not self._Grid.low_rank[0] or self.lbc_type == "periodic":
+                            self.array[:, :nh, :, :] = self.array[
+                                :, -2 * nh : -nh, :, :
+                            ]
 
                 if dim == 1:
                     if comm_size > 1:
                         send_buf = np.copy(self.array[:, :, -2 * nh : -nh, :])
                         recv_buf = np.empty_like(send_buf)
                         comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                        if not self._Grid.low_rank[1] or self.lbc_type == 'periodic':
+                        if not self._Grid.low_rank[1] or self.lbc_type == "periodic":
                             self.array[:, :, :nh, :] = recv_buf
                     else:
-                        if not self._Grid.low_rank[1] or self.lbc_type == 'periodic':
-                            self.array[:, :, :nh, :] = self.array[:, :, -2 * nh : -nh, :]
+                        if not self._Grid.low_rank[1] or self.lbc_type == "periodic":
+                            self.array[:, :, :nh, :] = self.array[
+                                :, :, -2 * nh : -nh, :
+                            ]
 
                 # Now do the left exchange
                 source, dest = comm.Shift(0, -1)
@@ -145,10 +147,10 @@ class GhostArray(GhostArrayBase):
                         send_buf = np.copy(self.array[:, nh : 2 * nh, :, :])
                         recv_buf = np.empty_like(send_buf)
                         comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                        if not self._Grid.high_rank[0] or self.lbc_type == 'periodic':
+                        if not self._Grid.high_rank[0] or self.lbc_type == "periodic":
                             self.array[:, -nh:, :, :] = recv_buf
                     else:
-                        if not self._Grid.high_rank[0] or self.lbc_type == 'periodic':
+                        if not self._Grid.high_rank[0] or self.lbc_type == "periodic":
                             self.array[:, -nh:, :, :] = self.array[:, nh : 2 * nh, :, :]
 
                 if dim == 1:
@@ -156,10 +158,10 @@ class GhostArray(GhostArrayBase):
                         send_buf = np.copy(self.array[:, :, nh : 2 * nh, :])
                         recv_buf = np.empty_like(send_buf)
                         comm.Sendrecv(send_buf, dest, recvbuf=recv_buf, source=source)
-                        if not self._Grid.high_rank[1] or self.lbc_type == 'periodic':
+                        if not self._Grid.high_rank[1] or self.lbc_type == "periodic":
                             self.array[:, :, -nh:, :] = recv_buf
                     else:
-                        if not self._Grid.high_rank[1] or self.lbc_type == 'periodic':
+                        if not self._Grid.high_rank[1] or self.lbc_type == "periodic":
                             self.array[:, :, -nh:, :] = self.array[:, :, nh : 2 * nh, :]
 
         else:
@@ -179,8 +181,6 @@ class GhostArray(GhostArrayBase):
 
                 # Construct the buffers
                 nh = self._n_halo[dim]
-
-
 
                 if dim == 0:
                     if comm_size > 1:
