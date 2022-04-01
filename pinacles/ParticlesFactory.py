@@ -17,6 +17,13 @@ class ParticlesDummy:
 
         return
 
+    def restart(self):
+        
+        return
+    
+    def dump_restart(self, data_dict):
+        
+        return
 
 def ParticlesFactory(
     namelist,

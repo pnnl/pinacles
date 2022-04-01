@@ -319,6 +319,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Restart.add_class_to_restart(self.Surf)
         self.Restart.add_class_to_restart(self.Micro)
         self.Restart.add_class_to_restart(self.Rad)
+        self.Restart.add_class_to_restart(self.Parts)
 
         # Allocate memory for storage arrays in container classes. This should come after most classes are instantiated becuase the
         # containter must know how much memory to allocate
@@ -584,6 +585,31 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Timers.add_timer("main")
         self.Timers.initialize()
 
+
+
+       # if MPI.COMM_WORLD.Get_rank() == 0:
+       #     gather =  self.ModelGrid.CreateGather((0,64), (0,64))
+       # else:
+       #     gather =  self.ModelGrid.CreateGather((0,64), (0,64))#
+
+       # u = self.VelocityState.get_field('u')
+       # u[:,:,:] = 10.0
+       # ug = gather.call(u)
+       # t0 = time.time()
+       # arr = gather.call(u)
+       # t1 = time.time() 
+       # if MPI.COMM_WORLD.Get_rank() == 0:
+       #     print(t1 - t0)#
+
+       # if MPI.COMM_WORLD.Get_rank() == 0:
+       #     import pylab as plt
+       #     plt.pcolor(ug[5,:,:].T)
+       #     plt.colorbar()
+       #     plt.title('ug')
+       #     plt.show()
+        #import sys; sys.exit()
+
+
         return
 
     def initialize_from_restart(self):
@@ -816,6 +842,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Restart.add_class_to_restart(self.Surf)
         self.Restart.add_class_to_restart(self.Micro)
         self.Restart.add_class_to_restart(self.Rad)
+        self.Restart.add_class_to_restart(self.Parts)
 
         # Allocate memory for storage arrays in container classes. This should come after most classes are instantiated becuase the
         # containter must know how much memory to allocate
@@ -974,6 +1001,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Timers.add_timer("BoundaryUpdate")
         self.Timers.add_timer("main")
         self.Timers.initialize()
+
 
         return
 
