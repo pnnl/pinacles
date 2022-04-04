@@ -4,7 +4,7 @@ from mpi4py import MPI
 import time
 from datetime import datetime as dt
 from pinacles import parameters
-import h5py
+
 
 
 class Restart:
@@ -133,6 +133,7 @@ class Restart:
 
     def read_portable(self):
 
+        
         with open(os.path.join(self._infile, "Restart.pkl"), "rb") as f:
             self.data_dict = pickle.load(f)
 
@@ -175,6 +176,7 @@ class Restart:
             restart_portable = self._namelist["restart"]["restart_portable"]
 
         if restart_portable:
+            import h5py
             self.read_portable()
         else:
             self.read()
