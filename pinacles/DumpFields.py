@@ -16,6 +16,13 @@ def DumpFieldsFactory(namelist, Timers, Grid, TimeSteppingController):
         from pinacles.DumpFieldsNetCDF import DumpFields
         return DumpFields(namelist, Timers, Grid, TimeSteppingController)
     elif namelist["fields"]["io_type"].upper() == "HDF5":
+        try:
+            import h5py
+        except:
+            UtilitiesParallel.print_root('No H5PY--Reverting to NETCDF fields output')
+            from pinacles.DumpFieldsNetCDF import DumpFields
+            return DumpFields(namelist, Timers, Grid, TimeSteppingController)
+
         from pinacles.DumpFieldsHDF5 import DumpFields_hdf
         return DumpFields_hdf(namelist, Timers, Grid, TimeSteppingController)
     elif namelist["fields"]["io_type"].upper() == "HDF5_GATHER":

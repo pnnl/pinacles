@@ -1,7 +1,10 @@
 import numpy as np
 import os
 from mpi4py import MPI
-import h5py
+try:
+    import h5py
+except:
+    pass
 
 import time
 from pinacles import UtilitiesParallel

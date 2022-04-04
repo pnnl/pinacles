@@ -1,16 +1,17 @@
 import numpy as np
-import h5py
 import time
 import os
 from mpi4py import MPI
 from pinacles import UtilitiesParallel
 
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
-
+try:
+    import h5py
+except:
+    pass
 
 class Fields2D:
     def __init__(self, namelist, Grid, Ref, VelocityState, TimeSteppingController):
-
         self._Grid = Grid
         self._Ref = Ref
         self._VelocityState = VelocityState
@@ -191,3 +192,45 @@ class Fields2D:
 
                 
         return
+
+
+class Fields2DNone:
+    def __init__(self):
+
+        self._frequency = 1.0e10
+        self._classes = {}
+       
+
+        return
+
+    @property
+    def frequency(self):
+        return self._frequency
+
+    def add_class(self, aclass):
+        assert aclass not in self._classes
+        self._classes[aclass.name] = aclass
+        return
+
+    def initialize(self):
+
+        return
+
+    def update(self):
+
+        return
+
+   
+def factory(namelist, Grid, Ref, VelocityState, TimeSteppingController):
+    try:
+        import h5py
+        dofields2d = True
+    except:
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            print("Cannot import h5py, will not provide 2d Fields!")
+        dofields2d = False
+
+    if dofields2d:
+        return Fields2D(namelist, Grid, Ref, VelocityState, TimeSteppingController)
+    else: 
+        return Fields2DNone()

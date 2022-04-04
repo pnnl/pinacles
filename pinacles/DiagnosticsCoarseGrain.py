@@ -2,7 +2,13 @@ import numpy as np
 import numba
 import os
 from mpi4py import MPI
-import h5py
+from pinacles import UtilitiesParallel
+
+try:
+    import h5py
+except:
+    pass
+
 
 
 class CoarseGrainerBase:
@@ -165,7 +171,6 @@ class CoarseGrain:
         return
 
     def update(self):
-
         if not np.allclose(self._TimeSteppingController._time % self._frequency, 0.0):
             return
 
@@ -525,7 +530,7 @@ class CoarseGrainer(CoarseGrainerBase):
             self._frequency = 1e9
 
         try:
-            self._resolutions = namelist["coarse_grainers"]["resolution"]
+            self._resolutions = namelist["coarse_grainers"]["resolutions"]
         except:
             self._resolutions = []
 
@@ -559,7 +564,6 @@ class CoarseGrainer(CoarseGrainerBase):
             )
 
     def update(self):
-
         for cg in self.coarse_grainers:
             cg.update()
 
@@ -580,6 +584,13 @@ def CoarseGrainFactory(
     if "coarse_grainers" not in namelist:
         return CoarseGrainerBase(namelist)
     else:
+        try:
+            import h5py
+        except:
+            UtilitiesParallel.print_root('No H5PY-Disabling Coarse Grain output')
+            return CoarseGrainerBase(namelist)
+
+
         return CoarseGrainer(
             namelist,
             Timers,
