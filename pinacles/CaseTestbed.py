@@ -511,8 +511,8 @@ class ForcingTestbed(Forcing.ForcingBase):
 
         data = nc.Dataset(file, "r")
         forcing_data = data.groups["forcing"]
-        lat = forcing_data.variables["latitude"][0]
-        self._f = 2.0 * parameters.OMEGA * np.sin(lat * np.pi / 180.0)
+        self._lat = forcing_data.variables["latitude"][:]
+        self._f = 2.0 * parameters.OMEGA * np.sin(self._lat[0] * np.pi / 180.0)
         zl = self._Grid.z_local
 
         # Read in the data, we want to
@@ -636,6 +636,17 @@ class ForcingTestbed(Forcing.ForcingBase):
         self._Timers.start_timer("ForcingTestBed_update")
 
         current_time = self._TimeSteppingController.time
+
+        if len(self._lat) > 1:
+            current_lat = interpolate.interp1d(
+                self._forcing_times,
+                self._lat,
+                axis=0,
+                fill_value="extrapolate",
+                assume_sorted=True,
+            )(current_time)
+            self._f = 2.0 * parameters.OMEGA * np.sin(current_lat[0] * np.pi / 180.0)
+
 
         # interpolate in time
         if self._momentum_forcing_method == "geostrophic":

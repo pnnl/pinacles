@@ -128,23 +128,34 @@ class RRTMG:
             # print('radiation profiles from sonde')
         except:
             rad_data = data.groups["radiation"]
-        self._latitude = rad_data.variables["latitude"][0]
-        self._longitude = rad_data.variables["longitude"][0]
+
+        self._latitude = rad_data.variables["latitude"][:]
+        if len(self._latitude) > 1:
+            try:
+                self._data_times = rad_data.variables['times'][:]
+            except:
+                UtilitiesParallel.print_root(' WARNING: No radiation data times given, using forcing times!')
+                force_data = data.groups['forcing']
+                self._data_times = force_data.variables['times'][:]
+        else:
+            self._data_times = None
+
+        self._longitude = rad_data.variables["longitude"][:]
         day = rad_data.variables["day_of_year"][0]
         self._hourz_init = rad_data.variables["hour_utc"][0]
 
         self._dyofyr_init = np.floor(day) + self._hourz_init / 24.0
         try:
-            self._emis = rad_data.variables["emissivity"][0]
+            self._emis = rad_data.variables["emissivity"][:]
         except:
-            self._emis = 0.98
+            self._emis = np.ones(1) * 0.98
         try:
-            albedo = rad_data.variables["albedo"][0]
+            self._albedo = rad_data.variables["albedo"][:]
         except:
-            albedo = 0.06
+            self._albedo = np.ones(1) * 0.06
 
-        self._adir = albedo
-        self._adif = albedo
+        self._adir = self._albedo[0]
+        self._adif = self._albedo[0]
 
         data.close()
 
@@ -217,18 +228,29 @@ class RRTMG:
             # print('radiation profiles from sonde')
         except:
             rad_data = data.groups["radiation"]
-        p_data = rad_data.variables["pressure"][:]
-        t_data = rad_data.variables["temperature"][:]
-        qv_data = rad_data.variables["vapor_mixing_ratio"][:]
-        ql_data = rad_data.variables["liquid_mixing_ratio"][:]
-        qi_data = rad_data.variables["ice_mixing_ratio"][:]
+        self._p_data = rad_data.variables["pressure"][:]
+        if self._data_times is None:
+            self._t_data = rad_data.variables["temperature"][:]
+            self._t_data = self._t_data[np.newaxis,:]
+            self._qv_data = rad_data.variables["vapor_mixing_ratio"][:]
+            self._qv_data = self._qv_data[np.newaxis, :]
+            self._ql_data = rad_data.variables["liquid_mixing_ratio"][:]
+            self._ql_data = self._ql_data[np.newaxis, :]
+            self._qi_data = rad_data.variables["ice_mixing_ratio"][:]
+            self._qi_data = self._qi_data[np.newaxis,:]
+        else:
+            self._t_data = rad_data.variables["temperature"][:,:]
+            self._qv_data = rad_data.variables["vapor_mixing_ratio"][:,:]
+            self._ql_data = rad_data.variables["liquid_mixing_ratio"][:,:]
+            self._qi_data = rad_data.variables["ice_mixing_ratio"][:,:]
+
         data.close()
 
         # Configure a few buffer points in the pressure profile
         dp_model_top = np.abs(
             self._Ref._P0_edge[-n_halo] - self._Ref._P0_edge[-n_halo - 1]
         )
-        p_trial = p_data[p_data < self._Ref._P0[-n_halo]]
+        p_trial = self._p_data[self._p_data < self._Ref._P0[-n_halo]]
         dp_trial = np.abs(p_trial[1] - p_trial[2])
         dp_geom = np.geomspace(dp_model_top * 1.5, dp_trial, num=10)
         p_buffer = np.array([self._Ref._P0_edge[-n_halo]])
@@ -239,11 +261,11 @@ class RRTMG:
             i += 1
 
         self.p_buffer = p_buffer[1:]
-        self.p_extension = p_data[p_data < p_buffer[-1]]
-        self.t_extension = t_data[p_data < p_buffer[-1]]
-        self.qv_extension = qv_data[p_data < p_buffer[-1]]
-        self.ql_extension = ql_data[p_data < p_buffer[-1]]
-        self.qi_extension = qi_data[p_data < p_buffer[-1]]
+        self.p_extension = self._p_data[self._p_data < p_buffer[-1]]
+        self.t_extension = self._t_data[:, self._p_data < p_buffer[-1]]
+        self.qv_extension = self._qv_data[:, self._p_data < p_buffer[-1]]
+        self.ql_extension = self._ql_data[:, self._p_data < p_buffer[-1]]
+        self.qi_extension = self._qi_data[:, self._p_data < p_buffer[-1]]
 
         # Set plev
         _nhalo = self._Grid.n_halo
@@ -295,6 +317,8 @@ class RRTMG:
         s = self._ScalarState.get_field("s")
 
         dt = self._TimeSteppingController.dt
+        current_time = self._TimeSteppingController.time
+
         if not force:
             self.time_elapsed += dt
 
@@ -319,10 +343,7 @@ class RRTMG:
             )
             if self.hourz > 24.0:
                 self.hourz = np.remainder(self.hourz, 24.0)
-            self.coszen = cos_sza(
-                self.dyofyr, self.hourz, self._latitude, self._longitude
-            )
-
+         
             # RRTMG flags. Hardwiring for now
             icld = 1
             idrv = 0
@@ -372,17 +393,17 @@ class RRTMG:
             ccl4vmr = (
                 np.ones((_ncol, _nlay), dtype=np.double, order="F") * self._vmr_ccl4
             )
-            emis = np.ones((_ncol, _nbndlw), dtype=np.double, order="F") * self._emis
+            emis = np.ones((_ncol, _nbndlw), dtype=np.double, order="F") #* self._emis
             cldfr = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             cicewp = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             cliqwp = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             reice = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             reliq = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
-            coszen = np.ones((_ncol), dtype=np.double, order="F") * self.coszen
-            asdir = np.ones((_ncol), dtype=np.double, order="F") * self._adir
-            asdif = np.ones((_ncol), dtype=np.double, order="F") * self._adif
-            aldir = np.ones((_ncol), dtype=np.double, order="F") * self._adir
-            aldif = np.ones((_ncol), dtype=np.double, order="F") * self._adif
+            coszen = np.ones((_ncol), dtype=np.double, order="F") #* self.coszen
+            asdir = np.ones((_ncol), dtype=np.double, order="F") #* self._adir
+            asdif = np.ones((_ncol), dtype=np.double, order="F") #* self._adif
+            aldir = np.ones((_ncol), dtype=np.double, order="F") #* self._adir
+            aldif = np.ones((_ncol), dtype=np.double, order="F") #* self._adif
             taucld_lw = np.zeros((_nbndlw, _ncol, _nlay), dtype=np.double, order="F")
             tauaer_lw = np.zeros((_ncol, _nlay, _nbndlw), dtype=np.double, order="F")
             taucld_sw = np.zeros((_nbndsw, _ncol, _nlay), dtype=np.double, order="F")
@@ -422,11 +443,98 @@ class RRTMG:
             )
             plev = np.asfortranarray(np.repeat(plev_col[np.newaxis, :], _ncol, axis=0))
 
+            # Check if the extension profile is changing in time
+            if self._data_times is None:
+                t_ext_cur = self.t_extension[0,:]
+                qv_ext_cur = self.qv_extension[0,:]
+                ql_ext_cur = self.ql_extension[0,:]
+                qi_ext_cur = self.qi_extension[0,:]
+                emis_cur = self._emis[0]
+                albedo_cur = self._albedo[0]
+                coszen_cur = cos_sza(
+                    self.dyofyr, self.hourz, self._latitude[0], self._longitude[0]
+                    )
+            else:
+                t_ext_cur  = interpolate.interp1d(
+                    self._data_times,
+                    self.t_extension,
+                    axis=0,
+                    fill_value="extrapolate",
+                    assume_sorted=True,
+                )(current_time)
+
+                qv_ext_cur  = interpolate.interp1d(
+                    self._data_times,
+                    self.qv_extension,
+                    axis=0,
+                    fill_value="extrapolate",
+                    assume_sorted=True,
+                )(current_time)
+
+                ql_ext_cur  = interpolate.interp1d(
+                    self._data_times,
+                    self.ql_extension,
+                    axis=0,
+                    fill_value="extrapolate",
+                    assume_sorted=True,
+                )(current_time)
+                
+                qi_ext_cur  = interpolate.interp1d(
+                    self._data_times,
+                    self.ql_extension,
+                    axis=0,
+                    fill_value="extrapolate",
+                    assume_sorted=True,
+                )(current_time)
+
+                emis_cur  = interpolate.interp1d(
+                    self._data_times,
+                    self._emis,
+                    axis=0,
+                    fill_value="extrapolate",
+                    assume_sorted=True,
+                )(current_time)
+
+                albedo_cur  = interpolate.interp1d(
+                    self._data_times,
+                    self._albedo,
+                    axis=0,
+                    fill_value="extrapolate",
+                    assume_sorted=True,
+                )(current_time)
+
+                lat_cur  = interpolate.interp1d(
+                    self._data_times,
+                    self._latitude,
+                    axis=0,
+                    fill_value="extrapolate",
+                    assume_sorted=True,
+                )(current_time)
+
+                lon_cur  = interpolate.interp1d(
+                    self._data_times,
+                    self._longitude,
+                    axis=0,
+                    fill_value="extrapolate",
+                    assume_sorted=True,
+                )(current_time)
+
+                coszen_cur = cos_sza(
+                    self.dyofyr, self.hourz, lat_cur, lon_cur
+                    )
+
+            asdir *= albedo_cur
+            asdif *= albedo_cur
+            aldir *= albedo_cur
+            aldif *= albedo_cur
+            emis *= emis_cur
+            coszen *= coszen_cur
+
             # reshape temperature to rrtmg shape (layers)
             to_rrtmg_shape(
                 _nhalo,
                 self._DiagnosticState.get_field("T"),
-                self.t_extension,
+                t_ext_cur,
                 tlay,
                 self.p_buffer,
                 self._Ref._P0[-_nhalo[2]],
@@ -456,7 +564,7 @@ class RRTMG:
             to_rrtmg_shape(
                 _nhalo,
                 self._ScalarState.get_field("qv"),
-                self.qv_extension,
+                qv_ext_cur,
                 h2ovmr,
                 self.p_buffer,
                 self._Ref._P0[-_nhalo[2]],
@@ -470,7 +578,7 @@ class RRTMG:
             to_rrtmg_shape(
                 _nhalo,
                 self._Micro.get_qcloud(),
-                self.ql_extension,
+                ql_ext_cur,
                 cliqwp,
                 self.p_buffer,
                 self._Ref._P0[-_nhalo[2]],
@@ -485,7 +593,7 @@ class RRTMG:
             to_rrtmg_shape(
                 _nhalo,
                 self._Micro.get_reffc(),
-                np.zeros_like(self.ql_extension),
+                np.zeros_like(ql_ext_cur),
                 reliq,
                 self.p_buffer,
                 self._Ref._P0[-_nhalo[2]],
@@ -499,7 +607,7 @@ class RRTMG:
             to_rrtmg_shape(
                 _nhalo,
                 self._Micro.get_qi(),
-                self.qi_extension,
+                qi_ext_cur,
                 cicewp,
                 self.p_buffer,
                 self._Ref._P0[-_nhalo[2]],
@@ -512,7 +620,7 @@ class RRTMG:
             to_rrtmg_shape(
                 _nhalo,
                 self._Micro.get_reffi(),
-                np.zeros_like(self.qi_extension),
+                np.zeros_like(qi_ext_cur),
                 reice,
                 self.p_buffer,
                 self._Ref._P0[-_nhalo[2]],
