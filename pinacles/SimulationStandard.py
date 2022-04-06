@@ -420,8 +420,12 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Ref,
             self.TimeSteppingController,
         )
+<<<<<<< HEAD
 
         self.Fields2d = Fields2D.Fields2D(
+=======
+        self.Fields2d = Fields2D.factory(
+>>>>>>> master
             self._namelist,
             self.ModelGrid,
             self.Ref,

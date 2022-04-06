@@ -5,7 +5,10 @@ from numba.typed import Dict, List
 import time
 import os
 from mpi4py import MPI
-import h5py
+try:
+    import h5py
+except:
+    pass
 
 
 class ParticlesBase:
@@ -19,7 +22,6 @@ class ParticlesBase:
         ScalarState,
         DiagnosticState,
     ):
-
         # Initialize data
         self._namelist = namelist
         self._Grid = Grid
