@@ -38,34 +38,54 @@ class Micro_M2005_MA(MicrophysicsBase):
 
         self._m2005_ma_cffi = m2005_ma_via_cffi.M2005_MA()
         
+        self._sam_dims = (
+            self._Grid.ngrid_local[0] - 2 * nhalo[0],
+            self._Grid.ngrid_local[1] - 2 * nhalo[1],
+            self._Grid.ngrid_local[2] - 2 * nhalo[2],
+        )
+        
+        self._nmicrofields = 0
+        
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            self._masterproc = True
+        else:
+            self._masterproc = False
+        
+        self._tlatqi = np.zeros(
+            (self._sam_dims[2]+1), order="F", dtype=np.double
+        )
+                
         try:
-            
             mp_flags = namelist["microphysics"]["flags"]
 
-            self._m2005_ma_cffi.init(
+            self._m2005_ma_cffi.setparm(
+                self.sam_dims[0],
+                self.sam_dims[1],
+                self.sam_dims[2],
+                self._nmicrofields,
                 docloud = mp_flags["docloud"],
-                dototalwater = mp_flags["dototalwater"],
-                dopredictNc = mp_flags["dopredictNc"],
-                doprogaerosol = mp_flags["doprogaerosol"],
-                dospecifyaerosol = mp_flags["dospecifyaerosol"],
-                doprecoff = mp_flags["doprecoff"],
-                doprecip = mp_flags["doprecip"], 
-                doicemicro = mp_flags["doicemicro"],
-                dograupel = mp_flags["dograupel"],
-                doactivdiagoutput = mp_flags["doactivdiagoutput"],
-                doreflectivity_cloudradar = mp_flags["doreflectivity_cloudradar"],
-                donudging_aerosol = mp_flags["donudging_aerosol"],
-                n_gas_chem_fields = mp_flags["n_gas_chem_fields"],
+                doprecip = mp_flags["doprecip"],
+                self.masterproc,
+                self._tlatqi,
             )
 
             if MPI.COMM_WORLD.Get_rank() == 0:
                 print("\tM2005_MA: Initialized with custom flags")
         except:
-            self._m2005_ma_cffi.init()
+            self._m2005_ma_cffi.setparm(
+                self.sam_dims[0],
+                self.sam_dims[1],
+                self.sam_dims[2],
+                self._nmicrofields,
+                self.masterproc,
+                True,
+                True,
+                self._tlatqi,
+            )
             if MPI.COMM_WORLD.Get_rank() == 0:
                 print("\tM2005_MA: Initialized with default flags")
                 
-        iqv = 1   ! total water (vapor + cloud liq) mass mixing ratio [kg H2O / kg dry air]
+        iqv = 1   # total water (vapor + cloud liq) mass mixing ratio [kg H2O / kg dry air]
         
         self._ScalarState.add_variable(
             "qv",
@@ -79,7 +99,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             count = 1
             
         else:
-            iqcl = 2  ! cloud water mass mixing ratio [kg H2O / kg dry air]
+            iqcl = 2  # cloud water mass mixing ratio [kg H2O / kg dry air]
             count = 2
             self._ScalarState.add_variable(
                 "qc",
@@ -90,7 +110,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             )
 
         if(dopredictNc):
-            incl = count + 1  ! cloud water number mixing ratio [#/kg dry air]
+            incl = count + 1  # cloud water number mixing ratio [#/kg dry air]
             count = count + 1
             self._ScalarState.add_variable(
                 "qnc",
@@ -101,11 +121,11 @@ class Micro_M2005_MA(MicrophysicsBase):
             )
 
         if(doprogaerosol):
-            iqad = count + 1 ! dry aerosol mass mixing ratio [kg aerosol/kg dry air]
-            iqad2 = count + 2 ! aitken mode
-            inad = count + 3 ! dry aerosol number mixing ratio [#/kg dry air]
-            inad2 = count + 4 ! aitken mode
-            iqaw = count + 5 ! wet aerosol mass mixing ratio [kg activated aerosol/kg dry air]
+            iqad = count + 1 # dry aerosol mass mixing ratio [kg aerosol/kg dry air]
+            iqad2 = count + 2 # aitken mode
+            inad = count + 3 # dry aerosol number mixing ratio [#/kg dry air]
+            inad2 = count + 4 # aitken mode
+            iqaw = count + 5 # wet aerosol mass mixing ratio [kg activated aerosol/kg dry air]
             count = count + 5
             self._ScalarState.add_variable(
                 "qad",
@@ -143,11 +163,11 @@ class Micro_M2005_MA(MicrophysicsBase):
                 limit=True,
             )
 
-            igas1 = count + 1 ! first gas chem field
+            igas1 = count + 1 # first gas chem field
             iDMS = igas1
             iSO2 = igas1 + 1
             iH2SO4 = igas1 + 2
-            count = count + 3 ! save space for gas chem fields # salt in our case
+            count = count + 3 # save space for gas chem fields # salt in our case
             self._ScalarState.add_variable(
                 "DMS",
                 long_name="DMS GAS CONCENTRATION",
@@ -171,8 +191,8 @@ class Micro_M2005_MA(MicrophysicsBase):
             )
 
         if(doprecip):
-            iqr = count + 1 ! rain mass mixing ratio [kg H2O / kg dry air]
-            inr = count + 2 ! rain number mixing ratio [#/kg dry air]
+            iqr = count + 1 # rain mass mixing ratio [kg H2O / kg dry air]
+            inr = count + 2 # rain number mixing ratio [#/kg dry air]
             count = count + 2
             self._ScalarState.add_variable(
                 "qr",
@@ -190,7 +210,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             )
 
             if(doprogaerosol):
-                iqar = count + 1 ! ! wet aerosol mass mixing ratio in rain [kg aerosol in rain/kg dry air]
+                iqar = count + 1 # # wet aerosol mass mixing ratio in rain [kg aerosol in rain/kg dry air]
                 count = count + 1
                 self._ScalarState.add_variable(
                     "qar",
@@ -201,10 +221,10 @@ class Micro_M2005_MA(MicrophysicsBase):
                 )
 
         if(doicemicro):
-            iqci = count + 1  ! cloud ice mass mixing ratio [kg H2O / kg dry air]
-            inci = count + 2  ! cloud ice number mixing ratio [#/kg dry air]
-            iqs = count + 3   ! snow mass mixing ratio [kg H2O / kg dry air]
-            ins = count + 4   ! snow number mixing ratio [#/kg dry air]
+            iqci = count + 1  # cloud ice mass mixing ratio [kg H2O / kg dry air]
+            inci = count + 2  # cloud ice number mixing ratio [#/kg dry air]
+            iqs = count + 3   # snow mass mixing ratio [kg H2O / kg dry air]
+            ins = count + 4   # snow number mixing ratio [#/kg dry air]
             count = count + 4
             self._ScalarState.add_variable(
                 "qci",
@@ -236,8 +256,8 @@ class Micro_M2005_MA(MicrophysicsBase):
             )
 
         if(dograupel):
-            iqg = count + 1   ! graupel mass mixing ratio [kg H2O / kg dry air]
-            ing = count + 2  ! graupel number mixing ratio [#/kg dry air]
+            iqg = count + 1   # graupel mass mixing ratio [kg H2O / kg dry air]
+            ing = count + 2  # graupel number mixing ratio [#/kg dry air]
             count = count + 2
             if(dohail):
                 self._ScalarState.add_variable(
@@ -310,7 +330,6 @@ class Micro_M2005_MA(MicrophysicsBase):
         self._tlat = np.zeros(
             (self._sam_dims[2]+1), order="F", dtype=np.double
         )
-        self._tlatqi = np.zeros_like(self._tlat)
         self._precflux = np.zeros_like(self._tlat)
         self._qpfall = np.zeros_like(self._tlat)
                 
@@ -324,6 +343,15 @@ class Micro_M2005_MA(MicrophysicsBase):
         rho0 = self._Ref.rho0
         tabs0 = self._Ref.T0
         rhow = self._Ref.rho0_edge
+        t0 = tabs0
+        qv0 = np.zeros_like(p0)
+        self._q0 = np.zeros_like(p0)
+        
+        dostatis = False
+        do_chunked_energy_budgets = False
+        donudging_aerosol = False
+        
+        self._T = self._DiagnosticState.get_field("T")
 
         # For diagnostic variables
 
@@ -406,6 +434,45 @@ class Micro_M2005_MA(MicrophysicsBase):
                 long_name=diag_3d_long_names[vn][0],
                 units=diag_3d_long_names[vn][1],
             )
+            
+            
+        self._m2005_ma_cffi.init(
+            self.sam_dims[0],
+            self.sam_dims[1],
+            self.sam_dims[2],
+            self.nmicrofields,
+            nx_gl, 
+            ny_gl,
+            my_rank, 
+            nsubdomains_x, 
+            nsubdomains_y, 
+            nrestart,
+            self._T,
+            self._microfield_4d,
+            self.n_diag_3d,
+            self._diag_3d,
+            z, 
+            p0,
+            rho0, 
+            tabs0, 
+            zi, 
+            rhow, 
+            t0, 
+            dx,
+            dz,
+            self._q0, 
+            qv0, 
+            time, 
+            LCOND, 
+            LSUB, 
+            CP, 
+            RGAS, 
+            RV, 
+            G,
+            dostatis, 
+            do_chunked_energy_budgets, 
+            donudging_aerosol,
+        )
                         
         self._Timers.add_timer("MicroM2005_MA_update")
         return
@@ -430,82 +497,69 @@ class Micro_M2005_MA(MicrophysicsBase):
         
         self._microfield(:,:,:,iqv) =   self._ScalarState.getfield("qv")
         
-        if(Not dototalwater):
+        if(not dototalwater):
             self._microfield(:,:,:,iqcl) =   self._ScalarState.getfield("qc")
 
         if(dopredictNc):
             self._microfield(:,:,:,incl) =   self._ScalarState.getfield("qnc")
 
         if(doprogaerosol):
-            self._microfield(:,:,:,iqad) =   self._ScalarState.getfield("qad")
-            self._microfield(:,:,:,iqad2) =   self._ScalarState.getfield("qad2")
-            self._microfield(:,:,:,inad) =   self._ScalarState.getfield("qnad")
-            self._microfield(:,:,:,inad2) =   self._ScalarState.getfield("qnad2")
-            self._microfield(:,:,:,iqaw) =   self._ScalarState.getfield("qaw")
-            self._microfield(:,:,:,iqgas) =   self._ScalarState.getfield("qgas")
+            self._microfield(:,:,:,iqad)  =  self._ScalarState.getfield("qad")
+            self._microfield(:,:,:,iqad2) =  self._ScalarState.getfield("qad2")
+            self._microfield(:,:,:,inad)  =  self._ScalarState.getfield("qnad")
+            self._microfield(:,:,:,inad2) =  self._ScalarState.getfield("qnad2")
+            self._microfield(:,:,:,iqaw)  =  self._ScalarState.getfield("qaw")
+            self._microfield(:,:,:,iqgas) =  self._ScalarState.getfield("qgas")
 
         if(doprecip):
-            self._microfield(:,:,:,iqr) =   self._ScalarState.getfield("qr")
-            self._microfield(:,:,:,iqnr) =   self._ScalarState.getfield("qnr")
+            self._microfield(:,:,:,iqr)   =  self._ScalarState.getfield("qr")
+            self._microfield(:,:,:,iqnr)  =  self._ScalarState.getfield("qnr")
 
             if(doprogaerosol):
                 self._microfield(:,:,:,iqar) =   self._ScalarState.getfield("qar")
 
         if(doicemicro):
-            self._microfield(:,:,:,iqci) =   self._ScalarState.getfield("qci")
-            self._microfield(:,:,:,iqnci) =   self._ScalarState.getfield("qnci")
-            self._microfield(:,:,:,iqs) =   self._ScalarState.getfield("qs")
-            self._microfield(:,:,:,iqns) =   self._ScalarState.getfield("qns")
+            self._microfield(:,:,:,iqci)  =  self._ScalarState.getfield("qci")
+            self._microfield(:,:,:,iqnci) =  self._ScalarState.getfield("qnci")
+            self._microfield(:,:,:,iqs)   =  self._ScalarState.getfield("qs")
+            self._microfield(:,:,:,iqns)  =  self._ScalarState.getfield("qns")
 
         if(dograupel):
-            self._microfield(:,:,:,iqg) =   self._ScalarState.getfield("qg")
-            self._microfield(:,:,:,iqng) =   self._ScalarState.getfield("qng")                
+            self._microfield(:,:,:,iqg)   =  self._ScalarState.getfield("qg")
+            self._microfield(:,:,:,iqng)  =  self._ScalarState.getfield("qng")                
 
         self._m2005_ma_cffi.update(
             self.sam_dims[0],
             self.sam_dims[1],
             self.sam_dims[2],
             self.nmicrofields,
-            nx_gl,
-            ny_gl,
-            my_rank,
-            nsubdomains_x,
-            nsubdomains_y,
+            self.n_diag_3d,
+            icycle, 
+            ncycle, 
+            nsaveMSE, 
+            nstat, 
+            nstatis, 
+            nstep,
             T,
             s,
             w,
             self._microfield,
-            self._n_diag_3d,
             self._diag_3d,
-            z,
-            p0,
-            rho0,
-            tabs0,
-            zi,
-            rhow,
-            dx,
-            dz,
             self._nrainy,
             self._nrmn,
             self._ncmn,
             self._total_water_prec,
-            self._tlat,
-            self._tlatqi,
-            self._precflux,
-            self._qpfall,
+            self.tlat,
             self.fluxbq,
             self.fluxtq,
             self.u10arr,
+            self._precflux,
+            self._qpfall,
             self._precsfc,
             self._prec_xy,
             dt,
             time,
-            self._itimestep,
-            LCOND,
-            LSUB,
-            CPD,
-            RV,
-            G,
+            self.itimestep,
         )
 
         # Compute and apply sedimentation sources of static energy
