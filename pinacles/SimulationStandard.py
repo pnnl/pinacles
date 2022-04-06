@@ -48,6 +48,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self, namelist, llx=0.0, lly=0.0, llz=0.0, ParentNest=None, nest_num=0
     ):
 
+        self.ParentNest = ParentNest
+
         self._ll_corner = (llx, lly, llz)
 
         assert type(nest_num) == int
@@ -65,7 +67,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Initialize differently if this is a restart simulation
         if not self.Restart.restart_simulation:
-            self.initialize(ParentNest)
+            self.initialize(self.ParentNest)
         else:
             self.initialize_from_restart()
 
@@ -331,7 +333,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.ScalarTimeStepping.initialize()
         self.VelocityTimeStepping.initialize()
 
-        if ParentNest is None:
+        if self.ParentNest is None:
             self.LBC = LateralBCsFactory.LateralBCsFactory(
                 self._namelist,
                 self.ModelGrid,
@@ -363,7 +365,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.VelocityState,
                 self.TimeSteppingController,
                 self.Ingest,
-                NestState=ParentNest.ScalarState,
+                Parent=self.ParentNest,
+                NestState=self.ParentNest.ScalarState,
             )
             self.LBCVel = LateralBCsFactory.LateralBCsFactory(
                 self._namelist,
@@ -374,7 +377,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.VelocityState,
                 self.TimeSteppingController,
                 self.Ingest,
-                NestState=ParentNest.VelocityState,
+                Parent=self.ParentNest,
+                NestState=self.ParentNest.VelocityState,
             )
 
         if self.Ingest is not None:
@@ -516,7 +520,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         for lbc in [self.LBC, self.LBCVel]:
             # lbc.set_vars_on_boundary_to_mean()
-            lbc.set_vars_on_boundary(ParentNest=ParentNest)
+            lbc.set_vars_on_boundary(ParentNest=self.ParentNest)
 
         for prog_state in [self.ScalarState, self.VelocityState]:
             prog_state.boundary_exchange()
@@ -1076,7 +1080,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.PSolver.update()
 
                 for lbcs in [self.LBC, self.LBCVel]:
-                    lbcs.set_vars_on_boundary(ParentNest=ParentNest)
+                    lbcs.set_vars_on_boundary(ParentNest=self.ParentNest)
 
                 self.LBCVel.update(normal=False)
 
@@ -1145,6 +1149,25 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     integrate_by_dt=self.TimeSteppingController._dt,
                     ParentNest=ListOfSims[self._nest_num],
                 )
+                
+            if ParentNest is not None:
+                self.LBC.update_parent(dt=self.TimeSteppingController.dt)
+                ParentNest.ScalarState.boundary_exchange()
+                ParentNest.ScalarState.update_all_bcs()
+                
+                self.LBCVel.update_parent(dt=self.TimeSteppingController.dt)
+                ParentNest.VelocityState.boundary_exchange()
+                ParentNest.VelocityState.update_all_bcs()
+                ParentNest.LBCVel.update()
+                # Call pressure solver
+                ParentNest.PSolver.update()
+
+                for lbcs in [ParentNest.LBC, ParentNest.LBCVel]:
+                    lbcs.set_vars_on_boundary(ParentNest=ParentNest)
+
+                ParentNest.LBCVel.update(normal=False)
+
+
 
         return
 

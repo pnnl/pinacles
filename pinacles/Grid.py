@@ -283,6 +283,26 @@ class GridBase:
         return np.copy(self._global_axes[1][start:end])
 
     @property
+    def x_edge_local(self):
+        """Copy here is forced to keep _global_axes externally immutable,
+        if performace becomes an issue we can provide a property that return a
+        view so that copy occurs.
+        """
+        start = self._local_start[0]
+        end = self._local_end[0] + 2 * self._n_halo[0]
+        return np.copy(self._global_axes_edge[0][start:end])
+
+    @property
+    def y_edge_local(self):
+        """Copy here is forced to keep _global_axes externally immutable,
+        if performace becomes an issue we can provide a property that return a
+        view so that copy occurs.
+        """
+        start = self._local_start[1]
+        end = self._local_end[1] + 2 * self._n_halo[1]
+        return np.copy(self._global_axes_edge[1][start:end])
+
+    @property
     def z_local(self):
         """Copy here is forced to keep _global_axes externally immutable,
         if performace becomes an issue we can provide a property that return a
@@ -620,11 +640,11 @@ class RegularCartesian(GridBase):
 
         return (x_index, y_index, z_index)
 
-    def CreateGather(self, xrange, yrange):
-        return self._Gather(self, xrange, yrange)
+    def CreateGather(self, xrange, yrange, x_edge=False, y_edge=False):
+        return self._Gather(self, xrange, yrange, x_edge, y_edge)
 
     class _Gather:
-        def __init__(self, ModelGrid, xrange, yrange):
+        def __init__(self, ModelGrid, xrange, yrange, x_edge=False, y_edge=False):
 
             self.xrange = xrange
             self.yrange = yrange
@@ -650,10 +670,18 @@ class RegularCartesian(GridBase):
             self.y_start = []
             self.y_end = []
 
-            # First compute what I need to send
             n = len(self.xranges_to_get)
             for i in range(n):
-                n_local = local_ends[i] - local_starts[i]
+                if x_edge:
+                    local_ends[i][0] += 1
+                if y_edge:
+                    local_ends[i][1] += 1
+
+            self.local_ends = np.array(local_ends)
+
+            # First compute what I need to send
+
+            for i in range(n):
 
                 xi_start = 0
                 xi_end = 0
