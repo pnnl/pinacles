@@ -78,6 +78,7 @@
     },
     "nests": {
         "n": 1,
+        "two_way": false,
         "factor": [[3, 3, 1]],
         "parent_points": [[64,64,64]],
         "ll_corner": [[16, 16, 16]]

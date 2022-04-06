@@ -1150,7 +1150,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     ParentNest=ListOfSims[self._nest_num],
                 )
                 
-            if ParentNest is not None:
+            if ParentNest is not None and self.LBCVel.two_way:
                 self.LBC.update_parent(dt=self.TimeSteppingController.dt)
                 ParentNest.ScalarState.boundary_exchange()
                 ParentNest.ScalarState.update_all_bcs()

@@ -20,6 +20,8 @@ class LateralBCsNest(LateralBCsBase):
         self.parent_pts = nest_namelist["parent_pts"]
         assert "root_point" in nest_namelist
         self.root_point = nest_namelist["root_point"]
+        assert "two_way" in nest_namelist
+        self.two_way = nest_namelist["two_way"]
 
         self._NestState = NestState
         self._Parent = Parent
@@ -186,6 +188,8 @@ class LateralBCsNest(LateralBCsBase):
         return
 
     def update_parent(self, dt):
+        if not self.two_way:
+            return
 
         parent_start = np.array(self._Parent.ModelGrid._local_start)
         parent_end = np.array(self._Parent.ModelGrid._local_end)
