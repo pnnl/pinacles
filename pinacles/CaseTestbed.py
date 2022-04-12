@@ -644,6 +644,7 @@ class ForcingTestbed(Forcing.ForcingBase):
                 fill_value="extrapolate",
                 assume_sorted=True,
             )(current_time)
+            UtilitiesParallel.print_root('Current lat : ', current_lat)
             self._f = 2.0 * parameters.OMEGA * np.sin(current_lat * np.pi / 180.0)
 
         # interpolate in time
