@@ -38,48 +38,48 @@ class Micro_M2005_MA(MicrophysicsBase):
 
         self._m2005_ma_cffi = m2005_ma_via_cffi.M2005_MA()
         
-        self._sam_dims = (
-            self._Grid.ngrid_local[0] - 2 * nhalo[0],
-            self._Grid.ngrid_local[1] - 2 * nhalo[1],
-            self._Grid.ngrid_local[2] - 2 * nhalo[2],
-        )
+        nhalo = self._Grid.n_halo
+        nx =    self._Grid.ngrid_local[0] - 2 * nhalo[0]
+        ny =    self._Grid.ngrid_local[1] - 2 * nhalo[1]
+        nz =    self._Grid.ngrid_local[2] - 2 * nhalo[2]
         
         self._nmicrofields = 0
+        self._masterproc = False
         
         if MPI.COMM_WORLD.Get_rank() == 0:
             self._masterproc = True
-        else:
-            self._masterproc = False
-        
+            
         self._tlatqi = np.zeros(
-            (self._sam_dims[2]+1), order="F", dtype=np.double
+            (nz+1), order="F", dtype=np.double
         )
                 
         try:
             mp_flags = namelist["microphysics"]["flags"]
-
+            docloud = mp_flags["docloud"]
+            doprecip = mp_flags["doprecip"]
+                
             self._m2005_ma_cffi.setparm(
-                self.sam_dims[0],
-                self.sam_dims[1],
-                self.sam_dims[2],
+                nx,
+                ny,
+                nz,
                 self._nmicrofields,
-                docloud = mp_flags["docloud"],
-                doprecip = mp_flags["doprecip"],
-                self.masterproc,
+                docloud,
+                doprecip,
+                self._masterproc,
                 self._tlatqi,
-            )
+                )
 
             if MPI.COMM_WORLD.Get_rank() == 0:
                 print("\tM2005_MA: Initialized with custom flags")
         except:
             self._m2005_ma_cffi.setparm(
-                self.sam_dims[0],
-                self.sam_dims[1],
-                self.sam_dims[2],
+                nx,
+                ny,
+                nz,
                 self._nmicrofields,
-                self.masterproc,
                 True,
                 True,
+                self._masterproc,
                 self._tlatqi,
             )
             if MPI.COMM_WORLD.Get_rank() == 0:
@@ -293,7 +293,7 @@ class Micro_M2005_MA(MicrophysicsBase):
         self._nmicrofields = count
                 
         self._microfield = np.empty(
-            (self._sam_dims[0], self._sam_dims[1], self._sam_dims[2], self._nmicrofields),
+            (nx, ny, nz, self._nmicrofields),
             dtype=np.double,
             order="F",
         )
@@ -301,16 +301,19 @@ class Micro_M2005_MA(MicrophysicsBase):
         # Allocate microphysical/thermodynamic variables
 
         nhalo = self._Grid.n_halo
-        self._sam_dims = (
-            self._Grid.ngrid_local[0] - 2 * nhalo[0],
-            self._Grid.ngrid_local[1] - 2 * nhalo[1],
-            self._Grid.ngrid_local[2] - 2 * nhalo[2],
-        )
+        nx    = self._Grid.ngrid_local[0] - 2 * nhalo[0]
+        ny    = self._Grid.ngrid_local[1] - 2 * nhalo[1]
+        nz    = self._Grid.ngrid_local[2] - 2 * nhalo[2]
         nx_gl = self._Grid.n[0]
         ny_gl = self._Grid.n[1]
         my_rank = MPI.COMM_WORLD.Get_rank()
         nsubdomains_x = self._Grid.subcomms[0].Get_size()
         nsubdomains_y = self._Grid.subcomms[1].Get_size()
+        
+        if (namelist["restart"]["restart_simulation"] == False):
+            nrestart = 0
+        else:
+            nrestart = 1
                 
         self._itimestep = 0
                         
@@ -320,15 +323,15 @@ class Micro_M2005_MA(MicrophysicsBase):
         self._total_water_prec = 0.0
                 
         self._fluxbq = np.zeros(
-            (self._sam_dims[0], self._sam_dims[1]), order="F", dtype=np.double
+            (nx, ny), order="F", dtype=np.double
         )
-        self._fluxtq = np.zeros_like(self._fluxbq)
+        self._fluxtq = np.zeros_like(self._fluxbq)  # fluxes not being used anywhere
         self._u10arr = np.zeros_like(self._fluxbq)
         self._precsfc = np.zeros_like(self._fluxbq)
         self._prec_xy = np.zeros_like(self._fluxbq)
                 
         self._tlat = np.zeros(
-            (self._sam_dims[2]+1), order="F", dtype=np.double
+            (nz+1), order="F", dtype=np.double
         )
         self._precflux = np.zeros_like(self._tlat)
         self._qpfall = np.zeros_like(self._tlat)
@@ -390,17 +393,17 @@ class Micro_M2005_MA(MicrophysicsBase):
         n_tend_units = "kg-1"
         n_rate_units = "kg-1 s-1"
         diag_3d_long_names = {
-            "qtot_sed" : ("total liquid water sedimentation", "")
-            "qice_sed" : ("ice sedimentation", "")
-            "Nacc_sct" : ("Nacc self coagulation tendency", "")
-            "Nait_sct" : ("Nait self coagulation tendency", "")
-            "Nait2a_ct" : ("Nait2acc coagulation tendency", "")
-            "Mait2a_ct" : ("Mait2acc coagulation tendency", "")
-            "relhum" : ("relative humidity", "")
-            "diag_effc_3d" : ("cloud droplet effective radius", "m")
-            "diag_effr_3d" : ("rain droplet effective radius", "m")
-            "diag_effi_3d" : ("cloud ice effective radius", "m")
-            "diag_effs_3d" : ("snow effective radius", "m")
+            "qtot_sed" : ("total liquid water sedimentation", ""),
+            "qice_sed" : ("ice sedimentation", ""),
+            "Nacc_sct" : ("Nacc self coagulation tendency", ""),
+            "Nait_sct" : ("Nait self coagulation tendency", ""),
+            "Nait2a_ct" : ("Nait2acc coagulation tendency", ""),
+            "Mait2a_ct" : ("Mait2acc coagulation tendency", ""),
+            "relhum" : ("relative humidity", ""),
+            "diag_effc_3d" : ("cloud droplet effective radius", "m"),
+            "diag_effr_3d" : ("rain droplet effective radius", "m"),
+            "diag_effi_3d" : ("cloud ice effective radius", "m"),
+            "diag_effs_3d" : ("snow effective radius", "m"),
             "dBZCLRAD": ("Cloud Radar Reflectivity", "dBZ"),
             "NARG1": ("A-R&G. Activated Number Accumulation", n_tend_units),
             "NARG2": ("A-R&G Activated Number Aitken", n_tend_units),
@@ -422,7 +425,7 @@ class Micro_M2005_MA(MicrophysicsBase):
         self._n_diag_3d = len(self._diag_3d_vars)
 
         self._diag_3d = np.empty(
-            (self._sam_dims[0], self._sam_dims[1], self._sam_dims[2], self._n_diag_3d),
+            (nx, ny, nz, self._n_diag_3d),
             dtype=np.double,
             order="F",
         )
@@ -437,9 +440,9 @@ class Micro_M2005_MA(MicrophysicsBase):
             
             
         self._m2005_ma_cffi.init(
-            self.sam_dims[0],
-            self.sam_dims[1],
-            self.sam_dims[2],
+            nx,
+            ny,
+            nz,
             self.nmicrofields,
             nx_gl, 
             ny_gl,
@@ -448,7 +451,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             nsubdomains_y, 
             nrestart,
             self._T,
-            self._microfield_4d,
+            self._microfield,
             self.n_diag_3d,
             self._diag_3d,
             z, 
@@ -463,15 +466,15 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._q0, 
             qv0, 
             time, 
+            dostatis, 
+            do_chunked_energy_budgets, 
+            donudging_aerosol,
             LCOND, 
             LSUB, 
             CP, 
             RGAS, 
             RV, 
             G,
-            dostatis, 
-            do_chunked_energy_budgets, 
-            donudging_aerosol,
         )
                         
         self._Timers.add_timer("MicroM2005_MA_update")
@@ -495,43 +498,17 @@ class Micro_M2005_MA(MicrophysicsBase):
         RV = self.Parameters.RV
         G = self.Parameters.G
         
-        self._microfield(:,:,:,iqv) =   self._ScalarState.getfield("qv")
+        icycle = 1 
+        ncycle = 1
+        nsaveMSE = 1
+        nstat = 1 
+        nstatis = 1 
+        nstep = self._n_timesteps
         
-        if(not dototalwater):
-            self._microfield(:,:,:,iqcl) =   self._ScalarState.getfield("qc")
-
-        if(dopredictNc):
-            self._microfield(:,:,:,incl) =   self._ScalarState.getfield("qnc")
-
-        if(doprogaerosol):
-            self._microfield(:,:,:,iqad)  =  self._ScalarState.getfield("qad")
-            self._microfield(:,:,:,iqad2) =  self._ScalarState.getfield("qad2")
-            self._microfield(:,:,:,inad)  =  self._ScalarState.getfield("qnad")
-            self._microfield(:,:,:,inad2) =  self._ScalarState.getfield("qnad2")
-            self._microfield(:,:,:,iqaw)  =  self._ScalarState.getfield("qaw")
-            self._microfield(:,:,:,iqgas) =  self._ScalarState.getfield("qgas")
-
-        if(doprecip):
-            self._microfield(:,:,:,iqr)   =  self._ScalarState.getfield("qr")
-            self._microfield(:,:,:,iqnr)  =  self._ScalarState.getfield("qnr")
-
-            if(doprogaerosol):
-                self._microfield(:,:,:,iqar) =   self._ScalarState.getfield("qar")
-
-        if(doicemicro):
-            self._microfield(:,:,:,iqci)  =  self._ScalarState.getfield("qci")
-            self._microfield(:,:,:,iqnci) =  self._ScalarState.getfield("qnci")
-            self._microfield(:,:,:,iqs)   =  self._ScalarState.getfield("qs")
-            self._microfield(:,:,:,iqns)  =  self._ScalarState.getfield("qns")
-
-        if(dograupel):
-            self._microfield(:,:,:,iqg)   =  self._ScalarState.getfield("qg")
-            self._microfield(:,:,:,iqng)  =  self._ScalarState.getfield("qng")                
-
         self._m2005_ma_cffi.update(
-            self.sam_dims[0],
-            self.sam_dims[1],
-            self.sam_dims[2],
+            nx,
+            ny,
+            nz,
             self.nmicrofields,
             self.n_diag_3d,
             icycle, 
@@ -559,8 +536,41 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._prec_xy,
             dt,
             time,
-            self.itimestep,
         )
+        
+#        qv = self._ScalarState.getfield("qv")
+#        qv = self._microfield(1:nx,1:ny,1:nz,iqv)
+#        
+#        if(not dototalwater):
+#            self._microfield(:,:,:,iqcl) =   self._ScalarState.getfield("qc")
+#
+#        if(dopredictNc):
+#            self._microfield(:,:,:,incl) =   self._ScalarState.getfield("qnc")
+#
+#        if(doprogaerosol):
+#            self._microfield(:,:,:,iqad)  =  self._ScalarState.getfield("qad")
+#            self._microfield(:,:,:,iqad2) =  self._ScalarState.getfield("qad2")
+#            self._microfield(:,:,:,inad)  =  self._ScalarState.getfield("qnad")
+#            self._microfield(:,:,:,inad2) =  self._ScalarState.getfield("qnad2")
+#            self._microfield(:,:,:,iqaw)  =  self._ScalarState.getfield("qaw")
+#            self._microfield(:,:,:,iqgas) =  self._ScalarState.getfield("qgas")
+#
+#        if(doprecip):
+#            self._microfield(:,:,:,iqr)   =  self._ScalarState.getfield("qr")
+#            self._microfield(:,:,:,iqnr)  =  self._ScalarState.getfield("qnr")
+#
+#            if(doprogaerosol):
+#                self._microfield(:,:,:,iqar) =   self._ScalarState.getfield("qar")
+#
+#        if(doicemicro):
+#            self._microfield(:,:,:,iqci)  =  self._ScalarState.getfield("qci")
+#            self._microfield(:,:,:,iqnci) =  self._ScalarState.getfield("qnci")
+#            self._microfield(:,:,:,iqs)   =  self._ScalarState.getfield("qs")
+#            self._microfield(:,:,:,iqns)  =  self._ScalarState.getfield("qns")
+#
+#        if(dograupel):
+#            self._microfield(:,:,:,iqg)   =  self._ScalarState.getfield("qg")
+#            self._microfield(:,:,:,iqng)  =  self._ScalarState.getfield("qng")                
 
         # Compute and apply sedimentation sources of static energy
         np.multiply(qtot_sed, parameters.LV / parameters.CPD, out=s_tend_liq_sed)
