@@ -39,68 +39,61 @@ class Micro_M2005_MA(MicrophysicsBase):
         self._m2005_ma_cffi = m2005_ma_via_cffi.M2005_MA()
         
         nhalo = self._Grid.n_halo
-        nx =    self._Grid.ngrid_local[0] - 2 * nhalo[0]
-        ny =    self._Grid.ngrid_local[1] - 2 * nhalo[1]
-        nz =    self._Grid.ngrid_local[2] - 2 * nhalo[2]
+        self._sam_dims = np.array([
+            self._Grid.ngrid_local[0] - 2 * nhalo[0],
+            self._Grid.ngrid_local[1] - 2 * nhalo[1],
+            self._Grid.ngrid_local[2] - 2 * nhalo[2],
+            0,
+        ])
         
-        self._nmicrofields = 0
+        #print("SAM_Micro_M2005_MA",self._sam_dims)
+        
+        self._iqarray = np.zeros((22,), dtype=int)
         self._masterproc = False
         
         if MPI.COMM_WORLD.Get_rank() == 0:
             self._masterproc = True
             
         self._tlatqi = np.zeros(
-            (nz+1), order="F", dtype=np.double
+            (self._sam_dims[2]+1), order="F", dtype=np.double
         )
                 
         try:
             mp_flags = namelist["microphysics"]["flags"]
             docloud = mp_flags["docloud"]
             doprecip = mp_flags["doprecip"]
-                
-            self._m2005_ma_cffi.setparm(
-                nx,
-                ny,
-                nz,
-                self._nmicrofields,
-                docloud,
-                doprecip,
-                self._masterproc,
-                self._tlatqi,
-                )
-
             if MPI.COMM_WORLD.Get_rank() == 0:
                 print("\tM2005_MA: Initialized with custom flags")
         except:
-            self._m2005_ma_cffi.setparm(
-                nx,
-                ny,
-                nz,
-                self._nmicrofields,
-                True,
-                True,
-                self._masterproc,
-                self._tlatqi,
-            )
+            docloud = True
+            doprecip = True
             if MPI.COMM_WORLD.Get_rank() == 0:
                 print("\tM2005_MA: Initialized with default flags")
                 
-        iqv = 1   # total water (vapor + cloud liq) mass mixing ratio [kg H2O / kg dry air]
-        
-        self._ScalarState.add_variable(
-            "qv",
-            long_name="water vapor mixing ratio",
-            units="g kg^{-1}",
-            latex_name="q_v",
-            limit=True,
+        self._m2005_ma_cffi.setparm(
+        self._sam_dims,
+        self._iqarray,
+        docloud,
+        doprecip,
+        self._masterproc,
+        self._tlatqi,
         )
         
-        if(dototalwater):
-            count = 1
-            
-        else:
-            iqcl = 2  # cloud water mass mixing ratio [kg H2O / kg dry air]
-            count = 2
+        # print("SAM_Micro_M2005_MA",self._iqarray)
+        # print(self._iqarray[0])
+        
+        if(self._iqarray[0]<100):
+            iqv = self._iqarray[0]   # total water (vapor + cloud liq) mass mixing ratio [kg H2O / kg dry air]
+            self._ScalarState.add_variable(
+                "qv",
+                long_name="water vapor mixing ratio",
+                units="g kg^{-1}",
+                latex_name="q_v",
+                limit=True,
+            )
+        
+        if(self._iqarray[1]<100):            
+            iqcl = self._iqarray[1] # cloud water mass mixing ratio [kg H2O / kg dry air]
             self._ScalarState.add_variable(
                 "qc",
                 long_name="cloud water mixing ratio",
@@ -108,124 +101,9 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_c",
                 limit=True,
             )
-
-        if(dopredictNc):
-            incl = count + 1  # cloud water number mixing ratio [#/kg dry air]
-            count = count + 1
-            self._ScalarState.add_variable(
-                "qnc",
-                long_name="cloud number concentration",
-                units="# cm^{-3}",
-                latex_name="q_{nc}",
-                limit=True,
-            )
-
-        if(doprogaerosol):
-            iqad = count + 1 # dry aerosol mass mixing ratio [kg aerosol/kg dry air]
-            iqad2 = count + 2 # aitken mode
-            inad = count + 3 # dry aerosol number mixing ratio [#/kg dry air]
-            inad2 = count + 4 # aitken mode
-            iqaw = count + 5 # wet aerosol mass mixing ratio [kg activated aerosol/kg dry air]
-            count = count + 5
-            self._ScalarState.add_variable(
-                "qad",
-                long_name="dry aerosol mass mixing ratio",
-                units="g kg^{-1}",
-                latex_name="q_{ad}",
-                limit=True,
-            )
-            self._ScalarState.add_variable(
-                "qad2",
-                long_name="aitken mode mass mixing ratio",
-                units="g kg^{-1}",
-                latex_name="q_{ad2}",
-                limit=True,
-            )
-            self._ScalarState.add_variable(
-                "qnad",
-                long_name="dry aerosol number concentration",
-                units="# cm^{-3}",
-                latex_name="q_{nad}",
-                limit=True,
-            )
-            self._ScalarState.add_variable(
-                "qnad2",
-                long_name="aitken mode mass number concentration",
-                units="# cm^{-3}",
-                latex_name="q_{nad2}",
-                limit=True,
-            )
-            self._ScalarState.add_variable(
-                "qaw",
-                long_name="wet aerosol mass mixing ratio",
-                units="g kg^{-1}",
-                latex_name="q_{aw}",
-                limit=True,
-            )
-
-            igas1 = count + 1 # first gas chem field
-            iDMS = igas1
-            iSO2 = igas1 + 1
-            iH2SO4 = igas1 + 2
-            count = count + 3 # save space for gas chem fields # salt in our case
-            self._ScalarState.add_variable(
-                "DMS",
-                long_name="DMS GAS CONCENTRATION",
-                units="kg kg^{-1}",
-                latex_name="DMS",
-                limit=True,
-            )
-            self._ScalarState.add_variable(
-                "SO2",
-                long_name="SO2 GAS CONCENTRATION",
-                units="kg kg^{-1}",
-                latex_name="SO2",
-                limit=True,
-            )
-            self._ScalarState.add_variable(
-                "H2SO4",
-                long_name="H2SO4 GAS CONCENTRATION",
-                units="kg kg^{-1}",
-                latex_name="H2SO4",
-                limit=True,
-            )
-
-        if(doprecip):
-            iqr = count + 1 # rain mass mixing ratio [kg H2O / kg dry air]
-            inr = count + 2 # rain number mixing ratio [#/kg dry air]
-            count = count + 2
-            self._ScalarState.add_variable(
-                "qr",
-                long_name="rain water mixing ratio",
-                units="g kg^{-1}",
-                latex_name="q_{r}",
-                limit=True,
-            )
-            self._ScalarState.add_variable(
-                "qnr",
-                long_name="rain number concentration",
-                units="# cm^{-3}",
-                latex_name="q_{nr}",
-                limit=True,
-            )
-
-            if(doprogaerosol):
-                iqar = count + 1 # # wet aerosol mass mixing ratio in rain [kg aerosol in rain/kg dry air]
-                count = count + 1
-                self._ScalarState.add_variable(
-                    "qar",
-                    long_name="wet aerosol mass mixing ratio in rain",
-                    units="g kg^{-1}",
-                    latex_name="q_{ar}",
-                    limit=True,
-                )
-
-        if(doicemicro):
-            iqci = count + 1  # cloud ice mass mixing ratio [kg H2O / kg dry air]
-            inci = count + 2  # cloud ice number mixing ratio [#/kg dry air]
-            iqs = count + 3   # snow mass mixing ratio [kg H2O / kg dry air]
-            ins = count + 4   # snow number mixing ratio [#/kg dry air]
-            count = count + 4
+            
+        if(self._iqarray[2]<100):
+            iqci = self._iqarray[2]
             self._ScalarState.add_variable(
                 "qci",
                 long_name="cloud ice mixing ratio",
@@ -233,13 +111,19 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{i}",
                 limit=True,
             )
+            
+        if(self._iqarray[3]<100):
+            iqr = self._iqarray[3]
             self._ScalarState.add_variable(
-                "qnci",
-                long_name="cloud ice number concentration",
-                units="# cm^{-3}",
-                latex_name="q_{nci}",
+                "qr",
+                long_name="rain water mixing ratio",
+                units="g kg^{-1}",
+                latex_name="q_{r}",
                 limit=True,
             )
+            
+        if(self._iqarray[4]<100):
+            iqs = self._iqarray[4]
             self._ScalarState.add_variable(
                 "qs",
                 long_name="snow mixing ratio",
@@ -247,6 +131,49 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{s}",
                 limit=True,
             )
+            
+        if(self._iqarray[5]<100):
+            iqg = self._iqarray[5]
+            self._ScalarState.add_variable(
+                "qg",
+                long_name="graupel mixing ratio",
+                units="g kg^{-1}",
+                latex_name="q_{g}",
+                limit=True,
+            )
+            
+        if(self._iqarray[6]<100):
+            incl = self._iqarray[6]
+            self._ScalarState.add_variable(
+                "qnc",
+                long_name="cloud number concentration",
+                units="# cm^{-3}",
+                latex_name="q_{nc}",
+                limit=True,
+            )
+            
+        if(self._iqarray[7]<100):
+            inci = self._iqarray[7]
+            self._ScalarState.add_variable(
+                "qnci",
+                long_name="cloud ice number concentration",
+                units="# cm^{-3}",
+                latex_name="q_{nci}",
+                limit=True,
+            )
+            
+        if(self._iqarray[8]<100):
+            inr = self._iqarray[8]
+            self._ScalarState.add_variable(
+                "qnr",
+                long_name="rain number concentration",
+                units="# cm^{-3}",
+                latex_name="q_{nr}",
+                limit=True,
+            )
+            
+        if(self._iqarray[9]<100):
+            ins = self._iqarray[9]
             self._ScalarState.add_variable(
                 "qns",
                 long_name="snow number concentration",
@@ -254,61 +181,128 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{ns}",
                 limit=True,
             )
-
-        if(dograupel):
-            iqg = count + 1   # graupel mass mixing ratio [kg H2O / kg dry air]
-            ing = count + 2  # graupel number mixing ratio [#/kg dry air]
-            count = count + 2
-            if(dohail):
-                self._ScalarState.add_variable(
-                    "qh",
-                    long_name="hail mixing ratio",
-                    units="g kg^{-1}",
-                    latex_name="q_{h}",
-                    limit=True,
-                )
-                self._ScalarState.add_variable(
-                    "qnh",
-                    long_name="hail number concentration",
-                    units="# cm^{-3}",
-                    latex_name="q_{nh}",
-                    limit=True,
-                )
-            else:
-                self._ScalarState.add_variable(
-                    "qg",
-                    long_name="graupel mixing ratio",
-                    units="g kg^{-1}",
-                    latex_name="q_{g}",
-                    limit=True,
-                )
-                self._ScalarState.add_variable(
-                    "qng",
-                    long_name="graupel number concentration",
-                    units="# cm^{-3}",
-                    latex_name="q_{ng}",
-                    limit=True,
-                )
+            
+        if(self._iqarray[10]<100):
+            ing = self._iqarray[10]
+            self._ScalarState.add_variable(
+                "qng",
+                long_name="graupel number concentration",
+                units="# cm^{-3}",
+                latex_name="q_{ng}",
+                limit=True,
+            )
+            
+        if(self._iqarray[11]<100):
+            iqad = self._iqarray[11]
+            self._ScalarState.add_variable(
+                "qad",
+                long_name="dry aerosol mass mixing ratio",
+                units="g kg^{-1}",
+                latex_name="q_{ad}",
+                limit=True,
+            )
+            
+        if(self._iqarray[12]<100):
+            iqaw = self._iqarray[12]
+            self._ScalarState.add_variable(
+                "qaw",
+                long_name="wet aerosol mass mixing ratio",
+                units="g kg^{-1}",
+                latex_name="q_{aw}",
+                limit=True,
+            )
+            
+        if(self._iqarray[13]<100):
+            iqar = self._iqarray[13]
+            self._ScalarState.add_variable(
+                "qar",
+                long_name="wet aerosol mass mixing ratio in rain",
+                units="g kg^{-1}",
+                latex_name="q_{ar}",
+                limit=True,
+            )
+            
+        if(self._iqarray[14]<100):
+            inad = self._iqarray[14]
+            self._ScalarState.add_variable(
+                "qnad",
+                long_name="dry aerosol number concentration",
+                units="# cm^{-3}",
+                latex_name="q_{nad}",
+                limit=True,
+            )
+            
+        if(self._iqarray[15]<100):
+            iqad2 = self._iqarray[15]
+            self._ScalarState.add_variable(
+                "qad2",
+                long_name="aitken mode mass mixing ratio",
+                units="g kg^{-1}",
+                latex_name="q_{ad2}",
+                limit=True,
+            )
+            
+        if(self._iqarray[16]<100):
+            inad2 = self._iqarray[16]
+            self._ScalarState.add_variable(
+                "qnad2",
+                long_name="aitken mode mass number concentration",
+                units="# cm^{-3}",
+                latex_name="q_{nad2}",
+                limit=True,
+            )
+            
+        if(self._iqarray[17]<100):
+            igas1 = self._iqarray[17]
+            
+        if(self._iqarray[18]<100):
+            iDMS = self._iqarray[18]
+            self._ScalarState.add_variable(
+                "DMS",
+                long_name="DMS GAS CONCENTRATION",
+                units="kg kg^{-1}",
+                latex_name="DMS",
+                limit=True,
+            )
+            
+        if(self._iqarray[19]<100):
+            iSO2 = self._iqarray[19]
+            self._ScalarState.add_variable(
+                "SO2",
+                long_name="SO2 GAS CONCENTRATION",
+                units="kg kg^{-1}",
+                latex_name="SO2",
+                limit=True,
+            )
+            
+        if(self._iqarray[20]<100):
+            iH2SO4 = self._iqarray[20]
+            self._ScalarState.add_variable(
+                "H2SO4",
+                long_name="H2SO4 GAS CONCENTRATION",
+                units="kg kg^{-1}",
+                latex_name="H2SO4",
+                limit=True,
+            )
         
-        self._nmicrofields = count
-                
-        self._microfield = np.empty(
-            (nx, ny, nz, self._nmicrofields),
-            dtype=np.double,
-            order="F",
-        )
                 
         # Allocate microphysical/thermodynamic variables
 
-        nhalo = self._Grid.n_halo
         nx    = self._Grid.ngrid_local[0] - 2 * nhalo[0]
         ny    = self._Grid.ngrid_local[1] - 2 * nhalo[1]
         nz    = self._Grid.ngrid_local[2] - 2 * nhalo[2]
+        nmicrofields = self._sam_dims[3]
         nx_gl = self._Grid.n[0]
         ny_gl = self._Grid.n[1]
         my_rank = MPI.COMM_WORLD.Get_rank()
         nsubdomains_x = self._Grid.subcomms[0].Get_size()
         nsubdomains_y = self._Grid.subcomms[1].Get_size()
+                
+        self._microfield = np.empty(
+            (nx, ny, nz, nmicrofields),
+            dtype=np.double,
+            order="F",
+        )
         
         if (namelist["restart"]["restart_simulation"] == False):
             nrestart = 0
@@ -336,8 +330,8 @@ class Micro_M2005_MA(MicrophysicsBase):
         self._precflux = np.zeros_like(self._tlat)
         self._qpfall = np.zeros_like(self._tlat)
                 
-        z = self.Grid.z_global
-        zi = self.Grid.z_edge_global
+        z = self._Grid.z_global
+        zi = self._Grid.z_edge_global
         
         dx = self._Grid.dx[0]
         dz = self._Grid.dx[2]
@@ -354,7 +348,12 @@ class Micro_M2005_MA(MicrophysicsBase):
         do_chunked_energy_budgets = False
         donudging_aerosol = False
         
-        self._T = self._DiagnosticState.get_field("T")
+        self._T = np.empty(
+            (nx, ny, nz),
+            dtype=np.double,
+            order="F",
+        )
+        #Temp = self._DiagnosticState.get_field("T")
 
         # For diagnostic variables
 
@@ -422,10 +421,10 @@ class Micro_M2005_MA(MicrophysicsBase):
             "NCNEGLM": ("Mass Activation Rate Aitken Aerosol", n_rate_units),
         }
 
-        self._n_diag_3d = len(self._diag_3d_vars)
+        self.n_diag_3d = len(self._diag_3d_vars)
 
         self._diag_3d = np.empty(
-            (nx, ny, nz, self._n_diag_3d),
+            (nx, ny, nz, self.n_diag_3d),
             dtype=np.double,
             order="F",
         )
@@ -438,12 +437,15 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units=diag_3d_long_names[vn][1],
             )
             
-            
+        #print("SAM Before calling init")
+        
+        time = self._TimeSteppingController.time        
+              
         self._m2005_ma_cffi.init(
             nx,
             ny,
             nz,
-            self.nmicrofields,
+            nmicrofields,
             nx_gl, 
             ny_gl,
             my_rank, 
@@ -463,61 +465,63 @@ class Micro_M2005_MA(MicrophysicsBase):
             t0, 
             dx,
             dz,
+            time,
             self._q0, 
             qv0, 
-            time, 
             dostatis, 
             do_chunked_energy_budgets, 
             donudging_aerosol,
-            LCOND, 
-            LSUB, 
-            CP, 
-            RGAS, 
-            RV, 
-            G,
+            parameters.LV, 
+            parameters.LS, 
+            parameters.CPD, 
+            parameters.RD, 
+            parameters.RV, 
+            parameters.G,
         )
-                        
+        
+        # print("Init succesfully called",iqv)
+        
+        qv = self._microfield[:,:,:,iqv]
+        
         self._Timers.add_timer("MicroM2005_MA_update")
         return
 
     def update(self):
         self._Timers.start_timer("MicroM2005_MA_update")
-
+        
+        # print("SAM_Micro_M2005_MA",self._sam_dims)
+        
         # Get variables from the model state
         T = self._DiagnosticState.get_field("T")
         s = self._ScalarState.get_field("s")
         w = self._VelocityState.get_field("w")
+        
+        nhalo = self._Grid.n_halo
+        th_3d = T[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]]
                 
         dt = self._TimeSteppingController.dt
         time = self._TimeSteppingController.time
-                
-        LCOND = self.Parameters.LV
-        LSUB = self.Parameters.LS
-        CP = self.Parameters.CPD
-        RGAS = self.Parameters.RD
-        RV = self.Parameters.RV
-        G = self.Parameters.G
         
         icycle = 1 
         ncycle = 1
         nsaveMSE = 1
         nstat = 1 
         nstatis = 1 
-        nstep = self._n_timesteps
+        # nstep = self._TimeSteppingController._n_timesteps
         
         self._m2005_ma_cffi.update(
-            nx,
-            ny,
-            nz,
-            self.nmicrofields,
+            self._sam_dims[0],
+            self._sam_dims[1],
+            self._sam_dims[2],
+            self._sam_dims[3],
             self.n_diag_3d,
             icycle, 
             ncycle, 
             nsaveMSE, 
             nstat, 
             nstatis, 
-            nstep,
-            T,
+            self._itimestep,
+            th_3d,
             s,
             w,
             self._microfield,
@@ -526,10 +530,10 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._nrmn,
             self._ncmn,
             self._total_water_prec,
-            self.tlat,
-            self.fluxbq,
-            self.fluxtq,
-            self.u10arr,
+            self._tlat,
+            self._fluxbq,
+            self._fluxtq,
+            self._u10arr,
             self._precflux,
             self._qpfall,
             self._precsfc,
@@ -619,15 +623,15 @@ class Micro_M2005_MA(MicrophysicsBase):
         v.standard_name = "VWP"
         v.units = "kg/m^2"
 
-        v = timeseries_grp.createVariable("RAINNC", np.double, dimensions=("time",))
+        v = timeseries_grp.createVariable("precsfc", np.double, dimensions=("time",))
         v.long_name = "accumulated surface precip"
         v.units = "mm"
-        v.latex_name = "rainnc"
+        v.latex_name = "precsfc"
 
-        v = timeseries_grp.createVariable("RAINNCV", np.double, dimensions=("time",))
+        v = timeseries_grp.createVariable("prec_xy", np.double, dimensions=("time",))
         v.long_name = "one time step accumulated surface precip"
         v.units = "mm"
-        v.latex_name = "rainncv"
+        v.latex_name = "prec_xy"
 
         # Now add cloud fraction and rain fraction profiles
         v = profiles_grp.createVariable(
@@ -696,14 +700,14 @@ class Micro_M2005_MA(MicrophysicsBase):
         rf = water_fraction(n_halo, npts, qr)
         rf = UtilitiesParallel.ScalarAllReduce(rf)
 
-        rainnc = np.sum(self._RAINNC) / npts
-        rainnc = UtilitiesParallel.ScalarAllReduce(rainnc)
+        precsfc = np.sum(self._precsfc) / npts
+        precsfc = UtilitiesParallel.ScalarAllReduce(precsfc)
 
         rf_prof = water_fraction_profile(n_halo, npts, qr, threshold=1e-5)
         rf_prof = UtilitiesParallel.ScalarAllReduce(rf_prof)
 
-        rainncv = np.sum(self._RAINNCV) / npts
-        rainncv = UtilitiesParallel.ScalarAllReduce(rainncv)
+        prec_xy = np.sum(self._prec_xy) / npts
+        prec_xy = UtilitiesParallel.ScalarAllReduce(prec_xy)
 
         if my_rank == 0:
             timeseries_grp = nc_grp["timeseries"]
@@ -716,8 +720,8 @@ class Micro_M2005_MA(MicrophysicsBase):
             timeseries_grp["RWP"][-1] = rwp
             timeseries_grp["VWP"][-1] = vwp
 
-            timeseries_grp["RAINNC"][-1] = rainnc
-            timeseries_grp["RAINNCV"][-1] = rainncv
+            timeseries_grp["precsfc"][-1] = precsfc
+            timeseries_grp["prec_xy"][-1] = prec_xy
 
             profiles_grp["CF"][-1, :] = cf_prof[n_halo[2] : -n_halo[2]]
             profiles_grp["RF"][-1, :] = rf_prof[n_halo[2] : -n_halo[2]]
@@ -754,47 +758,48 @@ class Micro_M2005_MA(MicrophysicsBase):
         recv_buffer = np.empty_like(send_buffer)
 
         if nc_grp is not None:
-            rainnc = nc_grp.createVariable(
-                "RAINNC",
-                np.double,
-                dimensions=(
-                    "X",
-                    "Y",
-                ),
-            )
+            precsfc = nc_grp.create_dataset(
+                        "precsfc",
+                        (1, self._Grid.n[0], self._Grid.n[1]),
+                        dtype=np.double,
+                    )
 
-        send_buffer[start[0] : end[0], start[1] : end[1]] = self._RAINNC
+            for i, d in enumerate(["time", "X", "Y"]):
+                precsfc.dims[i].attach_scale(nc_grp[d])
+
+        send_buffer[start[0] : end[0], start[1] : end[1]] = self._precsfc
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
 
         if nc_grp is not None:
-            rainnc[:, :] = recv_buffer
+            precsfc[:, :] = recv_buffer
 
         if nc_grp is not None:
-            rainncv = nc_grp.createVariable(
-                "RAINNCV",
-                np.double,
-                dimensions=(
-                    "X",
-                    "Y",
-                ),
-            )
+            prec_xy = nc_grp.create_dataset(
+                        "prec_xy",
+                        (1, self._Grid.n[0], self._Grid.n[1]),
+                        dtype=np.double,
+                    )
+
+            for i, d in enumerate(["time", "X", "Y"]):
+                prec_xy.dims[i].attach_scale(nc_grp[d])
 
         send_buffer.fill(0.0)
-        send_buffer[start[0] : end[0], start[1] : end[1]] = self._RAINNCV
+        send_buffer[start[0] : end[0], start[1] : end[1]] = self._prec_xy
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
         if nc_grp is not None:
-            rainncv[:, :] = recv_buffer
+            prec_xy[:, :] = recv_buffer
 
         # Compute and output the LWP
         if nc_grp is not None:
-            lwp = nc_grp.createVariable(
-                "LWP",
-                np.double,
-                dimensions=(
-                    "X",
-                    "Y",
-                ),
-            )
+            lwp = nc_grp.create_dataset(
+                        "LWP",
+                        (1, self._Grid.n[0], self._Grid.n[1]),
+                        dtype=np.double,
+                    )
+
+            for i, d in enumerate(["time", "X", "Y"]):
+                lwp.dims[i].attach_scale(nc_grp[d])
+                
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
         qc = self._ScalarState.get_field("qc")[nh[0] : -nh[0], nh[1] : -nh[1], :]
@@ -810,18 +815,18 @@ class Micro_M2005_MA(MicrophysicsBase):
 
         # Compute and output the LWP
         if nc_grp is not None:
-            iwp = nc_grp.createVariable(
-                "IWP",
-                np.double,
-                dimensions=(
-                    "X",
-                    "Y",
-                ),
-            )
+            iwp = nc_grp.create_dataset(
+                        "IWP",
+                        (1, self._Grid.n[0], self._Grid.n[1]),
+                        dtype=np.double,
+                    )
 
+            for i, d in enumerate(["time", "X", "Y"]):
+                iwp.dims[i].attach_scale(nc_grp[d])
+                
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
-        qc = self._ScalarState.get_field("qi1")[nh[0] : -nh[0], nh[1] : -nh[1], :]
+        qc = self._ScalarState.get_field("qci")[nh[0] : -nh[0], nh[1] : -nh[1], :]
         iwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis, 0], axis=2)
 
         send_buffer.fill(0.0)
@@ -830,9 +835,6 @@ class Micro_M2005_MA(MicrophysicsBase):
         if nc_grp is not None:
             iwp[:, :] = recv_buffer
 
-        if nc_grp is not None:
-            nc_grp.sync()
-
         return
 
     def get_qc(self):
@@ -840,9 +842,6 @@ class Micro_M2005_MA(MicrophysicsBase):
 
     def get_qcloud(self):
         return self._ScalarState.get_field("qc")
-
-    def get_qi(self):
-        return self._ScalarState.get_field("qi1")
 
     def get_reffc(self):
         return self._DiagnosticState.get_field("diag_effc_3d")
