@@ -44,18 +44,18 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._Grid.ngrid_local[1] - 2 * nhalo[1],
             self._Grid.ngrid_local[2] - 2 * nhalo[2],
             0,
-        ])
-        
+        ], order="F", dtype=np.intc)
+        nz    = self._sam_dims[2]+1
         #print("SAM_Micro_M2005_MA",self._sam_dims)
         
-        self._iqarray = np.zeros((22,), dtype=int)
+        self._iqarray = np.zeros((22,), order="F", dtype=np.intc)
         self._masterproc = False
         
         if MPI.COMM_WORLD.Get_rank() == 0:
             self._masterproc = True
             
         self._tlatqi = np.zeros(
-            (self._sam_dims[2]+1), order="F", dtype=np.double
+            (nz), order="F", dtype=np.double
         )
                 
         try:
@@ -79,11 +79,13 @@ class Micro_M2005_MA(MicrophysicsBase):
         self._tlatqi,
         )
         
+        self._micro_vars = ["" for x in range(self._sam_dims[3]+1)]
         # print("SAM_Micro_M2005_MA",self._iqarray)
         # print(self._iqarray[0])
         
         if(self._iqarray[0]<100):
             iqv = self._iqarray[0]   # total water (vapor + cloud liq) mass mixing ratio [kg H2O / kg dry air]
+            self._micro_vars[iqv] = "qv"
             self._ScalarState.add_variable(
                 "qv",
                 long_name="water vapor mixing ratio",
@@ -94,6 +96,7 @@ class Micro_M2005_MA(MicrophysicsBase):
         
         if(self._iqarray[1]<100):            
             iqcl = self._iqarray[1] # cloud water mass mixing ratio [kg H2O / kg dry air]
+            self._micro_vars[iqcl] = "qc"
             self._ScalarState.add_variable(
                 "qc",
                 long_name="cloud water mixing ratio",
@@ -104,6 +107,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             
         if(self._iqarray[2]<100):
             iqci = self._iqarray[2]
+            self._micro_vars[iqci] = "qci"
             self._ScalarState.add_variable(
                 "qci",
                 long_name="cloud ice mixing ratio",
@@ -114,6 +118,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             
         if(self._iqarray[3]<100):
             iqr = self._iqarray[3]
+            self._micro_vars[iqr] = "qr"
             self._ScalarState.add_variable(
                 "qr",
                 long_name="rain water mixing ratio",
@@ -124,6 +129,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             
         if(self._iqarray[4]<100):
             iqs = self._iqarray[4]
+            self._micro_vars[iqs] = "qs"
             self._ScalarState.add_variable(
                 "qs",
                 long_name="snow mixing ratio",
@@ -134,6 +140,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             
         if(self._iqarray[5]<100):
             iqg = self._iqarray[5]
+            self._micro_vars[iqg] = "qg"
             self._ScalarState.add_variable(
                 "qg",
                 long_name="graupel mixing ratio",
@@ -144,6 +151,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             
         if(self._iqarray[6]<100):
             incl = self._iqarray[6]
+            self._micro_vars[incl] = "qnc"
             self._ScalarState.add_variable(
                 "qnc",
                 long_name="cloud number concentration",
@@ -154,6 +162,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             
         if(self._iqarray[7]<100):
             inci = self._iqarray[7]
+            self._micro_vars[inci] = "qnci"
             self._ScalarState.add_variable(
                 "qnci",
                 long_name="cloud ice number concentration",
@@ -164,6 +173,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             
         if(self._iqarray[8]<100):
             inr = self._iqarray[8]
+            self._micro_vars[inr] = "qnr"
             self._ScalarState.add_variable(
                 "qnr",
                 long_name="rain number concentration",
@@ -174,6 +184,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             
         if(self._iqarray[9]<100):
             ins = self._iqarray[9]
+            self._micro_vars[ins] = "qns"
             self._ScalarState.add_variable(
                 "qns",
                 long_name="snow number concentration",
@@ -184,6 +195,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             
         if(self._iqarray[10]<100):
             ing = self._iqarray[10]
+            self._micro_vars[ing] = "qng"
             self._ScalarState.add_variable(
                 "qng",
                 long_name="graupel number concentration",
@@ -194,6 +206,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             
         if(self._iqarray[11]<100):
             iqad = self._iqarray[11]
+            self._micro_vars[iqad] = "qad"
             self._ScalarState.add_variable(
                 "qad",
                 long_name="dry aerosol mass mixing ratio",
@@ -204,6 +217,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             
         if(self._iqarray[12]<100):
             iqaw = self._iqarray[12]
+            self._micro_vars[iqaw] = "qaw"
             self._ScalarState.add_variable(
                 "qaw",
                 long_name="wet aerosol mass mixing ratio",
@@ -214,6 +228,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             
         if(self._iqarray[13]<100):
             iqar = self._iqarray[13]
+            self._micro_vars[iqar] = "qar"
             self._ScalarState.add_variable(
                 "qar",
                 long_name="wet aerosol mass mixing ratio in rain",
@@ -224,6 +239,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             
         if(self._iqarray[14]<100):
             inad = self._iqarray[14]
+            self._micro_vars[inad] = "qnad"
             self._ScalarState.add_variable(
                 "qnad",
                 long_name="dry aerosol number concentration",
@@ -234,6 +250,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             
         if(self._iqarray[15]<100):
             iqad2 = self._iqarray[15]
+            self._micro_vars[iqad2] = "qad2"
             self._ScalarState.add_variable(
                 "qad2",
                 long_name="aitken mode mass mixing ratio",
@@ -244,6 +261,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             
         if(self._iqarray[16]<100):
             inad2 = self._iqarray[16]
+            self._micro_vars[inad2] = "qnad2"
             self._ScalarState.add_variable(
                 "qnad2",
                 long_name="aitken mode mass number concentration",
@@ -257,6 +275,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             
         if(self._iqarray[18]<100):
             iDMS = self._iqarray[18]
+            self._micro_vars[iDMS] = "DMS"
             self._ScalarState.add_variable(
                 "DMS",
                 long_name="DMS GAS CONCENTRATION",
@@ -267,6 +286,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             
         if(self._iqarray[19]<100):
             iSO2 = self._iqarray[19]
+            self._micro_vars[iSO2] = "SO2"
             self._ScalarState.add_variable(
                 "SO2",
                 long_name="SO2 GAS CONCENTRATION",
@@ -277,6 +297,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             
         if(self._iqarray[20]<100):
             iH2SO4 = self._iqarray[20]
+            self._micro_vars[iH2SO4] = "H2SO4"
             self._ScalarState.add_variable(
                 "H2SO4",
                 long_name="H2SO4 GAS CONCENTRATION",
@@ -290,7 +311,8 @@ class Micro_M2005_MA(MicrophysicsBase):
 
         nx    = self._Grid.ngrid_local[0] - 2 * nhalo[0]
         ny    = self._Grid.ngrid_local[1] - 2 * nhalo[1]
-        nz    = self._Grid.ngrid_local[2] - 2 * nhalo[2]
+        nzm   = self._Grid.ngrid_local[2] - 2 * nhalo[2]
+        nz    = nzm + 1
         nmicrofields = self._sam_dims[3]
         nx_gl = self._Grid.n[0]
         ny_gl = self._Grid.n[1]
@@ -299,7 +321,7 @@ class Micro_M2005_MA(MicrophysicsBase):
         nsubdomains_y = self._Grid.subcomms[1].Get_size()
                 
         self._microfield = np.empty(
-            (nx, ny, nz, nmicrofields),
+            (nx, ny, nzm, nmicrofields),
             dtype=np.double,
             order="F",
         )
@@ -325,9 +347,9 @@ class Micro_M2005_MA(MicrophysicsBase):
         self._prec_xy = np.zeros_like(self._fluxbq)
                 
         self._tlat = np.zeros(
-            (nz+1), order="F", dtype=np.double
+            (nz), dtype=np.double
         )
-        self._precflux = np.zeros_like(self._tlat)
+        self._precflux = np.asfortranarray(np.zeros_like(self._tlat))
         self._qpfall = np.zeros_like(self._tlat)
                 
         z = self._Grid.z_global
@@ -349,7 +371,7 @@ class Micro_M2005_MA(MicrophysicsBase):
         donudging_aerosol = False
         
         self._T = np.empty(
-            (nx, ny, nz),
+            (nx, ny, nzm),
             dtype=np.double,
             order="F",
         )
@@ -424,7 +446,7 @@ class Micro_M2005_MA(MicrophysicsBase):
         self.n_diag_3d = len(self._diag_3d_vars)
 
         self._diag_3d = np.empty(
-            (nx, ny, nz, self.n_diag_3d),
+            (nx, ny, nzm, self.n_diag_3d),
             dtype=np.double,
             order="F",
         )
@@ -444,7 +466,7 @@ class Micro_M2005_MA(MicrophysicsBase):
         self._m2005_ma_cffi.init(
             nx,
             ny,
-            nz,
+            nzm,
             nmicrofields,
             nx_gl, 
             ny_gl,
@@ -497,7 +519,9 @@ class Micro_M2005_MA(MicrophysicsBase):
         w = self._VelocityState.get_field("w")
         
         nhalo = self._Grid.n_halo
-        th_3d = T[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]]
+        th_3d = np.asfortranarray(T[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
+        s_3d = np.asfortranarray(s[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
+        w_3d = np.asfortranarray(w[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2] - 1:self._Grid.ngrid_local[2] - nhalo[2]])
                 
         dt = self._TimeSteppingController.dt
         time = self._TimeSteppingController.time
@@ -507,12 +531,16 @@ class Micro_M2005_MA(MicrophysicsBase):
         nsaveMSE = 1
         nstat = 1 
         nstatis = 1 
+        nz = self._sam_dims[2] + 1
         # nstep = self._TimeSteppingController._n_timesteps
+        
+        # print("SAM Before calling main")
         
         self._m2005_ma_cffi.update(
             self._sam_dims[0],
             self._sam_dims[1],
             self._sam_dims[2],
+            nz,
             self._sam_dims[3],
             self.n_diag_3d,
             icycle, 
@@ -522,8 +550,8 @@ class Micro_M2005_MA(MicrophysicsBase):
             nstatis, 
             self._itimestep,
             th_3d,
-            s,
-            w,
+            s_3d,
+            w_3d,
             self._microfield,
             self._diag_3d,
             self._nrainy,
@@ -542,6 +570,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             time,
         )
         
+        print("SAM after main")
 #        qv = self._ScalarState.getfield("qv")
 #        qv = self._microfield(1:nx,1:ny,1:nz,iqv)
 #        
