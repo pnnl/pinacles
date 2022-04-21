@@ -534,7 +534,7 @@ class Micro_M2005_MA(MicrophysicsBase):
         nz = self._sam_dims[2] + 1
         # nstep = self._TimeSteppingController._n_timesteps
         
-        # print("SAM Before calling main")
+        print("SAM Before calling main",self._precflux[1])
         
         self._m2005_ma_cffi.update(
             self._sam_dims[0],
@@ -549,25 +549,25 @@ class Micro_M2005_MA(MicrophysicsBase):
             nstat, 
             nstatis, 
             self._itimestep,
-            th_3d,
-            s_3d,
-            w_3d,
-            self._microfield,
-            self._diag_3d,
+            dt,
+            time,
             self._nrainy,
             self._nrmn,
             self._ncmn,
             self._total_water_prec,
             self._tlat,
-            self._fluxbq,
-            self._fluxtq,
-            self._u10arr,
             self._precflux,
             self._qpfall,
             self._precsfc,
             self._prec_xy,
-            dt,
-            time,
+            self._fluxbq,
+            self._fluxtq,
+            self._u10arr,
+            th_3d,
+            s_3d,
+            w_3d,
+            self._microfield,
+            self._diag_3d,
         )
         
         print("SAM after main")
