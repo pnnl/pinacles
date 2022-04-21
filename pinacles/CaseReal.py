@@ -47,12 +47,20 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
         self._qvflx = np.zeros_like(self._windspeed_sfc)
         self._tflx = np.zeros_like(self._windspeed_sfc)
+        self._lhf = np.zeros_like(self._windspeed_sfc)
+        self._shf = np.zeros_like(self._windspeed_sfc)
         self._Ri = np.zeros_like(self._windspeed_sfc)
         self._N = np.zeros_like(self._windspeed_sfc)
+        self._psi_m = np.zeros_like(self._windspeed_sfc)
+        self._psi_h = np.zeros_like(self._windspeed_sfc)
 
         self._cm = np.zeros_like(self._windspeed_sfc)
         self._ch = np.zeros_like(self._windspeed_sfc)
         self._cq = np.zeros_like(self._windspeed_sfc)
+        self._z0 = np.zeros_like(self._windspeed_sfc)
+        self._ustar = np.zeros_like(self._windspeed_sfc)
+        self._u10 = np.zeros_like(self._windspeed_sfc)
+        self._v10 = np.zeros_like(self._windspeed_sfc)
 
         self._TSKIN = np.zeros_like(self._windspeed_sfc)
         self._TSKIN_pre = np.zeros_like(self._windspeed_sfc)
@@ -162,18 +170,34 @@ class SurfaceReanalysis(Surface.SurfaceBase):
 
         self._qv0 = compute_qvs(self._TSKIN, self._Ref.Psfc)
 
+        self._z0[self._z0 < 0.0002] = 0.0002
+
         Surface_impl.compute_exchange_coefficients_charnock(
             self._Ri,
             z_edge[nh[2]] / 2.0,
-            np.zeros_like(qvsfc) + 0.0002,
+            self._z0,
             self._windspeed_sfc,
             self._cm,
             self._ch,
+            self._psi_m,
+            self._psi_h
         )
         self._cq[:, :] = self._ch[:, :]
 
         self._tflx = -self._ch * self._windspeed_sfc * (Ssfc - self._TSKIN)
         self._qvflx = -self._cq * self._windspeed_sfc * (qvsfc - self._qv0)
+        self._ustar = np.sqrt(self._cm**2.0 * self._windspeed_sfc**2.0)
+
+
+        u10_star = np.zeros_like(self._ustar)
+        v10_star = np.zeros_like(self._ustar)
+        
+        u10_star[1:,:] = np.sqrt(self._cm[1:,:]**2.0 * (0.5 * (usfc[1:,:] + usfc[:-1,:]))**2.0)
+        v10_star[:,1:] = np.sqrt(self._cm[:,1:]**2.0 * (0.5 * (vsfc[:,1:] + vsfc[:,:-1]))**2.0)
+
+
+        self._u10[:,:] = u10_star/0.41 * (np.log(10.0/self._z0) - self._psi_m)
+        self._v10[:,:] = v10_star/0.41 * (np.log(10.0/self._z0) - self._psi_m)
 
         self._taux_sfc = -self._cm * self._windspeed_sfc * (usfc + self._Ref.u0)
         self._tauy_sfc = -self._cm * self._windspeed_sfc * (vsfc + self._Ref.v0)
@@ -907,9 +931,10 @@ class LateralBCsReanalysis(LateralBCsBase):
     def lateral_nudge(self):
 
         nudge_width = self.nudge_width
+        #weight = (nudge_width - np.arange(nudge_width))/nudge_width / (10.0 * self._TimeSteppingController.dt)
         # weight =  1.0/(2.0 * self._TimeSteppingController.dt)  / (1.0 + np.arange(nudge_width))
         weight = (1.0 - np.tanh(np.arange(self.nudge_width) / 2)) / (
-            4.0 * self._TimeSteppingController.dt
+            self._TimeSteppingController.dt*20.0
         )
 
         # weight = 1.0/(100.0 * self._TimeSteppingController.dt) * np.arange(self.nudge_width,0,-1)/self.nudge_width
@@ -930,6 +955,9 @@ class LateralBCsReanalysis(LateralBCsBase):
                 start = nh[0]
                 end = start + self.nudge_width
 
+                corner_low = nh[1] + self.nudge_width
+                corner_high = -nh[1] - self.nudge_width
+
                 u_nudge = (
                     self._previous_bdy[var]["x_low"][:, :, :]
                     + (
@@ -939,6 +967,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                     * (self._TimeSteppingController._time - self.time_previous)
                     / 3600.0
                 )
+
 
                 if self._Grid.low_rank[0]:
                     ut[start:end, :, :] -= (
@@ -978,10 +1007,10 @@ class LateralBCsReanalysis(LateralBCsBase):
                     / 3600.0
                 )
 
-                if self._Grid.low_rank[1]:
-                    ut[:, start:end, :] -= (
-                        u[:, start:end, :] - u_nudge[:, 1:, :]
-                    ) * weight[np.newaxis, :, np.newaxis]
+                #if self._Grid.low_rank[1]:
+                #    ut[:, start:end, :] -= (
+                #        u[:, start:end, :] - u_nudge[:, 1:, :]
+                #    ) * weight[np.newaxis, :, np.newaxis]
 
                 u_nudge = (
                     self._previous_bdy[var]["y_high"][:, :, :]
@@ -995,14 +1024,21 @@ class LateralBCsReanalysis(LateralBCsBase):
 
                 start = -nh[1] - self.nudge_width
                 end = -nh[1]
-                if self._Grid.high_rank[1]:
-                    ut[:, start:end, :] -= (
-                        u[:, start:end, :] - u_nudge[:, :-1, :]
-                    ) * weight[np.newaxis, ::-1, np.newaxis]
+                
+
+                
+                #if self._Grid.high_rank[1]:
+                #    ut[:, start:end, :] -= (
+                #        u[:, start:end, :] - u_nudge[:, :-1, :]
+                #    ) * weight[np.newaxis, ::-1, np.newaxis]
 
             elif var == "v":
                 v = self._State.get_field(var)
                 vt = self._State.get_tend(var)
+
+
+                corner_low = nh[0] + self.nudge_width
+                corner_high = -nh[0] - self.nudge_width
 
                 v_nudge = (
                     self._previous_bdy[var]["x_low"][:, :, :]
@@ -1016,10 +1052,10 @@ class LateralBCsReanalysis(LateralBCsBase):
 
                 start = nh[0]
                 end = nh[0] + self.nudge_width
-                if self._Grid.low_rank[0]:
-                    vt[start:end, :, :] -= (
-                        v[start:end, :, :] - v_nudge[1:, :, :]
-                    ) * weight[:, np.newaxis, np.newaxis]
+                #if self._Grid.low_rank[0]:
+                #    vt[start:end, :, :] -= (
+                #        v[start:end, :, :] - v_nudge[1:, :, :]
+                #    ) * weight[:, np.newaxis, np.newaxis]
 
                 v_nudge = (
                     self._previous_bdy[var]["x_high"][:, :, :]
@@ -1034,10 +1070,10 @@ class LateralBCsReanalysis(LateralBCsBase):
                 start = -nh[0] - self.nudge_width
                 end = -nh[0]
 
-                if self._Grid.high_rank[0]:
-                    vt[start:end, :, :] -= (
-                        v[start:end, :, :] - v_nudge[:-1, :, :]
-                    ) * weight[::-1, np.newaxis, np.newaxis]
+               # if self._Grid.high_rank[0]:
+               #     vt[start:end, corner_low:corner_high, :] -= (
+               #         v[start:end, corner_low:corner_high, :] - v_nudge[:-1, corner_low:corner_high, :]
+               #     ) * weight[::-1, np.newaxis, np.newaxis]
 
                 v_nudge = (
                     self._previous_bdy[var]["y_low"][:, :, :]
@@ -1078,149 +1114,149 @@ class LateralBCsReanalysis(LateralBCsBase):
                 w = self._State.get_field(var)
                 wt = self._State.get_tend(var)
 
-                # if self._TimeSteppingController.time < 3600.0:
-                #    wt[:,:,:] = -w[:,:,:] * 1/300.0
+                # # if self._TimeSteppingController.time < 3600.0:
+                # #    wt[:,:,:] = -w[:,:,:] * 1/300.0
 
                 # start = nh[0]
                 # end = nh[0] + self.nudge_width
                 # wt[start:end, :, :] -= (
-                #     w[start:end, :, :] - w[start + 1 : end + 1, :, :]
-                # ) * weight[:, np.newaxis, np.newaxis]
+                #      w[start:end, :, :] - w[start:end, :, :] * 0.0
+                #  ) * weight[:, np.newaxis, np.newaxis]
 
                 # start = -nh[0] - self.nudge_width
                 # end = -nh[0]
                 # wt[start:end, :, :] -= (
-                #     w[start:end, :, :] - w[start - 1 : end - 1, :, :]
-                # ) * weight[::-1, np.newaxis, np.newaxis]
+                #      w[start:end, :, :] - w[start : end, :, :] * 0.0
+                #  ) * weight[::-1, np.newaxis, np.newaxis]
 
                 # start = nh[1]
                 # end = nh[1] + self.nudge_width
-                # wt[2 * nh[1] : -2 * nh[1], start:end, :] -= (
-                #     w[2 * nh[1] : -2 * nh[1], start:end, :]
-                #     - w[2 * nh[1] : -2 * nh[1], start + 1 : end + 1, :]
-                # ) * weight[np.newaxis, :, np.newaxis]
+                # wt[:, start:end, :] -= (
+                #      w[:, start:end, :]
+                #      - w[:, start: end, :] * 0.0 
+                #  ) * weight[np.newaxis, :, np.newaxis]
 
-                # start = -nh[1] - self.nudge_width
-                # end = -nh[1]
-                # wt[2 * nh[1] : -2 * nh[1], start:end, :] -= (
-                #     w[2 * nh[1] : -2 * nh[1], start:end, :]
-                #     - w[2 * nh[1] : -2 * nh[1], start - 1 : end - 1, :]
-                # ) * weight[np.newaxis, ::-1, np.newaxis]
+                # start = nh[1]
+                # end = nh[1] + self.nudge_width
+                # wt[ : , start:end, :] -= (
+                #      w[:, start:end, :]
+                #      - w[:, start: end, :] * 0.0
+                #  ) * weight[np.newaxis, ::-1, np.newaxis]
 
             elif (
                 var == "s" or var == "qv"
             ):  # or var == "qc" or var=="qi" or var == 'qi1':
+                pass 
+                # phi = self._State.get_field(var)
+                # phi_t = self._State.get_tend(var)
+                # s_t = self._State.get_tend("s")
 
-                phi = self._State.get_field(var)
-                phi_t = self._State.get_tend(var)
-                s_t = self._State.get_tend("s")
+                # if var == "s":
+                #     var = "T"
+                #     phi = self._DiagnosticState.get_field("T")
 
-                if var == "s":
-                    var = "T"
-                    phi = self._DiagnosticState.get_field("T")
+                # # Needed for energy source term
+                # L = 0.0
+                # if var == "qc":
+                #     L = parameters.LV
+                # elif var == "qi" or var == "qi1":
+                #     L = parameters.LS
 
-                # Needed for energy source term
-                L = 0.0
-                if var == "qc":
-                    L = parameters.LV
-                elif var == "qi" or var == "qi1":
-                    L = parameters.LS
+                # phi_nudge = (
+                #     self._previous_bdy[var]["x_low"][:, :, :]
+                #     + (
+                #         self._post_bdy[var]["x_low"][:, :, :]
+                #         - self._previous_bdy[var]["x_low"][:, :, :]
+                #     )
+                #     * (self._TimeSteppingController._time - self.time_previous)
+                #     / 3600.0
+                # )
 
-                phi_nudge = (
-                    self._previous_bdy[var]["x_low"][:, :, :]
-                    + (
-                        self._post_bdy[var]["x_low"][:, :, :]
-                        - self._previous_bdy[var]["x_low"][:, :, :]
-                    )
-                    * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
-                )
+                # start = nh[0]
+                # end = nh[0] + self.nudge_width
+                # if self._Grid.low_rank[0]:
+                #     phi_t[start:end, :, :] -= (
+                #         phi[start:end, :, :] - phi_nudge[1:, :, :]
+                #     ) * weight[:, np.newaxis, np.newaxis]
 
-                start = nh[0]
-                end = nh[0] + self.nudge_width
-                if self._Grid.low_rank[0]:
-                    phi_t[start:end, :, :] -= (
-                        phi[start:end, :, :] - phi_nudge[1:, :, :]
-                    ) * weight[:, np.newaxis, np.newaxis]
+                #     s_t[start:end, :, :] += (
+                #         L
+                #         * (phi[start:end, :, :] - phi_nudge[1:, :, :])
+                #         * weight[:, np.newaxis, np.newaxis]
+                #         / parameters.CPD
+                #     )
 
-                    s_t[start:end, :, :] += (
-                        L
-                        * (phi[start:end, :, :] - phi_nudge[1:, :, :])
-                        * weight[:, np.newaxis, np.newaxis]
-                        / parameters.CPD
-                    )
+                # phi_nudge = (
+                #     self._previous_bdy[var]["x_high"][:, :, :]
+                #     + (
+                #         self._post_bdy[var]["x_high"][:, :, :]
+                #         - self._previous_bdy[var]["x_high"][:, :, :]
+                #     )
+                #     * (self._TimeSteppingController._time - self.time_previous)
+                #     / 3600.0
+                # )
 
-                phi_nudge = (
-                    self._previous_bdy[var]["x_high"][:, :, :]
-                    + (
-                        self._post_bdy[var]["x_high"][:, :, :]
-                        - self._previous_bdy[var]["x_high"][:, :, :]
-                    )
-                    * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
-                )
+                # start = -nh[0] - self.nudge_width
+                # end = -nh[0]
 
-                start = -nh[0] - self.nudge_width
-                end = -nh[0]
+                # if self._Grid.high_rank[0]:
+                #     phi_t[start:end, :, :] -= (
+                #         phi[start:end, :, :] - phi_nudge[:-1, :, :]
+                #     ) * weight[::-1, np.newaxis, np.newaxis]
 
-                if self._Grid.high_rank[0]:
-                    phi_t[start:end, :, :] -= (
-                        phi[start:end, :, :] - phi_nudge[:-1, :, :]
-                    ) * weight[::-1, np.newaxis, np.newaxis]
+                #     s_t[start:end, :, :] += (
+                #         L
+                #         * (phi[start:end, :, :] - phi_nudge[:-1, :, :])
+                #         * weight[::-1, np.newaxis, np.newaxis]
+                #         / parameters.CPD
+                #     )
 
-                    s_t[start:end, :, :] += (
-                        L
-                        * (phi[start:end, :, :] - phi_nudge[:-1, :, :])
-                        * weight[::-1, np.newaxis, np.newaxis]
-                        / parameters.CPD
-                    )
+                # phi_nudge = (
+                #     self._previous_bdy[var]["y_low"][:, :, :]
+                #     + (
+                #         self._post_bdy[var]["y_low"][:, :, :]
+                #         - self._previous_bdy[var]["y_low"][:, :, :]
+                #     )
+                #     * (self._TimeSteppingController._time - self.time_previous)
+                #     / 3600.0
+                # )
 
-                phi_nudge = (
-                    self._previous_bdy[var]["y_low"][:, :, :]
-                    + (
-                        self._post_bdy[var]["y_low"][:, :, :]
-                        - self._previous_bdy[var]["y_low"][:, :, :]
-                    )
-                    * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
-                )
+                # start = nh[1]
+                # end = nh[1] + self.nudge_width
+                # if self._Grid.low_rank[1]:
+                #     phi_t[:, start:end, :] -= (
+                #         phi[:, start:end, :] - phi_nudge[:, 1:, :]
+                #     ) * weight[np.newaxis, :, np.newaxis]
 
-                start = nh[1]
-                end = nh[1] + self.nudge_width
-                if self._Grid.low_rank[1]:
-                    phi_t[:, start:end, :] -= (
-                        phi[:, start:end, :] - phi_nudge[:, 1:, :]
-                    ) * weight[np.newaxis, :, np.newaxis]
+                #     s_t[:, start:end, :] += (
+                #         L
+                #         * (phi[:, start:end, :] - phi_nudge[:, 1:, :])
+                #         * weight[np.newaxis, :, np.newaxis]
+                #         / parameters.CPD
+                #     )
 
-                    s_t[:, start:end, :] += (
-                        L
-                        * (phi[:, start:end, :] - phi_nudge[:, 1:, :])
-                        * weight[np.newaxis, :, np.newaxis]
-                        / parameters.CPD
-                    )
+                # phi_nudge = (
+                #     self._previous_bdy[var]["y_high"][:, :, :]
+                #     + (
+                #         self._post_bdy[var]["y_high"][:, :, :]
+                #         - self._previous_bdy[var]["y_high"][:, :, :]
+                #     )
+                #     * (self._TimeSteppingController._time - self.time_previous)
+                #     / 3600.0
+                # )
 
-                phi_nudge = (
-                    self._previous_bdy[var]["y_high"][:, :, :]
-                    + (
-                        self._post_bdy[var]["y_high"][:, :, :]
-                        - self._previous_bdy[var]["y_high"][:, :, :]
-                    )
-                    * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
-                )
+                # start = -nh[1] - self.nudge_width
+                # end = -nh[1]
+                # if self._Grid.high_rank[1]:
+                #     phi_t[:, start:end, :] -= (
+                #         phi[:, start:end, :] - phi_nudge[:, :-1, :]
+                #     ) * weight[np.newaxis, ::-1, np.newaxis]
 
-                start = -nh[1] - self.nudge_width
-                end = -nh[1]
-                if self._Grid.high_rank[1]:
-                    phi_t[:, start:end, :] -= (
-                        phi[:, start:end, :] - phi_nudge[:, :-1, :]
-                    ) * weight[np.newaxis, ::-1, np.newaxis]
-
-                    s_t[:, start:end, :] += (
-                        L
-                        * (phi[:, start:end, :] - phi_nudge[:, :-1, :])
-                        * weight[np.newaxis, ::-1, np.newaxis]
-                        / parameters.CPD
-                    )
+                #     s_t[:, start:end, :] += (
+                #         L
+                #         * (phi[:, start:end, :] - phi_nudge[:, :-1, :])
+                #         * weight[np.newaxis, ::-1, np.newaxis]
+                #         / parameters.CPD
+                #     )
 
         return

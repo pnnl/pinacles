@@ -211,7 +211,7 @@ class IngestEra5:
         nh = self._Grid.n_halo
         for i in range(T_horizontal.shape[1]):
             for j in range(T_horizontal.shape[2]):
-
+                
                 z = hgt_horizontal_interp[:, i, j]
                 # z = np.concatenate(([2.0], z))
 
@@ -849,7 +849,7 @@ def IngestFactory(namelist, Grid, TimeSteppingController):
     if 'open_boundary_treatment' not in namelist['lbc']:
         return IngestBase(namelist, Grid, TimeSteppingController)
     
-    if namelist['lbc']['open_boundary_treatment'] == "reanalysis":
-        return IngestEra5(namelist, Grid, TimeSteppingController)
-    else:
-        return IngestBase(namelist, Grid, TimeSteppingController)
+    #if namelist['lbc']['open_boundary_treatment'] == "reanalysis":
+    return IngestEra5(namelist, Grid, TimeSteppingController)
+    #else:
+    #    return IngestBase(namelist, Grid, TimeSteppingController)

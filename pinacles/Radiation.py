@@ -197,11 +197,16 @@ class RRTMG:
         self._toa_lw_dn = 0.0
 
         self._toa_sw_dn_2d = np.zeros(
-            (self._Grid.ngrid_local[0], self._Grid.ngrid_local[1]), dtype=np.double
+            (self._Grid.local_shape[0], self._Grid.local_shape[1]), dtype=np.double
         )
         self._surf_sw_dn_2d = np.zeros(
-            (self._Grid.ngrid_local[0], self._Grid.ngrid_local[1]), dtype=np.double
+            (self._Grid.local_shape[0], self._Grid.local_shape[1]), dtype=np.double
         )
+
+        self._toa_lw_up_2d = np.zeros(
+            (self._Grid.local_shape[0], self._Grid.local_shape[1]), dtype=np.double
+        )
+
 
         self._restart_attributes = [
             "time_elapsed",
@@ -609,8 +614,10 @@ class RRTMG:
             self._toa_lw_dn = np.sum(dflx_lw[:, -1]) / npts
             self._toa_lw_up = np.sum(uflx_lw[:, -1]) / npts
 
-            self._toa_sw_dn_2d = dflx_sw[:, -1]
-            self._surf_sw_dn_2d = dflx_sw[:, 0]
+            self._toa_sw_dn_2d[:,:]= dflx_sw[:, -1].reshape(self._toa_sw_dn_2d.shape, order='C')
+            self._surf_sw_dn_2d[:,:] = dflx_sw[:, 0].reshape(self._toa_sw_dn_2d.shape, order='C')
+            self._toa_lw_up_2d[:,:] = uflx_lw[:, -1].reshape(self._toa_sw_dn_2d.shape, order='C')
+
 
             ds_hr_lw = self._DiagnosticState.get_field("heating_rate_lw")
             ds_hr_sw = self._DiagnosticState.get_field("heating_rate_sw")
@@ -762,6 +769,29 @@ class RRTMG:
         return
 
     def io_fields2d_update(self, fx):
+        
+        start = self._Grid.local_start
+        end = self._Grid._local_end
+        send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
+        recv_buffer = np.empty_like(send_buffer)
+
+        if fx is not None:
+            toa = fx.create_dataset(
+                "LW_UP_TOA",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
+
+            for i, d in enumerate(["time", "X", "Y"]):
+                toa.dims[i].attach_scale(fx[d])
+
+        send_buffer[start[0] : end[0], start[1] : end[1]] = self._toa_lw_up_2d
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        
+        if fx is not None:
+            toa[:, :] = recv_buffer
+        
+        
         return
 
     @property

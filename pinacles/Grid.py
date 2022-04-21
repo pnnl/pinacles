@@ -12,6 +12,8 @@ import numba
 class GridBase:
     def __init__(self, namelist, llx, lly, llz):
 
+        self._namelist = namelist
+
         # List of class atributes that will be restarted
         self._restart_attributes = []
 
@@ -436,6 +438,8 @@ class RegularCartesian(GridBase):
 
         self._compute_globalcoordiantes()
 
+        self.lat_lon = False
+
         if "center_latlon" in namelist["grid"]:
             self._center_latlon = tuple(namelist["grid"]["center_latlon"])
             self._conic_intersection = tuple(namelist["grid"]["conic_intersection"])
@@ -449,16 +453,27 @@ class RegularCartesian(GridBase):
             )
 
             self.compute_latlon()
+            self.lat_lon = True
 
         return
 
     def compute_latlon(self):
 
+
         # Compute domain half width
-        halfwidth = (self.l[0] / 2.0, self.l[1] / 2.0)
+        if 'parent_grid' not in self._namelist:
+            halfwidth = (self.l[0] / 2.0, self.l[1] / 2.0)
+        else:
+            lp = self._namelist['parent_grid']['l']
+            halfwidth = (lp[0] / 2.0, lp[1] / 2.0)
 
         local_axis = self._local_axes
         local_axis_edge = self._local_axes_edge
+
+
+        #print(local_axis[0])
+        #print(local_axis_edge[0])
+        #import sys; sys.exit()
 
         x_global_mesh, y_global_mesh = np.meshgrid(
             self.x_global[:] - halfwidth[0],
@@ -527,6 +542,7 @@ class RegularCartesian(GridBase):
         self.lat_min = MPI.COMM_WORLD.allreduce(
             np.min(self.lat_local_edge_y), op=MPI.MIN
         )
+
 
         return
 
@@ -639,6 +655,8 @@ class RegularCartesian(GridBase):
         z_index = np.argmin(np.abs(self.z_local - z))
 
         return (x_index, y_index, z_index)
+
+
 
     def CreateGather(self, xrange, yrange, x_edge=False, y_edge=False):
         return self._Gather(self, xrange, yrange, x_edge, y_edge)

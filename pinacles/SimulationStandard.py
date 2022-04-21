@@ -1,5 +1,4 @@
 import time
-
 global_start_time = time.perf_counter()
 import numba
 import json
@@ -37,6 +36,7 @@ from pinacles import Timers
 from pinacles import LateralBCsFactory
 from pinacles import Ingest
 from pinacles import DiagnosticsCoarseGrain
+from pinacles import WRF_PBL_Ysu
 from mpi4py import MPI
 import numpy as np
 import os
@@ -311,6 +311,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.DiagnosticState,
         )
 
+
+        self.PBL = WRF_PBL_Ysu.PBL_Ysu(self._namelist, self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.DiagnosticState, self.Surf, self.Rad, self.TimeSteppingController)
+
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
         self.Restart.add_class_to_restart(self.ScalarState)
@@ -420,12 +423,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Ref,
             self.TimeSteppingController,
         )
-<<<<<<< HEAD
-
-        self.Fields2d = Fields2D.Fields2D(
-=======
         self.Fields2d = Fields2D.factory(
->>>>>>> master
             self._namelist,
             self.ModelGrid,
             self.Ref,
@@ -436,6 +434,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Fields2d.add_class(self.Micro)
         self.Fields2d.add_class(self.Thermo)
         self.Fields2d.add_class(self.Plumes)
+        self.Fields2d.add_class(self.Rad)
 
         # Instantiate optional TowerIO
         self.IOTower = TowersIO.Towers(
@@ -555,7 +554,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Update thermo this is mostly for IO at time 0
         self.Thermo.update(apply_buoyancy=False)
-        # self.Rad.update(force=True)
+        self.Rad.update(force=True)
         self.PSolver.update()
 
         # import pylab as plt
@@ -1061,6 +1060,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 # Update scalar and momentum diffusion
                 self.ScalarDiff.update()
                 self.MomDiff.update()
+
+                #self.PBL.update()
 
                 # Do Damping
                 self.RayleighDamping.update()

@@ -260,7 +260,7 @@ class LateralBCsNest(LateralBCsBase):
 
         for var_name in self._State._dofs:
 
-            # if var_name == 'w':
+            #if var_name == 'w':
             #    continue
 
             # Compute the domain mean of the variables
@@ -277,18 +277,19 @@ class LateralBCsNest(LateralBCsBase):
             )
 
             if var_name == "v":
-                slab_range = (center_point_y, center_point_y + 1)
+                slab_range = (center_point_y-1, center_point_y)
             else:
-                slab_range = (center_point_y, center_point_y + 1)
+                slab_range = (center_point_y-1, center_point_y)
+                
 
             # First we get y_low
-            y_low[nh[0] : -nh[0], nh[2] : -nh[2]] = np.repeat(
-                self._NestState.get_slab_y(var_name, slab_range)[
-                    local_part_of_parent[0] : local_part_of_parent[1], :, :
-                ],
+            y_low[nh[0] : -nh[0], nh[2] : -nh[2]] =  ndimage.uniform_filter(np.repeat(
+                self._NestState.get_slab_y(var_name, slab_range),
                 self.factor[1],
                 axis=0,
-            )[: self._Grid._local_shape[0], 0, :]
+            ),size=(3,1,1))[
+                    local_part_of_parent[0]*self.factor[0] : local_part_of_parent[1]*self.factor[0], :, :
+                ][: self._Grid._local_shape[0], 0, :]
 
             if var_name == "v":
                 slab_range = (
@@ -297,17 +298,18 @@ class LateralBCsNest(LateralBCsBase):
                 )
             else:
                 slab_range = (
+                    center_point_y + self.parent_pts[1],
                     center_point_y + self.parent_pts[1] + 1,
-                    center_point_y + self.parent_pts[1] + 2,
                 )
 
-            y_high[nh[0] : -nh[0], nh[2] : -nh[2]] = np.repeat(
-                self._NestState.get_slab_y(var_name, slab_range)[
-                    local_part_of_parent[0] : local_part_of_parent[1], :, :
-                ],
+
+            y_high[nh[0] : -nh[0], nh[2] : -nh[2]] = ndimage.uniform_filter(np.repeat(
+                self._NestState.get_slab_y(var_name, slab_range),
                 self.factor[1],
                 axis=0,
-            )[: self._Grid._local_shape[0], 0, :]
+            ),size=(3,1,1))[
+                    local_part_of_parent[0]*self.factor[0] : local_part_of_parent[1]*self.factor[0], :, :
+                ][: self._Grid._local_shape[0], 0, :]
 
             # Now get the indicies of the subset on this rank
             start = (local_start[1]) // self.factor[1] + self.root_point[1]
@@ -317,35 +319,35 @@ class LateralBCsNest(LateralBCsBase):
             )
 
             if var_name == "u":
-                slab_range = (center_point_x, center_point_x + 1)
+                slab_range = (center_point_x-1, center_point_x)
             else:
-                slab_range = (center_point_x, center_point_x + 1)
+                slab_range = (center_point_x-1, center_point_x)
 
-            x_low[nh[1] : -nh[1], nh[2] : -nh[2]] = np.repeat(
-                self._NestState.get_slab_x(var_name, slab_range)[
-                    :, local_part_of_parent[0] : local_part_of_parent[1], :
-                ],
+            x_low[nh[1] : -nh[1], nh[2] : -nh[2]] = ndimage.uniform_filter(np.repeat(
+                self._NestState.get_slab_x(var_name, slab_range),
                 self.factor[0],
                 axis=1,
-            )[0, : self._Grid._local_shape[1], :]
+            ),size=(1,3,1))[
+                    :, local_part_of_parent[0]*self.factor[0] : local_part_of_parent[1]*self.factor[0], :
+                ][0, : self._Grid._local_shape[1], :]
 
             if var_name == "u":
                 slab_range = (
                     center_point_x + self.parent_pts[0],
-                    center_point_x + self.parent_pts[0] + 1,
+                    center_point_x + self.parent_pts[0]+1,
                 )
             else:
                 slab_range = (
+                    center_point_x + self.parent_pts[0],
                     center_point_x + self.parent_pts[0] + 1,
-                    center_point_x + self.parent_pts[0] + 2,
                 )
 
-            x_high[nh[1] : -nh[1], nh[2] : -nh[2]] = np.repeat(
-                self._NestState.get_slab_x(var_name, slab_range)[
-                    :, local_part_of_parent[0] : local_part_of_parent[1], :
-                ],
+            x_high[nh[1] : -nh[1], nh[2] : -nh[2]] = ndimage.uniform_filter(np.repeat(
+                self._NestState.get_slab_x(var_name, slab_range),
                 self.factor[0],
                 axis=1,
-            )[0, : self._Grid._local_shape[1], :]
+            ),size=(1,3,1))[
+                    :, local_part_of_parent[0]*self.factor[0] : local_part_of_parent[1]*self.factor[0], :
+                ][0, : self._Grid._local_shape[1], :]
 
         return

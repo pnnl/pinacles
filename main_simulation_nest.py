@@ -54,6 +54,8 @@ def main(namelist):
 
         # Here we use the i + 1 th nest namelist to communicat informaton to the nest class
         # TODO Perhaps we could clean this up as may get confusing
+        
+        nest_namelist['parent_grid'] = namelist['grid']
         nest_namelist["nest"] = {}
         nest_namelist["nest"]["factor"] = namelist["nests"]["factor"][i]
         nest_namelist["nest"]["parent_pts"] = namelist["nests"]["parent_points"][i]

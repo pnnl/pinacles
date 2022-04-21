@@ -558,7 +558,6 @@ class ModelState:
                     our_dof, nh[0] : -nh[0], nh[1] : -nh[1], nh[2] : -nh[2]
                 ] = in_var
 
-            # import sys; sys.exit()
 
         return
 
