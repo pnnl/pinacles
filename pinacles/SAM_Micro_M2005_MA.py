@@ -347,9 +347,10 @@ class Micro_M2005_MA(MicrophysicsBase):
         self._prec_xy = np.zeros_like(self._fluxbq)
                 
         self._tlat = np.zeros(
-            (nz), dtype=np.double
+            (nz), order="F", dtype=np.double
         )
-        self._precflux = np.asfortranarray(np.zeros_like(self._tlat))
+        self._precflux = np.zeros_like(self._tlat)
+        # np.asfortranarray(np.zeros_like(self._tlat))
         self._qpfall = np.zeros_like(self._tlat)
                 
         z = self._Grid.z_global
@@ -459,7 +460,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units=diag_3d_long_names[vn][1],
             )
             
-        #print("SAM Before calling init")
+        # print("SAM Before calling init",self._T[0,0,0])
         
         time = self._TimeSteppingController.time        
               
@@ -531,16 +532,15 @@ class Micro_M2005_MA(MicrophysicsBase):
         nsaveMSE = 1
         nstat = 1 
         nstatis = 1 
-        nz = self._sam_dims[2] + 1
+        # nz = self._sam_dims[2] + 1
         # nstep = self._TimeSteppingController._n_timesteps
         
-        print("SAM Before calling main",self._precflux[1])
+        print("SAM Before calling main",self._tlat[0],th_3d[0,0,0])
         
         self._m2005_ma_cffi.update(
             self._sam_dims[0],
             self._sam_dims[1],
             self._sam_dims[2],
-            nz,
             self._sam_dims[3],
             self.n_diag_3d,
             icycle, 
