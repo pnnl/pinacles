@@ -106,10 +106,10 @@ class Micro_M2005_MA(MicrophysicsBase):
             )
             
         if(self._iqarray[2]>0):
-            iqci = self._iqarray[2] - 1
-            self._micro_vars[iqci] = "qci"
+            iqi = self._iqarray[2] - 1
+            self._micro_vars[iqi] = "qi"
             self._ScalarState.add_variable(
-                "qci",
+                "qi",
                 long_name="cloud ice mixing ratio",
                 units="g kg^{-1}",
                 latex_name="q_{i}",
@@ -371,13 +371,14 @@ class Micro_M2005_MA(MicrophysicsBase):
         do_chunked_energy_budgets = False
         donudging_aerosol = False
         
-        self._T = np.empty(
+        Temp = np.empty(
             (nx, ny, nzm),
             dtype=np.double,
             order="F",
         )
+        
         #Temp = self._DiagnosticState.get_field("T")
-
+        # print("SAM",rho0[0:16])
         # For diagnostic variables
 
         # self._diag_3d_vars = [
@@ -480,14 +481,13 @@ class Micro_M2005_MA(MicrophysicsBase):
             nsubdomains_x, 
             nsubdomains_y, 
             nrestart,
-            self._T,
+            Temp,
             self._microfield,
             z, 
             p0,
             rho0, 
             tabs0, 
             zi, 
-            rhow, 
             t0, 
             dx,
             dz,
@@ -505,24 +505,21 @@ class Micro_M2005_MA(MicrophysicsBase):
             parameters.G,
         )
         
-        # print("Init succesfully called",iqv)
-        
-        # for i, vn in enumerate(self._micro_vars):
-        #     dv = self._ScalarState.get_field(vn)
-        #     dv[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]] = self._microfield[:, :, :, i]
-        qv = self._microfield[:,:,:,iqv]
-        
         self._Timers.add_timer("MicroM2005_MA_update")
         return
 
     def update(self):
         self._Timers.start_timer("MicroM2005_MA_update")
         
-        # print("SAM_Micro_M2005_MA",self._sam_dims)
+        p0 = self._Ref.p0
+        rho0 = self._Ref.rho0
+        tabs0 = self._Ref.T0
+        rhow = self._Ref.rho0_edge
+        # print("SAM_in_main",rho0[0:15])
         
         # Get variables from the model state
         self._T = self._DiagnosticState.get_field("T")
-        s = self._ScalarState.get_field("s")
+        self._s = self._ScalarState.get_field("s")
         w = self._VelocityState.get_field("w")
         
         qtot_sed = self._DiagnosticState.get_field("qtot_sed")
@@ -532,13 +529,14 @@ class Micro_M2005_MA(MicrophysicsBase):
         s_tend_ice_sed = self._DiagnosticState.get_field("s_tend_ice_sed")
         
         nhalo = self._Grid.n_halo
+        
         th_sam = np.asfortranarray(self._T[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
-        s_sam = np.asfortranarray(s[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
+        s_sam = np.asfortranarray(self._s[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
         w_sam = np.asfortranarray(w[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2] - 1:self._Grid.ngrid_local[2] - nhalo[2]])
         
         qtot_sed_sam = np.asfortranarray(qtot_sed[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
         qice_sed_sam = np.asfortranarray(qice_sed[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
-                
+                        
         for i, vn in enumerate(self._micro_vars):
             # print(vn)
             dv = self._ScalarState.get_field(vn)
@@ -555,6 +553,8 @@ class Micro_M2005_MA(MicrophysicsBase):
         # nz = self._sam_dims[2] + 1
         # nstep = self._TimeSteppingController._n_timesteps
         
+        
+        # print("Before update",np.amin(s_sam),np.amin(self._s),np.amin(self._microfield))
         # print("SAM Before calling main")
               # self._tlat[0],th_3d[0,0,0])
         
@@ -571,6 +571,10 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._itimestep,
             dt,
             time,
+            p0,
+            rho0,
+            tabs0,
+            rhow,
             self._nrainy,
             self._nrmn,
             self._ncmn,
@@ -595,42 +599,10 @@ class Micro_M2005_MA(MicrophysicsBase):
             dv = self._ScalarState.get_field(vn)
             dv[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]] = self._microfield[:, :, :, i]
             
-        s[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]] = s_sam[:, :, :]
+        self._s[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]] = s_sam[:, :, :]
         self._T[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]] = th_sam[:, :, :]
-        # print("SAM after main")
-#        qv = self._ScalarState.getfield("qv")
-#        qv = self._microfield(1:nx,1:ny,1:nz,iqv)
-#        
-#        if(not dototalwater):
-#            self._microfield(:,:,:,iqcl) =   self._ScalarState.getfield("qc")
-#
-#        if(dopredictNc):
-#            self._microfield(:,:,:,incl) =   self._ScalarState.getfield("qnc")
-#
-#        if(doprogaerosol):
-#            self._microfield(:,:,:,iqad)  =  self._ScalarState.getfield("qad")
-#            self._microfield(:,:,:,iqad2) =  self._ScalarState.getfield("qad2")
-#            self._microfield(:,:,:,inad)  =  self._ScalarState.getfield("qnad")
-#            self._microfield(:,:,:,inad2) =  self._ScalarState.getfield("qnad2")
-#            self._microfield(:,:,:,iqaw)  =  self._ScalarState.getfield("qaw")
-#            self._microfield(:,:,:,iqgas) =  self._ScalarState.getfield("qgas")
-#
-#        if(doprecip):
-#            self._microfield(:,:,:,iqr)   =  self._ScalarState.getfield("qr")
-#            self._microfield(:,:,:,iqnr)  =  self._ScalarState.getfield("qnr")
-#
-#            if(doprogaerosol):
-#                self._microfield(:,:,:,iqar) =   self._ScalarState.getfield("qar")
-#
-#        if(doicemicro):
-#            self._microfield(:,:,:,iqci)  =  self._ScalarState.getfield("qci")
-#            self._microfield(:,:,:,iqnci) =  self._ScalarState.getfield("qnci")
-#            self._microfield(:,:,:,iqs)   =  self._ScalarState.getfield("qs")
-#            self._microfield(:,:,:,iqns)  =  self._ScalarState.getfield("qns")
-#
-#        if(dograupel):
-#            self._microfield(:,:,:,iqg)   =  self._ScalarState.getfield("qg")
-#            self._microfield(:,:,:,iqng)  =  self._ScalarState.getfield("qng")                
+        
+        # print("After update",np.amin(s_sam),np.amin(self._s),np.amin(self._microfield))               
 
         # Compute and apply sedimentation sources of static energy
         np.multiply(qtot_sed, parameters.LV / parameters.CPD, out=s_tend_liq_sed)
@@ -882,7 +854,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
-        qc = self._ScalarState.get_field("qci")[nh[0] : -nh[0], nh[1] : -nh[1], :]
+        qc = self._ScalarState.get_field("qi")[nh[0] : -nh[0], nh[1] : -nh[1], :]
         iwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis, 0], axis=2)
 
         send_buffer.fill(0.0)
@@ -898,6 +870,9 @@ class Micro_M2005_MA(MicrophysicsBase):
 
     def get_qcloud(self):
         return self._ScalarState.get_field("qc")
+    
+    def get_qi(self):
+        return self._ScalarState.get_field("qi")
 
     def get_reffc(self):
         return self._DiagnosticState.get_field("diag_effc_3d")
