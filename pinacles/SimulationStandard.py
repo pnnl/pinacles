@@ -782,7 +782,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Now iniitalzie the IO field
         self.StatsIO.initialize()
 
-        self.Fields2d = Fields2D.Fields2D(
+        self.Fields2d = Fields2D.factory(
             self._namelist,
             self.ModelGrid,
             self.Ref,
