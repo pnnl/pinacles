@@ -17,7 +17,7 @@ class ParticlesDummy:
 
         return
 
-    def restart(self):
+    def restart(self, data_dict, **kwargs):
         
         return
     
