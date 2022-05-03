@@ -1636,7 +1636,7 @@ class ParticlesBase:
                 jj = j * jshift
                 for k in range(shape[2]):
                     arr = particle_data[ii + jj + k]
-                    particle_data[ii + jj + k] = arr[:, arr[valid_dof,:] < 1]
+                    particle_data[ii + jj + k] = arr[:, arr[valid_dof,:] > 0]
 
         return
 
