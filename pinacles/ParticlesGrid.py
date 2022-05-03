@@ -5,6 +5,7 @@ from numba.typed import Dict, List
 import time
 import os
 from mpi4py import MPI
+
 try:
     import h5py
 except:
@@ -87,16 +88,32 @@ class ParticlesBase:
         assert self.boundary_type in ["periodic", "exit"]
 
         self.injected = False
+        # total number of degrees of freedom assigned to each particle
+        # self._particle_dofs = self._interp_particle_dofs + self._nointerp_particle_dofs
         self._particle_dofs = 0  # The first three dofs are always position
+        # Number of dofs assigned to each particle that
+        # are obtained by interpolation from the Eulerian field
         self._interp_particle_dofs = 0
+        # Number of dofs assigned to each particle
+        # that are NOT obtained by interpolation
         self._nointerp_particle_dofs = 0
+        """self._particle_data is a 1-D list of 2-D numpy arrays
+            List elements are indexed by grid cell (using shifting to map to 1D)
+            the numpy arrays have the dimensions [dof, particle]
+            At any given time, not all particles are valid; invalid entries are indicated
+            by the "valid" dof"""
         self._particle_data = None
+        # 3D array that keeps a count of the number of valid particles in each grid cell
         self._n = None
         self._initialzied = False
         self._n_buffer = 1024  # The size of the buffer
         self._minimum_particles = 2
 
-        # These are numba dictionaries
+        """ These are numba dictionaries that map a variable name (as a string)
+            to the index of that variable in the numpy arrays that make up the
+            self._particle_data list
+            the following rules apply
+        """
         self._particle_varnames = Dict.empty(
             key_type=types.unicode_type, value_type=types.int64
         )
@@ -107,6 +124,7 @@ class ParticlesBase:
             key_type=types.unicode_type, value_type=types.int64
         )
 
+        # these created as are nointerp variables (interp=False is default option)
         self.add_particle_variable("valid")
         self.add_particle_variable("id")
         self.add_particle_variable("x")
@@ -458,6 +476,8 @@ class ParticlesBase:
 
         return
 
+    # I actually think the treatment of interp vs no interp indices needs to be switched here
+    # This method doesn't seem to get used currently, so it shouldn't have caused any issues
     def get_particle_var(self, name):
         if name in self._interp_particle_varnames:
             indx = self._interp_particle_varnames[name]
@@ -1577,6 +1597,10 @@ class ParticlesBase:
         # Get the name of this particualr container and create a dictionary for it in the
         # restart data dict.
 
+        self.condense_particle_data(
+            self._particle_varnames, self._n, self._particle_data
+        )
+
         key = "PARTICLES"
         data_dict[key] = {}
 
@@ -1596,6 +1620,25 @@ class ParticlesBase:
         # This is a numba typed list, we will need ot pack this into a python list. We will need to
         # do the inverse operation at restart
         data_dict[key]["_particle_data"] = list(self._particle_data)
+
+        return
+
+    @staticmethod
+    @numba.njit
+    def condense_particle_data(particle_varnames, n, particle_data):
+        valid_dof = particle_varnames["valid"]
+        shape = n.shape
+        ishift = shape[1] * shape[2]
+        jshift = shape[2]
+        for i in range(shape[0]):
+            ii = i * ishift
+            for j in range(shape[1]):
+                jj = j * jshift
+                for k in range(shape[2]):
+                    arr = particle_data[ii + jj + k]
+                    indx = np.nonzero(arr[valid_dof, :] > 0)
+                    arr = np.delete(arr, indx, axis=1)
+                    particle_data[ii + jj + k] = arr
 
         return
 
