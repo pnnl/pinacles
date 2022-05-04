@@ -1623,6 +1623,26 @@ class ParticlesBase:
 
         return
 
+
+    @staticmethod
+    @numba.njit
+    def condense_particle_data_routine(particle_varnames, n, particle_data, n_buffer):
+        valid_dof = particle_varnames["valid"]
+        shape = n.shape
+        ishift = shape[1] * shape[2]
+        jshift = shape[2]
+        for i in range(shape[0]):
+            ii = i * ishift
+            for j in range(shape[1]):
+                jj = j * jshift
+                for k in range(shape[2]):
+                    arr = particle_data[ii + jj + k]
+                    if arr.shape[1] > n_buffer:
+                        particle_data[ii + jj + k] = arr[:, arr[valid_dof,:] > 0]
+
+        return
+
+
     @staticmethod
     @numba.njit
     def condense_particle_data(particle_varnames, n, particle_data, n_buffer):
@@ -1636,8 +1656,7 @@ class ParticlesBase:
                 jj = j * jshift
                 for k in range(shape[2]):
                     arr = particle_data[ii + jj + k]
-                    if arr.shape[1] > n_buffer:
-                        particle_data[ii + jj + k] = arr[:, arr[valid_dof,:] > 0]
+                    particle_data[ii + jj + k] = arr[:, arr[valid_dof,:] > 0]
 
         return
 
