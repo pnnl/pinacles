@@ -515,7 +515,7 @@ class Micro_M2005_MA(MicrophysicsBase):
         rho0 = self._Ref.rho0
         tabs0 = self._Ref.T0
         rhow = self._Ref.rho0_edge
-        # print("SAM_in_main",rho0[0:15])
+        # print("SAM_in_main",p0[0:15])
         
         # Get variables from the model state
         self._T = self._DiagnosticState.get_field("T")
@@ -852,16 +852,16 @@ class Micro_M2005_MA(MicrophysicsBase):
             for i, d in enumerate(["time", "X", "Y"]):
                 iwp.dims[i].attach_scale(nc_grp[d])
                 
-        nh = self._Grid.n_halo
-        rho0 = self._Ref.rho0
-        qc = self._ScalarState.get_field("qi")[nh[0] : -nh[0], nh[1] : -nh[1], :]
-        iwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis, 0], axis=2)
+        #nh = self._Grid.n_halo
+        #rho0 = self._Ref.rho0
+        #qc = self._ScalarState.get_field("qi")[nh[0] : -nh[0], nh[1] : -nh[1], :]
+        #iwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis, 0], axis=2)
 
-        send_buffer.fill(0.0)
-        send_buffer[start[0] : end[0], start[1] : end[1]] = iwp_compute
-        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
-        if nc_grp is not None:
-            iwp[:, :] = recv_buffer
+#        send_buffer.fill(0.0)
+#        send_buffer[start[0] : end[0], start[1] : end[1]] = iwp_compute
+#        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+#        if nc_grp is not None:
+#            iwp[:, :] = recv_buffer
 
         return
 
@@ -871,8 +871,8 @@ class Micro_M2005_MA(MicrophysicsBase):
     def get_qcloud(self):
         return self._ScalarState.get_field("qc")
     
-    def get_qi(self):
-        return self._ScalarState.get_field("qi")
+#    def get_qi(self):
+#        return self._ScalarState.get_field("qi")
 
     def get_reffc(self):
         return self._DiagnosticState.get_field("diag_effc_3d")
