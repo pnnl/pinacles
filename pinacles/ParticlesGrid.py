@@ -1598,7 +1598,7 @@ class ParticlesBase:
         # restart data dict.
 
         self.condense_particle_data(
-            self._particle_varnames, self._n, self._particle_data
+            self._particle_varnames, self._n, self._particle_data, self._n_buffer
         )
 
         key = "PARTICLES"
@@ -1625,7 +1625,7 @@ class ParticlesBase:
 
     @staticmethod
     @numba.njit
-    def condense_particle_data(particle_varnames, n, particle_data):
+    def condense_particle_data(particle_varnames, n, particle_data, n_buffer):
         valid_dof = particle_varnames["valid"]
         shape = n.shape
         ishift = shape[1] * shape[2]
@@ -1636,7 +1636,8 @@ class ParticlesBase:
                 jj = j * jshift
                 for k in range(shape[2]):
                     arr = particle_data[ii + jj + k]
-                    particle_data[ii + jj + k] = arr[:, arr[valid_dof,:] > 0]
+                    if arr.shape[1] > n_buffer:
+                        particle_data[ii + jj + k] = arr[:, arr[valid_dof,:] > 0]
 
         return
 
