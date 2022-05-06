@@ -778,6 +778,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.StatsIO.add_class(self.Micro)
         self.StatsIO.add_class(self.DiagTurbulence)
         self.StatsIO.add_class(self.DiagClouds)
+        self.StatsIO.add_class(self.Rad)
 
         # Now iniitalzie the IO field
         self.StatsIO.initialize()
