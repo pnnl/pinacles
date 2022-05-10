@@ -41,11 +41,11 @@ class Micro_M2005_MA(MicrophysicsBase):
 
         self._m2005_ma_cffi = m2005_ma_via_cffi.M2005_MA()
         
-        nhalo = self._Grid.n_halo
+        self._nhalo = self._Grid.n_halo
         self._sam_dims = np.array([
-            self._Grid.ngrid_local[0] - 2 * nhalo[0],
-            self._Grid.ngrid_local[1] - 2 * nhalo[1],
-            self._Grid.ngrid_local[2] - 2 * nhalo[2],
+            self._Grid.ngrid_local[0] - 2 * self._nhalo[0],
+            self._Grid.ngrid_local[1] - 2 * self._nhalo[1],
+            self._Grid.ngrid_local[2] - 2 * self._nhalo[2],
             0,
         ], order="F", dtype=np.intc)
         nz    = self._sam_dims[2]+1
@@ -400,20 +400,16 @@ class Micro_M2005_MA(MicrophysicsBase):
         self._DiagnosticState.add_variable("s_tend_liq_sed", long_name="s tend liquid water sedimentation", units="")
         self._DiagnosticState.add_variable("s_tend_ice_sed", long_name="s tend ice water sedimentation", units="")
         
-        return
-
-    def initialize(self):
-    
-        nx    = self._Grid.ngrid_local[0] - 2 * nhalo[0]
-        ny    = self._Grid.ngrid_local[1] - 2 * nhalo[1]
-        nzm   = self._Grid.ngrid_local[2] - 2 * nhalo[2]
+        nx    = self._Grid.ngrid_local[0] - 2 * self._nhalo[0]
+        ny    = self._Grid.ngrid_local[1] - 2 * self._nhalo[1]
+        nzm   = self._Grid.ngrid_local[2] - 2 * self._nhalo[2]
         nz    = nzm + 1
         nmicrofields = self._sam_dims[3]
-        nx_gl = self._Grid.n[0]
-        ny_gl = self._Grid.n[1]
-        my_rank = MPI.COMM_WORLD.Get_rank()
-        nsubdomains_x = self._Grid.subcomms[0].Get_size()
-        nsubdomains_y = self._Grid.subcomms[1].Get_size()
+        self._nx_gl = self._Grid.n[0]
+        self._ny_gl = self._Grid.n[1]
+        self._my_rank = MPI.COMM_WORLD.Get_rank()
+        self._nsubdomains_x = self._Grid.subcomms[0].Get_size()
+        self._nsubdomains_y = self._Grid.subcomms[1].Get_size()
                 
         self._microfield = np.empty(
             (nx, ny, nzm, nmicrofields),
@@ -422,9 +418,9 @@ class Micro_M2005_MA(MicrophysicsBase):
         )
         
         if (namelist["restart"]["restart_simulation"] == False):
-            nrestart = 0
+            self._nrestart = 0
         else:
-            nrestart = 1
+            self._nrestart = 1
                 
         self._itimestep = 0
                         
@@ -448,25 +444,17 @@ class Micro_M2005_MA(MicrophysicsBase):
         # np.asfortranarray(np.zeros_like(self._tlat))
         self._qpfall = np.zeros_like(self._tlat)
                 
-        z = self._Grid.z_global
-        zi = self._Grid.z_edge_global
+        self._z = self._Grid.z_global
+        self._zi = self._Grid.z_edge_global
         
-        dx = self._Grid.dx[0]
-        dz = self._Grid.dx[2]
+        self._dx = self._Grid.dx[0]
+        self._dz = self._Grid.dx[2]
 
-        p0 = self._Ref.p0
-        rho0 = self._Ref.rho0
-        self._tabs0 = self._Ref.T0
-        rhow = self._Ref.rho0_edge
-        t0 = self._tabs0
-        self._qv0 = np.zeros_like(p0)
-        self._q0 = np.zeros_like(p0)
+        self._dostatis = False
+        self._do_chunked_energy_budgets = False
+        self._donudging_aerosol = False
         
-        dostatis = False
-        do_chunked_energy_budgets = False
-        donudging_aerosol = False
-        
-        Temp = np.empty(
+        self._Temp = np.empty(
             (nx, ny, nzm),
             dtype=np.double,
             order="F",
@@ -474,40 +462,57 @@ class Micro_M2005_MA(MicrophysicsBase):
         
         #Temp
         # print("SAM",rho0[0:16])
+        
+        self._time = self._TimeSteppingController.time
+        
+        return
+
+    def initialize(self):
+        self._p0 = self._Ref.p0
+        self._rho0 = self._Ref.rho0
+        self._tabs0 = self._Ref.T0
+        self._rhow = self._Ref.rho0_edge
+        self._t0 = self._tabs0 + self._z*parameters.G/parameters.CPD
+        self._qv0 = np.zeros_like(self._p0)
+        self._q0 = np.zeros_like(self._p0)
+        
         qv = self._ScalarState.get_field("qv")
         qc = self._ScalarState.get_field("qc")
-        self._qv0 = qv.mean(axis=0).mean(axis=1)
-        self._q0 = self._qv0 + qc.mean(axis=0).mean(axis=1)
+        self._qv0 = qv.mean(axis=1).mean(axis=0)[self._nhalo[2]:self._Grid.ngrid_local[2] - self._nhalo[2]]
+        self._q0 = self._qv0 + qc.mean(axis=1).mean(axis=0)[self._nhalo[2]:self._Grid.ngrid_local[2] - self._nhalo[2]]
         
-        time = self._TimeSteppingController.time        
-              
+        # T = self._DiagnosticState.get_field("T")
+        # self._Temp = np.asfortranarray(T[self._nhalo[0]:self._Grid.ngrid_local[0] - self._nhalo[0],self._nhalo[1]:self._Grid.ngrid_local[1] - self._nhalo[1],self._nhalo[2]:self._Grid.ngrid_local[2] - self._nhalo[2]])
+        
+        # print(self._qv0[0::10],self._q0[0::10],self._tabs0[0::10])
+                      
         self._m2005_ma_cffi.init(
-            nx,
-            ny,
-            nzm,
-            nmicrofields,
-            nx_gl, 
-            ny_gl,
-            my_rank, 
-            nsubdomains_x, 
-            nsubdomains_y, 
-            nrestart,
-            Temp,
+            self._sam_dims[0],
+            self._sam_dims[1],
+            self._sam_dims[2],
+            self._sam_dims[3],
+            self._nx_gl, 
+            self._ny_gl,
+            self._my_rank, 
+            self._nsubdomains_x, 
+            self._nsubdomains_y, 
+            self._nrestart,
+            self._Temp,
             self._microfield,
-            z, 
-            p0,
-            rho0, 
+            self._z, 
+            self._p0,
+            self._rho0, 
             self._tabs0, 
-            zi, 
-            t0, 
-            dx,
-            dz,
-            time,
+            self._zi, 
+            self._t0, 
+            self._dx,
+            self._dz,
+            self._time,
             self._q0, 
             self._qv0, 
-            dostatis, 
-            do_chunked_energy_budgets, 
-            donudging_aerosol,
+            self._dostatis, 
+            self._do_chunked_energy_budgets, 
+            self._donudging_aerosol,
             parameters.LV, 
             parameters.LS, 
             parameters.CPD, 
@@ -518,7 +523,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                         
         for i, vn in enumerate(self._micro_vars):
             dv = self._ScalarState.get_field(vn)
-            sam_to_our_order(nhalo, self._microfield[:, :, :, i], dv)
+            sam_to_our_order(self._nhalo, self._microfield[:, :, :, i], dv)
         
         self._Timers.add_timer("MicroM2005_MA_update")
         return
@@ -528,7 +533,7 @@ class Micro_M2005_MA(MicrophysicsBase):
         
         p0 = self._Ref.p0
         rho0 = self._Ref.rho0
-        # tabs0 = self._Ref.T0
+        tabs0 = self._Ref.T0
         rhow = self._Ref.rho0_edge
         # print("SAM_in_main",p0[0:15])
         
@@ -588,7 +593,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             time,
             p0,
             rho0,
-            self._tabs0,
+            tabs0,
             rhow,
             self._nrainy,
             self._nrmn,
@@ -890,8 +895,8 @@ class Micro_M2005_MA(MicrophysicsBase):
     def get_qcloud(self):
         return self._ScalarState.get_field("qc")
     
-#    def get_qi(self):
-#        return self._ScalarState.get_field("qi")
+    # def get_qi(self):
+    #     return self._ScalarState.get_field("qi")
 
     def get_reffc(self):
         return self._DiagnosticState.get_field("diag_effc_3d")
