@@ -7,10 +7,9 @@ from pinacles.Microphysics import (
 )
 from pinacles.externals.sam_m2005_ma_wrapper import m2005_ma_via_cffi
 from pinacles import UtilitiesParallel
-from pinacles.WRFUtil import (
-    sam_to_our_order
-)
+from pinacles.WRFUtil import sam_to_our_order
 from pinacles import parameters
+import pinacles.ThermodynamicsMoist_impl as MoistThermo
 from mpi4py import MPI
 import numba
 import numpy as np
@@ -472,19 +471,33 @@ class Micro_M2005_MA(MicrophysicsBase):
         self._rho0 = self._Ref.rho0
         self._tabs0 = self._Ref.T0
         self._rhow = self._Ref.rho0_edge
-        self._t0 = self._tabs0 + self._z*parameters.G/parameters.CPD
-        self._qv0 = np.zeros_like(self._p0)
-        self._q0 = np.zeros_like(self._p0)
+        # self._t0 = self._tabs0 + self._z*parameters.G/parameters.CPD
+        # self._qv0 = np.zeros_like(self._p0)
+        # self._q0 = np.zeros_like(self._p0)
         
         qv = self._ScalarState.get_field("qv")
         qc = self._ScalarState.get_field("qc")
         self._qv0 = qv.mean(axis=1).mean(axis=0)[self._nhalo[2]:self._Grid.ngrid_local[2] - self._nhalo[2]]
-        self._q0 = self._qv0 + qc.mean(axis=1).mean(axis=0)[self._nhalo[2]:self._Grid.ngrid_local[2] - self._nhalo[2]]
+        self._qc0 = qc.mean(axis=1).mean(axis=0)[self._nhalo[2]:self._Grid.ngrid_local[2] - self._nhalo[2]]
+        self._q0 = self._qv0 + self._qc0
+                
+        s = self._ScalarState.get_field("s")
+        self._t0 = s.mean(axis=1).mean(axis=0)[self._nhalo[2]:self._Grid.ngrid_local[2] - self._nhalo[2]]
+        
+        # self._tabs0 = np.zeros_like(self._p0)
+        # for k in range(self._sam_dims[2]):
+        #     # self._tabs0[k] = MoistThermo.T(self._z[k],self._t0[k],self._qc0[k],0.0)
+        #     z = self._z[k]
+        #     if z < 795.0:
+        #         self._tabs0[k] = 288.3
+        #     else:
+        #         self._tabs0[k] = 295.0 + (z - 795.0) ** (1.0 / 3.0)
+        #     # print(k,self._tabs0[k])
         
         # T = self._DiagnosticState.get_field("T")
         # self._Temp = np.asfortranarray(T[self._nhalo[0]:self._Grid.ngrid_local[0] - self._nhalo[0],self._nhalo[1]:self._Grid.ngrid_local[1] - self._nhalo[1],self._nhalo[2]:self._Grid.ngrid_local[2] - self._nhalo[2]])
         
-        # print(self._qv0[0::10],self._q0[0::10],self._tabs0[0::10])
+        # print(self._qv0[0::10],self._qc0[0::10],self._tabs0[0::10])
                       
         self._m2005_ma_cffi.init(
             self._sam_dims[0],
@@ -530,10 +543,10 @@ class Micro_M2005_MA(MicrophysicsBase):
 
     def update(self):
         self._Timers.start_timer("MicroM2005_MA_update")
-        
+                
         p0 = self._Ref.p0
         rho0 = self._Ref.rho0
-        tabs0 = self._Ref.T0
+        # tabs0 = self._Ref.T0
         rhow = self._Ref.rho0_edge
         # print("SAM_in_main",p0[0:15])
         
@@ -569,14 +582,13 @@ class Micro_M2005_MA(MicrophysicsBase):
         ncycle = 1
         nsaveMSE = 1
         nstat = 1 
-        nstatis = 1 
-        # nz = self._sam_dims[2] + 1
-        # nstep = self._TimeSteppingController._n_timesteps
-        
+        nstatis = 1         
         
         # print("Before update",np.amin(s_sam),np.amin(self._s),np.amin(self._microfield))
         # print("SAM Before calling main")
-              # self._tlat[0],th_3d[0,0,0])
+        #       # self._tlat[0],th_3d[0,0,0])
+        # if MPI.COMM_WORLD.Get_rank() == 0:
+        #     print("Pin",dt, parameters.LV,parameters.CPD)
         
         self._m2005_ma_cffi.update(
             self._sam_dims[0],
@@ -593,7 +605,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             time,
             p0,
             rho0,
-            tabs0,
+            self._tabs0,
             rhow,
             self._nrainy,
             self._nrmn,
@@ -624,8 +636,11 @@ class Micro_M2005_MA(MicrophysicsBase):
         # s[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]] = s_sam[:, :, :]
         # T[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]] = th_sam[:, :, :]
         
-        sam_to_our_order(nhalo, th_sam, T)
+        # sam_to_our_order(nhalo, th_sam, T)
         sam_to_our_order(nhalo, s_sam, s)
+        
+        sam_to_our_order(nhalo, qtot_sed_sam, qtot_sed)
+        sam_to_our_order(nhalo, qice_sed_sam, qice_sed)
         # print("After update",np.amin(s_sam),np.amin(self._s),np.amin(self._microfield))               
 
         # Compute and apply sedimentation sources of static energy
@@ -723,7 +738,8 @@ class Micro_M2005_MA(MicrophysicsBase):
 
         qc = self._ScalarState.get_field("qc")
         qv = self._ScalarState.get_field("qv")
-        qr = self._ScalarState.get_field("qr")
+        # qr = self._ScalarState.get_field("qr")
+        qr = np.zeros_like(qc)
 
         # First compute liqud water path
         lwp = water_path(n_halo, dz, npts, rho0, qc)
@@ -890,7 +906,7 @@ class Micro_M2005_MA(MicrophysicsBase):
         return
 
     def get_qc(self):
-        return self._ScalarState.get_field("qc") + self._ScalarState.get_field("qr")
+        return self._ScalarState.get_field("qc") #+ self._ScalarState.get_field("qr")
 
     def get_qcloud(self):
         return self._ScalarState.get_field("qc")

@@ -68,7 +68,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         ThermodynamicsMoist_impl.eos(
             z, p0, alpha0, s, qv, ql, qi, T, tref, alpha, buoyancy
         )
-
+        
         # Compute the buoyancy frequency
         ThermodynamicsMoist_impl.compute_moist_bvf(
             dz, n_halo, p0, rho0, T, qv, ql, qi, bvf
