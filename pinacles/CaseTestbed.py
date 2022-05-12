@@ -7,6 +7,7 @@ from scipy import interpolate
 from pinacles import UtilitiesParallel
 import pinacles.ThermodynamicsMoist_impl as MoistThermo
 import sys
+from pinacles.WRF_Micro_Kessler import compute_qvs
 
 
 def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
@@ -270,11 +271,20 @@ class SurfaceTestbed(Surface.SurfaceBase):
         self._TimeSteppingController = TimeSteppingController
 
         file = namelist["testbed"]["input_filepath"]
+        try:
+            self._surface_option = namelist["tesbed"]["surface_option"]
+        except:
+            self._surface_option = 'fixed_flux'
+            UtilitiesParallel.print_root('testbed surface option not specified, defaulting to fixed fluxes')
+        
+        assert self._surface_option in ['fixed_flux', 'MO'], "unrecognized surface option"
+        
         data = nc.Dataset(file, "r")
         surface_data = data.groups["surface"]
         self._forcing_times = surface_data.variables["times"][:]
         self._forcing_shf = surface_data.variables["sensible_heat_flux"][:]
         self._forcing_lhf = surface_data.variables["latent_heat_flux"][:]
+
 
         """different testbed cases have different availability of surface temperature information. Here trying to
         distinguish when a skin temperature value is directly available, in contrast to backing a temperature out from
@@ -308,14 +318,34 @@ class SurfaceTestbed(Surface.SurfaceBase):
         self._taux_sfc = np.zeros_like(self._windspeed_sfc)
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
         self._bflx_sfc = np.zeros_like(self._windspeed_sfc)
-        self._ustar_sfc = np.zeros_like(self._windspeed_sfc)
+        self._ustar = np.zeros_like(self._windspeed_sfc)
+        self._qvflx = np.zeros_like(self._windspeed_sfc)
+        self._tflx = np.zeros_like(self._windspeed_sfc)
+        self._lhf = np.zeros_like(self._windspeed_sfc)
+        self._shf = np.zeros_like(self._windspeed_sfc)
+        
+        self.T_surface = np.zeros_like(self._windspeed_sfc)
+        if self._surface_option == "MO":
+            self._Ri = np.zeros_like(self._windspeed_sfc)
+            self._N = np.zeros_like(self._windspeed_sfc)
+            self._psi_m = np.zeros_like(self._windspeed_sfc)
+            self._psi_h = np.zeros_like(self._windspeed_sfc)
+
+            self._cm = np.zeros_like(self._windspeed_sfc)
+            self._ch = np.zeros_like(self._windspeed_sfc)
+            self._cq = np.zeros_like(self._windspeed_sfc)
+            self._z0 = np.zeros_like(self._windspeed_sfc)
+       
+            self._u10 = np.zeros_like(self._windspeed_sfc)
+            self._v10 = np.zeros_like(self._windspeed_sfc)
+
 
         # Use these to store the fluxes for output
-        self._shf = self._forcing_shf[0]
-        self._lhf = self._forcing_lhf[0]
-        self._ustar = self._forcing_ustar[0]
+        # self._shf = self._forcing_shf[0]
+        # self._lhf = self._forcing_lhf[0]
+        # self._ustar = self._forcing_ustar[0]
 
-        self._z0 = 0.0
+
 
         self._Timers.add_timer("SurfaceTestbed_update")
         return
@@ -337,15 +367,27 @@ class SurfaceTestbed(Surface.SurfaceBase):
         n_halo = self._Grid.n_halo
         npts = self._Grid.n[0] * self._Grid.n[1]
 
+        mean_shf = np.sum(self._shf) / npts
+        mean_shf = UtilitiesParallel.ScalarAllReduce(mean_shf)
+
+        mean_lhf = np.sum(self._lhf) / npts
+        mean_lhf = UtilitiesParallel.ScalarAllReduce(mean_lhf)
+
+        mean_ustar = np.sum(self._ustar) / npts
+        mean_ustar = UtilitiesParallel.ScalarAllReduce(mean_ustar)
+
+        mean_z0 = np.sum(self._z0) / npts
+        mean_z0 = UtilitiesParallel.ScalarAllReduce(mean_z0)
+
         MPI.COMM_WORLD.barrier()
         if my_rank == 0:
             timeseries_grp = rt_grp["timeseries"]
 
-            timeseries_grp["shf"][-1] = self._shf
-            timeseries_grp["lhf"][-1] = self._lhf
+            timeseries_grp["shf"][-1] = mean_shf
+            timeseries_grp["lhf"][-1] = mean_lhf
 
-            timeseries_grp["ustar"][-1] = self._ustar
-            timeseries_grp["z0"][-1] = self._z0
+            timeseries_grp["ustar"][-1] = mean_ustar
+            timeseries_grp["z0"][-1] = mean_z0
 
         return
 
@@ -371,7 +413,7 @@ class SurfaceTestbed(Surface.SurfaceBase):
             fill_value="extrapolate",
             assume_sorted=True,
         )(current_time)
-        self.T_surface = interpolate.interp1d(
+        T_surface_interp = interpolate.interp1d(
             self._forcing_times,
             self._forcing_skintemp,
             fill_value="extrapolate",
@@ -380,13 +422,25 @@ class SurfaceTestbed(Surface.SurfaceBase):
         # Get grid & reference profile info
         nh = self._Grid.n_halo
         dxi2 = self._Grid.dxi[2]
+        z_edge = self._Grid.z_edge_global
+
         alpha0 = self._Ref.alpha0
         alpha0_edge = self._Ref.alpha0_edge
+        rho0_edge = self._Ref.rho0_edge
+
         exner_edge = self._Ref.exner_edge
+        p0_edge = self._Ref.p0_edge
+        exner = self._Ref.exner
+
 
         # Get fields
         u = self._VelocityState.get_field("u")
         v = self._VelocityState.get_field("v")
+        qv = self._ScalarState.get_field("qv")
+        s = self._ScalarState.get_field("s")
+        T = self._DiagnosticState.get_field("T")
+
+
 
         # Get tendencies
         ut = self._VelocityState.get_tend("u")
@@ -397,65 +451,93 @@ class SurfaceTestbed(Surface.SurfaceBase):
         # Get surface slices
         usfc = u[:, :, nh[2]]
         vsfc = v[:, :, nh[2]]
+        Ssfc = s[:, :, nh[2]]
+        qvsfc = qv[:, :, nh[2]]
+        Tsfc = T[:, :, nh[2]]
+
+        self.T_surface[:,:] = T_surface_interp
+
 
         # Compute the surface stress & apply it
         Surface_impl.compute_windspeed_sfc(
             usfc, vsfc, self._Ref.u0, self._Ref.v0, self.gustiness, self._windspeed_sfc
         )
-        # OPTION 1-- u* from the input file
-        # -----------------------------------------------------------
-        self._ustar_sfc[:, :] = ustar_interp
-        self._ustar = ustar_interp
+        if self._surface_option == "fixed_flux":
+            self._ustar[:, :] = ustar_interp
+            self._shf[:,:] = shf_interp
+            self._lhf[:,:] = lhf_interp
 
-        # --------------------------------------------------------
-        # OPTION 2-- z0 from windspeed (this is rough, should be improved), then get u*
-        # Using the mean windspeed rather than pointwise, should also be interpolated to 10m
-        # Expression from ARPS based on anderson 1993, we also used this in pycles
-        # wspd_local = np.sum(self._windspeed_sfc[nh[0]:-nh[0], nh[1]:-nh[1]])/(self._Grid.n[0] * self._Grid.n[1])
-        # wspd_mean = UtilitiesParallel.ScalarAllReduce(wspd_local)
-        # self._z0 =self._compute_z0(self._Grid.dx[2]/2.0,wspd_mean)
-        # self._bflx_sfc[:,:] = (parameters.G * self._Ref.alpha0[nh[2]] * parameters.ICPD/self.T_surface
-        #                         * (shf_interp + (parameters.EPSVI -1.0) * parameters.CPD * self.T_surface * lhf_interp / parameters.LV))
-        # Surface_impl.compute_ustar_sfc(self._windspeed_sfc, self._bflx_sfc, self._z0, self._Grid.dx[2]/2.0, self._ustar_sfc)
-        # ustar_local = np.sum(self._ustar_sfc[nh[0]:-nh[0], nh[1]:-nh[1]])/(self._Grid.n[0] * self._Grid.n[1])
-        # self._ustar = UtilitiesParallel.ScalarAllReduce(ustar_local)
+            self._tflx[:,:] = shf_interp * alpha0_edge[nh[2] - 1] / parameters.CPD
+            self._qvflx[:,:] = lhf_interp * alpha0_edge[nh[2] - 1] / parameters.LV
+        
+            Surface_impl.tau_given_ustar(
+                self._ustar,
+                usfc,
+                vsfc,
+                self._Ref.u0,
+                self._Ref.v0,
+                self._windspeed_sfc,
+                self._taux_sfc,
+                self._tauy_sfc,
+            )
 
-        Surface_impl.tau_given_ustar(
-            self._ustar_sfc,
-            usfc,
-            vsfc,
-            self._Ref.u0,
-            self._Ref.v0,
-            self._windspeed_sfc,
-            self._taux_sfc,
-            self._tauy_sfc,
-        )
+         
+        elif self._surface_option == "MO":
+            Surface_impl.compute_surface_layer_Ri(
+                nh,
+                z_edge[nh[2]] / 2.0,
+                self.T_surface,
+                exner_edge[nh[2] - 1],
+                p0_edge[nh[2] - 1],
+                qvsfc,
+                Tsfc,
+                exner[nh[2]],
+                qvsfc,
+                self._windspeed_sfc,
+                self._N,
+                self._Ri,
+            )
+            self._qv0 = compute_qvs(self.T_surface, self._Ref.Psfc)
+
+            self._z0[self._z0 < 0.0002] = 0.0002
+
+            Surface_impl.compute_exchange_coefficients_charnock(
+                self._Ri,
+                z_edge[nh[2]] / 2.0,
+                self._z0,
+                self._windspeed_sfc,
+                self._cm,
+                self._ch,
+                self._psi_m,
+                self._psi_h
+            )
+            self._cq[:, :] = self._ch[:, :]
+
+            self._tflx = -self._ch * self._windspeed_sfc * (Ssfc - self._TSKIN)
+            self._qvflx = -self._cq * self._windspeed_sfc * (qvsfc - self._qv0)
+
+            self._shf[:,:] = self._tflx[:,:] * rho0_edge[nh[2] - 1] * parameters.CPD
+            self._lhf[:,:] = self._qvflx[:,:]* rho0_edge[nh[2] - 1] * parameters.LV
+            self._ustar = np.sqrt(self._cm**2.0 * self._windspeed_sfc**2.0)
+
+            self._taux_sfc = -self._cm * self._windspeed_sfc * (usfc + self._Ref.u0)
+            self._tauy_sfc = -self._cm * self._windspeed_sfc * (vsfc + self._Ref.v0)
+
+
         Surface_impl.surface_flux_application(
-            dxi2, nh, alpha0, alpha0_edge, self._taux_sfc, ut
+            dxi2, nh, alpha0, alpha0_edge,  self._taux_sfc, ut
         )
         Surface_impl.surface_flux_application(
             dxi2, nh, alpha0, alpha0_edge, self._tauy_sfc, vt
         )
-
-        # Apply the heat fluxes
-        s_flx_sf = (
-            np.zeros_like(self._taux_sfc)
-            + shf_interp * alpha0_edge[nh[2] - 1] / parameters.CPD
-        )
-        qv_flx_sf = (
-            np.zeros_like(self._taux_sfc)
-            + lhf_interp * alpha0_edge[nh[2] - 1] / parameters.LV
+        Surface_impl.surface_flux_application(
+            dxi2, nh, alpha0, alpha0_edge, self._tflx, st
         )
         Surface_impl.surface_flux_application(
-            dxi2, nh, alpha0, alpha0_edge, s_flx_sf, st
-        )
-        Surface_impl.surface_flux_application(
-            dxi2, nh, alpha0, alpha0_edge, qv_flx_sf, qvt
+            dxi2, nh, alpha0, alpha0_edge, self._qvflx, qvt
         )
 
-        # Store the surface fluxes for output
-        self._shf = shf_interp
-        self._lhf = lhf_interp
+
         return
 
     def _compute_z0(self, z1, wspd):

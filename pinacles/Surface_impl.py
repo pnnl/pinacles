@@ -1,6 +1,8 @@
 import numpy as np
 import numba
 from pinacles import Surface_impl
+from pinacles import parameters
+from pinacles.WRF_Micro_Kessler import compute_qvs
 
 GAMMA_M = 15.0
 GAMMA_H = 9.0
@@ -201,7 +203,125 @@ def momentum_bulk_aero(windspeed_sfc, cm, u, v, u0, v0, taux, tauy):
             windspeed_at_u = 0.5 * (windspeed_sfc[i, j] + windspeed_sfc[i + 1, j])
             windspeed_at_v = 0.5 * (windspeed_sfc[i, j] + windspeed_sfc[i, j + 1])
 
-            taux[i, j] = -cm * windspeed_at_u * (u[i, j] + u0)
-            tauy[i, j] = -cm * windspeed_at_v * (v[i, j] + v0)
+            taux[i, j] = -cm[i, j] * windspeed_at_u * (u[i, j] + u0)
+            tauy[i, j] = -cm[i, j] * windspeed_at_v * (v[i, j] + v0)
+
+    return
+
+
+@numba.njit
+def exchange_coefficients_byun(Ri, zb, z0):  # , cm, ch):
+    logz = np.log(zb / z0)
+    zfactor = zb / (zb - z0) * logz
+    sb = Ri / PR0
+
+    if Ri <= 0.0:  # Unstable or neutral case
+        qb = 1.0 / 9.0 * (1.0 / (GAMMA_M * GAMMA_M) + 3.0 * GAMMA_H / GAMMA_M * sb * sb)
+        pb = (
+            1.0
+            / 54.0
+            * (
+                -2.0 / (GAMMA_M * GAMMA_M * GAMMA_M)
+                + 9.0 / GAMMA_M * (-GAMMA_H / GAMMA_M + 3.0) * sb * sb
+            )
+        )
+        crit = qb * qb * qb - pb * pb
+
+        if crit >= 0.0:
+            angle = np.arccos(pb / np.sqrt(qb * qb * qb))
+            zeta = zfactor * (
+                -2.0 * np.sqrt(qb) * np.cos(angle / 3.0) + 1.0 / (3.0 * GAMMA_M)
+            )
+        else:
+            tb = (np.sqrt(-crit) + np.abs(pb)) ** (1.0 / 3.0)
+            zeta = zfactor * (1.0 / (3.0 * GAMMA_M) - (tb + qb / tb))
+
+        lmo = zb / zeta
+        zeta0 = z0 / lmo
+        psi_m = psi_m_unstable(zeta, zeta0)
+        psi_h = psi_h_unstable(zeta, zeta0)
+
+    else:  # Stable conditions
+        zeta = (
+            zfactor
+            / (2.0 * BETA_H * (BETA_M * Ri - 1.0))
+            * ((1.0 - 2.0 * BETA_H * Ri) - np.sqrt(1.0 + 4.0 * (BETA_H - BETA_M) * sb))
+        )
+        lmo = zb / zeta
+        zeta0 = z0 / lmo
+        psi_m = psi_m_stable(zeta, zeta0)
+        psi_h = psi_h_stable(zeta, zeta0)
+
+    cu = VKB / (logz - psi_m)
+    cth = VKB / (logz - psi_h) / PR0
+    cm = cu * cu
+    ch = cu * cth
+    return cm, ch, psi_m, psi_h
+
+
+@numba.njit
+def exchange_coefficients_charnock(Ri, zb, z0, windspeed):
+
+    for i in range(10):
+        cm, ch, psi_m, psi_h= exchange_coefficients_byun(Ri, zb, z0)
+        u_star = np.sqrt(cm) * windspeed
+        z0 = 0.015 * u_star * u_star / parameters.G
+
+    return cm, ch, psi_m, psi_h
+
+
+@numba.njit()
+def compute_exchange_coefficients(Ri, zb, z0, cm, ch, psi_m, psi_h):
+    shape = cm.shape
+    for i in range(1, shape[0]):
+        for j in range(1, shape[1]):
+            cm[i, j], ch[i, j], psi_m[i,j], psi_h[i,j] = exchange_coefficients_byun(
+                Ri[i, j], zb, z0[i, j]
+            )  # , cm[i,j], ch[i,j])
+    return
+
+
+@numba.njit()
+def compute_exchange_coefficients_charnock(Ri, zb, z0, windspeed, cm, ch, psi_m, psi_h):
+    shape = cm.shape
+    for i in range(1, shape[0]):
+        for j in range(1, shape[1]):
+            cm[i, j], ch[i, j], psi_m[i,j], psi_h[i,j]= exchange_coefficients_charnock(
+                Ri[i, j], zb, z0[i, j], windspeed[i, j]
+            )  # , cm[i,j], ch[i,j])
+    return
+
+
+@numba.njit()
+def compute_surface_layer_Ri(
+    nh,
+    z_b,
+    T_b,
+    exner_b,
+    p_b,
+    qv_b,
+    T_surface,
+    exner_surface,
+    qv_surface,
+    windspeed,
+    N2,
+    Ri,
+):
+    # Compute the surface layer richardson number
+    shape = Ri.shape
+    for i in range(nh[0], shape[0] - nh[0]):
+        for j in range(nh[1], shape[1] - nh[1]):
+            thetav_b = T_b[i, j] / exner_b * (1.0 + 0.61 * qv_b[i, j])
+            thetav_surface = (
+                T_surface[i, j]
+                / exner_surface
+                * (1.0 + 0.61 * compute_qvs(T_surface[i, j], p_b))
+            )
+
+            # Compute the surface BV frequency squared
+            N2[i, j] = parameters.G / thetav_surface * (thetav_b - thetav_surface) / z_b
+
+            # Compute the local richardson number
+            Ri[i, j] = N2[i, j] * z_b * z_b / (windspeed[i, j] * windspeed[i, j])
 
     return

@@ -374,7 +374,13 @@ class RRTMG:
             plev = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")  # hPA !!!
             tlay = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             tlev = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")
-            tsfc = np.ones((_ncol), dtype=np.double, order="F") * self._Surf.T_surface
+            if len(np.shape(self._Surf.T_surface)) == 0:
+                tsfc =  np.ones((_ncol), dtype=np.double, order="F") * self._Surf.T_surface
+            else:
+                tsfc = np.ravel(
+                    self._Surf.T_surface[3:-3, 3:-3]
+                )  
+
             h2ovmr = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             o3vmr = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             co2vmr = np.ones((_ncol, _nlay), dtype=np.double, order="F") * self._vmr_co2
