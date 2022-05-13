@@ -263,7 +263,7 @@ def exchange_coefficients_byun(Ri, zb, z0):  # , cm, ch):
 def exchange_coefficients_charnock(Ri, zb, z0, windspeed):
 
     for i in range(10):
-        cm, ch, psi_m, psi_h= exchange_coefficients_byun(Ri, zb, z0)
+        cm, ch, psi_m, psi_h = exchange_coefficients_byun(Ri, zb, z0)
         u_star = np.sqrt(cm) * windspeed
         z0 = 0.015 * u_star * u_star / parameters.G
 
@@ -275,7 +275,7 @@ def compute_exchange_coefficients(Ri, zb, z0, cm, ch, psi_m, psi_h):
     shape = cm.shape
     for i in range(1, shape[0]):
         for j in range(1, shape[1]):
-            cm[i, j], ch[i, j], psi_m[i,j], psi_h[i,j] = exchange_coefficients_byun(
+            cm[i, j], ch[i, j], psi_m[i, j], psi_h[i, j] = exchange_coefficients_byun(
                 Ri[i, j], zb, z0[i, j]
             )  # , cm[i,j], ch[i,j])
     return
@@ -286,7 +286,12 @@ def compute_exchange_coefficients_charnock(Ri, zb, z0, windspeed, cm, ch, psi_m,
     shape = cm.shape
     for i in range(1, shape[0]):
         for j in range(1, shape[1]):
-            cm[i, j], ch[i, j], psi_m[i,j], psi_h[i,j]= exchange_coefficients_charnock(
+            (
+                cm[i, j],
+                ch[i, j],
+                psi_m[i, j],
+                psi_h[i, j],
+            ) = exchange_coefficients_charnock(
                 Ri[i, j], zb, z0[i, j], windspeed[i, j]
             )  # , cm[i,j], ch[i,j])
     return

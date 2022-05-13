@@ -358,7 +358,8 @@ class SurfaceTestbed(Surface.SurfaceBase):
         timeseries_grp.createVariable("shf", np.double, dimensions=("time",))
         timeseries_grp.createVariable("lhf", np.double, dimensions=("time",))
         timeseries_grp.createVariable("ustar", np.double, dimensions=("time",))
-        timeseries_grp.createVariable("z0", np.double, dimensions=("time",))
+        if self._surface_option == 'MO':
+            timeseries_grp.createVariable("z0", np.double, dimensions=("time",))
         return
 
     def io_update(self, rt_grp):
@@ -375,9 +376,9 @@ class SurfaceTestbed(Surface.SurfaceBase):
 
         mean_ustar = np.sum(self._ustar) / npts
         mean_ustar = UtilitiesParallel.ScalarAllReduce(mean_ustar)
-
-        mean_z0 = np.sum(self._z0) / npts
-        mean_z0 = UtilitiesParallel.ScalarAllReduce(mean_z0)
+        if self._surface_option == 'MO':
+            mean_z0 = np.sum(self._z0) / npts
+            mean_z0 = UtilitiesParallel.ScalarAllReduce(mean_z0)
 
         MPI.COMM_WORLD.barrier()
         if my_rank == 0:
@@ -387,7 +388,8 @@ class SurfaceTestbed(Surface.SurfaceBase):
             timeseries_grp["lhf"][-1] = mean_lhf
 
             timeseries_grp["ustar"][-1] = mean_ustar
-            timeseries_grp["z0"][-1] = mean_z0
+            if self._surface_option == 'MO':
+                timeseries_grp["z0"][-1] = mean_z0
 
         return
 
@@ -726,7 +728,7 @@ class ForcingTestbed(Forcing.ForcingBase):
                 fill_value="extrapolate",
                 assume_sorted=True,
             )(current_time)
-            UtilitiesParallel.print_root('Current lat : ', current_lat)
+            # UtilitiesParallel.print_root('Current lat : ' + str( current_lat))
             self._f = 2.0 * parameters.OMEGA * np.sin(current_lat * np.pi / 180.0)
 
         # interpolate in time
