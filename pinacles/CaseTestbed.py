@@ -272,11 +272,11 @@ class SurfaceTestbed(Surface.SurfaceBase):
 
         file = namelist["testbed"]["input_filepath"]
         try:
-            self._surface_option = namelist["tesbed"]["surface_option"]
+            self._surface_option = namelist["testbed"]["surface_option"]
         except:
             self._surface_option = 'fixed_flux'
             UtilitiesParallel.print_root('testbed surface option not specified, defaulting to fixed fluxes')
-        
+        print(self._surface_option)
         assert self._surface_option in ['fixed_flux', 'MO'], "unrecognized surface option"
         
         data = nc.Dataset(file, "r")
@@ -515,7 +515,7 @@ class SurfaceTestbed(Surface.SurfaceBase):
             )
             self._cq[:, :] = self._ch[:, :]
 
-            self._tflx = -self._ch * self._windspeed_sfc * (Ssfc - self._TSKIN)
+            self._tflx = -self._ch * self._windspeed_sfc * (Ssfc - self.T_surface)
             self._qvflx = -self._cq * self._windspeed_sfc * (qvsfc - self._qv0)
 
             self._shf[:,:] = self._tflx[:,:] * rho0_edge[nh[2] - 1] * parameters.CPD
