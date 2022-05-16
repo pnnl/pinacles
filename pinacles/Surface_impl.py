@@ -9,7 +9,6 @@ PR0 = 0.74
 BETA_M = 4.7
 BETA_H = BETA_M / PR0
 
-
 @numba.njit
 def psi_m_unstable(zeta, zeta0):
     x = (1.0 - GAMMA_M * zeta) ** 0.25
@@ -204,4 +203,14 @@ def momentum_bulk_aero(windspeed_sfc, cm, u, v, u0, v0, taux, tauy):
             taux[i, j] = -cm * windspeed_at_u * (u[i, j] + u0)
             tauy[i, j] = -cm * windspeed_at_v * (v[i, j] + v0)
 
+    return
+
+
+@numba.njit()
+def compute_aerosol_flux(u10arr, sflux_coef, sflux_r, sigma, whitecap_coef, rho_aerosol, naflx, qaflx):
+    shape = u10arr.shape
+    for i in range(1, shape[0]):
+        for j in range(1, shape[1]):
+            naflx[i,j] = sflux_coef*whitecap_coef*(u10arr[i,j])**3.41   #/m2/s (Berner 2013 eq(5))
+            qaflx[i,j] = 1.3333 * np.pi * (sflux_r*1.e-6)**3 * rho_aerosol * naflx[i,j] * np.exp(4.5 * np.log(sigma)**2) # units are kg/m2/s
     return

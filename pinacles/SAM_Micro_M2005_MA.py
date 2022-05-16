@@ -497,7 +497,13 @@ class Micro_M2005_MA(MicrophysicsBase):
         # T = self._DiagnosticState.get_field("T")
         # self._Temp = np.asfortranarray(T[self._nhalo[0]:self._Grid.ngrid_local[0] - self._nhalo[0],self._nhalo[1]:self._Grid.ngrid_local[1] - self._nhalo[1],self._nhalo[2]:self._Grid.ngrid_local[2] - self._nhalo[2]])
         
-        # print(self._qv0[0::10],self._qc0[0::10],self._tabs0[0::10])
+        # print(self._qv0[0::10],self._qc0[0::10],self._tabs0[0::10])               
+        for i, vn in enumerate(self._micro_vars):
+            # print(vn)
+            dv = self._ScalarState.get_field(vn)
+            self._microfield[:,:,:,i] = np.asfortranarray(dv[self._nhalo[0]:self._Grid.ngrid_local[0] - self._nhalo[0],
+                                                             self._nhalo[1]:self._Grid.ngrid_local[1] - self._nhalo[1],
+                                                             self._nhalo[2]:self._Grid.ngrid_local[2] - self._nhalo[2]])
                       
         self._m2005_ma_cffi.init(
             self._sam_dims[0],
@@ -563,17 +569,31 @@ class Micro_M2005_MA(MicrophysicsBase):
         
         nhalo = self._Grid.n_halo
         
-        th_sam = np.asfortranarray(T[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
-        s_sam = np.asfortranarray(s[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
-        w_sam = np.asfortranarray(w[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2] - 1:self._Grid.ngrid_local[2] - nhalo[2]])
+        th_sam = np.asfortranarray(T[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],
+                                     nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],
+                                     nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
         
-        qtot_sed_sam = np.asfortranarray(qtot_sed[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
-        qice_sed_sam = np.asfortranarray(qice_sed[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
+        s_sam = np.asfortranarray(s[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],
+                                    nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],
+                                    nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
+        
+        w_sam = np.asfortranarray(w[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],
+                                    nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],
+                                    nhalo[2] - 1:self._Grid.ngrid_local[2] - nhalo[2]])
+        
+        qtot_sed_sam = np.asfortranarray(qtot_sed[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],
+                                                  nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],
+                                                  nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
+        qice_sed_sam = np.asfortranarray(qice_sed[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],
+                                                  nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],
+                                                  nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
                         
         for i, vn in enumerate(self._micro_vars):
             # print(vn)
             dv = self._ScalarState.get_field(vn)
-            self._microfield[:,:,:,i] = np.asfortranarray(dv[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
+            self._microfield[:,:,:,i] = np.asfortranarray(dv[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],
+                                                             nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],
+                                                             nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
                         
         dt = self._TimeSteppingController.dt
         time = self._TimeSteppingController.time
@@ -738,8 +758,7 @@ class Micro_M2005_MA(MicrophysicsBase):
 
         qc = self._ScalarState.get_field("qc")
         qv = self._ScalarState.get_field("qv")
-        # qr = self._ScalarState.get_field("qr")
-        qr = np.zeros_like(qc)
+        qr = self._ScalarState.get_field("qr")
 
         # First compute liqud water path
         lwp = water_path(n_halo, dz, npts, rho0, qc)

@@ -155,6 +155,16 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
         self._ustar = 0.25  # m/s
         self._theta_surface = 290.0  # K
         self.T_surface = 289.76
+        
+        
+        self._SFLUX_NACC_COEF = 4.37e7    # coefficient of surface accumulation number flux
+        self._SFLUX_RACC = 0.075          # median radius of surface accum. flux  (micron)
+        self._SFLUX_NAIT_COEF = 4.37e7    # coefficient of surface aitken number flux
+        self._SFLUX_RAIT = 0.015          # median radius of aitken flux
+        self._WHITECAP_COEF = 3.84e-6     # for surface salt aerosol flux,  from eq (5) for whitecap coverage in Clarke etal (2006)
+        self._RHO_AEROSOL = 2160.         # kg/m^3 aerosol density set for NaCl
+        self._SIGMA_ACCUM = 1.7           # sig=geom standard deviation of aer size distn.
+        self._SIGMA_AITKEN = 1.2          # sig=geom standard deviation of aer size distn.
 
         nl = self._Grid.ngrid_local
 
@@ -163,6 +173,8 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
         # self._bflx_sfc = np.zeros_like(self._windspeed_sfc) + self._buoyancy_flux
         self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
+        self._naflux_sfc = np.zeros_like(self._windspeed_sfc)
+        self._qaflux_sfc = np.zeros_like(self._windspeed_sfc)
 
         self._Timers.add_timer("SurfaceDycoms_update")
 
@@ -315,6 +327,49 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
         )
         Surface_impl.iles_surface_flux_application(
             1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, qv_flx_sf, qvt
+        )
+                
+        nadt  = self._ScalarState.get_tend("qnad")
+        qadt  = self._ScalarState.get_tend("qad")
+        nad2t = self._ScalarState.get_tend("qnad2")
+        qad2t = self._ScalarState.get_tend("qad2")
+        
+        Surface_impl.compute_aerosol_flux(
+            self._windspeed_sfc, 
+            self._SFLUX_NACC_COEF, 
+            self._SFLUX_RACC, 
+            self._SIGMA_ACCUM, 
+            self._WHITECAP_COEF, 
+            self._RHO_AEROSOL, 
+            self._naflux_sfc, 
+            self._qaflux_sfc,
+        )
+        
+        Surface_impl.iles_surface_flux_application(
+            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._naflux_sfc, nadt
+        )
+        
+        Surface_impl.iles_surface_flux_application(
+            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._qaflux_sfc, qadt
+            
+        )
+        Surface_impl.compute_aerosol_flux(
+            self._windspeed_sfc, 
+            self._SFLUX_NAIT_COEF, 
+            self._SFLUX_RAIT, 
+            self._SIGMA_AITKEN, 
+            self._WHITECAP_COEF, 
+            self._RHO_AEROSOL,
+            self._naflux_sfc, 
+            self._qaflux_sfc,
+        )
+        
+        Surface_impl.iles_surface_flux_application(
+            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._naflux_sfc, nad2t
+        )
+        
+        Surface_impl.iles_surface_flux_application(
+            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._naflux_sfc, qad2t
         )
 
         self._Timers.end_timer("SurfaceDycoms_update")
