@@ -213,4 +213,20 @@ def compute_aerosol_flux(u10arr, sflux_coef, sflux_r, sigma, whitecap_coef, rho_
         for j in range(1, shape[1]):
             naflx[i,j] = sflux_coef*whitecap_coef*(u10arr[i,j])**3.41   #/m2/s (Berner 2013 eq(5))
             qaflx[i,j] = 1.3333 * np.pi * (sflux_r*1.e-6)**3 * rho_aerosol * naflx[i,j] * np.exp(4.5 * np.log(sigma)**2) # units are kg/m2/s
+            
+    return
+
+
+@numba.njit()
+def compute_u10_arr(u, v, u0, v0, fac1, fac2, gustiness, u10arr):
+
+    shape = u10arr.shape
+
+    for i in range(1, shape[0]):
+        for j in range(1, shape[1]):
+            ui = 0.5 * fac1 * (u[i - 1, j,1] + u[i, j,1]) + 0.5 * fac2 * (u[i - 1, j,2] + u[i, j,2]) + u0
+            vi = 0.5 * fac1 * (v[i, j - 1,1] + v[i, j,1]) + 0.5 * fac2 * (v[i, j - 1,2] + v[i, j,2]) + v0
+            spd = np.sqrt(ui * ui + vi * vi)
+            u10arr[i, j] = max(spd, gustiness)
+
     return

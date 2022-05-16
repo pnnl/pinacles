@@ -167,6 +167,14 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
         self._SIGMA_AITKEN = 1.2          # sig=geom standard deviation of aer size distn.
 
         nl = self._Grid.ngrid_local
+        
+        zl = self._Grid.z_local
+        for k in range(nl[2]):
+            if zl[k] > 10.0:
+                break
+        self.ind10 = k-1
+        self.fac1 = (zl[k] - 10.0) / (zl[k] - zl[k-1])
+        self.fac2 = (10.0 - zl[k-1]) / (zl[k] - zl[k-1])
 
         self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
         self._taux_sfc = np.zeros_like(self._windspeed_sfc)
@@ -175,6 +183,7 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
         self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
         self._naflux_sfc = np.zeros_like(self._windspeed_sfc)
         self._qaflux_sfc = np.zeros_like(self._windspeed_sfc)
+        self._u10_arr = np.zeros_like(self._windspeed_sfc)
 
         self._Timers.add_timer("SurfaceDycoms_update")
 
@@ -329,13 +338,20 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
             1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, qv_flx_sf, qvt
         )
                 
+        u10 = u[:, :, self.ind10:self.ind10+1]
+        v10 = v[:, :, self.ind10:self.ind10+1]
+        
         nadt  = self._ScalarState.get_tend("qnad")
         qadt  = self._ScalarState.get_tend("qad")
         nad2t = self._ScalarState.get_tend("qnad2")
         qad2t = self._ScalarState.get_tend("qad2")
         
+        Surface_impl.compute_u10_arr(
+            u10, v10, self._Ref.u0, self._Ref.v0, self.fac1, self.fac2, self.gustiness, self._u10_arr
+        )
+        
         Surface_impl.compute_aerosol_flux(
-            self._windspeed_sfc, 
+            self._u10_arr, 
             self._SFLUX_NACC_COEF, 
             self._SFLUX_RACC, 
             self._SIGMA_ACCUM, 
@@ -354,7 +370,7 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
             
         )
         Surface_impl.compute_aerosol_flux(
-            self._windspeed_sfc, 
+            self._u10_arr, 
             self._SFLUX_NAIT_COEF, 
             self._SFLUX_RAIT, 
             self._SIGMA_AITKEN, 
