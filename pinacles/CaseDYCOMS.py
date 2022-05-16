@@ -369,7 +369,7 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
         )
         
         Surface_impl.iles_surface_flux_application(
-            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._naflux_sfc, qad2t
+            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._qaflux_sfc, qad2t
         )
 
         self._Timers.end_timer("SurfaceDycoms_update")
