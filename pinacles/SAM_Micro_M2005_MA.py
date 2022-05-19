@@ -650,6 +650,7 @@ class Micro_M2005_MA(MicrophysicsBase):
         for i, vn in enumerate(self._micro_vars):
             dv = self._ScalarState.get_field(vn)
             sam_to_our_order(nhalo, self._microfield[:, :, :, i], dv)
+            # print("After update", vn, np.amin(dv), np.amax(dv))
             
             # dv[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]] = self._microfield[:, :, :, i]
             

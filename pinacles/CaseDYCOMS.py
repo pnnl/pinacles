@@ -183,6 +183,8 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
         self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
         self._naflux_sfc = np.zeros_like(self._windspeed_sfc)
         self._qaflux_sfc = np.zeros_like(self._windspeed_sfc)
+        self._na2flux_sfc = np.zeros_like(self._windspeed_sfc)
+        self._qa2flux_sfc = np.zeros_like(self._windspeed_sfc)
         self._u10_arr = np.zeros_like(self._windspeed_sfc)
 
         self._Timers.add_timer("SurfaceDycoms_update")
@@ -366,9 +368,9 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
         )
         
         Surface_impl.iles_surface_flux_application(
-            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._qaflux_sfc, qadt
-            
+            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._qaflux_sfc, qadt          
         )
+        
         Surface_impl.compute_aerosol_flux(
             self._u10_arr, 
             self._SFLUX_NAIT_COEF, 
@@ -376,16 +378,16 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
             self._SIGMA_AITKEN, 
             self._WHITECAP_COEF, 
             self._RHO_AEROSOL,
-            self._naflux_sfc, 
-            self._qaflux_sfc,
+            self._na2flux_sfc, 
+            self._qa2flux_sfc,
         )
         
         Surface_impl.iles_surface_flux_application(
-            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._naflux_sfc, nad2t
+            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._na2flux_sfc, nad2t
         )
         
         Surface_impl.iles_surface_flux_application(
-            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._qaflux_sfc, qad2t
+            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._qa2flux_sfc, qad2t
         )
 
         self._Timers.end_timer("SurfaceDycoms_update")
