@@ -35,6 +35,7 @@ from pinacles import UtilitiesParallel
 from pinacles import ParticlesFactory
 from pinacles import Timers
 from pinacles import DiagnosticsCoarseGrain
+from pinacles import DiagnosticsCase
 from mpi4py import MPI
 import numpy as np
 
@@ -284,6 +285,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.DiagnosticState,
         )
 
+
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
         self.Restart.add_class_to_restart(self.ScalarState)
@@ -346,6 +348,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Fields2d.add_class(self.Micro)
         self.Fields2d.add_class(self.Thermo)
         self.Fields2d.add_class(self.Plumes)
+        self.Fields2d.add_class(self.Surf)
 
         # Instantiate optional TowerIO
         self.IOTower = TowersIO.Towers(
@@ -379,6 +382,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.DiagnosticState,
         )
 
+        self.DiagCase = DiagnosticsCase.DiagnosticsCase(
+            self._namelist,
+            self.ModelGrid,
+            self.Ref,
+            self.Thermo,
+            self.Micro,
+            self.VelocityState,
+            self.ScalarState,
+            self.DiagnosticState
+        )
+
         # Initalize memory for outputting Advective and Diffusive Fluxes
         self.ScalarDiff.initialize_io_arrays()
         self.ScalarAdv.initialize_io_arrays()
@@ -393,6 +407,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.StatsIO.add_class(self.Micro)
         self.StatsIO.add_class(self.DiagTurbulence)
         self.StatsIO.add_class(self.DiagClouds)
+        self.StatsIO.add_class(self.DiagCase)
         self.StatsIO.add_class(self.Rad)
 
         # Now iniitalzie the IO field
@@ -764,6 +779,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.DiagnosticState,
         )
 
+        self.DiagCase = DiagnosticsCase.DiagnosticsCase(
+            self._namelist,
+            self.ModelGrid,
+            self.Ref,
+            self.Thermo,
+            self.Micro,
+            self.VelocityState,
+            self.ScalarState,
+            self.DiagnosticState
+        )
+
         # Initalize memory for outputting Advective and Diffusive Fluxes
         self.ScalarDiff.initialize_io_arrays()
         self.ScalarAdv.initialize_io_arrays()
@@ -779,6 +805,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.StatsIO.add_class(self.DiagTurbulence)
         self.StatsIO.add_class(self.DiagClouds)
         self.StatsIO.add_class(self.Rad)
+        self.StatsIO.add_class(self.DiagCase)
 
         # Now iniitalzie the IO field
         self.StatsIO.initialize()
@@ -793,6 +820,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Fields2d.add_class(self.Micro)
         self.Fields2d.add_class(self.Thermo)
         self.Fields2d.add_class(self.Plumes)
+        self.Fields2d.add_class(self.Surf)
 
         # Now initialze for the output of 3D fields
         # Now initialze for the output of 3D fields
