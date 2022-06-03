@@ -35,12 +35,8 @@ def eos(z_in, P_in, alpha0, s_in, qv_in, T_out, tref, alpha_out, buoyancy_out):
             for k in range(shape[2]):
                 T_out[i, j, k] = T(z_in[k], s_in[i, j, k])
                 alpha_out[i, j, k] = alpha(P_in[k], T_out[i, j, k])
-                p_prime = parameters.RD / alpha0[k] * tref[k]
-                buoyancy_out[i, j, k] = parameters.G * (
-                    T_out[i, j, k] / tref[k]
-                    + 0.608 * qv_in[i, j, k]
-                    - p_prime / P_in[k]
-                )
+                #p_prime = parameters.RD / alpha0[k] * tref[k]
+                buoyancy_out[i, j, k] = parameters.G * (alpha_out[i, j, k] - alpha0[k]) / alpha0[k]
 
     return
 
@@ -63,7 +59,7 @@ def compute_bvf(n_halo, theta_ref, exner, T, qv, dz, thetav, bvf):
                 * (thetav[i, j, k + 1] - thetav[i, j, k])
                 / (dz)
             )
-            for k in range(n_halo[2] + 2, shape[2] - n_halo[2]):
+            for k in range(n_halo[2] + 1, shape[2] - n_halo[2]):
                 bvf[i, j, k] = (
                     parameters.G
                     / theta_ref[k]
