@@ -4,6 +4,7 @@ from pinacles import parameters
 from pinacles import Surface, Surface_impl, Forcing_impl, Forcing
 from pinacles import UtilitiesParallel
 import pinacles.ThermodynamicsMoist_impl as MoistThermo
+from pinacles.CaseTestbed import get_lognormal_dist
 
 
 def compute_thetal(p, T, ql, exner):
@@ -130,6 +131,33 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     u -= Ref.u0
     v -= Ref.v0
+
+    if namelist["microphysics"]["scheme"] == "sbm":
+        sbm_init_nc = 55.0e6
+        nbins = 33
+        sig1 = 1.2
+        UtilitiesParallel.print_root("\t Initializing SBM bins for DYCOMS")
+        ff_list = []
+        for ibin in range(nbins):
+            ff_list.append(ScalarState.get_field("ff1i" + str(np.int(ibin + 1))))
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                for k in range(shape[2]):
+                    qc_sum = 0.0
+                    if qc[i, j, k] > 0.0:
+
+                        f, xl = get_lognormal_dist(
+                            nbins, qc[i, j, k], sbm_init_nc, sig1
+                        )
+
+                        for ibin in range(nbins):
+
+                            ff_list[ibin][i, j, k] = (
+                                f[ibin] * 1e6 * xl[ibin] / Ref.rho0[k]
+                            )  # /col* col
+                            qc_sum += ff_list[ibin][i, j, k]
+
+                        qc[i, j, k] = qc_sum
 
     return
 
