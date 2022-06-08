@@ -10,6 +10,7 @@ try:
 except:
     pass
 
+
 class Fields2D:
     def __init__(self, namelist, Grid, Ref, VelocityState, TimeSteppingController):
         self._Grid = Grid
@@ -73,10 +74,10 @@ class Fields2D:
 
         t0 = time.perf_counter()
 
-        output_here = self._output_path #os.path.join(
+        output_here = self._output_path  # os.path.join(
         #    self._output_path, str(np.round(self._TimeSteppingController.time))
-        #)
-        
+        # )
+
         MPI.COMM_WORLD.barrier()
         if self._this_rank == 0:
             if not os.path.exists(output_here):
@@ -85,8 +86,7 @@ class Fields2D:
 
         fx = None
         if MPI.COMM_WORLD.Get_rank() == 0:
-            
-            
+
             s = self._TimeSteppingController.time
             days = s // 86400
             s = s - (days * 86400)
@@ -94,7 +94,7 @@ class Fields2D:
             s = s - (hours * 3600)
             minutes = s // 60
             seconds = s - (minutes * 60)
-            
+
             fx = h5py.File(
                 os.path.join(
                     output_here,
@@ -103,9 +103,8 @@ class Fields2D:
                     )
                     + ".h5",
                 ),
-                "w"
+                "w",
             )
-            
 
             # Add some metadata
             fx.attrs["unique_id"] = self._namelist["meta"]["unique_id"]
@@ -122,7 +121,7 @@ class Fields2D:
         # Sync and close netcdf file
         if fx is not None:
             fx.close()
-            
+
         self._last_io_time = self._TimeSteppingController._time
 
         t1 = time.perf_counter()
@@ -132,7 +131,7 @@ class Fields2D:
 
         return
 
-    def output_velocities(self, fx):
+    def output_velocities(self, nc_grp):
 
         start = self._Grid.local_start
         end = self._Grid._local_end
@@ -141,19 +140,19 @@ class Fields2D:
         send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
         recv_buffer = np.empty_like(send_buffer)
 
-        for v in ["u", "v", "w"]:
+        for v in ["u", "v"]:
             for k in self._output_levels:
                 z = self._Grid.z_global[nh[2] + k]
 
-                if fx is not None:
-                    var_fx = fx.create_dataset(
-                                v + "_" + str(z),
-                                (1, self._Grid.n[0], self._Grid.n[1]),
-                                dtype=np.double,
-                            )
-
-                    for i, d in enumerate(["time", "X", "Y"]):
-                        var_fx.dims[i].attach_scale(fx[d])
+                if nc_grp is not None:
+                    var_nc = nc_grp.createVariable(
+                        v + "_" + str(z),
+                        np.double,
+                        dimensions=(
+                            "X",
+                            "Y",
+                        ),
+                    )
 
                 var = self._VelocityState.get_field(v)
                 send_buffer.fill(0.0)
@@ -161,10 +160,40 @@ class Fields2D:
                     nh[0] : -nh[0], nh[1] : -nh[1], nh[2] + k
                 ]
                 MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
-                if fx is not None:
-                    var_fx[:, :] = recv_buffer
+                if nc_grp is not None:
+                    var_nc[:, :] = recv_buffer
 
+                if nc_grp is not None:
+                    nc_grp.sync()
+        for v in ["w"]:
+            for k in self._output_levels:
+                z = self._Grid.z_global[nh[2] + k]
 
+                if nc_grp is not None:
+                    var_nc = nc_grp.createVariable(
+                        v + "_" + str(z),
+                        np.double,
+                        dimensions=(
+                            "X",
+                            "Y",
+                        ),
+                    )
+
+                var = self._VelocityState.get_field(v)
+                send_buffer.fill(0.0)
+                send_buffer[start[0] : end[0], start[1] : end[1]] = (
+                    np.add(
+                        var[nh[0] : -nh[0], nh[1] : -nh[1], nh[2] + k],
+                        var[nh[0] : -nh[0], nh[1] : -nh[1], nh[2] + k - 1],
+                    )
+                    * 0.5
+                )
+                MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+                if nc_grp is not None:
+                    var_nc[:, :] = recv_buffer
+
+                if nc_grp is not None:
+                    nc_grp.sync()
         return
 
     def setup_directories(self):
@@ -185,12 +214,11 @@ class Fields2D:
             dset.make_scale()
             if MPI.COMM_WORLD.rank == 0:
                 dset[:] = self._Grid._global_axes[i][nhalo[i] : -nhalo[i]]
-                
+
         dset = fx.create_dataset("time", 1, dtype="d")
         dset.make_scale()
         dset[:] = self._TimeSteppingController.time
 
-                
         return
 
 
@@ -199,7 +227,6 @@ class Fields2DNone:
 
         self._frequency = 1.0e10
         self._classes = {}
-       
 
         return
 
@@ -220,10 +247,11 @@ class Fields2DNone:
 
         return
 
-   
+
 def factory(namelist, Grid, Ref, VelocityState, TimeSteppingController):
     try:
         import h5py
+
         dofields2d = True
     except:
         if MPI.COMM_WORLD.Get_rank() == 0:
@@ -232,5 +260,5 @@ def factory(namelist, Grid, Ref, VelocityState, TimeSteppingController):
 
     if dofields2d:
         return Fields2D(namelist, Grid, Ref, VelocityState, TimeSteppingController)
-    else: 
+    else:
         return Fields2DNone()
