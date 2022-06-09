@@ -452,7 +452,8 @@ class ModelState:
 
         if "restart_type" not in data_dict:
             for att in self._restart_attributes:
-                assert self.__dict__[att] == data_dict[key][att]
+                if att != "restart_type":
+                    assert self.__dict__[att] == data_dict[key][att]
 
             # Update the internal arrays
             self._state_array.array[:, :, :, :] = data_dict[key]["_state_array"][
