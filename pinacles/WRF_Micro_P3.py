@@ -364,7 +364,7 @@ class MicroP3(MicrophysicsBase):
                 np.empty(tuple(self._wrf_dims), order="F", dtype=np.double),
             )
 
-        self._restart_attributes = ["_RAINNC"]
+        self._restart_attributes = ["_RAINNC", "_itimestep"]
 
         self._Timers.add_timer("MicroP3_update")
         return
