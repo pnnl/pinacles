@@ -131,7 +131,7 @@ class Fields2D:
 
         return
 
-    def output_velocities(self, nc_grp):
+    def output_velocities(self, fx):
 
         start = self._Grid.local_start
         end = self._Grid._local_end
@@ -144,15 +144,16 @@ class Fields2D:
             for k in self._output_levels:
                 z = self._Grid.z_global[nh[2] + k]
 
-                if nc_grp is not None:
-                    var_nc = nc_grp.createVariable(
-                        v + "_" + str(z),
-                        np.double,
-                        dimensions=(
-                            "X",
-                            "Y",
-                        ),
-                    )
+                
+                if fx is not None:
+                    var_fx = fx.create_dataset(
+                                v + "_" + str(z),
+                                (1, self._Grid.n[0], self._Grid.n[1]),
+                                dtype=np.double,
+                            )
+
+                    for i, d in enumerate(["time", "X", "Y"]):
+                        var_fx.dims[i].attach_scale(fx[d])
 
                 var = self._VelocityState.get_field(v)
                 send_buffer.fill(0.0)
@@ -160,24 +161,22 @@ class Fields2D:
                     nh[0] : -nh[0], nh[1] : -nh[1], nh[2] + k
                 ]
                 MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
-                if nc_grp is not None:
-                    var_nc[:, :] = recv_buffer
+                if fx is not None:
+                    var_fx[:, :] = recv_buffer
 
-                if nc_grp is not None:
-                    nc_grp.sync()
         for v in ["w"]:
             for k in self._output_levels:
                 z = self._Grid.z_global[nh[2] + k]
 
-                if nc_grp is not None:
-                    var_nc = nc_grp.createVariable(
-                        v + "_" + str(z),
-                        np.double,
-                        dimensions=(
-                            "X",
-                            "Y",
-                        ),
-                    )
+                if fx is not None:
+                    var_fx = fx.create_dataset(
+                                v + "_" + str(z),
+                                (1, self._Grid.n[0], self._Grid.n[1]),
+                                dtype=np.double,
+                            )
+
+                    for i, d in enumerate(["time", "X", "Y"]):
+                        var_fx.dims[i].attach_scale(fx[d])
 
                 var = self._VelocityState.get_field(v)
                 send_buffer.fill(0.0)
@@ -189,11 +188,10 @@ class Fields2D:
                     * 0.5
                 )
                 MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
-                if nc_grp is not None:
-                    var_nc[:, :] = recv_buffer
+                if fx is not None:
+                    var_fx[:, :] = recv_buffer
 
-                if nc_grp is not None:
-                    nc_grp.sync()
+                
         return
 
     def setup_directories(self):
