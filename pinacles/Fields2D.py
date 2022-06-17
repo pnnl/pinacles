@@ -109,7 +109,7 @@ class Fields2D:
             # Add some metadata
             fx.attrs["unique_id"] = self._namelist["meta"]["unique_id"]
             fx.attrs["wall_time"] = self._namelist["meta"]["wall_time"]
-            fx.attrs["fequency"] = self.frequency
+            fx.attrs["frequency"] = self.frequency
 
             self.setup_dims(fx)
 

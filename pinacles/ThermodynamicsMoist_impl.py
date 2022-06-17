@@ -105,7 +105,7 @@ def compute_moist_bvf(dz, n_halo, p0, rho0, T, qv, ql, qi, bvf):
 
     For cloud free conditions we compute equation 1a in Durran and Klemp (1982), with an additional
     term accounting for virtual temperature effects. The virtual temperature term is the last term on the
-    right hand size of equation 6 in the Durran and Klemp paper.
+    righthand side of equation 6 in the Durran and Klemp paper.
 
     """
 
