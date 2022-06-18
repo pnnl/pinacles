@@ -542,7 +542,7 @@ class MicroKessler(MicrophysicsBase):
         return
 
     def dump_restart(self, data_dict):
-        # Get the name of this particualr container and create a dictionary for it in the
+        # Get the name of this particular container and create a dictionary for it in the
         # restart data dict.
 
         key = "KESSLER"

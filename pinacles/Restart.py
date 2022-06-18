@@ -13,9 +13,9 @@ class Restart:
         # Remember the namelist
         self._namelist = namelist
 
-        self._fequency = parameters.LARGE
+        self._frequency = parameters.LARGE
         if "frequency" in self._namelist["restart"]:
-            self._fequency = self._namelist["restart"]["frequency"]
+            self._frequency = self._namelist["restart"]["frequency"]
 
         self._restart_simulation = False
         if "restart_simulation" in self._namelist["restart"]:
@@ -143,7 +143,7 @@ class Restart:
 
     def add_class_to_restart(self, class_to_add):
         """This function adds a class to the list of classes that will either
-        contribute to restart files or read from redstart files. These classes must contain
+        contribute to restart files or read from restart files. These classes must contain
         the class methods restart and dump_restart.
 
         Args:
@@ -181,7 +181,7 @@ class Restart:
         else:
             self.read()
 
-        # Now loop over the calles and call the restart method
+        # Now loop over the classes and call the restart method
         for item in self._classes_to_restart:
             item.restart(self.data_dict, **{"h5_data": self.h5_data})
 
@@ -220,7 +220,7 @@ class Restart:
 
     def purge_data_dict(self):
         """This method frees memory associated with the dictionary (dict_data) used to store data that is
-        then writte to the restart files.
+        then writen to the restart files.
         """
         self.data_dict = {}
         return
@@ -232,7 +232,7 @@ class Restart:
         Returns:
             float: frequency in seconds
         """
-        return self._fequency
+        return self._frequency
 
     @property
     def path(self):

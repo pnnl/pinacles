@@ -257,7 +257,7 @@ class DiagnosticsTurbulence:
             for j in range(n_halo[1], shape[1] - n_halo[1]):
                 for k in range(n_halo[2], shape[2] - n_halo[2]):
 
-                    # Compute cell centered fluctations
+                    # Compute cell centered fluctuations
                     up = 0.5 * (u[i - 1, j, k] + u[i, j, k]) - umean[k]
                     vp = 0.5 * (v[i, j - 1, k] + v[i, j, k]) - vmean[k]
                     wp = 0.5 * (w[i, j, k - 1] + w[i, j, k]) - 0.5 * (
@@ -279,7 +279,7 @@ class DiagnosticsTurbulence:
                     vvv[k] += vp * vp * vp
                     www[k] += wp * wp * wp
 
-                    # Fourth cental moments
+                    # Fourth central moments
                     uuuu[k] += up * up * up * up
                     vvvv[k] += vp * vp * vp * vp
                     wwww[k] += wp * wp * wp * wp
@@ -537,7 +537,7 @@ class DiagnosticsTurbulence:
     @staticmethod
     @numba.njit()
     def compute_vertical_fluxes(n_halo, w_mean, phi_mean, w, phi, fluxz):
-        # Compute a resolved vertival flux of phi
+        # Compute a resolved vertical flux of phi
         shape = phi.shape
         for i in range(n_halo[0], shape[0] - n_halo[0]):
             for j in range(n_halo[1], shape[1] - n_halo[1]):

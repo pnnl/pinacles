@@ -53,7 +53,7 @@ def comput_local_cfl_max(nhalo, dxi, u, v, w):
 
 @numba.njit(fastmath=True)
 def compute_local_diff_num_max(nhalo, dxi, dt, Km):
-    """Retyrbs number diffusion number following
+    """Returns number diffusion number following
     Heus et al. (2010) for this MPI rank.
 
     Args:

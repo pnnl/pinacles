@@ -868,7 +868,7 @@ class ScalarWENO(ScalarAdvectionBase):
         v = self._VelocityState.get_field("v")
         w = self._VelocityState.get_field("w")
 
-        # Get the releveant reference variables
+        # Get the relevant reference variables
         # TODO there is acopy hiding here
         rho0 = self._Ref.rho0
         alpha0 = self._Ref.alpha0

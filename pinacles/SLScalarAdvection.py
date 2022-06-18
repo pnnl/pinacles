@@ -305,7 +305,7 @@ class CTU(ScalarAdvection.ScalarAdvectionBase):
         y_quad = np.empty(v.shape, dtype=np.int64)
         z_quad = np.empty(w.shape, dtype=np.int64)
 
-        # Grab the time an spatial resolution
+        # Grab the time and spatial resolution
         dt = self._TimeStepping.dt
         dxi = self._Grid.dxi
 
@@ -317,8 +317,7 @@ class CTU(ScalarAdvection.ScalarAdvectionBase):
 
         # Now iterate over the scalar variables
         for var in self._ScalarState.names:
-
-            # Grab the sclars and tendencies for each field
+            # Grab the scalars and tendencies for each field
             phi = self._ScalarState.get_field(var)
             phi_t = self._ScalarState.get_tend(var)
 

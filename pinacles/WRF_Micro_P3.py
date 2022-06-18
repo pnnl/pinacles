@@ -103,7 +103,7 @@ class MicroP3(MicrophysicsBase):
         if MPI.COMM_WORLD.Get_rank() == 0:
             print("\tP3: Using the " + str(self._rain_moment) + "-moment rain scheme")
 
-        # Set the default droplet conencentration for 1-moment rain scheme.
+        # Set the default droplet concentration for 1-moment rain scheme.
         self._nccnst = 200.0e6
         try:
             self._nccnst = namelist["microphysics"]["nccnst"]
@@ -148,7 +148,7 @@ class MicroP3(MicrophysicsBase):
                 if MPI.COMM_WORLD.Get_rank() == 0:
                     print("\tP3: Initialized with default aerosol distn")
 
-        # Allocate microphysical/thermodyamic variables
+        # Allocate microphysical/thermodynamic variables
         self._ScalarState.add_variable(
             "qv",
             long_name="water vapor mixing ratio",
@@ -759,11 +759,11 @@ class MicroP3(MicrophysicsBase):
         qv = self._ScalarState.get_field("qv")
         qr = self._ScalarState.get_field("qr")
 
-        # First compute liqud water path
+        # First compute liquid water path
         lwp = water_path(n_halo, dz, npts, rho, qc)
         lwp = UtilitiesParallel.ScalarAllReduce(lwp)
 
-        # First compute liqud water path
+        # First compute liquid water path
         lwp_lasso, npts_lasso = water_path_lasso(n_halo, dz, rho, qc + qr)
         lwp_lasso = UtilitiesParallel.ScalarAllReduce(lwp_lasso)
         npts_lasso = UtilitiesParallel.ScalarAllReduce(npts_lasso)
@@ -947,7 +947,7 @@ class MicroP3(MicrophysicsBase):
         return
 
     def dump_restart(self, data_dict):
-        # Get the name of this particualr container and create a dictionary for it in the
+        # Get the name of this particular container and create a dictionary for it in the
         # restart data dict.
 
         key = "P3"

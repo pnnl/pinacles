@@ -102,7 +102,7 @@ class MomentumWENO(MomentumAdvectionBase):
     def update(self):
         self._Timers.start_timer("MomentumWENO_update")
 
-        # Get values from thermodynmic reference state
+        # Get values from thermodynamic reference state
         rho0 = self._Ref.rho0
         rho0_edge = self._Ref.rho0_edge
 

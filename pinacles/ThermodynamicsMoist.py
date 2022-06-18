@@ -27,7 +27,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         )
         DiagnosticState.add_variable(
             "qt",
-            long_name="Total water specific humidty",
+            long_name="Total water specific humidity",
             latex_name="q_t",
             units="kg/kg",
         )

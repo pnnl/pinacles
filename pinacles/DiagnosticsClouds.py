@@ -316,7 +316,7 @@ class DiagnosticsClouds:
                     n_halo, qc, w, phi, cloud_count, core_count, phi_cloud, phi_core
                 )
 
-                # Todo precompute these they shouldn't change by varaible
+                # Todo precompute these they shouldn't change by variable
                 cloud_count = UtilitiesParallel.ScalarAllReduce(cloud_count)
                 core_count = UtilitiesParallel.ScalarAllReduce(core_count)
 

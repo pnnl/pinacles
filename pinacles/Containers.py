@@ -19,7 +19,7 @@ class ModelState:
         self._dofs = {}  # This maps variable name to the GhostArray dof where it stored
         self._long_names = {}  # Store long names for the variables
         self._latex_names = {}  # Store latex names, this is handy for plotting
-        self._units = {}  # Store the units, this is also hand for plotting
+        self._units = {}  # Store the units, this is also handy for plotting
         self._nvars = 0  # The number of 3D field stored in this model state
         self._bcs = {}
         self._loc = {}
@@ -195,7 +195,7 @@ class ModelState:
         return
 
     def get_field(self, name):
-        # Return a contiguious memory slice of _state_array containing the values of name
+        # Return a contiguous memory slice of _state_array containing the values of name
         dof = self._dofs[name]
         return self._state_array.array[dof, :, :, :]
 
@@ -493,7 +493,7 @@ class ModelState:
 
     def dump_restart(self, data_dict):
 
-        # Get the name of this particualr container and create a dictionary for it in the
+        # Get the name of this particular container and create a dictionary for it in the
         # restart data dict.
 
         key = self.name

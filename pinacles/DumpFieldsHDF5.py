@@ -163,7 +163,7 @@ class DumpFields_hdf:
 
                     dset.attrs["units"] = ac.get_units(v)
                     dset.attrs["long_name"] = ac.get_long_name(v)
-                    dset.attrs["standar_name"] = ac.get_standard_name(v)
+                    dset.attrs["standard_name"] = ac.get_standard_name(v)
 
                 MPI.COMM_WORLD.barrier()
 

@@ -10,7 +10,7 @@ import numba
 class GridBase:
     def __init__(self, namelist):
 
-        # List of class atributes that will be restarted
+        # List of class attributes that will be restarted
         self._restart_attributes = []
 
         # The total number of points in the domain NOT including halo/ghost points
@@ -39,12 +39,12 @@ class GridBase:
         self._local_end = None
         self._restart_attributes.append("_local_end")
 
-        # Lenght of each CRM domain side
+        # Length of each CRM domain side
         self._l = np.array(namelist["grid"]["l"], dtype=np.double)
         self._restart_attributes.append("_l")
         assert len(self._l) == 3
 
-        # The global x,y,z coordiantes
+        # The global x,y,z coordinates
         self._global_axes = None
         self._global_axes_edge = None
         self._local_axes = None
@@ -61,7 +61,7 @@ class GridBase:
         self._dxi = None
         self._restart_attributes.append("_dxi")
 
-        # Store sub-cummunicators created by mpi4py_fft
+        # Store sub-communicators created by mpi4py_fft
         self.subcomms = None
         self._create_subcomms()
 
@@ -82,7 +82,7 @@ class GridBase:
     def n(self):
         return self._n
         """ Returns the number of points in the domain w/o halos. 
-        This corresponds to namelist['grid']['n'] in the input namelsit.
+        This corresponds to namelist['grid']['n'] in the input namelist.
 
         Returns: 
             n: float ndarray of shape (3,)
@@ -129,7 +129,7 @@ class GridBase:
 
     @property
     def nl(self):
-        # TODO replace all instanes of local_shape with nl
+        # TODO replace all instances of local_shape with nl
         return self._local_shape
 
     @property
@@ -151,7 +151,7 @@ class GridBase:
     @property
     def x_global(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         return np.copy(self._global_axes[0])
@@ -159,7 +159,7 @@ class GridBase:
     @property
     def x_edge_global(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         return np.copy(self._global_axes_edge[0])
@@ -167,7 +167,7 @@ class GridBase:
     @property
     def y_global(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         return np.copy(self._global_axes[1])
@@ -175,7 +175,7 @@ class GridBase:
     @property
     def y_edge_global(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         return np.copy(self._global_axes_edge[1])
@@ -183,7 +183,7 @@ class GridBase:
     @property
     def z_global(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         return np.copy(self._global_axes[2])
@@ -191,7 +191,7 @@ class GridBase:
     @property
     def z_edge_global(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         return np.copy(self._global_axes_edge[2])
@@ -199,7 +199,7 @@ class GridBase:
     @property
     def global_axes(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         return self._global_axes.copy()
@@ -207,7 +207,7 @@ class GridBase:
     @property
     def x_local(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         start = self._local_start[0]
@@ -217,7 +217,7 @@ class GridBase:
     @property
     def y_local(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         start = self._local_start[1]
@@ -227,7 +227,7 @@ class GridBase:
     @property
     def z_local(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         start = self._local_start[2]
@@ -237,7 +237,7 @@ class GridBase:
     @property
     def local_axes(self):
         """Copy here is forced to keep _local_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         return np.copy(self._local_axes)
@@ -246,7 +246,7 @@ class GridBase:
     def local_axes_edge(self):
         """
         Copy here is forced to keep _local_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         return np.copy(self._local_axes_edge)
@@ -327,11 +327,11 @@ class RegularCartesian(GridBase):
     def __init__(self, namelist):
 
         GridBase.__init__(self, namelist)
-        self._compute_globalcoordiantes()
+        self._compute_globalcoordinates()
 
         return
 
-    def _compute_globalcoordiantes(self):
+    def _compute_globalcoordinates(self):
 
         self._global_axes = []
         self._global_axes_edge = []
