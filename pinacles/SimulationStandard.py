@@ -8,7 +8,7 @@ import uuid
 import datetime
 from pinacles import SimulationBase
 
-from pinacles import Initializaiton
+from pinacles import Initialization
 from pinacles import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
 from pinacles import ScalarAdvectionFactory
 from pinacles import ScalarAdvection, TimeStepping, ReferenceState
@@ -309,7 +309,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.VelocityTimeStepping.initialize()
 
         # Do case specific initializations the initial profiles are integrated here
-        Initializaiton.initialize(
+        Initialization.initialize(
             self._namelist,
             self.ModelGrid,
             self.Ref,
@@ -720,7 +720,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.VelocityTimeStepping.initialize()
 
         # Do case specific initializations the initial profiles are integrated here
-        Initializaiton.initialize(
+        Initialization.initialize(
             self._namelist,
             self.ModelGrid,
             self.Ref,
