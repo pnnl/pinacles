@@ -479,14 +479,14 @@ class Micro_M2005_MA(MicrophysicsBase):
         qc = self._ScalarState.get_field("qc")
         self._qv0 = qv.mean(axis=1).mean(axis=0)[self._nhalo[2]:self._Grid.ngrid_local[2] - self._nhalo[2]]
         self._qc0 = qc.mean(axis=1).mean(axis=0)[self._nhalo[2]:self._Grid.ngrid_local[2] - self._nhalo[2]]
-        self._q0 = self._qv0 + self._qc0
+        # self._q0 = self._qv0 + self._qc0
                 
         s = self._ScalarState.get_field("s")
         self._t0 = s.mean(axis=1).mean(axis=0)[self._nhalo[2]:self._Grid.ngrid_local[2] - self._nhalo[2]]
         
         # self._tabs0 = np.zeros_like(self._p0)
-        # for k in range(self._sam_dims[2]):
-        #     # self._tabs0[k] = MoistThermo.T(self._z[k],self._t0[k],self._qc0[k],0.0)
+        for k in range(self._sam_dims[2]):
+            self._tabs0[k] = MoistThermo.T(self._z[k],self._t0[k],self._qc0[k],0.0)
         #     z = self._z[k]
         #     if z < 795.0:
         #         self._tabs0[k] = 288.3
@@ -527,7 +527,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._dx,
             self._dz,
             self._time,
-            self._q0, 
+            self._qc0, 
             self._qv0, 
             self._dostatis, 
             self._do_chunked_energy_budgets, 

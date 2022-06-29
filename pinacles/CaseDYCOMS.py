@@ -339,56 +339,59 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
         Surface_impl.iles_surface_flux_application(
             1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, qv_flx_sf, qvt
         )
-                
-        u10 = u[:, :, self.ind10:self.ind10+1]
-        v10 = v[:, :, self.ind10:self.ind10+1]
-        
-        nadt  = self._ScalarState.get_tend("qnad")
-        qadt  = self._ScalarState.get_tend("qad")
-        nad2t = self._ScalarState.get_tend("qnad2")
-        qad2t = self._ScalarState.get_tend("qad2")
-        
-        Surface_impl.compute_u10_arr(
-            u10, v10, self._Ref.u0, self._Ref.v0, self.fac1, self.fac2, self.gustiness, self._u10_arr
-        )
-        
-        Surface_impl.compute_aerosol_flux(
-            self._u10_arr, 
-            self._SFLUX_NACC_COEF, 
-            self._SFLUX_RACC, 
-            self._SIGMA_ACCUM, 
-            self._WHITECAP_COEF, 
-            self._RHO_AEROSOL, 
-            self._naflux_sfc, 
-            self._qaflux_sfc,
-        )
-        
-        Surface_impl.iles_surface_flux_application(
-            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._naflux_sfc, nadt
-        )
-        
-        Surface_impl.iles_surface_flux_application(
-            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._qaflux_sfc, qadt          
-        )
-        
-        Surface_impl.compute_aerosol_flux(
-            self._u10_arr, 
-            self._SFLUX_NAIT_COEF, 
-            self._SFLUX_RAIT, 
-            self._SIGMA_AITKEN, 
-            self._WHITECAP_COEF, 
-            self._RHO_AEROSOL,
-            self._na2flux_sfc, 
-            self._qa2flux_sfc,
-        )
-        
-        Surface_impl.iles_surface_flux_application(
-            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._na2flux_sfc, nad2t
-        )
-        
-        Surface_impl.iles_surface_flux_application(
-            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._qa2flux_sfc, qad2t
-        )
+         
+        try:
+            u10 = u[:, :, self.ind10:self.ind10+1]
+            v10 = v[:, :, self.ind10:self.ind10+1]
+
+            nadt  = self._ScalarState.get_tend("qnad")
+            qadt  = self._ScalarState.get_tend("qad")
+            nad2t = self._ScalarState.get_tend("qnad2")
+            qad2t = self._ScalarState.get_tend("qad2")
+
+            Surface_impl.compute_u10_arr(
+                u10, v10, self._Ref.u0, self._Ref.v0, self.fac1, self.fac2, self.gustiness, self._u10_arr
+            )
+
+            Surface_impl.compute_aerosol_flux(
+                self._u10_arr, 
+                self._SFLUX_NACC_COEF, 
+                self._SFLUX_RACC, 
+                self._SIGMA_ACCUM, 
+                self._WHITECAP_COEF, 
+                self._RHO_AEROSOL, 
+                self._naflux_sfc, 
+                self._qaflux_sfc,
+            )
+
+            Surface_impl.iles_surface_flux_application(
+                1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._naflux_sfc, nadt
+            )
+
+            Surface_impl.iles_surface_flux_application(
+                1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._qaflux_sfc, qadt          
+            )
+
+            Surface_impl.compute_aerosol_flux(
+                self._u10_arr, 
+                self._SFLUX_NAIT_COEF, 
+                self._SFLUX_RAIT, 
+                self._SIGMA_AITKEN, 
+                self._WHITECAP_COEF, 
+                self._RHO_AEROSOL,
+                self._na2flux_sfc, 
+                self._qa2flux_sfc,
+            )
+
+            Surface_impl.iles_surface_flux_application(
+                1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._na2flux_sfc, nad2t
+            )
+
+            Surface_impl.iles_surface_flux_application(
+                1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._qa2flux_sfc, qad2t
+            )
+        except:
+            pass
 
         self._Timers.end_timer("SurfaceDycoms_update")
         return
