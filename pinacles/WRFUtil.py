@@ -123,6 +123,7 @@ def to_our_order_4d_halo(nhalo, wrf_array, our_array):
                 for k in range(shape[3]):
                     our_array[n, i, j, k] = wrf_array[i, k, j, n]
 
+
 @numba.njit
 def to_sam_order(nhalo, our_array, sam_array):
     shape = our_array.shape
@@ -146,8 +147,8 @@ def sam_to_our_order(nhalo, sam_array, our_array):
                 j_sam = j - nhalo[1]
                 k_sam = k - nhalo[2]
                 our_array[i, j, k] = sam_array[i_sam, j_sam, k_sam]
-         
-        
+
+
 @numba.njit
 def to_sam_order_4d(nhalo, our_array, sam_array):
     shape = our_array.shape

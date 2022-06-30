@@ -14,6 +14,7 @@ from mpi4py import MPI
 import numba
 import numpy as np
 
+
 class Micro_M2005_MA(MicrophysicsBase):
     def __init__(
         self,
@@ -39,27 +40,28 @@ class Micro_M2005_MA(MicrophysicsBase):
         )
 
         self._m2005_ma_cffi = m2005_ma_via_cffi.M2005_MA()
-        
+
         self._nhalo = self._Grid.n_halo
-        self._sam_dims = np.array([
-            self._Grid.ngrid_local[0] - 2 * self._nhalo[0],
-            self._Grid.ngrid_local[1] - 2 * self._nhalo[1],
-            self._Grid.ngrid_local[2] - 2 * self._nhalo[2],
-            0,
-        ], order="F", dtype=np.intc)
-        nz    = self._sam_dims[2]+1
-        #print("SAM_Micro_M2005_MA",self._sam_dims)
-        
+        self._sam_dims = np.array(
+            [
+                self._Grid.ngrid_local[0] - 2 * self._nhalo[0],
+                self._Grid.ngrid_local[1] - 2 * self._nhalo[1],
+                self._Grid.ngrid_local[2] - 2 * self._nhalo[2],
+                0,
+            ],
+            order="F",
+            dtype=np.intc,
+        )
+        nz = self._sam_dims[2] + 1
+
         self._iqarray = np.zeros((22,), order="F", dtype=np.intc)
         self._masterproc = False
-        
+
         if MPI.COMM_WORLD.Get_rank() == 0:
             self._masterproc = True
-            
-        self._tlatqi = np.zeros(
-            (nz), order="F", dtype=np.double
-        )
-                
+
+        self._tlatqi = np.zeros((nz), order="F", dtype=np.double)
+
         try:
             mp_flags = namelist["microphysics"]["flags"]
             docloud = mp_flags["docloud"]
@@ -71,23 +73,23 @@ class Micro_M2005_MA(MicrophysicsBase):
             doprecip = True
             if MPI.COMM_WORLD.Get_rank() == 0:
                 print("\tM2005_MA: Initialized with default flags")
-                
+
         self._m2005_ma_cffi.setparm(
-        self._sam_dims,
-        self._iqarray,
-        docloud,
-        doprecip,
-        self._masterproc,
-        self._tlatqi,
+            self._sam_dims,
+            self._iqarray,
+            docloud,
+            doprecip,
+            self._masterproc,
+            self._tlatqi,
         )
-        
+
         self._micro_vars = ["" for x in range(self._sam_dims[3])]
-        # print("SAM_Micro_M2005_MA",self._iqarray)
-        # print(self._iqarray[0])
-        
-        if(self._iqarray[0]>0):
-            iqv = self._iqarray[0] - 1   # vapor mass mixing ratio [kg H2O / kg dry air]
-            self._micro_vars[iqv] = "qv"   # -1 in the index to go from fortran (starting from 1) to python (starting from 0)
+
+        if self._iqarray[0] > 0:
+            iqv = self._iqarray[0] - 1  # vapor mass mixing ratio [kg H2O / kg dry air]
+            self._micro_vars[
+                iqv
+            ] = "qv"  # -1 in the index to go from fortran (starting from 1) to python (starting from 0)
             self._ScalarState.add_variable(
                 "qv",
                 long_name="water vapor mixing ratio",
@@ -95,9 +97,11 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_v",
                 limit=True,
             )
-        
-        if(self._iqarray[1]>0):            
-            iqcl = self._iqarray[1] - 1 # cloud water mass mixing ratio [kg H2O / kg dry air]
+
+        if self._iqarray[1] > 0:
+            iqcl = (
+                self._iqarray[1] - 1
+            )  # cloud water mass mixing ratio [kg H2O / kg dry air]
             self._micro_vars[iqcl] = "qc"
             self._ScalarState.add_variable(
                 "qc",
@@ -106,8 +110,8 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_c",
                 limit=True,
             )
-            
-        if(self._iqarray[2]>0):
+
+        if self._iqarray[2] > 0:
             iqi = self._iqarray[2] - 1
             self._micro_vars[iqi] = "qi"
             self._ScalarState.add_variable(
@@ -117,8 +121,8 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{i}",
                 limit=True,
             )
-            
-        if(self._iqarray[3]>0):
+
+        if self._iqarray[3] > 0:
             iqr = self._iqarray[3] - 1
             self._micro_vars[iqr] = "qr"
             self._ScalarState.add_variable(
@@ -128,8 +132,8 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{r}",
                 limit=True,
             )
-            
-        if(self._iqarray[4]>0):
+
+        if self._iqarray[4] > 0:
             iqs = self._iqarray[4] - 1
             self._micro_vars[iqs] = "qs"
             self._ScalarState.add_variable(
@@ -139,8 +143,8 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{s}",
                 limit=True,
             )
-            
-        if(self._iqarray[5]>0):
+
+        if self._iqarray[5] > 0:
             iqg = self._iqarray[5] - 1
             self._micro_vars[iqg] = "qg"
             self._ScalarState.add_variable(
@@ -150,8 +154,8 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{g}",
                 limit=True,
             )
-            
-        if(self._iqarray[6]>0):
+
+        if self._iqarray[6] > 0:
             incl = self._iqarray[6] - 1
             self._micro_vars[incl] = "qnc"
             self._ScalarState.add_variable(
@@ -161,8 +165,8 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{nc}",
                 limit=True,
             )
-            
-        if(self._iqarray[7]>0):
+
+        if self._iqarray[7] > 0:
             inci = self._iqarray[7] - 1
             self._micro_vars[inci] = "qnci"
             self._ScalarState.add_variable(
@@ -172,8 +176,8 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{nci}",
                 limit=True,
             )
-            
-        if(self._iqarray[8]>0):
+
+        if self._iqarray[8] > 0:
             inr = self._iqarray[8] - 1
             self._micro_vars[inr] = "qnr"
             self._ScalarState.add_variable(
@@ -183,8 +187,8 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{nr}",
                 limit=True,
             )
-            
-        if(self._iqarray[9]>0):
+
+        if self._iqarray[9] > 0:
             ins = self._iqarray[9] - 1
             self._micro_vars[ins] = "qns"
             self._ScalarState.add_variable(
@@ -194,8 +198,8 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{ns}",
                 limit=True,
             )
-            
-        if(self._iqarray[10]>0):
+
+        if self._iqarray[10] > 0:
             ing = self._iqarray[10] - 1
             self._micro_vars[ing] = "qng"
             self._ScalarState.add_variable(
@@ -205,8 +209,8 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{ng}",
                 limit=True,
             )
-            
-        if(self._iqarray[11]>0):
+
+        if self._iqarray[11] > 0:
             iqad = self._iqarray[11] - 1
             self._micro_vars[iqad] = "qad"
             self._ScalarState.add_variable(
@@ -216,8 +220,8 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{ad}",
                 limit=True,
             )
-            
-        if(self._iqarray[12]>0):
+
+        if self._iqarray[12] > 0:
             iqaw = self._iqarray[12] - 1
             self._micro_vars[iqaw] = "qaw"
             self._ScalarState.add_variable(
@@ -227,8 +231,8 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{aw}",
                 limit=True,
             )
-            
-        if(self._iqarray[13]>0):
+
+        if self._iqarray[13] > 0:
             iqar = self._iqarray[13] - 1
             self._micro_vars[iqar] = "qar"
             self._ScalarState.add_variable(
@@ -238,8 +242,8 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{ar}",
                 limit=True,
             )
-            
-        if(self._iqarray[14]>0):
+
+        if self._iqarray[14] > 0:
             inad = self._iqarray[14] - 1
             self._micro_vars[inad] = "qnad"
             self._ScalarState.add_variable(
@@ -249,8 +253,8 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{nad}",
                 limit=True,
             )
-            
-        if(self._iqarray[15]>0):
+
+        if self._iqarray[15] > 0:
             iqad2 = self._iqarray[15] - 1
             self._micro_vars[iqad2] = "qad2"
             self._ScalarState.add_variable(
@@ -260,8 +264,8 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{ad2}",
                 limit=True,
             )
-            
-        if(self._iqarray[16]>0):
+
+        if self._iqarray[16] > 0:
             inad2 = self._iqarray[16] - 1
             self._micro_vars[inad2] = "qnad2"
             self._ScalarState.add_variable(
@@ -271,11 +275,11 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{nad2}",
                 limit=True,
             )
-            
-        if(self._iqarray[17]>0):
+
+        if self._iqarray[17] > 0:
             igas1 = self._iqarray[17] - 1
-            
-        if(self._iqarray[18]>0):
+
+        if self._iqarray[18] > 0:
             iDMS = self._iqarray[18] - 1
             self._micro_vars[iDMS] = "DMS"
             self._ScalarState.add_variable(
@@ -285,8 +289,8 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="DMS",
                 limit=True,
             )
-            
-        if(self._iqarray[19]>0):
+
+        if self._iqarray[19] > 0:
             iSO2 = self._iqarray[19] - 1
             self._micro_vars[iSO2] = "SO2"
             self._ScalarState.add_variable(
@@ -296,8 +300,8 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="SO2",
                 limit=True,
             )
-            
-        if(self._iqarray[20]>0):
+
+        if self._iqarray[20] > 0:
             iH2SO4 = self._iqarray[20] - 1
             self._micro_vars[iH2SO4] = "H2SO4"
             self._ScalarState.add_variable(
@@ -307,10 +311,9 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="H2SO4",
                 limit=True,
             )
-        
+
         # Allocate microphysical/thermodynamic variables
-        
-        
+
         # For diagnostic variables
 
         # self._diag_3d_vars = [
@@ -384,86 +387,81 @@ class Micro_M2005_MA(MicrophysicsBase):
         #     dtype=np.double,
         #     order="F",
         # )
-        
-#         # Add a diagnostic variable for each of the process rates
-#         for i, vn in enumerate(self._diag_3d_vars):
-#             self._DiagnosticState.add_variable(
-#                 "m2005_ma_" + vn,
-#                 long_name=diag_3d_long_names[vn][0],
-#                 units=diag_3d_long_names[vn][1],
-#             )
-        
-        self._DiagnosticState.add_variable("qtot_sed", long_name="total liquid water sedimentation", units="")
-        self._DiagnosticState.add_variable("qice_sed", long_name="ice sedimentation", units="")
-        
-        self._DiagnosticState.add_variable("s_tend_liq_sed", long_name="s tend liquid water sedimentation", units="")
-        self._DiagnosticState.add_variable("s_tend_ice_sed", long_name="s tend ice water sedimentation", units="")
-        
-        nx    = self._Grid.ngrid_local[0] - 2 * self._nhalo[0]
-        ny    = self._Grid.ngrid_local[1] - 2 * self._nhalo[1]
-        nzm   = self._Grid.ngrid_local[2] - 2 * self._nhalo[2]
-        nz    = nzm + 1
+
+        #         # Add a diagnostic variable for each of the process rates
+        #         for i, vn in enumerate(self._diag_3d_vars):
+        #             self._DiagnosticState.add_variable(
+        #                 "m2005_ma_" + vn,
+        #                 long_name=diag_3d_long_names[vn][0],
+        #                 units=diag_3d_long_names[vn][1],
+        #             )
+
+        self._DiagnosticState.add_variable(
+            "qtot_sed", long_name="total liquid water sedimentation", units=""
+        )
+        self._DiagnosticState.add_variable(
+            "qice_sed", long_name="ice sedimentation", units=""
+        )
+
+        self._DiagnosticState.add_variable(
+            "s_tend_liq_sed", long_name="s tend liquid water sedimentation", units=""
+        )
+        self._DiagnosticState.add_variable(
+            "s_tend_ice_sed", long_name="s tend ice water sedimentation", units=""
+        )
+
+        nx = self._Grid.ngrid_local[0] - 2 * self._nhalo[0]
+        ny = self._Grid.ngrid_local[1] - 2 * self._nhalo[1]
+        nzm = self._Grid.ngrid_local[2] - 2 * self._nhalo[2]
+        nz = nzm + 1
         nmicrofields = self._sam_dims[3]
         self._nx_gl = self._Grid.n[0]
         self._ny_gl = self._Grid.n[1]
         self._my_rank = MPI.COMM_WORLD.Get_rank()
         self._nsubdomains_x = self._Grid.subcomms[0].Get_size()
         self._nsubdomains_y = self._Grid.subcomms[1].Get_size()
-                
+
         self._microfield = np.empty(
-            (nx, ny, nzm, nmicrofields),
-            dtype=np.double,
-            order="F",
+            (nx, ny, nzm, nmicrofields), dtype=np.double, order="F",
         )
-        
-        if (namelist["restart"]["restart_simulation"] == False):
+
+        if namelist["restart"]["restart_simulation"] == False:
             self._nrestart = 0
         else:
             self._nrestart = 1
-                
+
         self._itimestep = 0
-                        
+
         self._nrainy = np.zeros((1), order="F", dtype=np.double)
         self._nrmn = np.zeros_like(self._nrainy)
         self._ncmn = np.zeros_like(self._nrainy)
         self._total_water_prec = np.zeros_like(self._nrainy)
-                
-        self._fluxbq = np.zeros(
-            (nx, ny), order="F", dtype=np.double
-        )
+
+        self._fluxbq = np.zeros((nx, ny), order="F", dtype=np.double)
         self._fluxtq = np.zeros_like(self._fluxbq)  # fluxes not being used anywhere
         self._u10arr = np.zeros_like(self._fluxbq)
         self._precsfc = np.zeros_like(self._fluxbq)
         self._prec_xy = np.zeros_like(self._fluxbq)
-                
-        self._tlat = np.zeros(
-            (nz), order="F", dtype=np.double
-        )
+
+        self._tlat = np.zeros((nz), order="F", dtype=np.double)
         self._precflux = np.zeros_like(self._tlat)
         # np.asfortranarray(np.zeros_like(self._tlat))
         self._qpfall = np.zeros_like(self._tlat)
-                
+
         self._z = self._Grid.z_global
         self._zi = self._Grid.z_edge_global
-        
+
         self._dx = self._Grid.dx[0]
         self._dz = self._Grid.dx[2]
 
         self._dostatis = False
         self._do_chunked_energy_budgets = False
         self._donudging_aerosol = False
-        
-        self._Temp = np.empty(
-            (nx, ny, nzm),
-            dtype=np.double,
-            order="F",
-        )
-        
-        #Temp
-        # print("SAM",rho0[0:16])
-        
+
+        self._Temp = np.empty((nx, ny, nzm), dtype=np.double, order="F",)
+
         self._time = self._TimeSteppingController.time
-        
+
         return
 
     def initialize(self):
@@ -471,155 +469,166 @@ class Micro_M2005_MA(MicrophysicsBase):
         self._rho0 = self._Ref.rho0
         self._tabs0 = self._Ref.T0
         self._rhow = self._Ref.rho0_edge
-        # self._t0 = self._tabs0 + self._z*parameters.G/parameters.CPD
-        # self._qv0 = np.zeros_like(self._p0)
-        # self._q0 = np.zeros_like(self._p0)
-        
+
         qv = self._ScalarState.get_field("qv")
         qc = self._ScalarState.get_field("qc")
-        self._qv0 = qv.mean(axis=1).mean(axis=0)[self._nhalo[2]:self._Grid.ngrid_local[2] - self._nhalo[2]]
-        self._qc0 = qc.mean(axis=1).mean(axis=0)[self._nhalo[2]:self._Grid.ngrid_local[2] - self._nhalo[2]]
-        # self._q0 = self._qv0 + self._qc0
-                
+        self._qv0 = qv.mean(axis=1).mean(axis=0)[
+            self._nhalo[2] : self._Grid.ngrid_local[2] - self._nhalo[2]
+        ]
+        self._qc0 = qc.mean(axis=1).mean(axis=0)[
+            self._nhalo[2] : self._Grid.ngrid_local[2] - self._nhalo[2]
+        ]
+
         s = self._ScalarState.get_field("s")
-        self._t0 = s.mean(axis=1).mean(axis=0)[self._nhalo[2]:self._Grid.ngrid_local[2] - self._nhalo[2]]
-        
+        self._t0 = s.mean(axis=1).mean(axis=0)[
+            self._nhalo[2] : self._Grid.ngrid_local[2] - self._nhalo[2]
+        ]
+
         # self._tabs0 = np.zeros_like(self._p0)
         for k in range(self._sam_dims[2]):
-            self._tabs0[k] = MoistThermo.T(self._z[k],self._t0[k],self._qc0[k],0.0)
-        #     z = self._z[k]
-        #     if z < 795.0:
-        #         self._tabs0[k] = 288.3
-        #     else:
-        #         self._tabs0[k] = 295.0 + (z - 795.0) ** (1.0 / 3.0)
-        #     # print(k,self._tabs0[k])
-        
-        # T = self._DiagnosticState.get_field("T")
-        # self._Temp = np.asfortranarray(T[self._nhalo[0]:self._Grid.ngrid_local[0] - self._nhalo[0],self._nhalo[1]:self._Grid.ngrid_local[1] - self._nhalo[1],self._nhalo[2]:self._Grid.ngrid_local[2] - self._nhalo[2]])
-        
-        # print(self._qv0[0::10],self._qc0[0::10],self._tabs0[0::10])               
+            self._tabs0[k] = MoistThermo.T(self._z[k], self._t0[k], self._qc0[k], 0.0)
+
         for i, vn in enumerate(self._micro_vars):
-            # print(vn)
             dv = self._ScalarState.get_field(vn)
-            self._microfield[:,:,:,i] = np.asfortranarray(dv[self._nhalo[0]:self._Grid.ngrid_local[0] - self._nhalo[0],
-                                                             self._nhalo[1]:self._Grid.ngrid_local[1] - self._nhalo[1],
-                                                             self._nhalo[2]:self._Grid.ngrid_local[2] - self._nhalo[2]])
-                      
+            self._microfield[:, :, :, i] = np.asfortranarray(
+                dv[
+                    self._nhalo[0] : self._Grid.ngrid_local[0] - self._nhalo[0],
+                    self._nhalo[1] : self._Grid.ngrid_local[1] - self._nhalo[1],
+                    self._nhalo[2] : self._Grid.ngrid_local[2] - self._nhalo[2],
+                ]
+            )
+
         self._m2005_ma_cffi.init(
             self._sam_dims[0],
             self._sam_dims[1],
             self._sam_dims[2],
             self._sam_dims[3],
-            self._nx_gl, 
+            self._nx_gl,
             self._ny_gl,
-            self._my_rank, 
-            self._nsubdomains_x, 
-            self._nsubdomains_y, 
+            self._my_rank,
+            self._nsubdomains_x,
+            self._nsubdomains_y,
             self._nrestart,
             self._Temp,
             self._microfield,
-            self._z, 
+            self._z,
             self._p0,
-            self._rho0, 
-            self._tabs0, 
-            self._zi, 
-            self._t0, 
+            self._rho0,
+            self._tabs0,
+            self._zi,
+            self._t0,
             self._dx,
             self._dz,
             self._time,
-            self._qc0, 
-            self._qv0, 
-            self._dostatis, 
-            self._do_chunked_energy_budgets, 
+            self._qc0,
+            self._qv0,
+            self._dostatis,
+            self._do_chunked_energy_budgets,
             self._donudging_aerosol,
-            parameters.LV, 
-            parameters.LS, 
-            parameters.CPD, 
-            parameters.RD, 
-            parameters.RV, 
+            parameters.LV,
+            parameters.LS,
+            parameters.CPD,
+            parameters.RD,
+            parameters.RV,
             parameters.G,
         )
-                        
+
         for i, vn in enumerate(self._micro_vars):
             dv = self._ScalarState.get_field(vn)
             sam_to_our_order(self._nhalo, self._microfield[:, :, :, i], dv)
-        
+
         self._Timers.add_timer("MicroM2005_MA_update")
         return
 
     def update(self):
         self._Timers.start_timer("MicroM2005_MA_update")
-                
+
         p0 = self._Ref.p0
         rho0 = self._Ref.rho0
         # tabs0 = self._Ref.T0
         rhow = self._Ref.rho0_edge
-        # print("SAM_in_main",p0[0:15])
-        
+
         # Get variables from the model state
         T = self._DiagnosticState.get_field("T")
         s = self._ScalarState.get_field("s")
         w = self._VelocityState.get_field("w")
-        
+
         qtot_sed = self._DiagnosticState.get_field("qtot_sed")
         qice_sed = self._DiagnosticState.get_field("qice_sed")
-        
+
         s_tend_liq_sed = self._DiagnosticState.get_field("s_tend_liq_sed")
         s_tend_ice_sed = self._DiagnosticState.get_field("s_tend_ice_sed")
-        
+
         nhalo = self._Grid.n_halo
-        
-        th_sam = np.asfortranarray(T[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],
-                                     nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],
-                                     nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
-        
-        s_sam = np.asfortranarray(s[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],
-                                    nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],
-                                    nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
-        
-        w_sam = np.asfortranarray(w[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],
-                                    nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],
-                                    nhalo[2] - 1:self._Grid.ngrid_local[2] - nhalo[2]])
-        
-        qtot_sed_sam = np.asfortranarray(qtot_sed[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],
-                                                  nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],
-                                                  nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
-        qice_sed_sam = np.asfortranarray(qice_sed[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],
-                                                  nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],
-                                                  nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
-                        
+
+        th_sam = np.asfortranarray(
+            T[
+                nhalo[0] : self._Grid.ngrid_local[0] - nhalo[0],
+                nhalo[1] : self._Grid.ngrid_local[1] - nhalo[1],
+                nhalo[2] : self._Grid.ngrid_local[2] - nhalo[2],
+            ]
+        )
+
+        s_sam = np.asfortranarray(
+            s[
+                nhalo[0] : self._Grid.ngrid_local[0] - nhalo[0],
+                nhalo[1] : self._Grid.ngrid_local[1] - nhalo[1],
+                nhalo[2] : self._Grid.ngrid_local[2] - nhalo[2],
+            ]
+        )
+
+        w_sam = np.asfortranarray(
+            w[
+                nhalo[0] : self._Grid.ngrid_local[0] - nhalo[0],
+                nhalo[1] : self._Grid.ngrid_local[1] - nhalo[1],
+                nhalo[2] - 1 : self._Grid.ngrid_local[2] - nhalo[2],
+            ]
+        )
+
+        qtot_sed_sam = np.asfortranarray(
+            qtot_sed[
+                nhalo[0] : self._Grid.ngrid_local[0] - nhalo[0],
+                nhalo[1] : self._Grid.ngrid_local[1] - nhalo[1],
+                nhalo[2] : self._Grid.ngrid_local[2] - nhalo[2],
+            ]
+        )
+        qice_sed_sam = np.asfortranarray(
+            qice_sed[
+                nhalo[0] : self._Grid.ngrid_local[0] - nhalo[0],
+                nhalo[1] : self._Grid.ngrid_local[1] - nhalo[1],
+                nhalo[2] : self._Grid.ngrid_local[2] - nhalo[2],
+            ]
+        )
+
         for i, vn in enumerate(self._micro_vars):
-            # print(vn)
             dv = self._ScalarState.get_field(vn)
-            self._microfield[:,:,:,i] = np.asfortranarray(dv[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],
-                                                             nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],
-                                                             nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]])
-                        
+            self._microfield[:, :, :, i] = np.asfortranarray(
+                dv[
+                    nhalo[0] : self._Grid.ngrid_local[0] - nhalo[0],
+                    nhalo[1] : self._Grid.ngrid_local[1] - nhalo[1],
+                    nhalo[2] : self._Grid.ngrid_local[2] - nhalo[2],
+                ]
+            )
+
         dt = self._TimeSteppingController.dt
         time = self._TimeSteppingController.time
-        
-        icycle = 1 
+
+        icycle = 1
         ncycle = 1
         nsaveMSE = 1
-        nstat = 1 
-        nstatis = 1         
-        
-        # print("Before update",np.amin(s_sam),np.amin(self._s),np.amin(self._microfield))
-        # print("SAM Before calling main")
-        #       # self._tlat[0],th_3d[0,0,0])
-        # if MPI.COMM_WORLD.Get_rank() == 0:
-        #     print("Pin",dt, parameters.LV,parameters.CPD)
-        
+        nstat = 1
+        nstatis = 1
+
         self._m2005_ma_cffi.update(
             self._sam_dims[0],
             self._sam_dims[1],
             self._sam_dims[2],
             self._sam_dims[3],
-            icycle, 
-            ncycle, 
-            nsaveMSE, 
-            nstat, 
-            nstatis, 
+            icycle,
+            ncycle,
+            nsaveMSE,
+            nstat,
+            nstatis,
             self._itimestep,
             dt,
             time,
@@ -646,23 +655,16 @@ class Micro_M2005_MA(MicrophysicsBase):
             qtot_sed_sam,
             qice_sed_sam,
         )
-        
+
         for i, vn in enumerate(self._micro_vars):
             dv = self._ScalarState.get_field(vn)
             sam_to_our_order(nhalo, self._microfield[:, :, :, i], dv)
-            # print("After update", vn, np.amin(dv), np.amax(dv))
-            
-            # dv[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]] = self._microfield[:, :, :, i]
-            
-        # s[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]] = s_sam[:, :, :]
-        # T[nhalo[0]:self._Grid.ngrid_local[0] - nhalo[0],nhalo[1]:self._Grid.ngrid_local[1] - nhalo[1],nhalo[2]:self._Grid.ngrid_local[2] - nhalo[2]] = th_sam[:, :, :]
-        
+
         # sam_to_our_order(nhalo, th_sam, T)
         sam_to_our_order(nhalo, s_sam, s)
-        
+
         sam_to_our_order(nhalo, qtot_sed_sam, qtot_sed)
         sam_to_our_order(nhalo, qice_sed_sam, qice_sed)
-        # print("After update",np.amin(s_sam),np.amin(self._s),np.amin(self._microfield))               
 
         # Compute and apply sedimentation sources of static energy
         np.multiply(qtot_sed, parameters.LV / parameters.CPD, out=s_tend_liq_sed)
@@ -722,26 +724,12 @@ class Micro_M2005_MA(MicrophysicsBase):
         v.latex_name = "prec_xy"
 
         # Now add cloud fraction and rain fraction profiles
-        v = profiles_grp.createVariable(
-            "CF",
-            np.double,
-            dimensions=(
-                "time",
-                "z",
-            ),
-        )
+        v = profiles_grp.createVariable("CF", np.double, dimensions=("time", "z",),)
         v.long_name = "Cloud Fraction"
         v.standard_name = "CF"
         v.units = ""
 
-        v = profiles_grp.createVariable(
-            "RF",
-            np.double,
-            dimensions=(
-                "time",
-                "z",
-            ),
-        )
+        v = profiles_grp.createVariable("RF", np.double, dimensions=("time", "z",),)
         v.long_name = "Rain Fraction"
         v.standard_name = "RF"
         v.units = ""
@@ -847,10 +835,8 @@ class Micro_M2005_MA(MicrophysicsBase):
 
         if nc_grp is not None:
             precsfc = nc_grp.create_dataset(
-                        "precsfc",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "precsfc", (1, self._Grid.n[0], self._Grid.n[1]), dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 precsfc.dims[i].attach_scale(nc_grp[d])
@@ -863,10 +849,8 @@ class Micro_M2005_MA(MicrophysicsBase):
 
         if nc_grp is not None:
             prec_xy = nc_grp.create_dataset(
-                        "prec_xy",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "prec_xy", (1, self._Grid.n[0], self._Grid.n[1]), dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 prec_xy.dims[i].attach_scale(nc_grp[d])
@@ -880,14 +864,12 @@ class Micro_M2005_MA(MicrophysicsBase):
         # Compute and output the LWP
         if nc_grp is not None:
             lwp = nc_grp.create_dataset(
-                        "LWP",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "LWP", (1, self._Grid.n[0], self._Grid.n[1]), dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 lwp.dims[i].attach_scale(nc_grp[d])
-                
+
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
         qc = self._ScalarState.get_field("qc")[nh[0] : -nh[0], nh[1] : -nh[1], :]
@@ -904,33 +886,31 @@ class Micro_M2005_MA(MicrophysicsBase):
         # Compute and output the LWP
         if nc_grp is not None:
             iwp = nc_grp.create_dataset(
-                        "IWP",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "IWP", (1, self._Grid.n[0], self._Grid.n[1]), dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 iwp.dims[i].attach_scale(nc_grp[d])
-                
-        #nh = self._Grid.n_halo
-        #rho0 = self._Ref.rho0
-        #qc = self._ScalarState.get_field("qi")[nh[0] : -nh[0], nh[1] : -nh[1], :]
-        #iwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis, 0], axis=2)
 
-#        send_buffer.fill(0.0)
-#        send_buffer[start[0] : end[0], start[1] : end[1]] = iwp_compute
-#        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
-#        if nc_grp is not None:
-#            iwp[:, :] = recv_buffer
+        # nh = self._Grid.n_halo
+        # rho0 = self._Ref.rho0
+        # qc = self._ScalarState.get_field("qi")[nh[0] : -nh[0], nh[1] : -nh[1], :]
+        # iwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis, 0], axis=2)
+
+        #        send_buffer.fill(0.0)
+        #        send_buffer[start[0] : end[0], start[1] : end[1]] = iwp_compute
+        #        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        #        if nc_grp is not None:
+        #            iwp[:, :] = recv_buffer
 
         return
 
     def get_qc(self):
-        return self._ScalarState.get_field("qc") #+ self._ScalarState.get_field("qr")
+        return self._ScalarState.get_field("qc")  # + self._ScalarState.get_field("qr")
 
     def get_qcloud(self):
         return self._ScalarState.get_field("qc")
-    
+
     # def get_qi(self):
     #     return self._ScalarState.get_field("qi")
 
