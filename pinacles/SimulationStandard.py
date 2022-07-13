@@ -36,6 +36,7 @@ from pinacles import ParticlesFactory
 from pinacles import Timers
 from pinacles import DiagnosticsCoarseGrain
 from pinacles import DiagnosticsCase
+from pinacles import reproducibility
 from mpi4py import MPI
 import numpy as np
 
@@ -57,6 +58,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Set up the restart, restart modifies the namelist, so this call should not be moved
         self.Restart = Restart.Restart(namelist)
+        Re = reproducibility.Reproducibility(namelist)
 
         # Initialize differently if this is a restart simulation
         if not self.Restart.restart_simulation:
@@ -285,7 +287,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.DiagnosticState,
         )
 
-
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
         self.Restart.add_class_to_restart(self.ScalarState)
@@ -390,7 +391,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Micro,
             self.VelocityState,
             self.ScalarState,
-            self.DiagnosticState
+            self.DiagnosticState,
         )
 
         # Initialize memory for outputting Advective and Diffusive Fluxes
@@ -457,30 +458,27 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Timers.add_timer("main")
         self.Timers.initialize()
 
+        # if MPI.COMM_WORLD.Get_rank() == 0:
+        #     gather =  self.ModelGrid.CreateGather((0,64), (0,64))
+        # else:
+        #     gather =  self.ModelGrid.CreateGather((0,64), (0,64))#
 
+        # u = self.VelocityState.get_field('u')
+        # u[:,:,:] = 10.0
+        # ug = gather.call(u)
+        # t0 = time.time()
+        # arr = gather.call(u)
+        # t1 = time.time()
+        # if MPI.COMM_WORLD.Get_rank() == 0:
+        #     print(t1 - t0)#
 
-       # if MPI.COMM_WORLD.Get_rank() == 0:
-       #     gather =  self.ModelGrid.CreateGather((0,64), (0,64))
-       # else:
-       #     gather =  self.ModelGrid.CreateGather((0,64), (0,64))#
-
-       # u = self.VelocityState.get_field('u')
-       # u[:,:,:] = 10.0
-       # ug = gather.call(u)
-       # t0 = time.time()
-       # arr = gather.call(u)
-       # t1 = time.time() 
-       # if MPI.COMM_WORLD.Get_rank() == 0:
-       #     print(t1 - t0)#
-
-       # if MPI.COMM_WORLD.Get_rank() == 0:
-       #     import pylab as plt
-       #     plt.pcolor(ug[5,:,:].T)
-       #     plt.colorbar()
-       #     plt.title('ug')
-       #     plt.show()
-        #import sys; sys.exit()
-
+        # if MPI.COMM_WORLD.Get_rank() == 0:
+        #     import pylab as plt
+        #     plt.pcolor(ug[5,:,:].T)
+        #     plt.colorbar()
+        #     plt.title('ug')
+        #     plt.show()
+        # import sys; sys.exit()
 
         return
 
@@ -787,7 +785,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Micro,
             self.VelocityState,
             self.ScalarState,
-            self.DiagnosticState
+            self.DiagnosticState,
         )
 
         # Initialize memory for outputting Advective and Diffusive Fluxes
@@ -879,7 +877,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Timers.add_timer("BoundaryUpdate")
         self.Timers.add_timer("main")
         self.Timers.initialize()
-
 
         return
 
