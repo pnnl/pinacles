@@ -46,6 +46,7 @@ class DumpFields_hdf:
 
         self._classes = {}
         self._namelist = namelist
+        
 
         self._Timers.add_timer("DumpFields")
         return

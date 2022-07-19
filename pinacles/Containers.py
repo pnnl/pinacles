@@ -24,6 +24,7 @@ class ModelState:
         self._bcs = {}
         self._loc = {}
         self._limit = {}
+        self._flux_divergence = {}
         self._identical_bcs = identical_bcs
 
         self.name = container_name
@@ -39,6 +40,8 @@ class ModelState:
             "_loc",
             "_identical_bcs",
             "name",
+            "_limit",
+            "_flux_divergence",
         ]
 
         return
@@ -83,10 +86,17 @@ class ModelState:
         bcs="gradient zero",
         loc="c",
         limit=False,
+        flux_divergence="default",
     ):
 
         # Do some correctness checks and warn for some behavior
         assert bcs in ["gradient zero", "value zero"]
+
+        flux_divergence = flux_divergence.upper()
+
+        self._fd_options = ["DEFAULT", "EMONO", "SPLIT_EMONO", "BOUNDED"]
+
+        assert flux_divergence in self._fd_options
 
         # TODO add error handling here. For example what happens if memory has alread been allocated for this container.
         self._dofs[name] = self._nvars
@@ -96,6 +106,7 @@ class ModelState:
         self._bcs[name] = bcs
         self._loc[name] = loc
         self._limit[name] = limit
+        self._flux_divergence[name] = flux_divergence
 
         # Increment the bumber of variables
         self._nvars += 1
@@ -123,6 +134,13 @@ class ModelState:
             dof = self._dofs[var]
             self._state_array.boundary_exchange(dof=dof)
         return
+
+    def override_flux_divergence(self, name, flux_divergence):
+        flux_divergence = flux_divergence.upper()
+        assert flux_divergence in self._fd_options
+        assert name in self._flux_divergence
+
+        self._flux_divergence[name] = flux_divergence
 
     def update_bcs(self, name):
 
@@ -266,8 +284,13 @@ class ModelState:
 
     @property
     def stats_io_init(self):
-
         return
+
+    def is_limited(self, name):
+        return self._limit[name]
+
+    def flux_divergence_type(self, name):
+        return self._flux_divergence[name]
 
     @staticmethod
     @numba.njit()
@@ -284,7 +307,8 @@ class ModelState:
 
         for key, value in self._limit.items():
             field = self.get_field(key)
-            self.limiter(field)
+            if value:
+                self.limiter(field)
 
         return
 

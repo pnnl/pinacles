@@ -155,6 +155,7 @@ class MicroP3(MicrophysicsBase):
             units="kg kg^{-1}",
             latex_name="q_v",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qc",
@@ -162,6 +163,7 @@ class MicroP3(MicrophysicsBase):
             units="kg kg^{-1}",
             latex_name="q_c",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qnc",
@@ -169,6 +171,7 @@ class MicroP3(MicrophysicsBase):
             units="# kg^{-1}",
             latex_name="q_{nc}",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qr",
@@ -176,6 +179,7 @@ class MicroP3(MicrophysicsBase):
             units="kg kg^{-1}",
             latex_name="q_{r}",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qnr",
@@ -183,6 +187,7 @@ class MicroP3(MicrophysicsBase):
             units="# kg^{-1}",
             latex_name="q_{nr}",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qi1",
@@ -190,6 +195,7 @@ class MicroP3(MicrophysicsBase):
             units="kg kg^{-1}",
             latex_name="q_{i}",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qni1",
@@ -197,6 +203,7 @@ class MicroP3(MicrophysicsBase):
             units="# kg^{-1}",
             latex_name="q_{ni}",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qir1",
@@ -204,6 +211,7 @@ class MicroP3(MicrophysicsBase):
             units="kg kg^{-1}",
             latex_name="q_{ir}",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qib1",
@@ -211,6 +219,7 @@ class MicroP3(MicrophysicsBase):
             units="m^{-3} kg^{-1}",
             latex_name="q_{ib}",
             limit=True,
+            flux_divergence="EMONO",
         )
 
         self._DiagnosticState.add_variable("liq_sed")
@@ -853,7 +862,9 @@ class MicroP3(MicrophysicsBase):
             for i, d in enumerate(["time", "X", "Y"]):
                 rainnc.dims[i].attach_scale(fx[d])
 
-        send_buffer[start[0] : end[0], start[1] : end[1]] = self._RAINNC
+        send_buffer[start[0] : end[0], start[1] : end[1]] = np.ascontiguousarray(
+            self._RAINNC
+        )
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
 
         if fx is not None:
@@ -870,7 +881,9 @@ class MicroP3(MicrophysicsBase):
                 rainncv.dims[i].attach_scale(fx[d])
 
         send_buffer.fill(0.0)
-        send_buffer[start[0] : end[0], start[1] : end[1]] = self._RAINNCV
+        send_buffer[start[0] : end[0], start[1] : end[1]] = np.ascontiguousarray(
+            self._RAINNCV
+        )
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
         if fx is not None:
             rainncv[:, :] = recv_buffer

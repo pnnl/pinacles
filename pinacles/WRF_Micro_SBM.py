@@ -73,7 +73,7 @@ class MicroSBM(MicrophysicsBase):
             TimeSteppingController,
         )
 
-        self._ScalarState.add_variable("qv")
+        self._ScalarState.add_variable("qv", flux_divergence="EMONO")
         # TODO for now adding these as prognostic variables but probably unnecessary
         self._list_of_ScalarStatevars = ["qc", "qr", "qnc", "qnr", "qna", "qna_nucl"]
 
@@ -102,6 +102,7 @@ class MicroSBM(MicrophysicsBase):
                 latex_name=var,
                 long_name=long_names[var],
                 limit=True,
+                flux_divergence="EMONO",
             )
 
         # Add new diag fields
@@ -199,6 +200,7 @@ class MicroSBM(MicrophysicsBase):
                 units="kg kg^{-1}",
                 long_name="liquid bin mass " + str(i),
                 limit=True,
+                flux_divergence="EMONO",
             )
         self._qc_end = self._ScalarState.nvars
         # Add aersol bins
@@ -209,6 +211,7 @@ class MicroSBM(MicrophysicsBase):
                 units="kg kg^{-1}",
                 long_name="aerosol bin mass " + str(i),
                 limit=True,
+                flux_divergence="EMONO",
             )
 
         for i in range(1, 34):
@@ -218,6 +221,7 @@ class MicroSBM(MicrophysicsBase):
                 units="kg kg^{-1}",
                 long_name="(regeneration) aerosol bin mass " + str(i),
                 limit=True,
+                flux_divergence="EMONO",
             )
         self._bin_end = self._ScalarState.nvars
 

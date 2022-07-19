@@ -108,6 +108,7 @@ class MicroKessler(MicrophysicsBase):
             units="kg kg^{-1}",
             latex_name="q_v",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qc",
@@ -115,6 +116,7 @@ class MicroKessler(MicrophysicsBase):
             units="kg kg^{-1}",
             latex_name="q_c",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qr",
@@ -122,8 +124,8 @@ class MicroKessler(MicrophysicsBase):
             units="kg kg^{-1}",
             latex_name="q_{r}",
             limit=True,
+            flux_divergence="EMONO",
         )
-
         self._DiagnosticState.add_variable(
             "liq_sed", long_name="liquid water sedimentation", units="kg kg^{-1} s^{-1}"
         )

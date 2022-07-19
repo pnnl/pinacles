@@ -169,26 +169,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Micro,
         )
 
-        # Instantiate scalar advection
-        self.ScalarAdv = ScalarAdvectionFactory.factory(
-            self._namelist,
-            self.Timers,
-            self.ModelGrid,
-            self.Ref,
-            self.ScalarState,
-            self.VelocityState,
-            self.ScalarTimeStepping,
-        )
-
-        self.MomAdv = MomentumAdvection.factory(
-            self._namelist,
-            self.Timers,
-            self.ModelGrid,
-            self.Ref,
-            self.ScalarState,
-            self.VelocityState,
-        )
-
         # Instantiate scalar diffusion
         self.ScalarDiff = ScalarDiffusion.ScalarDiffusion(
             self._namelist,
@@ -301,6 +281,27 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Allocate memory for storage arrays in container classes. This should come after most classes are instantiated becuase the
         # container must know how much memory to allocate
+
+        # Instantiate scalar advection
+        self.ScalarAdv = ScalarAdvectionFactory.factory(
+            self._namelist,
+            self.Timers,
+            self.ModelGrid,
+            self.Ref,
+            self.ScalarState,
+            self.VelocityState,
+            self.ScalarTimeStepping,
+        )
+
+        self.MomAdv = MomentumAdvection.factory(
+            self._namelist,
+            self.Timers,
+            self.ModelGrid,
+            self.Ref,
+            self.ScalarState,
+            self.VelocityState,
+        )
+
         self.ScalarState.allocate()
         self.VelocityState.allocate()
         self.DiagnosticState.allocate()
@@ -709,6 +710,26 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Allocate memory for storage arrays in container classes. This should come after most classes are instantiated becuase the
         # container must know how much memory to allocate
+
+        self.ScalarAdv = ScalarAdvectionFactory.factory(
+            self._namelist,
+            self.Timers,
+            self.ModelGrid,
+            self.Ref,
+            self.ScalarState,
+            self.VelocityState,
+            self.ScalarTimeStepping,
+        )
+
+        self.MomAdv = MomentumAdvection.factory(
+            self._namelist,
+            self.Timers,
+            self.ModelGrid,
+            self.Ref,
+            self.ScalarState,
+            self.VelocityState,
+        )
+
         self.ScalarState.allocate()
         self.VelocityState.allocate()
         self.DiagnosticState.allocate()

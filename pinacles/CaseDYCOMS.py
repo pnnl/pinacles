@@ -94,39 +94,40 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     exner = Ref.exner
 
-    # Wind is uniform initiall
+    # Wind is uniform initially
     u.fill(0.0)
     v.fill(0.0)
     w.fill(0.0)
 
     shape = s.shape
 
-    perts = np.random.uniform(-0.01, 0.01, (shape[0], shape[1], shape[2])) * 10.0
+    perts = np.random.uniform(-0.1, 0.1, (shape[0], shape[1], shape[2]))
 
-    for k in range(shape[2]):
 
-        z = zl[k]
-        if z < 795.0:
-            thetal = 288.3
-            qt = 9.45
-        else:
-            thetal = 295.0 + (z - 795.0) ** (1.0 / 3.0)
-            qt = 5.0 - 3.0 * (1.0 - np.exp(-(z - 795.0) / 500.0))
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            for k in range(shape[2]):
 
-        qt /= 1000.0
-        t, ql = sat_adjust(Ref.p0[k], thetal, qt, exner[k])
-        qv[:, :, k] = qt - ql
-        qc[:, :, k] = ql
+                z = zl[k]
+                if z < 795.0:
+                    thetal = 288.3
+                    qt = 9.45
+                else:
+                    thetal = 295.0 + (z - 795.0) ** (1.0 / 3.0)
+                    qt = 5.0 - 3.0 * (1.0 - np.exp(-(z - 795.0) / 500.0))
 
-        for i in range(shape[0]):
-            for j in range(shape[1]):
+                qt /= 1000.0
+                t, ql = sat_adjust(Ref.p0[k], thetal, qt, exner[k])
+                qv[i, j, k] = qt - ql
+                qc[i, j, k] = ql
+
                 if zl[k] < 200.0:
                     t += perts[i, j, k]
 
                 s[i, j, k] = MoistThermo.s(zl[k], t, ql, 0.0)
 
-        u[:, :, k] = 3.0 + z * 4.3e-3
-        v[:, :, k] = -9.0 + z * 5.6e-3
+                u[i, j, k] = 3.0 + z * 4.3e-3
+                v[i, j, k] = -9.0 + z * 5.6e-3
 
     u -= Ref.u0
     v -= Ref.v0
@@ -254,7 +255,7 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
         return
 
     def update(self):
-
+        
         self._Timers.start_timer("SurfaceDycoms_update")
         nh = self._Grid.n_halo
         dxi2 = self._Grid.dxi[2]

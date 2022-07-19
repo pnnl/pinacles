@@ -41,6 +41,14 @@ class MomentumAdvectionBase:
             self._fu = MomentumAdvection_impl.u_advection_weno5
             self._fv = MomentumAdvection_impl.v_advection_weno5
             self._fw = MomentumAdvection_impl.w_advection_weno5
+        if scheme == "WENO5_Z":
+            UtilitiesParallel.print_root(
+                "\t \t Using " + scheme + " momentum advection"
+            )
+            assert np.all(n_halo >= 3)  # Check that we have enough halo points
+            self._fu = MomentumAdvection_impl.u_advection_weno5_z
+            self._fv = MomentumAdvection_impl.v_advection_weno5_z
+            self._fw = MomentumAdvection_impl.w_advection_weno5_z
         elif scheme == "WENO5_BASE":
             UtilitiesParallel.print_root(
                 "\t \t Using " + scheme + " momentum advection"
@@ -57,6 +65,14 @@ class MomentumAdvectionBase:
             self._fu = MomentumAdvection_impl.u_advection_weno7
             self._fv = MomentumAdvection_impl.v_advection_weno7
             self._fw = MomentumAdvection_impl.w_advection_weno7
+        elif scheme == "WENO7_Z":
+            UtilitiesParallel.print_root(
+                "\t \t Using " + scheme + " momentum advection"
+            )
+            assert np.all(n_halo >= 4)  # Check that we have enough halo points
+            self._fu = MomentumAdvection_impl.u_advection_weno7_z
+            self._fv = MomentumAdvection_impl.v_advection_weno7_z
+            self._fw = MomentumAdvection_impl.w_advection_weno7_z
         elif scheme == "WENO7_BASE":
             UtilitiesParallel.print_root(
                 "\t \t Using " + scheme + " momentum advection"
