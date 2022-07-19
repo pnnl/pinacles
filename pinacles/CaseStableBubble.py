@@ -27,9 +27,9 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     w = VelocityState.get_field("w")
     s = ScalarState.get_field("s")
 
-    xl = ModelGrid.x_local
-    yl = ModelGrid.y_local
-    zl = ModelGrid.z_local
+    xl = ModelGrid.local_axes[0]
+    yl = ModelGrid.local_axes[1]
+    zl = ModelGrid.local_axes[2]
     xg = ModelGrid.x_global
     yg = ModelGrid.y_global
 
@@ -42,28 +42,20 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     shape = s.shape
 
-    dista = np.zeros_like(u)
+    # dista = np.zeros_like(u)
 
     for i in range(shape[0]):
         for j in range(shape[1]):
             for k in range(shape[2]):
                 dist = np.sqrt(
-                    (xl[i] / 1000.0 - 25.6) ** 2.0
+                    ((xl[i] / 1000.0 - 25.6) / 4.0) ** 2.0
                     + ((zl[k] / 1000.0 - 3.0) / 2.0) ** 2.0
                 )
-
-                t = 300.0
+                t = 300.0 - zl[k] * parameters.G * parameters.ICPD
                 if dist <= 1.0:
-                    t -= 7.5
-
-                t *= exner[k]
+                    t -= 15.0 * (np.cos(np.pi * dist) + 1.0) / 2.0
 
                 s[i, j, k] = DryThermo.s(zl[k], t)
-                # dist = min(dist, 1.0)
-                # t = (300.0 ) - 15.0*( np.cos(np.pi * dist) + 1.0) /2.0
-                # dista[i,j,k] = dist
-
-    return
 
 
 class SurfaceStableBubble(Surface.SurfaceBase):
@@ -95,9 +87,6 @@ class SurfaceStableBubble(Surface.SurfaceBase):
 
         self._Timers.add_timer("SurfaceStableBubble_update")
 
-        return
-
     def update(self):
         # No surface implementation for this case
-
-        return
+        pass

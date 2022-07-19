@@ -22,9 +22,9 @@ def rk2ssp_s1(state_0, state_1, tend_1, dt):
         for i in range(shape[1]):
             for j in range(shape[2]):
                 for k in range(shape[3]):
-                    state_1[n, i, j, k] = 0.5 * (
+                    state_1[n, i, j, k] = (
                         state_0[n, i, j, k]
-                        + (state_1[n, i, j, k] + tend_1[n, i, j, k] * dt)
+                        + 0.5 * ( (state_1[n, i, j, k]  - state_0[n,i,j,k]) + tend_1[n, i, j, k] * dt)
                     )
                     tend_1[n, i, j, k] = 0.0
     return

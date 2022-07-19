@@ -51,7 +51,7 @@ def standard_mocks(tmpdir):
 
     namelist["grid"] = {}
     namelist["grid"]["n"] = [6, 6, 6]
-    namelist["grid"]["n_halo"] = [3, 3, 3]
+    namelist["grid"]["n_halo"] = [4, 4, 4]
     namelist["grid"]["l"] = [2000.0, 2000.0, 2000.0]
 
     namelist["time"] = {}
