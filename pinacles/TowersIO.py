@@ -104,14 +104,37 @@ class Tower:
 
         for con in self._containers:
             for var in con._dofs.keys():
-                if con._loc[var] != "z":
+                if var == "u":
                     phi = con.get_field(var)
-                    rt_grp[var][-1, :] = phi[self._i_indx, self._j_indx, nh[2] : -nh[2]]
+                    rt_grp[var][-1, :] = (
+                        np.add(
+                            phi[self._i_indx, self._j_indx, nh[2] : -nh[2]],
+                            phi[self._i_indx - 1, self._j_indx, nh[2] : -nh[2]],
+                        )
+                        * 0.5
+                    )
+
+                elif var == "v":
+                    phi = con.get_field(var)
+                    rt_grp[var][-1, :] = (
+                        np.add(
+                            phi[self._i_indx, self._j_indx, nh[2] : -nh[2]],
+                            phi[self._i_indx, self._j_indx - 1, nh[2] : -nh[2]],
+                        )
+                        * 0.5
+                    )
+
                 else:
-                    phi = con.get_field(var)
-                    rt_grp[var][-1, :] = phi[
-                        self._i_indx, self._j_indx, nh[2] - 1 : -nh[2]
-                    ]
+                    if con._loc[var] != "z":
+                        phi = con.get_field(var)
+                        rt_grp[var][-1, :] = phi[
+                            self._i_indx, self._j_indx, nh[2] : -nh[2]
+                        ]
+                    else:
+                        phi = con.get_field(var)
+                        rt_grp[var][-1, :] = phi[
+                            self._i_indx, self._j_indx, nh[2] - 1 : -nh[2]
+                        ]
 
         rt_grp.close()
 

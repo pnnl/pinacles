@@ -19,7 +19,7 @@ class PressureSolver:
         self._wavenumber_substarts = None
         self._wavenumber_n = None
 
-        # Add dynamic pressure as a diagnsotic state
+        # Add dynamic pressure as a diagnostic state
         self._DiagnosticState.add_variable(
             "dynamic pressure",
             long_name="Dynamic Pressure",
@@ -34,7 +34,7 @@ class PressureSolver:
             latex_name="div(\rho u_h)",
         )
 
-        # Setup the Fourier Transform
+        # Set up the Fourier Transform
         div = fft.DistArray(self._Grid.n, self._Grid.subcomms, dtype=np.complex)
         div = div.redistribute(0)
 
@@ -96,7 +96,7 @@ class PressureSolver:
 
         fill_pressure(n_halo, self.FFT.backward(div_hat_2), dynp)
 
-        # TODO add single vairable exchange
+        # TODO add single variable exchange
         self._DiagnosticState.boundary_exchange("dynamic pressure")
         self._DiagnosticState._gradient_zero_bc("dynamic pressure")
 

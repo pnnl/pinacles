@@ -10,6 +10,7 @@ try:
 except:
     pass
 
+
 class Fields2D:
     def __init__(self, namelist, Grid, Ref, VelocityState, TimeSteppingController):
         self._Grid = Grid
@@ -108,7 +109,7 @@ class Fields2D:
             # Add some metadata
             fx.attrs["unique_id"] = self._namelist["meta"]["unique_id"]
             fx.attrs["wall_time"] = self._namelist["meta"]["wall_time"]
-            fx.attrs["fequency"] = self.frequency
+            fx.attrs["frequency"] = self.frequency
 
             self.setup_dims(fx)
 
@@ -139,10 +140,11 @@ class Fields2D:
         send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
         recv_buffer = np.empty_like(send_buffer)
 
-        for v in ["u", "v", "w"]:
+        for v in ["u", "v"]:
             for k in self._output_levels:
                 z = self._Grid.z_global[nh[2] + k]
 
+                
                 if fx is not None:
                     var_fx = fx.create_dataset(
                         v + "_" + str(z),
@@ -162,6 +164,34 @@ class Fields2D:
                 if fx is not None:
                     var_fx[:, :] = recv_buffer
 
+        for v in ["w"]:
+            for k in self._output_levels:
+                z = self._Grid.z_global[nh[2] + k]
+
+                if fx is not None:
+                    var_fx = fx.create_dataset(
+                                v + "_" + str(z),
+                                (1, self._Grid.n[0], self._Grid.n[1]),
+                                dtype=np.double,
+                            )
+
+                    for i, d in enumerate(["time", "X", "Y"]):
+                        var_fx.dims[i].attach_scale(fx[d])
+
+                var = self._VelocityState.get_field(v)
+                send_buffer.fill(0.0)
+                send_buffer[start[0] : end[0], start[1] : end[1]] = (
+                    np.add(
+                        var[nh[0] : -nh[0], nh[1] : -nh[1], nh[2] + k],
+                        var[nh[0] : -nh[0], nh[1] : -nh[1], nh[2] + k - 1],
+                    )
+                    * 0.5
+                )
+                MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+                if fx is not None:
+                    var_fx[:, :] = recv_buffer
+
+                
         return
 
     def setup_directories(self):
@@ -195,7 +225,6 @@ class Fields2DNone:
 
         self._frequency = 1.0e10
         self._classes = {}
-       
 
         return
 
@@ -216,10 +245,11 @@ class Fields2DNone:
 
         return
 
-   
+
 def factory(namelist, Grid, Ref, VelocityState, TimeSteppingController):
     try:
         import h5py
+
         dofields2d = True
     except:
         if MPI.COMM_WORLD.Get_rank() == 0:
@@ -228,5 +258,5 @@ def factory(namelist, Grid, Ref, VelocityState, TimeSteppingController):
 
     if dofields2d:
         return Fields2D(namelist, Grid, Ref, VelocityState, TimeSteppingController)
-    else: 
+    else:
         return Fields2DNone()

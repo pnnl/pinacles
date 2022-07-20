@@ -219,7 +219,7 @@ class IngestEra5:
 
                 interp = interpolate.Akima1DInterpolator(z, T_horizontal[:, i, j])
                 Ti[i, j, :] = np.pad(
-                    interp.__call__(height[nh[2] : -nh[2]]), 3, mode="edge"
+                    interp.__call__(height[nh[2] : -nh[2]]), nh[2], mode="edge"
                 )
 
         return Ti
@@ -278,7 +278,7 @@ class IngestEra5:
 
                 interp = interpolate.Akima1DInterpolator(z, qv_horizontal[:, i, j])
                 qvi[i, j, :] = np.pad(
-                    interp.__call__(height[nh[2] : -nh[2]]), 3, mode="edge"
+                    interp.__call__(height[nh[2] : -nh[2]]), nh[2], mode="edge"
                 )
 
         qvi[qvi < 0] = 1e-10
@@ -339,7 +339,7 @@ class IngestEra5:
 
                 interp = interpolate.Akima1DInterpolator(z, qv_horizontal[:, i, j])
                 qvi[i, j, :] = np.pad(
-                    interp.__call__(height[nh[2] : -nh[2]]), 3, mode="edge"
+                    interp.__call__(height[nh[2] : -nh[2]]), nh[2], mode="edge"
                 )
 
         qvi[qvi < 0] = 0.0
@@ -399,7 +399,7 @@ class IngestEra5:
 
                 interp = interpolate.Akima1DInterpolator(z, qv_horizontal[:, i, j])
                 qvi[i, j, :] = np.pad(
-                    interp.__call__(height[nh[2] : -nh[2]]), 3, mode="edge"
+                    interp.__call__(height[nh[2] : -nh[2]]), nh[2], mode="edge"
                 )
 
         qvi[qvi < 0] = 0.0
@@ -466,7 +466,7 @@ class IngestEra5:
 
                 interp = interpolate.Akima1DInterpolator(z[:], u_horizontal[:, i, j])
                 ui[i, j, :] = np.pad(
-                    interp.__call__(height[nh[2] : -nh[2]]), 3, mode="edge"
+                    interp.__call__(height[nh[2] : -nh[2]]), nh[2], mode="edge"
                 )
 
         return ui
@@ -538,7 +538,7 @@ class IngestEra5:
 
                 interp = interpolate.Akima1DInterpolator(z[:], v_horizontal[:, i, j])
                 vi[i, j, :] = np.pad(
-                    interp.__call__(height[nh[2] : -nh[2]]), 3, mode="edge"
+                    interp.__call__(height[nh[2] : -nh[2]]), nh[2], mode="edge"
                 )
 
         # print('V', np.amax(vi), np.amax(vi))

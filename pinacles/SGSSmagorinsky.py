@@ -43,7 +43,7 @@ def compute_visc(
                 # Compute the eddy viscosity with a correction for
                 # stratification
                 eddy_viscosity[i, j, k] = (cs * filt_scale) ** 2.0 * (
-                    fb * strain_rate_mag[i, j, k]
+                    fb * strain_rate_mag[i, j, k] 
                 )
 
                 tke_sgs[i, j, k] = (eddy_viscosity[i, j, k] / (filt_scale * 0.1)) ** 2.0
@@ -91,7 +91,7 @@ class Smagorinsky(SGSBase):
             self._cs = 0.17
 
         try:
-            self._prt = namelist["sgs"]["smagorinsky"]["Prt"]
+            self._prt = namelist["sgs"]["smagorinsky"]["prt"]
         except BaseException:
             self._prt = 1.0 / 3.0
 

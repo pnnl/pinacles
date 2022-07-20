@@ -103,7 +103,7 @@ class MicroP3(MicrophysicsBase):
         if MPI.COMM_WORLD.Get_rank() == 0:
             print("\tP3: Using the " + str(self._rain_moment) + "-moment rain scheme")
 
-        # Set the default droplet conencentration for 1-moment rain scheme.
+        # Set the default droplet concentration for 1-moment rain scheme.
         self._nccnst = 200.0e6
         try:
             self._nccnst = namelist["microphysics"]["nccnst"]
@@ -148,13 +148,14 @@ class MicroP3(MicrophysicsBase):
                 if MPI.COMM_WORLD.Get_rank() == 0:
                     print("\tP3: Initialized with default aerosol distn")
 
-        # Allocate microphysical/thermodyamic variables
+        # Allocate microphysical/thermodynamic variables
         self._ScalarState.add_variable(
             "qv",
             long_name="water vapor mixing ratio",
             units="kg kg^{-1}",
             latex_name="q_v",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qc",
@@ -162,6 +163,7 @@ class MicroP3(MicrophysicsBase):
             units="kg kg^{-1}",
             latex_name="q_c",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qnc",
@@ -169,6 +171,7 @@ class MicroP3(MicrophysicsBase):
             units="# kg^{-1}",
             latex_name="q_{nc}",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qr",
@@ -176,6 +179,7 @@ class MicroP3(MicrophysicsBase):
             units="kg kg^{-1}",
             latex_name="q_{r}",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qnr",
@@ -183,6 +187,7 @@ class MicroP3(MicrophysicsBase):
             units="# kg^{-1}",
             latex_name="q_{nr}",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qi1",
@@ -190,6 +195,7 @@ class MicroP3(MicrophysicsBase):
             units="kg kg^{-1}",
             latex_name="q_{i}",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qni1",
@@ -197,6 +203,7 @@ class MicroP3(MicrophysicsBase):
             units="# kg^{-1}",
             latex_name="q_{ni}",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qir1",
@@ -204,6 +211,7 @@ class MicroP3(MicrophysicsBase):
             units="kg kg^{-1}",
             latex_name="q_{ir}",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qib1",
@@ -211,6 +219,7 @@ class MicroP3(MicrophysicsBase):
             units="m^{-3} kg^{-1}",
             latex_name="q_{ib}",
             limit=True,
+            flux_divergence="EMONO",
         )
 
         self._DiagnosticState.add_variable("liq_sed")
@@ -364,7 +373,7 @@ class MicroP3(MicrophysicsBase):
                 np.empty(tuple(self._wrf_dims), order="F", dtype=np.double),
             )
 
-        self._restart_attributes = ["_RAINNC"]
+        self._restart_attributes = ["_RAINNC", "_itimestep"]
 
         self._Timers.add_timer("MicroP3_update")
         return
@@ -759,11 +768,11 @@ class MicroP3(MicrophysicsBase):
         qv = self._ScalarState.get_field("qv")
         qr = self._ScalarState.get_field("qr")
 
-        # First compute liqud water path
+        # First compute liquid water path
         lwp = water_path(n_halo, dz, npts, rho, qc)
         lwp = UtilitiesParallel.ScalarAllReduce(lwp)
 
-        # First compute liqud water path
+        # First compute liquid water path
         lwp_lasso, npts_lasso = water_path_lasso(n_halo, dz, rho, qc + qr)
         lwp_lasso = UtilitiesParallel.ScalarAllReduce(lwp_lasso)
         npts_lasso = UtilitiesParallel.ScalarAllReduce(npts_lasso)
@@ -853,7 +862,9 @@ class MicroP3(MicrophysicsBase):
             for i, d in enumerate(["time", "X", "Y"]):
                 rainnc.dims[i].attach_scale(fx[d])
 
-        send_buffer[start[0] : end[0], start[1] : end[1]] = self._RAINNC
+        send_buffer[start[0] : end[0], start[1] : end[1]] = np.ascontiguousarray(
+            self._RAINNC
+        )
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
 
         if fx is not None:
@@ -870,7 +881,9 @@ class MicroP3(MicrophysicsBase):
                 rainncv.dims[i].attach_scale(fx[d])
 
         send_buffer.fill(0.0)
-        send_buffer[start[0] : end[0], start[1] : end[1]] = self._RAINNCV
+        send_buffer[start[0] : end[0], start[1] : end[1]] = np.ascontiguousarray(
+            self._RAINNCV
+        )
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
         if fx is not None:
             rainncv[:, :] = recv_buffer
@@ -947,7 +960,7 @@ class MicroP3(MicrophysicsBase):
         return
 
     def dump_restart(self, data_dict):
-        # Get the name of this particualr container and create a dictionary for it in the
+        # Get the name of this particular container and create a dictionary for it in the
         # restart data dict.
 
         key = "P3"

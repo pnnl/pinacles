@@ -100,14 +100,21 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     try:
         raw_clwc = init_data.variables["cloud_water_content"][:]
-        init_qc = True
-        UtilitiesParallel.print_root("\t \t Initialization of qc is true")
+        init_qc_type = 'clwc'
+        UtilitiesParallel.print_root("\t \t Initialization of qc from clwc is true")
+        rho_factor = Ref.rho0[:]
     except:
-        init_qc = False
-        qc.fill(0.0)
-        UtilitiesParallel.print_root("\t \t Initialization of qc is false")
+        try:
+            raw_clwc = init_data.variables["qc"][:]
+            init_qc_type = 'qc'
+            UtilitiesParallel.print_root("\t \t Initialization of qc from qc is true")
+            rho_factor = np.ones_like(Ref.rho0)
+        except:
+            init_qc_type = 'none'
+            qc.fill(0.0)
+            UtilitiesParallel.print_root("\t \t Initialization of qc is false")
 
-    if init_qc:
+    if init_qc_type != 'none':
         init_var_from_sounding(raw_clwc, init_z, zl, qc)
         shape = qc.shape
         if micro_scheme == "sbm" and sbm_init_type == "assume_distribution":
@@ -135,7 +142,7 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                             for ibin in range(nbins):
 
                                 ff_list[ibin][i, j, k] = (
-                                    f[ibin] * 1e6 * xl[ibin] / Ref.rho0[k]
+                                    f[ibin] * 1e6 * xl[ibin] / rho_factor[k]
                                 )  # /col* col
                                 qc_sum += ff_list[ibin][i, j, k]
                         # qc[i,j,k] = qc[i,j,k]/Ref.rho0[k]
@@ -152,13 +159,13 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
             for i in range(shape[0]):
                 for j in range(shape[1]):
                     for k in range(shape[2]):
-                        qv[i, j, k] += qc[i, j, k] / Ref.rho0[k]
+                        qv[i, j, k] += qc[i, j, k] / rho_factor[k]
                         qc[i, j, k] = 0.0
         else:
             for i in range(shape[0]):
                 for j in range(shape[1]):
                     for k in range(shape[2]):
-                        qc[i, j, k] = qc[i, j, k] / Ref.rho0[k]
+                        qc[i, j, k] = qc[i, j, k] /rho_factor[k]
 
     try:
         raw_temperature = init_data.variables["temperature"][:]

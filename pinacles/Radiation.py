@@ -367,7 +367,7 @@ class RRTMG:
             tlay = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             tlev = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")
             tsfc = np.ravel(
-                self._Surf.T_surface[3:-3, 3:-3]
+                self._Surf.T_surface[_nhalo[0]:-_nhalo[0], _nhalo[1]:-_nhalo[1]]
             )  # np.ones((_ncol), dtype=np.double, order="F") * self._Surf.T_surface
             h2ovmr = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             o3vmr = np.zeros((_ncol, _nlay), dtype=np.double, order="F")

@@ -1,5 +1,6 @@
 import numpy as np
 from mpi4py import MPI
+import numba 
 from pinacles import parameters
 from pinacles import Surface, Surface_impl, Forcing_impl, Forcing
 from pinacles import UtilitiesParallel
@@ -346,4 +347,118 @@ class ForcingBOMEX(Forcing.ForcingBase):
         Forcing_impl.apply_subsidence(self._subsidence, self._Grid.dxi[2], qv, qvt)
 
         self._Timers.end_timer("ForcingBomex_update")
+        return
+    
+@numba.njit()
+def compute_zi(nh, z_edge, thv):
+    shape = thv.shape
+    
+    zi = np.zeros((shape[0], shape[1]), dtype=np.double)
+    
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            k_grad_max = 0
+            grad = -999999.9
+            for k in range(nh[2], shape[2]-nh[2]-1):
+                tmp_grad = thv[i,j,k+1] - thv[i,j,k]
+                if tmp_grad > grad and z_edge[k] >= 500.0:
+                    k_grad_max = k
+                    grad = tmp_grad
+                
+            zi[i,j] = z_edge[k_grad_max]   
+    
+    return zi
+    
+class BomexDiagnostics:
+    
+    def __init__(self, Grid, Ref, Thermo, Micro, VelocityState, ScalarState, DiagnosticState):
+    
+        self._Grid = Grid
+        self._Ref = Ref
+        self._Thermo = Thermo
+        self._Micro = Micro
+        self._VelocityState = VelocityState
+        self._ScalarState = ScalarState
+        self._DiagnosticState = DiagnosticState
+        
+        
+    def io_initialize(self, this_grp):
+        
+        my_rank = MPI.COMM_WORLD.Get_rank()
+        
+        if my_rank != 0:
+            return
+        
+        timeseries_grp = this_grp["timeseries"]
+        profiles_grp = this_grp["profiles"]
+        
+        
+        # Add surface windspeed
+        v = timeseries_grp.createVariable(
+            "zi", np.double, dimensions=("time",)
+        )
+        v.long_name = "Inversion height based on potential temperature"
+        v.unts = "m"
+        v.standard_name = "Inversion height"
+
+        
+        # Add surface windspeed
+        v = timeseries_grp.createVariable(
+            "zi_s", np.double, dimensions=("time",)
+        )
+        v.long_name = "Inversion height based on static energy"
+        v.unts = "m"
+        v.standard_name = "Inversion height"
+
+        
+        return
+        
+    def io_update(self, this_grp):
+
+    
+        #Compute the height of the maximum gradient in potential temperature
+        nh = self._Grid.n_halo
+        npts = self._Grid.n[0] * self._Grid.n[1]
+        z_edge = self._Grid.z_edge_global
+        thv = self._DiagnosticState.get_field('thetav')
+        s = self._ScalarState.get_field('s')
+
+
+        # PBL Height based on thv
+        zi = compute_zi(nh, z_edge, thv)
+        
+        zi_loc = (
+            np.sum(zi[nh[0] : -nh[0], nh[1] : -nh[1]])
+            / npts
+        )
+        zi_glob = UtilitiesParallel.ScalarAllReduce(zi_loc)
+                
+        MPI.COMM_WORLD.barrier()
+        my_rank = MPI.COMM_WORLD.Get_rank()
+        if my_rank == 0:
+            
+            timeseries_grp = this_grp["timeseries"]
+            profiles_grp = this_grp["profiles"]
+        
+            timeseries_grp["zi"][-1] = zi_glob
+        
+        #PBL Height based on s
+        zi = compute_zi(nh, z_edge, s)
+        
+        zi_loc = (
+            np.sum(zi[nh[0] : -nh[0], nh[1] : -nh[1]])
+            / npts
+        )
+        zi_glob = UtilitiesParallel.ScalarAllReduce(zi_loc)
+                
+        MPI.COMM_WORLD.barrier()
+        my_rank = MPI.COMM_WORLD.Get_rank()
+        if my_rank == 0:
+            
+            timeseries_grp = this_grp["timeseries"]
+            profiles_grp = this_grp["profiles"]
+        
+            timeseries_grp["zi_s"][-1] = zi_glob
+        
+        
         return

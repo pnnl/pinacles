@@ -415,6 +415,21 @@ class DiagnosticsTurbulence:
         v.long_name = "correlation between total water mixing ratio and liquid-ice potential temperature"
         v.latex_name = "\overline{q_t^\prime \theta_{li} ^\prime}"
         v.units = "kg kg^-1 K"
+        
+        v = timeseries_grp.createVariable(
+            "tke_resolved", np.double, dimensions=("time",),
+        )
+        v.long_name = "vertical integral of turbulence kinetic energy"
+        v.latex_name = "e"
+        v.units = "m^2 s^{-2}"
+        
+        v = timeseries_grp.createVariable(
+            "tke_sgs", np.double, dimensions=("time",),
+        )
+        v.long_name = "vertical integral of sgs turbulence kinetic energy"
+        v.latex_name = "e_sgs"
+        v.units = "m^2 s^{-2}"
+        
         return
 
     @staticmethod
@@ -445,7 +460,7 @@ class DiagnosticsTurbulence:
             for j in range(n_halo[1], shape[1] - n_halo[1]):
                 for k in range(n_halo[2], shape[2] - n_halo[2]):
 
-                    # Compute cell centered fluctations
+                    # Compute cell centered fluctuations
                     up = 0.5 * (u[i - 1, j, k] + u[i, j, k]) - umean[k]
                     vp = 0.5 * (v[i, j - 1, k] + v[i, j, k]) - vmean[k]
                     wp = 0.5 * (w[i, j, k - 1] + w[i, j, k]) - 0.5 * (
@@ -467,7 +482,7 @@ class DiagnosticsTurbulence:
                     vvv[k] += vp * vp * vp
                     www[k] += wp * wp * wp
 
-                    # Fourth cental moments
+                    # Fourth central moments
                     uuuu[k] += up * up * up * up
                     vvvv[k] += vp * vp * vp * vp
                     wwww[k] += wp * wp * wp * wp
@@ -575,6 +590,16 @@ class DiagnosticsTurbulence:
         vvvv = UtilitiesParallel.ScalarAllReduce(vvvv / npts)
         wwww = UtilitiesParallel.ScalarAllReduce(wwww / npts)
 
+
+        tke_sgs = None
+        if 'tke_sgs' in self._DiagnosticState._dofs:
+            tke_sgs = self._DiagnosticState.get_field('tke_sgs')
+        elif 'tke_sgs' in self._ScalarState._dofs:
+            tke_sgs = self._ScalarState.dofs('tke_sgs')
+            
+        tke_sgs = np.sum(tke_sgs[n_halo[0]:-n_halo[0], n_halo[1]:-n_halo[1],:],axis=(0,1))
+        tke_sgs = UtilitiesParallel.ScalarAllReduce(tke_sgs / npts)
+
         # Only do IO on rank 0
         my_rank = MPI.COMM_WORLD.Get_rank()
         MPI.COMM_WORLD.barrier()
@@ -601,6 +626,15 @@ class DiagnosticsTurbulence:
             profiles_grp["u4"][-1, :] = uuuu[n_halo[2] : -n_halo[2]]
             profiles_grp["v4"][-1, :] = vvvv[n_halo[2] : -n_halo[2]]
             profiles_grp["w4"][-1, :] = wwww[n_halo[2] : -n_halo[2]]
+
+            timeseries_grp = this_grp["timeseries"]
+            timeseries_grp['tke_resolved'][-1] = np.sum(0.5 * (
+                uu[n_halo[2] : -n_halo[2]]
+                + vv[n_halo[2] : -n_halo[2]]
+                + ww[n_halo[2] : -n_halo[2]]*self._Grid.dx[2]
+            ))
+            
+            timeseries_grp['tke_sgs'][-1] = np.sum(tke_sgs[n_halo[2] : -n_halo[2]]*self._Grid.dx[2])
 
         return
 
@@ -706,7 +740,7 @@ class DiagnosticsTurbulence:
     @staticmethod
     @numba.njit()
     def compute_vertical_fluxes(n_halo, w_mean, phi_mean, w, phi, fluxz):
-        # Compute a resolved vertival flux of phi
+        # Compute a resolved vertical flux of phi
         shape = phi.shape
         for i in range(n_halo[0], shape[0] - n_halo[0]):
             for j in range(n_halo[1], shape[1] - n_halo[1]):

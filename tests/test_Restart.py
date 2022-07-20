@@ -257,6 +257,9 @@ def test_full_functionality(mock_full_dump, mock_full_restart):
 
 @pytest.fixture()
 def mock_namelist(tmpdir):
+
+    import inputfiles.input_generator
+
     list_of_mock_namelists = []
 
     namelist = {}
@@ -277,7 +280,7 @@ def mock_namelist(tmpdir):
 
     namelist["grid"] = {}
     namelist["grid"]["n"] = [6, 6, 6]
-    namelist["grid"]["n_halo"] = [3, 3, 3]
+    namelist["grid"]["n_halo"] = [4, 4, 4]
     namelist["grid"]["l"] = [2000.0, 2000.0, 2000.0]
 
     namelist["time"] = {}
@@ -321,7 +324,7 @@ def mock_namelist(tmpdir):
             tmpdir, namelist["meta"]["casename"]
         )
 
-        for micro in ["kessler", "p3"]:
+        for micro in ["sa"]:
             namelist["microphysics"]["scheme"] = micro
 
         list_of_mock_namelists.append(copy.deepcopy(namelist))
@@ -332,7 +335,10 @@ def mock_namelist(tmpdir):
 def test_exact_restart(mock_namelist):
 
     for nml in mock_namelist:
+        print(nml)
         FreshSim = SimulationStandard.SimulationStandard(nml)
+
+        print("casename: ", nml["meta"]["casename"])
 
         # Run the simulation forward for 30s and dump restart
         FreshSim.update(30.0)
@@ -372,14 +378,54 @@ def test_exact_restart(mock_namelist):
         FreshSim.update(60.0)
         RestartSim.update(60.0)
 
+        assert (
+            FreshSim.ScalarState._state_array.array.shape
+            == RestartSim.ScalarState._state_array.array.shape
+        )
+
+        assert np.allclose(
+            FreshSim.ScalarState._state_array.array,
+            RestartSim.ScalarState._state_array.array,
+        )
+        print(
+            np.amax(
+                np.abs(
+                    RestartSim.ScalarState._state_array.array
+                    - FreshSim.ScalarState._state_array.array
+                )
+            )
+        )
+
         assert np.array_equal(
             FreshSim.ScalarState._state_array.array,
             RestartSim.ScalarState._state_array.array,
         )
+
+        assert (
+            FreshSim.VelocityState._state_array.array.shape
+            == RestartSim.VelocityState._state_array.array.shape
+        )
+
+        assert np.allclose(
+            FreshSim.VelocityState._state_array.array,
+            RestartSim.VelocityState._state_array.array,
+        )
+
         assert np.array_equal(
             FreshSim.VelocityState._state_array.array,
             RestartSim.VelocityState._state_array.array,
         )
+
+        assert (
+            FreshSim.DiagnosticState._state_array.array.shape
+            == RestartSim.DiagnosticState._state_array.array.shape
+        )
+
+        assert np.allclose(
+            FreshSim.DiagnosticState._state_array.array,
+            RestartSim.DiagnosticState._state_array.array,
+        )
+
         assert np.array_equal(
             FreshSim.DiagnosticState._state_array.array,
             RestartSim.DiagnosticState._state_array.array,
