@@ -849,7 +849,7 @@ def IngestFactory(namelist, Grid, TimeSteppingController):
     if 'open_boundary_treatment' not in namelist['lbc']:
         return IngestBase(namelist, Grid, TimeSteppingController)
     
-    #if namelist['lbc']['open_boundary_treatment'] == "reanalysis":
-    return IngestEra5(namelist, Grid, TimeSteppingController)
-    #else:
-    #    return IngestBase(namelist, Grid, TimeSteppingController)
+    if namelist['lbc']['open_boundary_treatment'] == "reanalysis":
+        return IngestEra5(namelist, Grid, TimeSteppingController)
+    else:
+        return IngestBase(namelist, Grid, TimeSteppingController)
