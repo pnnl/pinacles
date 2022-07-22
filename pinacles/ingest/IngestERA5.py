@@ -5,21 +5,9 @@ from scipy import interpolate
 from mpi4py import MPI
 import datetime
 
+from pinacles.ingest.Ingest import IngestBase
 
-class IngestBase:
-    def __init__(self, namelist, Grid, TimesSteppingController):
-
-        self._Grid = Grid
-        self._TimeSteppingManager = TimesSteppingController
-
-        return
-
-    def initialize(self):
-
-        return
-
-
-class IngestEra5:
+class IngestERA5:
     def __init__(self, namelist, Grid, TimeSteppingController):
 
         IngestBase.__init__(self, namelist, Grid, TimeSteppingController)
@@ -751,105 +739,3 @@ class IngestEra5:
         slp = MPI.COMM_WORLD.bcast(slp)
 
         return lon, lat, slp
-
-
-class IngestMerra(IngestBase):
-    def __init__(self, namelist, Grid):
-
-        IngestBase.__init__(self, namelist, Grid)
-
-        assert "real_data" not in namelist
-        self._real_data = namelist["meta"]["real_data"]
-        assert os.path.exists(self._real_data)
-
-        self.get_times()
-
-        return
-
-    def get_times(self):
-
-        if MPI.COMM_WORLD.Get_rank() == 0:
-            ocn_xr = xr.open_mfdataset(os.path.join(self._real_data, "*ocn*"))
-            asm_xr = xr.open_mfdataset(os.path.join(self._real_data, "*asm*"))
-
-            for time in ocn_xr.time:
-                print(time.values)
-
-            for time in asm_xr.time:
-                print(time.values)
-
-        return
-
-
-class IngestE3SM(IngestBase):
-    def __init__(self, namelist, Grid):
-
-        IngestBase.__init__(self, namelist, Grid)
-
-        assert "real_data" not in namelist
-        self._real_data = namelist["meta"]["real_data"]
-        assert os.path.exists(self._real_data)
-
-        for v in ["year", "month", "day", "hour"]:
-            assert v in namelist["time"]
-
-        self._calendar_units = "seconds since 0001-01-01"
-
-        self._start_datetime = cftime.datetime(
-            namelist["time"]["year"],
-            namelist["time"]["month"],
-            namelist["time"]["day"],
-            namelist["time"]["hour"],
-            calendar="noleap",
-        )
-
-        self._start_seconds = cftime.date2num(
-            self._start_datetime, units=self._calendar_units, calendar="noleap"
-        )
-
-        self.get_times()
-
-        import sys
-
-        sys.exit()
-        return
-
-    def get_times(self):
-
-        if MPI.COMM_WORLD.Get_rank() == 0:
-            ds = xr.open_mfdataset(os.path.join(self._real_data, "*.cam.h3*"))
-
-            self.time_indexes = ds.indexes["time"]
-
-            time_seconds = []
-            for t in self.time_indexes:
-                time_seconds.append(
-                    cftime.date2num(t, units=self._calendar_units, calendar="noleap")
-                )
-
-            self._time_seconds = np.array(time_seconds)
-            print(self._time_seconds, self._start_seconds)
-
-            # print(self._start_datetime,  cftime.date2num(self._start_datetime, units=self._calendar_units, calendar='noleap'))
-            # print(self.time_indexes[0], cftime.date2num(self.time_indexes[0], units=self._calendar_units, calendar='noleap'))
-
-            # print(self.time_indexes,self._start_datetime)
-            # print(cftime.date2index(self.time_indexes, self._start_datetime, calendar='noleap'))
-
-            # print(cftime.nc)
-            # cftime.time2index(cftime.date2num, self.time_indexes )
-
-        return
-
-
-def IngestFactory(namelist, Grid, TimeSteppingController):
-    
-    if 'lbc' not in namelist:
-        return IngestBase(namelist, Grid, TimeSteppingController)
-    if 'open_boundary_treatment' not in namelist['lbc']:
-        return IngestBase(namelist, Grid, TimeSteppingController)
-    
-    if namelist['lbc']['open_boundary_treatment'] == "reanalysis":
-        return IngestEra5(namelist, Grid, TimeSteppingController)
-    else:
-        return IngestBase(namelist, Grid, TimeSteppingController)
