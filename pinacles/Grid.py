@@ -1,5 +1,3 @@
-from socket import gaierror
-from struct import unpack
 from mpi4py import MPI
 import mpi4py_fft
 import numpy as np
