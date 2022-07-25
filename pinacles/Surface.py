@@ -1,5 +1,5 @@
 from pinacles import parameters
-
+import numpy as np
 
 class SurfaceBase:
     def __init__(
@@ -27,10 +27,120 @@ class SurfaceBase:
         self.T_surface = 300.0
 
         self._z0 = None
+        
+        self._scheme = namelist["microphysics"]["scheme"]
+                
+        if self._scheme == "m2005_ma":
+            self._ustar = 0.25  # m/s
+            self._SFLUX_NACC_COEF = 4.37e7  # coefficient of surface accumulation number flux
+            self._SFLUX_RACC = 0.075  # median radius of surface accum. flux  (micron)
+            self._SFLUX_NAIT_COEF = 4.37e7  # coefficient of surface aitken number flux
+            self._SFLUX_RAIT = 0.015  # median radius of aitken flux
+            self._WHITECAP_COEF = 3.84e-6  # for surface salt aerosol flux,  from eq (5) for whitecap coverage in Clarke etal (2006)
+            self._RHO_AEROSOL = 2160.0  # kg/m^3 aerosol density set for NaCl
+            self._SIGMA_ACCUM = 1.7  # sig=geom standard deviation of aer size distn.
+            self._SIGMA_AITKEN = 1.2  # sig=geom standard deviation of aer size distn.
+                        
+            nl = self._Grid.ngrid_local
 
+            zl = self._Grid.z_local
+            for k in range(nl[2]):
+                if zl[k] > 10.0:
+                    break
+            self.ind10 = k - 1
+            self.fac1 = (zl[k] - 10.0) / (zl[k] - zl[k - 1])
+            self.fac2 = (10.0 - zl[k - 1]) / (zl[k] - zl[k - 1])
+
+            self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
+            self._taux_sfc = np.zeros_like(self._windspeed_sfc)
+            self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
+            # self._bflx_sfc = np.zeros_like(self._windspeed_sfc) + self._buoyancy_flux
+            self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
+            self._naflux_sfc = np.zeros_like(self._windspeed_sfc)
+            self._qaflux_sfc = np.zeros_like(self._windspeed_sfc)
+            self._na2flux_sfc = np.zeros_like(self._windspeed_sfc)
+            self._qa2flux_sfc = np.zeros_like(self._windspeed_sfc)
+            self._u10_arr = np.zeros_like(self._windspeed_sfc)
+        
         return
 
     def update(self):
+                
+        try:
+            u10 = u[:, :, self.ind10 : self.ind10 + 1]
+            v10 = v[:, :, self.ind10 : self.ind10 + 1]
+
+            nadt = self._ScalarState.get_tend("qnad")
+            qadt = self._ScalarState.get_tend("qad")
+            nad2t = self._ScalarState.get_tend("qnad2")
+            qad2t = self._ScalarState.get_tend("qad2")
+
+            Surface_impl.compute_u10_arr(
+                u10,
+                v10,
+                self._Ref.u0,
+                self._Ref.v0,
+                self.fac1,
+                self.fac2,
+                self.gustiness,
+                self._u10_arr,
+            )
+
+            Surface_impl.compute_aerosol_flux(
+                self._u10_arr,
+                self._SFLUX_NACC_COEF,
+                self._SFLUX_RACC,
+                self._SIGMA_ACCUM,
+                self._WHITECAP_COEF,
+                self._RHO_AEROSOL,
+                self._naflux_sfc,
+                self._qaflux_sfc,
+            )
+
+            Surface_impl.iles_surface_flux_application(
+                1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._naflux_sfc, nadt
+            )
+
+            Surface_impl.iles_surface_flux_application(
+                1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._qaflux_sfc, qadt
+            )
+
+            Surface_impl.compute_aerosol_flux(
+                self._u10_arr,
+                self._SFLUX_NAIT_COEF,
+                self._SFLUX_RAIT,
+                self._SIGMA_AITKEN,
+                self._WHITECAP_COEF,
+                self._RHO_AEROSOL,
+                self._na2flux_sfc,
+                self._qa2flux_sfc,
+            )
+
+            Surface_impl.iles_surface_flux_application(
+                1e-5,
+                z_edge,
+                dxi2,
+                nh,
+                alpha0,
+                alpha0_edge,
+                100,
+                self._na2flux_sfc,
+                nad2t,
+            )
+
+            Surface_impl.iles_surface_flux_application(
+                1e-5,
+                z_edge,
+                dxi2,
+                nh,
+                alpha0,
+                alpha0_edge,
+                100,
+                self._qa2flux_sfc,
+                qad2t,
+            )
+        except:
+            pass
 
         return
 

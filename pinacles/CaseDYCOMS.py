@@ -124,12 +124,16 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                     t += perts[i, j, k]
 
                 s[i, j, k] = MoistThermo.s(zl[k], t, ql, 0.0)
+                
+        if namelist["meta"]["casename"] == "dycoms_rotated":
+            u[:, :, k] =  8.4853 - z * 0.9192e-3
+            v[:, :, k] = -4.2426 + z * 7.0004e-3
+        else:
+            u[:, :, k] =  3.0 + z * 4.3e-3 - Ref.u0
+            v[:, :, k] = -9.0 + z * 5.6e-3 - Ref.v0
 
-        u[:, :, k] = 3.0 + z * 4.3e-3
-        v[:, :, k] = -9.0 + z * 5.6e-3
-
-    u -= Ref.u0
-    v -= Ref.v0
+    # u -= Ref.u0
+    # v -= Ref.v0
 
     return
 
@@ -156,37 +160,37 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
         self._theta_surface = 290.0  # K
         self.T_surface = 289.76
 
-        self._SFLUX_NACC_COEF = (
-            4.37e7  # coefficient of surface accumulation number flux
-        )
-        self._SFLUX_RACC = 0.075  # median radius of surface accum. flux  (micron)
-        self._SFLUX_NAIT_COEF = 4.37e7  # coefficient of surface aitken number flux
-        self._SFLUX_RAIT = 0.015  # median radius of aitken flux
-        self._WHITECAP_COEF = 3.84e-6  # for surface salt aerosol flux,  from eq (5) for whitecap coverage in Clarke etal (2006)
-        self._RHO_AEROSOL = 2160.0  # kg/m^3 aerosol density set for NaCl
-        self._SIGMA_ACCUM = 1.7  # sig=geom standard deviation of aer size distn.
-        self._SIGMA_AITKEN = 1.2  # sig=geom standard deviation of aer size distn.
+#         self._SFLUX_NACC_COEF = (
+#             4.37e7  # coefficient of surface accumulation number flux
+#         )
+#         self._SFLUX_RACC = 0.075  # median radius of surface accum. flux  (micron)
+#         self._SFLUX_NAIT_COEF = 4.37e7  # coefficient of surface aitken number flux
+#         self._SFLUX_RAIT = 0.015  # median radius of aitken flux
+#         self._WHITECAP_COEF = 3.84e-6  # for surface salt aerosol flux,  from eq (5) for whitecap coverage in Clarke etal (2006)
+#         self._RHO_AEROSOL = 2160.0  # kg/m^3 aerosol density set for NaCl
+#         self._SIGMA_ACCUM = 1.7  # sig=geom standard deviation of aer size distn.
+#         self._SIGMA_AITKEN = 1.2  # sig=geom standard deviation of aer size distn.
 
-        nl = self._Grid.ngrid_local
+#         nl = self._Grid.ngrid_local
 
-        zl = self._Grid.z_local
-        for k in range(nl[2]):
-            if zl[k] > 10.0:
-                break
-        self.ind10 = k - 1
-        self.fac1 = (zl[k] - 10.0) / (zl[k] - zl[k - 1])
-        self.fac2 = (10.0 - zl[k - 1]) / (zl[k] - zl[k - 1])
+#         zl = self._Grid.z_local
+#         for k in range(nl[2]):
+#             if zl[k] > 10.0:
+#                 break
+#         self.ind10 = k - 1
+#         self.fac1 = (zl[k] - 10.0) / (zl[k] - zl[k - 1])
+#         self.fac2 = (10.0 - zl[k - 1]) / (zl[k] - zl[k - 1])
 
-        self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
-        self._taux_sfc = np.zeros_like(self._windspeed_sfc)
-        self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
-        # self._bflx_sfc = np.zeros_like(self._windspeed_sfc) + self._buoyancy_flux
-        self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
-        self._naflux_sfc = np.zeros_like(self._windspeed_sfc)
-        self._qaflux_sfc = np.zeros_like(self._windspeed_sfc)
-        self._na2flux_sfc = np.zeros_like(self._windspeed_sfc)
-        self._qa2flux_sfc = np.zeros_like(self._windspeed_sfc)
-        self._u10_arr = np.zeros_like(self._windspeed_sfc)
+#         self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
+#         self._taux_sfc = np.zeros_like(self._windspeed_sfc)
+#         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
+#         # self._bflx_sfc = np.zeros_like(self._windspeed_sfc) + self._buoyancy_flux
+#         self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
+#         self._naflux_sfc = np.zeros_like(self._windspeed_sfc)
+#         self._qaflux_sfc = np.zeros_like(self._windspeed_sfc)
+#         self._na2flux_sfc = np.zeros_like(self._windspeed_sfc)
+#         self._qa2flux_sfc = np.zeros_like(self._windspeed_sfc)
+#         self._u10_arr = np.zeros_like(self._windspeed_sfc)
 
         self._Timers.add_timer("SurfaceDycoms_update")
 
@@ -341,81 +345,81 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
             1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, qv_flx_sf, qvt
         )
 
-        try:
-            u10 = u[:, :, self.ind10 : self.ind10 + 1]
-            v10 = v[:, :, self.ind10 : self.ind10 + 1]
+#         try:
+#             u10 = u[:, :, self.ind10 : self.ind10 + 1]
+#             v10 = v[:, :, self.ind10 : self.ind10 + 1]
 
-            nadt = self._ScalarState.get_tend("qnad")
-            qadt = self._ScalarState.get_tend("qad")
-            nad2t = self._ScalarState.get_tend("qnad2")
-            qad2t = self._ScalarState.get_tend("qad2")
+#             nadt = self._ScalarState.get_tend("qnad")
+#             qadt = self._ScalarState.get_tend("qad")
+#             nad2t = self._ScalarState.get_tend("qnad2")
+#             qad2t = self._ScalarState.get_tend("qad2")
 
-            Surface_impl.compute_u10_arr(
-                u10,
-                v10,
-                self._Ref.u0,
-                self._Ref.v0,
-                self.fac1,
-                self.fac2,
-                self.gustiness,
-                self._u10_arr,
-            )
+#             Surface_impl.compute_u10_arr(
+#                 u10,
+#                 v10,
+#                 self._Ref.u0,
+#                 self._Ref.v0,
+#                 self.fac1,
+#                 self.fac2,
+#                 self.gustiness,
+#                 self._u10_arr,
+#             )
 
-            Surface_impl.compute_aerosol_flux(
-                self._u10_arr,
-                self._SFLUX_NACC_COEF,
-                self._SFLUX_RACC,
-                self._SIGMA_ACCUM,
-                self._WHITECAP_COEF,
-                self._RHO_AEROSOL,
-                self._naflux_sfc,
-                self._qaflux_sfc,
-            )
+#             Surface_impl.compute_aerosol_flux(
+#                 self._u10_arr,
+#                 self._SFLUX_NACC_COEF,
+#                 self._SFLUX_RACC,
+#                 self._SIGMA_ACCUM,
+#                 self._WHITECAP_COEF,
+#                 self._RHO_AEROSOL,
+#                 self._naflux_sfc,
+#                 self._qaflux_sfc,
+#             )
 
-            Surface_impl.iles_surface_flux_application(
-                1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._naflux_sfc, nadt
-            )
+#             Surface_impl.iles_surface_flux_application(
+#                 1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._naflux_sfc, nadt
+#             )
 
-            Surface_impl.iles_surface_flux_application(
-                1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._qaflux_sfc, qadt
-            )
+#             Surface_impl.iles_surface_flux_application(
+#                 1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._qaflux_sfc, qadt
+#             )
 
-            Surface_impl.compute_aerosol_flux(
-                self._u10_arr,
-                self._SFLUX_NAIT_COEF,
-                self._SFLUX_RAIT,
-                self._SIGMA_AITKEN,
-                self._WHITECAP_COEF,
-                self._RHO_AEROSOL,
-                self._na2flux_sfc,
-                self._qa2flux_sfc,
-            )
+#             Surface_impl.compute_aerosol_flux(
+#                 self._u10_arr,
+#                 self._SFLUX_NAIT_COEF,
+#                 self._SFLUX_RAIT,
+#                 self._SIGMA_AITKEN,
+#                 self._WHITECAP_COEF,
+#                 self._RHO_AEROSOL,
+#                 self._na2flux_sfc,
+#                 self._qa2flux_sfc,
+#             )
 
-            Surface_impl.iles_surface_flux_application(
-                1e-5,
-                z_edge,
-                dxi2,
-                nh,
-                alpha0,
-                alpha0_edge,
-                100,
-                self._na2flux_sfc,
-                nad2t,
-            )
+#             Surface_impl.iles_surface_flux_application(
+#                 1e-5,
+#                 z_edge,
+#                 dxi2,
+#                 nh,
+#                 alpha0,
+#                 alpha0_edge,
+#                 100,
+#                 self._na2flux_sfc,
+#                 nad2t,
+#             )
 
-            Surface_impl.iles_surface_flux_application(
-                1e-5,
-                z_edge,
-                dxi2,
-                nh,
-                alpha0,
-                alpha0_edge,
-                100,
-                self._qa2flux_sfc,
-                qad2t,
-            )
-        except:
-            pass
+#             Surface_impl.iles_surface_flux_application(
+#                 1e-5,
+#                 z_edge,
+#                 dxi2,
+#                 nh,
+#                 alpha0,
+#                 alpha0_edge,
+#                 100,
+#                 self._qa2flux_sfc,
+#                 qad2t,
+#             )
+#         except:
+#             pass
 
         self._Timers.end_timer("SurfaceDycoms_update")
         return
@@ -442,10 +446,15 @@ class ForcingDYCOMS(Forcing.ForcingBase):
 
         # Set Geostrophic wind
         self._ug = np.zeros_like(self._Grid.z_global)
-        self._vg = np.zeros_like(self._ug)
-        for k in range(zl.shape[0]):
-            self._ug[k] = 3.0 + (4.3e-3) * zl[k]
-            self._vg[k] = -9.0 + (5.6e-3) * zl[k]
+        self._vg = np.zeros_like(self._ug)        
+        if namelist["meta"]["casename"] == "dycoms_rotated":
+            for k in range(zl.shape[0]):
+                self._ug[k] =  8.4853 - 0.9192e-3 * zl[k]
+                self._vg[k] = -4.2426 + 7.0004e-3 * zl[k]
+        else:
+            for k in range(zl.shape[0]):
+                self._ug[k] =  3.0 + (4.3e-3) * zl[k]
+                self._vg[k] = -9.0 + (5.6e-3) * zl[k]
 
         # Set subsidence
         self._subsidence = np.zeros_like(self._Grid.z_global)

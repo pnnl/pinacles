@@ -66,19 +66,56 @@ class Micro_M2005_MA(MicrophysicsBase):
             mp_flags = namelist["microphysics"]["flags"]
             docloud = mp_flags["docloud"]
             doprecip = mp_flags["doprecip"]
+            doprogaero = mp_flags["doprogaerosol"]
+            
             if MPI.COMM_WORLD.Get_rank() == 0:
                 print("\tM2005_MA: Initialized with custom flags")
         except:
             docloud = True
             doprecip = True
+            doprogaero = True
+            
             if MPI.COMM_WORLD.Get_rank() == 0:
                 print("\tM2005_MA: Initialized with default flags")
+            
+        try:
+            aero_in = namelist["microphysics"]["aero"]
+
+            rm_acc = aero_in["rm_acc"]
+            N_acc = aero_in["N_acc"]
+            sigma_acc = aero_in["sigma_acc"]
+
+            rm_ait = aero_in["rm_ait"]
+            N_ait = aero_in["N_ait"]
+            sigma_ait = aero_in["sigma_ait"]
+            
+            if MPI.COMM_WORLD.Get_rank() == 0:
+                print("\tM2005_MA: Initialized with custom aerosol parameters")
+            
+        except:
+            rm_acc    = 0.06e-6
+            N_acc     = 65.0e6
+            sigma_acc = 1.7
+            
+            rm_ait    = 0.011e-6
+            N_ait     = 125.0e6
+            sigma_ait = 1.2
+            
+            if MPI.COMM_WORLD.Get_rank() == 0:
+                print("\tM2005_MA: Initialized with default DYCOMS aerosol parameters")
 
         self._m2005_ma_cffi.setparm(
             self._sam_dims,
             self._iqarray,
             docloud,
             doprecip,
+            doprogaero,
+            rm_acc,
+            N_acc,
+            sigma_acc,
+            rm_ait,
+            N_ait,
+            sigma_ait,
             self._masterproc,
             self._tlatqi,
         )
@@ -409,6 +446,19 @@ class Micro_M2005_MA(MicrophysicsBase):
         self._DiagnosticState.add_variable(
             "s_tend_ice_sed", long_name="s tend ice water sedimentation", units=""
         )
+        
+        self._DiagnosticState.add_variable(
+            "diag_effc_3d",
+            long_name="cloud droplet effective radius",
+            units="m",
+            latex_name="r_e",
+        )
+        self._DiagnosticState.add_variable(
+            "diag_effi_3d",
+            long_name="cloud ice effective radius",
+            units="m",
+            latex_name="r_{e,i}",
+        )
 
         nx = self._Grid.ngrid_local[0] - 2 * self._nhalo[0]
         ny = self._Grid.ngrid_local[1] - 2 * self._nhalo[1]
@@ -487,6 +537,24 @@ class Micro_M2005_MA(MicrophysicsBase):
         # self._tabs0 = np.zeros_like(self._p0)
         for k in range(self._sam_dims[2]):
             self._tabs0[k] = MoistThermo.T(self._z[k], self._t0[k], self._qc0[k], 0.0)
+        
+        diag_effc_3d = self._DiagnosticState.get_field("diag_effc_3d")
+        diag_effi_3d = self._DiagnosticState.get_field("diag_effi_3d")
+        
+        diag_effc_3d_sam = np.asfortranarray(
+            diag_effc_3d[
+                self._nhalo[0] : self._Grid.ngrid_local[0] - self._nhalo[0],
+                self._nhalo[1] : self._Grid.ngrid_local[1] - self._nhalo[1],
+                self._nhalo[2] : self._Grid.ngrid_local[2] - self._nhalo[2],
+            ]
+        )
+        diag_effi_3d_sam = np.asfortranarray(
+            diag_effi_3d[
+                self._nhalo[0] : self._Grid.ngrid_local[0] - self._nhalo[0],
+                self._nhalo[1] : self._Grid.ngrid_local[1] - self._nhalo[1],
+                self._nhalo[2] : self._Grid.ngrid_local[2] - self._nhalo[2],
+            ]
+        )    
 
         for i, vn in enumerate(self._micro_vars):
             dv = self._ScalarState.get_field(vn)
@@ -510,6 +578,8 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._nsubdomains_y,
             self._nrestart,
             self._Temp,
+            diag_effc_3d_sam,
+            diag_effi_3d_sam,
             self._microfield,
             self._z,
             self._p0,
@@ -536,6 +606,9 @@ class Micro_M2005_MA(MicrophysicsBase):
         for i, vn in enumerate(self._micro_vars):
             dv = self._ScalarState.get_field(vn)
             sam_to_our_order(self._nhalo, self._microfield[:, :, :, i], dv)
+            
+        sam_to_our_order(self._nhalo, diag_effc_3d_sam, diag_effc_3d)
+        sam_to_our_order(self._nhalo, diag_effi_3d_sam, diag_effi_3d)
 
         self._Timers.add_timer("MicroM2005_MA_update")
         return
@@ -558,6 +631,9 @@ class Micro_M2005_MA(MicrophysicsBase):
 
         s_tend_liq_sed = self._DiagnosticState.get_field("s_tend_liq_sed")
         s_tend_ice_sed = self._DiagnosticState.get_field("s_tend_ice_sed")
+        
+        diag_effc_3d = self._DiagnosticState.get_field("diag_effc_3d")
+        diag_effi_3d = self._DiagnosticState.get_field("diag_effi_3d")
 
         nhalo = self._Grid.n_halo
 
@@ -594,6 +670,21 @@ class Micro_M2005_MA(MicrophysicsBase):
         )
         qice_sed_sam = np.asfortranarray(
             qice_sed[
+                nhalo[0] : self._Grid.ngrid_local[0] - nhalo[0],
+                nhalo[1] : self._Grid.ngrid_local[1] - nhalo[1],
+                nhalo[2] : self._Grid.ngrid_local[2] - nhalo[2],
+            ]
+        )
+
+        diag_effc_3d_sam = np.asfortranarray(
+            diag_effc_3d[
+                nhalo[0] : self._Grid.ngrid_local[0] - nhalo[0],
+                nhalo[1] : self._Grid.ngrid_local[1] - nhalo[1],
+                nhalo[2] : self._Grid.ngrid_local[2] - nhalo[2],
+            ]
+        )
+        diag_effi_3d_sam = np.asfortranarray(
+            diag_effi_3d[
                 nhalo[0] : self._Grid.ngrid_local[0] - nhalo[0],
                 nhalo[1] : self._Grid.ngrid_local[1] - nhalo[1],
                 nhalo[2] : self._Grid.ngrid_local[2] - nhalo[2],
@@ -654,6 +745,8 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._microfield,
             qtot_sed_sam,
             qice_sed_sam,
+            diag_effc_3d_sam,
+            diag_effi_3d_sam,
         )
 
         for i, vn in enumerate(self._micro_vars):
@@ -665,6 +758,9 @@ class Micro_M2005_MA(MicrophysicsBase):
 
         sam_to_our_order(nhalo, qtot_sed_sam, qtot_sed)
         sam_to_our_order(nhalo, qice_sed_sam, qice_sed)
+
+        sam_to_our_order(nhalo, diag_effc_3d_sam, diag_effc_3d)
+        sam_to_our_order(nhalo, diag_effi_3d_sam, diag_effi_3d)
 
         # Compute and apply sedimentation sources of static energy
         np.multiply(qtot_sed, parameters.LV / parameters.CPD, out=s_tend_liq_sed)

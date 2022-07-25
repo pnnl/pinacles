@@ -15,6 +15,7 @@ CASENAMES = [
     "stable_bubble",
     "bomex",
     "dycoms",
+    "dycoms_rotated",
     "rico",
     "atex",
     "testbed",
@@ -30,7 +31,7 @@ def factory(namelist):
         return CaseStableBubble.initialize
     elif namelist["meta"]["casename"] == "bomex":
         return CaseBomex.initialize
-    elif namelist["meta"]["casename"] == "dycoms":
+    elif (namelist["meta"]["casename"] == "dycoms" or namelist["meta"]["casename"] == "dycoms_rotated"):
         return CaseDycoms.initialize
     elif namelist["meta"]["casename"] == "rico":
         return CaseRico.initialize
