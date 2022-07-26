@@ -32,14 +32,24 @@ class SurfaceBase:
                 
         if self._scheme == "m2005_ma":
             self._ustar = 0.25  # m/s
-            self._SFLUX_NACC_COEF = 4.37e7  # coefficient of surface accumulation number flux
-            self._SFLUX_RACC = 0.075  # median radius of surface accum. flux  (micron)
-            self._SFLUX_NAIT_COEF = 4.37e7  # coefficient of surface aitken number flux
-            self._SFLUX_RAIT = 0.015  # median radius of aitken flux
             self._WHITECAP_COEF = 3.84e-6  # for surface salt aerosol flux,  from eq (5) for whitecap coverage in Clarke etal (2006)
             self._RHO_AEROSOL = 2160.0  # kg/m^3 aerosol density set for NaCl
-            self._SIGMA_ACCUM = 1.7  # sig=geom standard deviation of aer size distn.
-            self._SIGMA_AITKEN = 1.2  # sig=geom standard deviation of aer size distn.
+            
+            self._SFLUX_NACC_COEF = 4.37e7  # coefficient of surface accumulation number flux
+            self._SFLUX_NAIT_COEF = 4.37e7  # coefficient of surface aitken number flux
+            
+            try:
+                aero_in = namelist["microphysics"]["aero"]
+                
+                self._SFLUX_RACC = aero_in["rm_acc"]
+                self._SFLUX_RAIT = aero_in["rm_ait"]
+                self._SIGMA_ACCUM = aero_in["sigma_acc"]
+                self._SIGMA_AITKEN = aero_in["sigma_ait"]
+            except:
+                self._SFLUX_RACC = 0.06  # median radius of surface accum. flux  (micron)
+                self._SFLUX_RAIT = 0.011  # median radius of aitken flux
+                self._SIGMA_ACCUM = 1.7  # sig=geom standard deviation of aer size distn.
+                self._SIGMA_AITKEN = 1.2  # sig=geom standard deviation of aer size distn.
                         
             nl = self._Grid.ngrid_local
 
