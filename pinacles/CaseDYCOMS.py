@@ -76,7 +76,11 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         pass
 
     # Integrate the reference profile.
-    Ref.set_surface(Psfc=1017.8e2, Tsfc=289.76, u0=6.22, v0=-4.8)
+    if namelist["meta"]["casename"] == "dycoms_rotated":
+        Ref.set_surface(Psfc=1017.8e2, Tsfc=289.76, u0=0, v0=0)
+    else:
+        Ref.set_surface(Psfc=1017.8e2, Tsfc=289.76, u0=6.22, v0=-4.8)
+        
     Ref.integrate()
 
     u = VelocityState.get_field("u")
