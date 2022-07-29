@@ -288,6 +288,9 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
     def update(self):
 
         self._Timers.start_timer("SurfaceDycoms_update")
+        
+        Surface.SurfaceBase.update(self)
+        
         nh = self._Grid.n_halo
         dxi2 = self._Grid.dxi[2]
         z_edge = self._Grid.z_edge_global

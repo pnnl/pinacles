@@ -1,4 +1,6 @@
 from pinacles import parameters
+from pinacles import UtilitiesParallel
+from pinacles import Surface_impl
 import numpy as np
 
 class SurfaceBase:
@@ -27,10 +29,24 @@ class SurfaceBase:
         self.T_surface = 300.0
 
         self._z0 = None
+        self.aero_flux = False
         
         self._scheme = namelist["microphysics"]["scheme"]
+        
+        try:
+            mp_flags = namelist["microphysics"]["flags"]
+            doprogaero = mp_flags["doprogaerosol"]
+            
+            UtilitiesParallel.print_root("\tCustom prog. aerosol flag")
+        except:
+            doprogaero = True
+            
+            UtilitiesParallel.print_root("\tDefault prog. aerosol flag (true)")
                 
-        if self._scheme == "m2005_ma":
+        if (self._scheme == "m2005_ma" and doprogaero == True):
+            
+            UtilitiesParallel.print_root("\tAerosol fluxes init")
+            self.aero_flux = True
             self._ustar = 0.25  # m/s
             self._WHITECAP_COEF = 3.84e-6  # for surface salt aerosol flux,  from eq (5) for whitecap coverage in Clarke etal (2006)
             self._RHO_AEROSOL = 2160.0  # kg/m^3 aerosol density set for NaCl
@@ -39,17 +55,21 @@ class SurfaceBase:
             self._SFLUX_NAIT_COEF = 4.37e7  # coefficient of surface aitken number flux
             
             try:
-                aero_in = namelist["microphysics"]["aero"]
+                aero_in = namelist["microphysics"]["m2005_ma"]["aero"]
                 
                 self._SFLUX_RACC = aero_in["rm_acc"]
                 self._SFLUX_RAIT = aero_in["rm_ait"]
                 self._SIGMA_ACCUM = aero_in["sigma_acc"]
                 self._SIGMA_AITKEN = aero_in["sigma_ait"]
+                
+                UtilitiesParallel.print_root("\tCustom aerosol parameters")
             except:
                 self._SFLUX_RACC = 0.06  # median radius of surface accum. flux  (micron)
                 self._SFLUX_RAIT = 0.011  # median radius of aitken flux
                 self._SIGMA_ACCUM = 1.7  # sig=geom standard deviation of aer size distn.
                 self._SIGMA_AITKEN = 1.2  # sig=geom standard deviation of aer size distn.
+                
+                UtilitiesParallel.print_root("\tDefault DYCOMS aerosol parameters")
                         
             nl = self._Grid.ngrid_local
 
@@ -76,7 +96,19 @@ class SurfaceBase:
 
     def update(self):
                 
-        try:
+        if self.aero_flux == True:
+            UtilitiesParallel.print_root("\tAerosol fluxes")# Get Fields
+            
+            nh = self._Grid.n_halo
+            dxi2 = self._Grid.dxi[2]
+            z_edge = self._Grid.z_edge_global
+
+            alpha0 = self._Ref.alpha0
+            alpha0_edge = self._Ref.alpha0_edge
+            
+            u = self._VelocityState.get_field("u")
+            v = self._VelocityState.get_field("v")
+
             u10 = u[:, :, self.ind10 : self.ind10 + 1]
             v10 = v[:, :, self.ind10 : self.ind10 + 1]
 
@@ -149,8 +181,6 @@ class SurfaceBase:
                 self._qa2flux_sfc,
                 qad2t,
             )
-        except:
-            pass
 
         return
 

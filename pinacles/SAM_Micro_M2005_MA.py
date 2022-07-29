@@ -68,18 +68,16 @@ class Micro_M2005_MA(MicrophysicsBase):
             doprecip = mp_flags["doprecip"]
             doprogaero = mp_flags["doprogaerosol"]
             
-            if MPI.COMM_WORLD.Get_rank() == 0:
-                print("\tM2005_MA: Initialized with custom flags")
+            UtilitiesParallel.print_root("\tM2005_MA: Initialized with custom flags")
         except:
             docloud = True
             doprecip = True
             doprogaero = True
             
-            if MPI.COMM_WORLD.Get_rank() == 0:
-                print("\tM2005_MA: Initialized with default flags")
+            UtilitiesParallel.print_root("\tM2005_MA: Initialized with default flags")
             
         try:
-            aero_in = namelist["microphysics"]["aero"]
+            aero_in = namelist["microphysics"]["m2005_ma"]["aero"]
 
             rm_acc = aero_in["rm_acc"]
             N_acc = aero_in["N_acc"]
@@ -89,8 +87,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             N_ait = aero_in["N_ait"]
             sigma_ait = aero_in["sigma_ait"]
             
-            if MPI.COMM_WORLD.Get_rank() == 0:
-                print("\tM2005_MA: Initialized with custom aerosol parameters")
+            UtilitiesParallel.print_root("\tM2005_MA: Initialized with custom aerosol parameters")
             
         except:
             rm_acc    = 0.06e-6
@@ -101,8 +98,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             N_ait     = 125.0e6
             sigma_ait = 1.2
             
-            if MPI.COMM_WORLD.Get_rank() == 0:
-                print("\tM2005_MA: Initialized with default DYCOMS aerosol parameters")
+            UtilitiesParallel.print_root("\tM2005_MA: Initialized with default DYCOMS aerosol parameters")
 
         self._m2005_ma_cffi.setparm(
             self._sam_dims,
@@ -130,8 +126,8 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._ScalarState.add_variable(
                 "qv",
                 long_name="water vapor mixing ratio",
-                units="g kg^{-1}",
-                latex_name="q_v",
+                units="kg kg^{-1}",
+                latex_name="q_{v}",
                 limit=True,
             )
 
@@ -143,8 +139,8 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._ScalarState.add_variable(
                 "qc",
                 long_name="cloud water mixing ratio",
-                units="g kg^{-1}",
-                latex_name="q_c",
+                units="kg kg^{-1}",
+                latex_name="q_{c}",
                 limit=True,
             )
 
@@ -154,7 +150,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._ScalarState.add_variable(
                 "qi",
                 long_name="cloud ice mixing ratio",
-                units="g kg^{-1}",
+                units="kg kg^{-1}",
                 latex_name="q_{i}",
                 limit=True,
             )
@@ -165,7 +161,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._ScalarState.add_variable(
                 "qr",
                 long_name="rain water mixing ratio",
-                units="g kg^{-1}",
+                units="kg kg^{-1}",
                 latex_name="q_{r}",
                 limit=True,
             )
@@ -176,7 +172,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._ScalarState.add_variable(
                 "qs",
                 long_name="snow mixing ratio",
-                units="g kg^{-1}",
+                units="kg kg^{-1}",
                 latex_name="q_{s}",
                 limit=True,
             )
@@ -187,7 +183,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._ScalarState.add_variable(
                 "qg",
                 long_name="graupel mixing ratio",
-                units="g kg^{-1}",
+                units="kg kg^{-1}",
                 latex_name="q_{g}",
                 limit=True,
             )
@@ -198,7 +194,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._ScalarState.add_variable(
                 "qnc",
                 long_name="cloud number concentration",
-                units="# cm^{-3}",
+                units="# kg^{-1}",
                 latex_name="q_{nc}",
                 limit=True,
             )
@@ -209,7 +205,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._ScalarState.add_variable(
                 "qnci",
                 long_name="cloud ice number concentration",
-                units="# cm^{-3}",
+                units="# kg^{-1}",
                 latex_name="q_{nci}",
                 limit=True,
             )
@@ -220,7 +216,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._ScalarState.add_variable(
                 "qnr",
                 long_name="rain number concentration",
-                units="# cm^{-3}",
+                units="# kg^{-1}",
                 latex_name="q_{nr}",
                 limit=True,
             )
@@ -231,7 +227,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._ScalarState.add_variable(
                 "qns",
                 long_name="snow number concentration",
-                units="# cm^{-3}",
+                units="# kg^{-1}",
                 latex_name="q_{ns}",
                 limit=True,
             )
@@ -242,7 +238,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._ScalarState.add_variable(
                 "qng",
                 long_name="graupel number concentration",
-                units="# cm^{-3}",
+                units="# kg^{-1}",
                 latex_name="q_{ng}",
                 limit=True,
             )
@@ -253,7 +249,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._ScalarState.add_variable(
                 "qad",
                 long_name="dry aerosol mass mixing ratio",
-                units="g kg^{-1}",
+                units="kg kg^{-1}",
                 latex_name="q_{ad}",
                 limit=True,
             )
@@ -264,7 +260,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._ScalarState.add_variable(
                 "qaw",
                 long_name="wet aerosol mass mixing ratio",
-                units="g kg^{-1}",
+                units="kg kg^{-1}",
                 latex_name="q_{aw}",
                 limit=True,
             )
@@ -275,7 +271,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._ScalarState.add_variable(
                 "qar",
                 long_name="wet aerosol mass mixing ratio in rain",
-                units="g kg^{-1}",
+                units="kg kg^{-1}",
                 latex_name="q_{ar}",
                 limit=True,
             )
@@ -286,7 +282,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._ScalarState.add_variable(
                 "qnad",
                 long_name="dry aerosol number concentration",
-                units="# cm^{-3}",
+                units="# kg^{-1}",
                 latex_name="q_{nad}",
                 limit=True,
             )
@@ -297,7 +293,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._ScalarState.add_variable(
                 "qad2",
                 long_name="aitken mode mass mixing ratio",
-                units="g kg^{-1}",
+                units="kg kg^{-1}",
                 latex_name="q_{ad2}",
                 limit=True,
             )
@@ -308,7 +304,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             self._ScalarState.add_variable(
                 "qnad2",
                 long_name="aitken mode mass number concentration",
-                units="# cm^{-3}",
+                units="# kg^{-1}",
                 latex_name="q_{nad2}",
                 limit=True,
             )
