@@ -21,6 +21,13 @@ class MomentumAdvectionBase:
         self._fluxy = np.zeros_like(self._fluxx)
         self._fluxz = np.zeros_like(self._fluxx)
 
+        self._fluxx_central = np.zeros(self._Grid.ngrid_local, dtype=np.double)
+        self._fluxy_central = np.zeros_like(self._fluxx)
+        self._fluxz_central = np.zeros_like(self._fluxx)
+
+
+
+
         return
 
     def update(self):
@@ -126,6 +133,7 @@ class MomentumWENO(MomentumAdvectionBase):
         alpha0_edge = self._Ref.alpha0_edge
 
         dxi = self._Grid.dxi
+        n_halo = self._Grid.n_halo
 
         # Retrieve velocities from container
         u = self._VelocityState.get_field("u")
@@ -141,17 +149,34 @@ class MomentumWENO(MomentumAdvectionBase):
         fluxy = self._fluxy
         fluxz = self._fluxz
 
+        fluxx_central = self._fluxx_central
+        fluxy_central = self._fluxy_central
+        fluxz_central = self._fluxz_central
+        
         # Here we return the fluxes. We could capture these for output
         # U Component
         self._fu(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz)
+
+        #Use a central schemeto spin up turbulence on boundaries
+        #MomentumAdvection_impl.u_advection_2nd(rho0, rho0_edge, u, v, w, fluxx_central, fluxy_central, fluxz_central)
+
+        #fluxx[:,:,n_halo[0]] = fluxx_central[:,:,n_halo[0]]
+        #fluxy[:,:,n_halo[0]] = fluxy_central[:,:,n_halo[0]]
+        
+
 
         MomentumAdvection_impl.uv_flux_div(
             dxi[0], dxi[1], dxi[2], alpha0, fluxx, fluxy, fluxz, u_t
         )
 
+        #MomentumAdvection_impl.v_advection_2nd(rho0, rho0_edge, u, v, w, fluxx_central, fluxy_central, fluxz_central)
+
         # V Component
         self._fv(rho0, rho0_edge, u, v, w, fluxx, fluxy, fluxz)
 
+        #fluxx[:,:,n_halo[0]] = fluxx_central[:,:,n_halo[0]]
+        #fluxy[:,:,n_halo[0]] = fluxy_central[:,:,n_halo[0]]
+        
         MomentumAdvection_impl.uv_flux_div(
             dxi[0], dxi[1], dxi[2], alpha0, fluxx, fluxy, fluxz, v_t
         )

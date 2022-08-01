@@ -5,7 +5,7 @@ from scipy import interpolate
 from mpi4py import MPI
 import datetime
 
-from pinacles.ingest.Ingest import IngestBase
+from pinacles.ingest.IngestBase import IngestBase
 
 class IngestERA5:
     def __init__(self, namelist, Grid, TimeSteppingController):

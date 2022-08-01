@@ -42,7 +42,7 @@ def LateralBCsFactory(
             )
             UtilitiesParallel.print_root("Using nested boundary conditions")
             
-        if boundary_treatment.lower() == "reanalysis":
+        if boundary_treatment.lower() in "reanalysis" or "wrf":
             lbc_class = LateralBCsReanalysis(
                 namelist,
                 Grid,

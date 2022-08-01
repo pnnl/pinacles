@@ -34,7 +34,7 @@ from pinacles import UtilitiesParallel
 from pinacles import ParticlesFactory
 from pinacles import Timers
 from pinacles import LateralBCsFactory
-from pinacles import Ingest
+from pinacles.ingest import Ingest
 from pinacles import DiagnosticsCoarseGrain
 from pinacles import DiagnosticsCase
 from pinacles import reproducibility

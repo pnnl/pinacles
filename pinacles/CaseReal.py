@@ -74,12 +74,11 @@ class SurfaceReanalysis(Surface.SurfaceBase):
 
         for tskin, shift in zip([self._TSKIN_pre, self._TSKIN_post], [0, 1]):
             # Compute reference profiles
+            print('Here')
             lon, lat, skin_T = self._Ingest.get_skin_T(shift=shift)
-
-            lon = ((lon + 180) % 360) - 180.0
-
-            lon_grid, lat_grid = np.meshgrid(lon, lat)
-            lon_lat = (lon_grid.flatten(), lat_grid.flatten())
+            print('Here Here')
+            #lon_grid, lat_grid = np.meshgrid(lon, lat)
+            lon_lat = (lon.flatten(), lat.flatten())
 
             tskin[:, :] = interpolate.griddata(
                 lon_lat,
@@ -96,6 +95,16 @@ class SurfaceReanalysis(Surface.SurfaceBase):
 
         self._previous_ingest += 1
         self._TSKIN_pre = np.copy(self._TSKIN_post)
+
+        lon, lat, skin_T = self._Ingest.get_skin_T(shift= self._previous_ingest)
+        lon_lat = (lon.flatten(), lat.flatten())
+        
+        self._TSKIN_post =  interpolate.griddata(
+                lon_lat,
+                skin_T.flatten(),
+                (self._Grid.lon_local, self._Grid.lat_local),
+                method="cubic",
+            )
 
         return
 
@@ -300,12 +309,10 @@ class InitializeReanalysis:
 
         nhalo = self._Grid.n_halo
 
-        # Compute reference profiles
         lon, lat, skin_T = self._Ingest.get_skin_T()
-        lon = ((lon + 180) % 360) - 180.0
 
-        lon_grid, lat_grid = np.meshgrid(lon, lat)
-        lon_lat = (lon_grid.flatten(), lat_grid.flatten())
+        lon_lat = (lon.flatten(), lat.flatten())
+
 
         TSKIN = interpolate.griddata(
             lon_lat,
@@ -315,13 +322,14 @@ class InitializeReanalysis:
         )
 
         lon, lat, slp = self._Ingest.get_slp()
-        lon = ((lon + 180) % 360) - 180.0
         SLP = interpolate.griddata(
             lon_lat,
             slp.flatten(),
             (self._Grid.lon_local, self._Grid.lat_local),
             method="cubic",
         )
+
+
 
         slp = MPI.COMM_WORLD.allreduce(
             np.sum(SLP[nhalo[0] : -nhalo[0], nhalo[1] : -nhalo[1]]), op=MPI.SUM
@@ -339,8 +347,11 @@ class InitializeReanalysis:
 
         # Now initialize T
         if MPI.COMM_WORLD.Get_rank() == 0:
-            print("Initialize temperature")
+            print('\t\t Surface Pressure: \t' + str(slp))
+            print('\t\t SKIN Temperature: \t' + str(TSKIN))
+            print("\t Initialize temperature")
 
+        
         T = self._Ingest.interp_T(
             self._Grid.lon_local, self._Grid.lat_local, self._Grid.z_local
         )
@@ -349,20 +360,24 @@ class InitializeReanalysis:
         if MPI.COMM_WORLD.Get_rank() == 0:
             print("Initizliaing specific humidity")
 
+
+
         qv = self._ScalarState.get_field("qv")
         qv[:, :, :] = self._Ingest.interp_qv(
             self._Grid.lon_local, self._Grid.lat_local, self._Grid.z_local
         )
 
-        qv[:, :, :] = qv[:, :, :] / self._Ref.rho0[np.newaxis, np.newaxis, :]
+        qv[:, :, :] = qv[:, :, :] #/ self._Ref.rho0[np.newaxis, np.newaxis, :]
+
 
         qc = self._ScalarState.get_field("qc")
         qc_interp = self._Ingest.interp_qc(
             self._Grid.lon_local, self._Grid.lat_local, self._Grid.z_local
         )
 
-        qc[:, :, :] = qc_interp[:, :, :]
-        qc[:, :, :] = qc[:, :, :] / self._Ref.rho0[np.newaxis, np.newaxis, :]
+        #qc[:, :, :] = qc_interp[:, :, :]
+        #qc[:, :, :] = qc[:, :, :] #/ self._Ref.rho0[np.newaxis, np.newaxis, :]
+
 
         try:
             qi = self._ScalarState.get_field("qi")
@@ -373,15 +388,15 @@ class InitializeReanalysis:
             self._Grid.lon_local, self._Grid.lat_local, self._Grid.z_local
         )
 
-        qi[:, :, :] = qi_interp[:, :, :]
-        qi[:, :, :] = qi[:, :, :] / self._Ref.rho0[np.newaxis, np.newaxis, :]
+        #qi[:, :, :] = qi_interp[:, :, :]
+        #qi[:, :, :] = qi[:, :, :] #/ self._Ref.rho0[np.newaxis, np.newaxis, :]
 
         s[:, :, :] = (
             T
             + (
                 self._Grid.z_local[np.newaxis, np.newaxis, :] * (parameters.G)
-                - parameters.LV * qc
-                - parameters.LS * qi
+                - parameters.LV * qc_interp
+                - parameters.LS * qi_interp
             )
             / parameters.CPD
         )
@@ -390,9 +405,11 @@ class InitializeReanalysis:
         s[:, :, nhalo[2] : nhalo[2] + 3] += random
 
         # Remove condensate from qv
-        qv[:, :, :] = qv[:, :, :]
+        qv[:, :, :] = qv[:, :, :] + qc_interp[:,:,:] + qi_interp[:,:,:]
 
         # qv[qv < 1e-9] = 1e-9
+
+
 
         # Now initializing u
         if MPI.COMM_WORLD.Get_rank() == 0:
@@ -402,6 +419,7 @@ class InitializeReanalysis:
             self._Grid.lon_local_edge_x, self._Grid.lat_local_edge_x, self._Grid.z_local
         )
 
+        
         # Now initialize v
         if MPI.COMM_WORLD.Get_rank() == 0:
             print("Initializaing v")
@@ -409,6 +427,11 @@ class InitializeReanalysis:
         v[:, :, :] = self._Ingest.interp_v(
             self._Grid.lon_local_edge_y, self._Grid.lat_local_edge_y, self._Grid.z_local
         )
+
+
+        #import pylab as plt
+        #plt.pcolor(v[:,:,4].T, cmap=plt.cm.gist_ncar)
+        #plt.show()
 
         # Now we need to rotate the wind field
         # u_at_v = self._Grid.upt_to_vpt(u)
@@ -445,6 +468,7 @@ class LateralBCsReanalysis(LateralBCsBase):
         self.time_previous = self._TimeSteppingController._time
 
         self.nudge_width = 5
+        self.ingest_freq = 1800.0
 
         return
 
@@ -620,8 +644,8 @@ class LateralBCsReanalysis(LateralBCsBase):
                             shift=shift,
                         ).squeeze()
 
-                        qc[:, :] = 0.0  # qc[:,:]/self._Ref.rho0[np.newaxis,:]
-                        qi[:, :] = 0.0  # qi[:,:]/self._Ref.rho0[np.newaxis,:]
+                        #qc[:, :] = 0.0  # qc[:,:]/self._Ref.rho0[np.newaxis,:]
+                        #qi[:, :] = 0.0  # qi[:,:]/self._Ref.rho0[np.newaxis,:]
 
                         T = self._Ingest.interp_T(
                             self.bdy_lons["scalar"][bdy],
@@ -634,8 +658,8 @@ class LateralBCsReanalysis(LateralBCsBase):
                             T
                             + (
                                 self._Grid.z_local[np.newaxis, :] * (parameters.G)
-                                - parameters.LV * qc
-                                - parameters.LS * qi
+                                - parameters.LV * qc 
+                                - parameters.LS * qi 
                             )
                             / parameters.CPD
                         )
@@ -648,19 +672,19 @@ class LateralBCsReanalysis(LateralBCsBase):
                         )
                     elif var == "qv":
 
-                        # qc = self._Ingest.interp_qc(
-                        #     self.bdy_lons["scalar"][bdy],
-                        #     self.bdy_lats["scalar"][bdy],
-                        #     self._Grid.z_local,
-                        #     shift=shift,
-                        # ).squeeze()
-
-                        # qi = self._Ingest.interp_qi(
-                        #     self.bdy_lons["scalar"][bdy],
-                        #     self.bdy_lats["scalar"][bdy],
-                        #     self._Grid.z_local,
-                        #     shift=shift,
-                        # ).squeeze()
+                        qc = self._Ingest.interp_qc(
+                             self.bdy_lons["scalar"][bdy],
+                             self.bdy_lats["scalar"][bdy],
+                             self._Grid.z_local,
+                             shift=shift,
+                         ).squeeze()
+                        
+                        qi = self._Ingest.interp_qi(
+                             self.bdy_lons["scalar"][bdy],
+                             self.bdy_lats["scalar"][bdy],
+                             self._Grid.z_local,
+                             shift=shift,
+                         ).squeeze()
 
                         qv = self._Ingest.interp_qv(
                             self.bdy_lons["scalar"][bdy],
@@ -671,7 +695,7 @@ class LateralBCsReanalysis(LateralBCsBase):
 
                         # qc[:,:] = qc[:,:]/self._Ref.rho0[np.newaxis,:]
                         # qi[:,:] = qi[:,:]/self._Ref.rho0[np.newaxis,:]
-                        qv[:, :] = qv[:, :] / self._Ref.rho0[np.newaxis, :]
+                        qv[:, :] = qv[:, :] + qc[:,:] + qi[:,:]# / self._Ref.rho0[np.newaxis, :]
                         # qi[qi < 0.0] = 0.0
 
                         bdy_data[var][bdy][:, :] = qv
@@ -764,8 +788,8 @@ class LateralBCsReanalysis(LateralBCsBase):
                         shift=shift,
                     ).squeeze()
 
-                    qc[:, :] = 0.0  # qc[:,:]/self._Ref.rho0[np.newaxis,:]
-                    qi[:, :] = 0.0  # qi[:,:]/self._Ref.rho0[np.newaxis,:]
+                    qc[:, :] = qc[:,:]#/self._Ref.rho0[np.newaxis,:]
+                    qi[:, :] = qi[:,:]#/self._Ref.rho0[np.newaxis,:]
 
                     T = self._Ingest.interp_T(
                         self.bdy_lons["scalar"][bdy],
@@ -778,8 +802,8 @@ class LateralBCsReanalysis(LateralBCsBase):
                         T
                         + (
                             self._Grid.z_local[np.newaxis, :] * (parameters.G)
-                            - parameters.LV * qc
-                            - parameters.LS * qi
+                            - parameters.LV * qc 
+                            - parameters.LS * qi 
                         )
                         / parameters.CPD
                     )
@@ -791,21 +815,20 @@ class LateralBCsReanalysis(LateralBCsBase):
                         np.amin(bdy_data[var][bdy][:, :]),
                     )
                 elif var == "qv":
-
-                    # qc = self._Ingest.interp_qc(
-                    #     self.bdy_lons["scalar"][bdy],
-                    #     self.bdy_lats["scalar"][bdy],
-                    #     self._Grid.z_local,
-                    #     shift=shift,
-                    # ).squeeze()
-
-                    # qi = self._Ingest.interp_qi(
-                    #     self.bdy_lons["scalar"][bdy],
-                    #     self.bdy_lats["scalar"][bdy],
-                    #     self._Grid.z_local,
-                    #     shift=shift,
-                    # ).squeeze()
-
+                    qc = self._Ingest.interp_qc(
+                     self.bdy_lons["scalar"][bdy],
+                     self.bdy_lats["scalar"][bdy],
+                     self._Grid.z_local,
+                     shift=shift,
+                     ).squeeze()
+                    
+                    qi = self._Ingest.interp_qi(
+                         self.bdy_lons["scalar"][bdy],
+                         self.bdy_lats["scalar"][bdy],
+                         self._Grid.z_local,
+                         shift=shift,
+                     ).squeeze()
+                    
                     qv = self._Ingest.interp_qv(
                         self.bdy_lons["scalar"][bdy],
                         self.bdy_lats["scalar"][bdy],
@@ -813,11 +836,11 @@ class LateralBCsReanalysis(LateralBCsBase):
                         shift=shift,
                     ).squeeze()
 
-                    # qc[:,:] = qc[:,:]/self._Ref.rho0[np.newaxis,:]
-                    # qi[:,:] = qi[:,:]/self._Ref.rho0[np.newaxis,:]
-                    qv[:, :] = qv[:, :] / self._Ref.rho0[np.newaxis, :]
+                    qc[:,:] = qc[:,:]#/self._Ref.rho0[np.newaxis,:]
+                    qi[:,:] = qi[:,:]#/self._Ref.rho0[np.newaxis,:]
+                    qv[:, :] = qv[:, :] #/ self._Ref.rho0[np.newaxis, :]
 
-                    bdy_data[var][bdy][:, :] = qv
+                    bdy_data[var][bdy][:, :] = qv + qi + qc
                     print(
                         np.amax(bdy_data[var][bdy][:, :]),
                         np.amin(bdy_data[var][bdy][:, :]),
@@ -833,7 +856,7 @@ class LateralBCsReanalysis(LateralBCsBase):
 
                     qc[qc < 0.0] = 0.0
 
-                    qc[:, :] = qc[:, :] / self._Ref.rho0[np.newaxis, :]
+                    qc[:, :] = qc[:, :] #/ self._Ref.rho0[np.newaxis, :]
 
                     bdy_data[var][bdy][:, :] = qc
                     print(
@@ -850,7 +873,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                         shift=shift,
                     ).squeeze()
 
-                    qi[:, :] = qi[:, :] / self._Ref.rho0[np.newaxis, :]
+                    qi[:, :] = qi[:, :] #/ self._Ref.rho0[np.newaxis, :]
 
                     qi[qi < 0.0] = 0.0
 
@@ -866,7 +889,7 @@ class LateralBCsReanalysis(LateralBCsBase):
 
     def set_vars_on_boundary(self, **kwargs):
 
-        if self.presvious_shift * 3600 <= self._TimeSteppingController.time:
+        if self.presvious_shift * self.ingest_freq<= self._TimeSteppingController.time:
             print("Updating boundary data: ", self._TimeSteppingController.time)
             self.update_ingest()
             self.time_previous = self._TimeSteppingController._time
@@ -885,7 +908,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                         - self._previous_bdy[var]["x_low"][0, :, :]
                     )
                     * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
+                    / self.ingest_freq
                 )
 
                 x_high[:, :] = (
@@ -895,7 +918,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                         - self._previous_bdy[var]["x_high"][-1, :, :]
                     )
                     * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
+                    / self.ingest_freq
                 )
 
                 y_low[:, :] = (
@@ -905,7 +928,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                         - self._previous_bdy[var]["y_low"][:, 0, :]
                     )
                     * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
+                    / self.ingest_freq
                 )
 
                 y_high[:, :] = (
@@ -915,7 +938,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                         - self._previous_bdy[var]["y_high"][:, -1, :]
                     )
                     * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
+                    / self.ingest_freq
                 )
 
             else:
@@ -965,7 +988,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                         - self._previous_bdy[var]["x_low"][:, :, :]
                     )
                     * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
+                    / self.ingest_freq
                 )
 
 
@@ -986,7 +1009,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                         - self._previous_bdy[var]["x_high"][:, :, :]
                     )
                     * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
+                    / self.ingest_freq
                 )
 
                 if self._Grid.high_rank[0]:
@@ -1004,13 +1027,13 @@ class LateralBCsReanalysis(LateralBCsBase):
                         - self._previous_bdy[var]["y_low"][:, :, :]
                     )
                     * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
+                    / self.ingest_freq
                 )
 
-                #if self._Grid.low_rank[1]:
-                #    ut[:, start:end, :] -= (
-                #        u[:, start:end, :] - u_nudge[:, 1:, :]
-                #    ) * weight[np.newaxis, :, np.newaxis]
+                if self._Grid.low_rank[1]:
+                    ut[:, start:end, :] -= (
+                        u[:, start:end, :] - u_nudge[:, 1:, :]
+                    ) * weight[np.newaxis, :, np.newaxis]
 
                 u_nudge = (
                     self._previous_bdy[var]["y_high"][:, :, :]
@@ -1019,7 +1042,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                         - self._previous_bdy[var]["y_high"][:, :, :]
                     )
                     * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
+                    / self.ingest_freq
                 )
 
                 start = -nh[1] - self.nudge_width
@@ -1027,10 +1050,10 @@ class LateralBCsReanalysis(LateralBCsBase):
                 
 
                 
-                #if self._Grid.high_rank[1]:
-                #    ut[:, start:end, :] -= (
-                #        u[:, start:end, :] - u_nudge[:, :-1, :]
-                #    ) * weight[np.newaxis, ::-1, np.newaxis]
+                if self._Grid.high_rank[1]:
+                    ut[:, start:end, :] -= (
+                        u[:, start:end, :] - u_nudge[:, :-1, :]
+                    ) * weight[np.newaxis, ::-1, np.newaxis]
 
             elif var == "v":
                 v = self._State.get_field(var)
@@ -1047,15 +1070,15 @@ class LateralBCsReanalysis(LateralBCsBase):
                         - self._previous_bdy[var]["x_low"][:, :, :]
                     )
                     * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
+                    / self.ingest_freq
                 )
 
                 start = nh[0]
                 end = nh[0] + self.nudge_width
-                #if self._Grid.low_rank[0]:
-                #    vt[start:end, :, :] -= (
-                #        v[start:end, :, :] - v_nudge[1:, :, :]
-                #    ) * weight[:, np.newaxis, np.newaxis]
+                if self._Grid.low_rank[0]:
+                    vt[start:end, :, :] -= (
+                        v[start:end, :, :] - v_nudge[1:, :, :]
+                    ) * weight[:, np.newaxis, np.newaxis]
 
                 v_nudge = (
                     self._previous_bdy[var]["x_high"][:, :, :]
@@ -1064,16 +1087,16 @@ class LateralBCsReanalysis(LateralBCsBase):
                         - self._previous_bdy[var]["x_high"][:, :, :]
                     )
                     * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
+                    / self.ingest_freq
                 )
 
                 start = -nh[0] - self.nudge_width
                 end = -nh[0]
 
-               # if self._Grid.high_rank[0]:
-               #     vt[start:end, corner_low:corner_high, :] -= (
-               #         v[start:end, corner_low:corner_high, :] - v_nudge[:-1, corner_low:corner_high, :]
-               #     ) * weight[::-1, np.newaxis, np.newaxis]
+                if self._Grid.high_rank[0]:
+                    vt[start:end, corner_low:corner_high, :] -= (
+                        v[start:end, corner_low:corner_high, :] - v_nudge[:-1, corner_low:corner_high, :]
+                    ) * weight[::-1, np.newaxis, np.newaxis]
 
                 v_nudge = (
                     self._previous_bdy[var]["y_low"][:, :, :]
@@ -1082,7 +1105,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                         - self._previous_bdy[var]["y_low"][:, :, :]
                     )
                     * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
+                    / self.ingest_freq
                 )
 
                 start = nh[1]
@@ -1099,7 +1122,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                         - self._previous_bdy[var]["y_high"][:, :, :]
                     )
                     * (self._TimeSteppingController._time - self.time_previous)
-                    / 3600.0
+                    / self.ingest_freq
                 )
 
                 start = -nh[1] - self.nudge_width - 1
@@ -1114,7 +1137,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                 w = self._State.get_field(var)
                 wt = self._State.get_tend(var)
 
-                # # if self._TimeSteppingController.time < 3600.0:
+                # # if self._TimeSteppingController.time < self.ingest_freq:
                 # #    wt[:,:,:] = -w[:,:,:] * 1/300.0
 
                 # start = nh[0]
@@ -1169,7 +1192,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                 #         - self._previous_bdy[var]["x_low"][:, :, :]
                 #     )
                 #     * (self._TimeSteppingController._time - self.time_previous)
-                #     / 3600.0
+                #     / self.ingest_freq
                 # )
 
                 # start = nh[0]
@@ -1193,7 +1216,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                 #         - self._previous_bdy[var]["x_high"][:, :, :]
                 #     )
                 #     * (self._TimeSteppingController._time - self.time_previous)
-                #     / 3600.0
+                #     / self.ingest_freq
                 # )
 
                 # start = -nh[0] - self.nudge_width
@@ -1218,7 +1241,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                 #         - self._previous_bdy[var]["y_low"][:, :, :]
                 #     )
                 #     * (self._TimeSteppingController._time - self.time_previous)
-                #     / 3600.0
+                #     / self.ingest_freq
                 # )
 
                 # start = nh[1]
@@ -1242,7 +1265,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                 #         - self._previous_bdy[var]["y_high"][:, :, :]
                 #     )
                 #     * (self._TimeSteppingController._time - self.time_previous)
-                #     / 3600.0
+                #     / self.ingest_freq
                 # )
 
                 # start = -nh[1] - self.nudge_width
