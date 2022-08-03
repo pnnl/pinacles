@@ -34,7 +34,7 @@ class SurfaceBase:
         self._scheme = namelist["microphysics"]["scheme"]
         
         try:
-            mp_flags = namelist["microphysics"]["flags"]
+            mp_flags = namelist["m2005_ma"]["flags"]
             doprogaero = mp_flags["doprogaerosol"]
             
             UtilitiesParallel.print_root("\tCustom prog. aerosol flag")
@@ -47,7 +47,7 @@ class SurfaceBase:
             
             UtilitiesParallel.print_root("\tAerosol fluxes init")
             self.aero_flux = True
-            self._ustar = 0.25  # m/s
+            # self._ustar = 0.25  # m/s
             self._WHITECAP_COEF = 3.84e-6  # for surface salt aerosol flux,  from eq (5) for whitecap coverage in Clarke etal (2006)
             self._RHO_AEROSOL = 2160.0  # kg/m^3 aerosol density set for NaCl
             
@@ -55,7 +55,7 @@ class SurfaceBase:
             self._SFLUX_NAIT_COEF = 4.37e7  # coefficient of surface aitken number flux
             
             try:
-                aero_in = namelist["microphysics"]["m2005_ma"]["aero"]
+                aero_in = namelist["m2005_ma"]["aero"]
                 
                 self._SFLUX_RACC = aero_in["rm_acc"]
                 self._SFLUX_RAIT = aero_in["rm_ait"]
@@ -81,23 +81,22 @@ class SurfaceBase:
             self.fac1 = (zl[k] - 10.0) / (zl[k] - zl[k - 1])
             self.fac2 = (10.0 - zl[k - 1]) / (zl[k] - zl[k - 1])
 
-            self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
-            self._taux_sfc = np.zeros_like(self._windspeed_sfc)
-            self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
-            # self._bflx_sfc = np.zeros_like(self._windspeed_sfc) + self._buoyancy_flux
-            self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
-            self._naflux_sfc = np.zeros_like(self._windspeed_sfc)
-            self._qaflux_sfc = np.zeros_like(self._windspeed_sfc)
-            self._na2flux_sfc = np.zeros_like(self._windspeed_sfc)
-            self._qa2flux_sfc = np.zeros_like(self._windspeed_sfc)
-            self._u10_arr = np.zeros_like(self._windspeed_sfc)
+            # self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
+            # self._taux_sfc = np.zeros_like(self._windspeed_sfc)
+            # self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
+            # self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
+            self._naflux_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
+            self._qaflux_sfc = np.zeros_like(self._naflux_sfc)
+            self._na2flux_sfc = np.zeros_like(self._naflux_sfc)
+            self._qa2flux_sfc = np.zeros_like(self._naflux_sfc)
+            self._u10_arr = np.zeros_like(self._naflux_sfc)
         
         return
 
     def update(self):
                 
         if self.aero_flux == True:
-            UtilitiesParallel.print_root("\tAerosol fluxes")# Get Fields
+            # UtilitiesParallel.print_root("\tAerosol fluxes") # Get Fields
             
             nh = self._Grid.n_halo
             dxi2 = self._Grid.dxi[2]

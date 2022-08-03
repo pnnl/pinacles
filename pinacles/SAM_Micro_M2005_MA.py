@@ -63,7 +63,7 @@ class Micro_M2005_MA(MicrophysicsBase):
         self._tlatqi = np.zeros((nz), order="F", dtype=np.double)
 
         try:
-            mp_flags = namelist["microphysics"]["flags"]
+            mp_flags = namelist["m2005_ma"]["flags"]
             docloud = mp_flags["docloud"]
             doprecip = mp_flags["doprecip"]
             doprogaero = mp_flags["doprogaerosol"]
@@ -77,7 +77,7 @@ class Micro_M2005_MA(MicrophysicsBase):
             UtilitiesParallel.print_root("\tM2005_MA: Initialized with default flags")
             
         try:
-            aero_in = namelist["microphysics"]["m2005_ma"]["aero"]
+            aero_in = namelist["m2005_ma"]["aero"]
 
             rm_acc = aero_in["rm_acc"]
             N_acc = aero_in["N_acc"]

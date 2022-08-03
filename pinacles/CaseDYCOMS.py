@@ -74,6 +74,12 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         np.random.seed(namelist["meta"]["random_seed"] + rank)
     except:
         pass
+    
+    # The 'dycoms_rotated' case is a modification of the standard dycoms case (DYCOMS RF02, Ackerman et al, MWR, 2009) 
+    # originally motivated by plume-lofting simulations. It rotates the wind direction of the standard dycoms case 
+    # to better align the mean winds with the x-direction of the computational domain and increase the downstream distance 
+    # over which the plume can develop. The Galilean transformation velocities (u0,v0) are set to zero to keep 
+    # plume release locations fixed. All other properties of the case correspond to standard dycoms values
 
     # Integrate the reference profile.
     if namelist["meta"]["casename"] == "dycoms_rotated":
@@ -163,6 +169,8 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
         self._ustar = 0.25  # m/s
         self._theta_surface = 290.0  # K
         self.T_surface = 289.76
+        
+        self._windspeed_sfc = None
 
 #         self._SFLUX_NACC_COEF = (
 #             4.37e7  # coefficient of surface accumulation number flux
@@ -175,7 +183,7 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
 #         self._SIGMA_ACCUM = 1.7  # sig=geom standard deviation of aer size distn.
 #         self._SIGMA_AITKEN = 1.2  # sig=geom standard deviation of aer size distn.
 
-#         nl = self._Grid.ngrid_local
+        nl = self._Grid.ngrid_local
 
 #         zl = self._Grid.z_local
 #         for k in range(nl[2]):
@@ -185,11 +193,11 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
 #         self.fac1 = (zl[k] - 10.0) / (zl[k] - zl[k - 1])
 #         self.fac2 = (10.0 - zl[k - 1]) / (zl[k] - zl[k - 1])
 
-#         self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
-#         self._taux_sfc = np.zeros_like(self._windspeed_sfc)
-#         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
+        self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
+        self._taux_sfc = np.zeros_like(self._windspeed_sfc)
+        self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
 #         # self._bflx_sfc = np.zeros_like(self._windspeed_sfc) + self._buoyancy_flux
-#         self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
+        self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
 #         self._naflux_sfc = np.zeros_like(self._windspeed_sfc)
 #         self._qaflux_sfc = np.zeros_like(self._windspeed_sfc)
 #         self._na2flux_sfc = np.zeros_like(self._windspeed_sfc)
