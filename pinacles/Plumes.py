@@ -114,6 +114,7 @@ class Plume:
             s_tend = self._ScalarState.get_tend("s")
             s_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
                 self._plume_heat_flux / grid_cell_mass * parameters.ICPD
+                - parameters.LV * self._plume_qc_flux / grid_cell_mass * parameters.ICPD
             )
 
             # Add the plume vapor flux
