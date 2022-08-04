@@ -2,7 +2,7 @@ import numpy as np
 import numba
 from mpi4py import MPI
 from pinacles import Surface, Surface_impl
-from pinacles import Forcing
+from pinacles import Forcing, Forcing_impl
 from pinacles import parameters
 import pinacles.ThermodynamicsMoist_impl as MoistThermo
 import pinacles.UtilitiesParallel as UtilitiesParallel
@@ -30,24 +30,36 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     s = ScalarState.get_field("s")
 
     xl = ModelGrid.local_axes[0]
+    xl_e = ModelGrid.local_axes_edge[0]
     yl = ModelGrid.local_axes[1]
+    yl_e = ModelGrid.local_axes_edge[1]
     zl = ModelGrid.local_axes[2]
     xg = ModelGrid.x_global
     yg = ModelGrid.y_global
+    nh = ModelGrid.n_halo
+    
+    lx = ModelGrid.l[0]
+    ly = ModelGrid.l[1]
+    
 
     exner = Ref.exner
 
     # Wind is uniform initiall
-    u.fill(0.0)
+    u.fill(2.0)
     v.fill(0.0)
     w.fill(0.0)
 
     shape = s.shape
 
     s.fill(293.0)
+    pert = np.random.uniform(low=-0.1, high=0.1, size=s.shape)
+    pert_mean = np.mean(np.mean(pert[nh[0]:-nh[0], nh[1]:-nh[1], :],axis=0),axis=0)
+    pert = pert - pert_mean[np.newaxis,np.newaxis,:]
+    #s += np.random.uniform(low=-0.5, high=0.5, size=s.shape)
     
-    s += np.random.uniform(low=-1e-1, high=1e-1, size=s.shape)
     
+    pert[:,:,nh[2] + 10:] = 0
+    s += pert
 
     shape = s.shape
     for i in range(shape[0]):
@@ -58,11 +70,22 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                 qv[i,j,k] = qs * 0.4
                 
                 
-    u_prof = (2.0)/10.0 * zl
-    u[:,:,:] = u_prof[np.newaxis, np.newaxis, :]
+    #u_prof = (2.0)/10.0 * zl
+    
+    vamp = np.sin(8.0 * xl/lx * np.pi)
+    uamp = np.sin(8.0 * yl/ly * np.pi)
+    
+    
+    #u[:,:,:] = u_prof[np.newaxis, np.newaxis, :]
+
+    v[:,:,:nh[2] + 10] += vamp[:,np.newaxis,np.newaxis]
+    u[:,:,:nh[2] + 10] += uamp[np.newaxis,:,np.newaxis]
+
+    
+
 
     #v[:,:,:8] = np.random.uniform(low=-1e-1, high=1e-1, size=v[:,:,:8].shape)
-                
+    #print( np.random.uniform(low=-1e-1, high=1e-1, size=v[:,:,:8].shape))
 
 
 
@@ -81,15 +104,32 @@ class ForcingChamber(Forcing.ForcingBase):
             DiagnosticState,
         )
 
-
+        zl = self._Grid.z_local
+        self._ug = np.zeros_like(zl) + 2.0
+        self._vg = np.zeros_like(zl)
+                
         self._TimeSteppingController = TimeSteppingController
 
-        self._Timers.add_timer("ForcingBomex_update")
         return
 
     def update(self):
 
-        self._Timers.start_timer("ForcingBomex_update")
+
+        u = self._VelocityState.get_field("u")
+        v = self._VelocityState.get_field("v")
+
+        ut = self._VelocityState.get_tend("u")
+        vt = self._VelocityState.get_tend("v")
+
+
+        Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, self._ug, self._vg, vt, ut)
+
+
+        return
+
+    def update(self):
+
+        #self._Timers.start_timer("ForcingBomex_update")
         exner = self._Ref.exner
         
         
@@ -117,7 +157,7 @@ class ForcingChamber(Forcing.ForcingBase):
             
             on_rank = self._Grid.point_on_rank(noz_point[0], noz_point[1], noz_point[2])
         
-            if on_rank and  self._TimeSteppingController.time >= 0.0 and self._TimeSteppingController.time <= 20.0:
+            if on_rank and  self._TimeSteppingController.time >= 60.0 and self._TimeSteppingController.time <= 120.0:
                 
                 xl = self._Grid.x_local
                 yl = self._Grid.y_local
@@ -135,7 +175,7 @@ class ForcingChamber(Forcing.ForcingBase):
                 st[xp, yp, zp + 1] -=  parameters.LV * (2.155/1000.0) / self._Ref.rho0[zp]/vol*parameters.ICPD
 
 
-        self._Timers.end_timer("ForcingBomex_update")
+        #self._Timers.end_timer("ForcingBomex_update")
         return
     
 class SurfaceChamber(Surface.SurfaceBase):
@@ -240,8 +280,3 @@ class SurfaceChamber(Surface.SurfaceBase):
 
         self._Timers.end_timer("SurfaceSullivanAndPatton_update")
         return
-
-
-
-
-    
