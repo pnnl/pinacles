@@ -80,7 +80,9 @@ class TimeSteppingController:
         self._times_to_match = []
         self._dt = 0.0
         self._restart_atts.append("_dt")
-        self._dt_max = 10.0
+        self._dt_max =  0.1
+        self._dt_init = 0.1
+        self._first_call = True
         self._cfl_target = namelist["time"]["cfl"]
 
         try:
@@ -142,6 +144,9 @@ class TimeSteppingController:
             self._dt = self.diff_num_target / max(diff_num_max_time_div_dt, 0.0001)
 
             self._dt = min(self._dt, self._dt_max)
+            if self._first_call:
+                self._dt = min(self._dt, self._dt_init)
+                self._first_call = False
             self._dt = min(self._dt, dt_from_cfl)
 
             if self._time + self._dt > end_time:

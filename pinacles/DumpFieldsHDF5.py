@@ -86,11 +86,15 @@ class DumpFields_hdf:
         minutes = s // 60
         seconds = s - (minutes * 60)
 
+        s = s - int(seconds) 
+        print(s, int(s*1000.0) )
+
+
         fx = h5py.File(
             os.path.join(
                 output_here,
-                "{:02}d-{:02}h-{:02}m-{:02}s".format(
-                    int(days), int(hours), int(minutes), int(seconds)
+                "{:02}d-{:02}h-{:02}m-{:02}s-{:03}ms".format(
+                    int(days), int(hours), int(minutes), int(seconds), int(s*1000.0)
                 )
                 + ".h5",
             ),

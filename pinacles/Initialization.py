@@ -1,3 +1,4 @@
+from unicodedata import name
 import numpy as np
 from pinacles import CaseStableBubble
 from mpi4py import MPI
@@ -9,6 +10,7 @@ import pinacles.CaseDYCOMS as CaseDycoms
 import pinacles.CaseRICO as CaseRico
 import pinacles.CaseATEX as CaseATEX
 import pinacles.CaseTestbed as CaseTestbed
+import pinacles.CaseChamber as CaseChamber
 
 CASENAMES = [
     "sullivan_and_patton",
@@ -18,6 +20,7 @@ CASENAMES = [
     "rico",
     "atex",
     "testbed",
+    "chamber"
 ]
 
 
@@ -38,6 +41,8 @@ def factory(namelist):
         return CaseATEX.initialize
     elif namelist["meta"]["casename"] == "testbed":
         return CaseTestbed.initialize
+    elif namelist["meta"]["casename"] == "chamber":
+        return CaseChamber.initialize
     else:
         UtilitiesParallel.print_root(
             "Caanot find initialization for: ", namelist["meta"]["casename"]

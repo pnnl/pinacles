@@ -5,6 +5,7 @@ from pinacles import CaseStableBubble
 from pinacles import CaseRICO
 from pinacles import CaseATEX
 from pinacles import CaseTestbed
+from pinacles import CaseChamber
 from pinacles import Surface
 
 
@@ -41,6 +42,10 @@ def factory(
         )
     elif casename == "atex":
         return CaseATEX.SurfaceATEX(
+            namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+        )
+    elif casename == "chamber":
+        return CaseChamber.SurfaceChamber(
             namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
     elif casename == "testbed":

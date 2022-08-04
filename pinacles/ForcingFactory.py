@@ -4,6 +4,7 @@ from pinacles import CaseDYCOMS
 from pinacles import CaseRICO
 from pinacles import CaseATEX
 from pinacles import CaseTestbed
+from pinacles import CaseChamber
 from pinacles import Forcing
 
 
@@ -57,6 +58,10 @@ def factory(
             ScalarState,
             DiagnosticState,
             TimeSteppingController,
+        )
+    elif casename == "chamber":
+        return CaseChamber.ForcingChamber(
+            namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState, TimeSteppingController
         )
     else:
         return Forcing.ForcingBase(
