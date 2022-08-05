@@ -52,13 +52,16 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     shape = s.shape
 
     s.fill(293.0)
-    pert = np.random.uniform(low=-0.1, high=0.1, size=s.shape)
+    pert = np.random.uniform(low=-0.25, high=0.25, size=s.shape)
     pert_mean = np.mean(np.mean(pert[nh[0]:-nh[0], nh[1]:-nh[1], :],axis=0),axis=0)
     pert = pert - pert_mean[np.newaxis,np.newaxis,:]
     #s += np.random.uniform(low=-0.5, high=0.5, size=s.shape)
     
     
-    pert[:,:,nh[2] + 10:] = 0
+    
+    zpert_i = np.min(np.argmin(np.abs(zl - 7.5))) 
+    
+    pert[:,:,zpert_i:] = 0
     s += pert
 
     shape = s.shape
@@ -78,8 +81,8 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
     
     #u[:,:,:] = u_prof[np.newaxis, np.newaxis, :]
 
-    v[:,:,:nh[2] + 10] += vamp[:,np.newaxis,np.newaxis]
-    u[:,:,:nh[2] + 10] += uamp[np.newaxis,:,np.newaxis]
+    v[:,:,:zpert_i] += vamp[:,np.newaxis,np.newaxis]
+    u[:,:,:zpert_i] += uamp[np.newaxis,:,np.newaxis]
 
     
 
@@ -150,14 +153,26 @@ class ForcingChamber(Forcing.ForcingBase):
         qvt = self._ScalarState.get_tend("qv")
         qct = self._ScalarState.get_tend("qc")
 
-        noz_points = [ (10.0 *0.05, 10.0 * 0.50, 10.0 * 0.75), (10.0 *0.15, 10.0 * 0.5, 10.0 * 0.75), (10.0 *0.25, 10.0 * 0.5, 10.0 * 0.75) ]
 
+        lx = self._Grid.l[0]
+        ly = self._Grid.l[1]
+        lz = self._Grid.l[2]
+    
+
+        xlocs = [1.0 - 4*0.078125, 1.0, 1.0  + 4*0.078125]
+        ylocs = [5.0 - 4*0.078125, 5.0, 5.0  + 4*0.078125]
+        zloc  = 7.5
+
+        noz_points = []
+        for xl in xlocs:
+            for yl in ylocs:
+                noz_points.append((xl, yl, zloc))
 
         for noz_point in noz_points:
             
             on_rank = self._Grid.point_on_rank(noz_point[0], noz_point[1], noz_point[2])
         
-            if on_rank and  self._TimeSteppingController.time >= 60.0 and self._TimeSteppingController.time <= 120.0:
+            if on_rank and  self._TimeSteppingController.time >= 360.0 and self._TimeSteppingController.time <= 40.0:
                 
                 xl = self._Grid.x_local
                 yl = self._Grid.y_local
