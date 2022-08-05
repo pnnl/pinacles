@@ -74,6 +74,8 @@ def main(namelist):
 
         # Compute how long t
         integrate_by_dt = np.amin(last_io_time + io_frequencies - time)
+        if integrate_by_dt == 0:
+            integrate_by_dt = np.amin(io_frequencies)
 
     return
 

@@ -64,6 +64,7 @@ class RungeKutta2ndSSP(RungeKuttaBase):
         return self._dt
 
 
+
 def factory(namelist, Timers, Grid, PrognosticState):
     return RungeKutta2ndSSP(namelist, Timers, Grid, PrognosticState)
 

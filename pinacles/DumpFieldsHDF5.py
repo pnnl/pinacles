@@ -8,7 +8,7 @@ except:
 
 import time
 from pinacles import UtilitiesParallel
-
+import copy
 
 class DumpFields_hdf:
     def __init__(self, namelist, Timers, Grid, TimeSteppingController):
@@ -61,7 +61,7 @@ class DumpFields_hdf:
         return
 
     def update(self):
-
+        print('Prepping ouptput')
         t0 = time.perf_counter()
         self._Timers.start_timer("DumpFields")
 
@@ -78,23 +78,21 @@ class DumpFields_hdf:
 
         MPI.COMM_WORLD.barrier()
 
-        s = self._TimeSteppingController.time
-        days = s // 86400
-        s = s - (days * 86400)
-        hours = s // 3600
-        s = s - (hours * 3600)
-        minutes = s // 60
-        seconds = s - (minutes * 60)
-
-        s = s - int(seconds) 
-        print(s, int(s*1000.0) )
-
+        s = copy.deepcopy(self._TimeSteppingController.time)
+        days = s // 86400.
+        s = s - (days * 86400.)
+        hours = s // 3600.
+        s = s - (hours * 3600.)
+        minutes = s // 60.
+        seconds = s - (minutes * 60.)
+        s = s - int(seconds)
+        ms = s * 1000.0
 
         fx = h5py.File(
             os.path.join(
                 output_here,
                 "{:02}d-{:02}h-{:02}m-{:02}s-{:03}ms".format(
-                    int(days), int(hours), int(minutes), int(seconds), int(s*1000.0)
+                    int(days), int(hours), int(minutes), int(seconds), int(ms)
                 )
                 + ".h5",
             ),
