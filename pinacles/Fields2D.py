@@ -12,10 +12,12 @@ except:
 
 
 class Fields2D:
-    def __init__(self, namelist, Grid, Ref, VelocityState, TimeSteppingController):
+    def __init__(self, namelist, Grid, Ref, ScalarState,  VelocityState, DiagnosticState, TimeSteppingController):
         self._Grid = Grid
         self._Ref = Ref
+        self._ScalarState = ScalarState
         self._VelocityState = VelocityState
+        self._DiagnosticState = DiagnosticState
 
         """Set the output frequency, default it to the stats frequency 
         but allow in to be overridden """
@@ -30,6 +32,17 @@ class Fields2D:
             self._output_levels = namelist["fields2d"]["output_levels"]
         except:
             self._output_levels = [0]
+
+        try:
+            self._x_locs = namelist["fields2d"]["x_locs"]
+        except:
+            self._x_locs = []
+
+
+        try:
+            self._y_locs = namelist["fields2d"]["y_locs"]
+        except:
+            self._y_locs = []
 
         self._output_root = str(namelist["meta"]["output_directory"])
         self._casename = str(namelist["meta"]["simname"])
@@ -86,20 +99,21 @@ class Fields2D:
 
         fx = None
         if MPI.COMM_WORLD.Get_rank() == 0:
-
             s = self._TimeSteppingController.time
-            days = s // 86400
-            s = s - (days * 86400)
-            hours = s // 3600
-            s = s - (hours * 3600)
-            minutes = s // 60
-            seconds = s - (minutes * 60)
+            days = s // 86400.
+            s = s - (days * 86400.)
+            hours = s // 3600.
+            s = s - (hours * 3600.)
+            minutes = s // 60.
+            seconds = s - (minutes * 60.)
+            s = s - int(seconds)
+            ms = s * 1000.0
 
             fx = h5py.File(
                 os.path.join(
                     output_here,
-                    "{:02}d-{:02}h-{:02}m-{:02}s".format(
-                        int(days), int(hours), int(minutes), int(seconds)
+                    "{:02}d-{:02}h-{:02}m-{:02}s-{:03}ms".format(
+                        int(days), int(hours), int(minutes), int(seconds), int(ms)
                     )
                     + ".h5",
                 ),
@@ -116,6 +130,7 @@ class Fields2D:
         for aclass in self._classes:
             self._classes[aclass].io_fields2d_update(fx)
 
+        self.output_horizontal(fx, [self._ScalarState, self._DiagnosticState, self._VelocityState])
         self.output_velocities(fx)
 
         # Sync and close netcdf file
@@ -194,6 +209,30 @@ class Fields2D:
                 
         return
 
+    def output_horizontal(self, fx, container):
+        xla = self._Grid.local_axes[0]
+        yla = self._Grid.local_axes[1]
+
+        for con in container:
+            for v in con._dofs:
+                for xl in self._x_locs:
+                    
+                    xi = np.min(np.argmin(np.abs(yla - xl)))
+                    data = con.get_field_slice_h(v, xi)
+
+                    if fx is not None:
+                        var_fx = fx.create_dataset(
+                                    v + "_x_" + str(xl),
+                                    (1, self._Grid.n[0], self._Grid.n[2]),
+                                    dtype=np.double,
+                                )
+
+                        for i, d in enumerate(["time", "X", "Z"]):
+                            var_fx.dims[i].attach_scale(fx[d])
+
+                        var_fx[:, :] = data
+        return
+
     def setup_directories(self):
 
         if MPI.COMM_WORLD.Get_rank() == 0:
@@ -246,7 +285,7 @@ class Fields2DNone:
         return
 
 
-def factory(namelist, Grid, Ref, VelocityState, TimeSteppingController):
+def factory(namelist, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController):
     try:
         import h5py
 
@@ -257,6 +296,6 @@ def factory(namelist, Grid, Ref, VelocityState, TimeSteppingController):
         dofields2d = False
 
     if dofields2d:
-        return Fields2D(namelist, Grid, Ref, VelocityState, TimeSteppingController)
+        return Fields2D(namelist, Grid, Ref, ScalarState, VelocityState, DiagnosticState,  TimeSteppingController)
     else:
         return Fields2DNone()

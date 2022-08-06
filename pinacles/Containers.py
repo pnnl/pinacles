@@ -275,12 +275,12 @@ class ModelState:
         n = self._Grid.n
 
         if not y:
-            local_data = self.get_field(name)[nh[0] : -nh[0], nh[2] : -nh[2], indx]
+            local_data = self.get_field(name)[nh[0] : -nh[0],  indx, nh[2] : -nh[2]]
             local_copy_of_global = np.zeros((n[0], n[2]), dtype=np.double)
         
             local_copy_of_global[ls[0] : ls[0] + nl[0], ls[2] : ls[2] + nl[2]] = local_data
         else:
-            local_data = self.get_field(name)[nh[1] : -nh[1], nh[2] : -nh[2], indx]
+            local_data = self.get_field(name)[indx, nh[1] : -nh[1], nh[2] : -nh[2]]
             local_copy_of_global = np.zeros((n[1], n[2]), dtype=np.double)
             
             local_copy_of_global[ls[1] : ls[1] + nl[1], ls[2] : ls[2] + nl[2]] = local_data

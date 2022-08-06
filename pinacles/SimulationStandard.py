@@ -129,6 +129,14 @@ class SimulationStandard(SimulationBase.SimulationBase):
             bcs="value zero",
         )
 
+        self.ScalarState.add_variable(
+            "spray",
+            long_name="w velocity component",
+            units="kg/kg",
+            latex_name="spray",
+        )
+
+
         # Instantiate kinematics and the SGS model
         self.Kine = Kinematics.Kinematics(
             self.Timers,
@@ -343,7 +351,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self._namelist,
             self.ModelGrid,
             self.Ref,
+            self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.TimeSteppingController,
         )
 
@@ -833,7 +843,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self._namelist,
             self.ModelGrid,
             self.Ref,
+            self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.TimeSteppingController,
         )
         self.Fields2d.add_class(self.Micro)

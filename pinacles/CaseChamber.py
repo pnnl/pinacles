@@ -75,7 +75,7 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                 
     #u_prof = (2.0)/10.0 * zl
     
-    vamp = np.sin(8.0 * xl/lx * np.pi)
+    vamp = np.sin(32.0 * xl/lx * np.pi)
     uamp = np.sin(8.0 * yl/ly * np.pi)
     
     
@@ -110,23 +110,8 @@ class ForcingChamber(Forcing.ForcingBase):
         zl = self._Grid.z_local
         self._ug = np.zeros_like(zl) + 2.0
         self._vg = np.zeros_like(zl)
-                
+        self._f = 1.0e-4
         self._TimeSteppingController = TimeSteppingController
-
-        return
-
-    def update(self):
-
-
-        u = self._VelocityState.get_field("u")
-        v = self._VelocityState.get_field("v")
-
-        ut = self._VelocityState.get_tend("u")
-        vt = self._VelocityState.get_tend("v")
-
-
-        Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, self._ug, self._vg, vt, ut)
-
 
         return
 
@@ -152,7 +137,7 @@ class ForcingChamber(Forcing.ForcingBase):
         st = self._ScalarState.get_tend("s")
         qvt = self._ScalarState.get_tend("qv")
         qct = self._ScalarState.get_tend("qc")
-
+        sprayt = self._ScalarState.get_tend("spray")
 
         lx = self._Grid.l[0]
         ly = self._Grid.l[1]
@@ -172,7 +157,7 @@ class ForcingChamber(Forcing.ForcingBase):
             
             on_rank = self._Grid.point_on_rank(noz_point[0], noz_point[1], noz_point[2])
         
-            if on_rank and  self._TimeSteppingController.time >= 360.0 and self._TimeSteppingController.time <= 40.0:
+            if on_rank and  self._TimeSteppingController.time >= 5.0 and self._TimeSteppingController.time <= 15.0:
                 
                 xl = self._Grid.x_local
                 yl = self._Grid.y_local
@@ -187,7 +172,10 @@ class ForcingChamber(Forcing.ForcingBase):
                 #print(vol)
                 wt[xp, yp, zp] += ((2.155/1000.0) * 16.0)/ self._Ref.rho0[zp]/vol
                 qct[xp, yp, zp + 1] += (2.155/1000.0) / self._Ref.rho0[zp]/vol
+                sprayt[xp, yp, zp + 1] += (2.155/1000.0) / self._Ref.rho0[zp]/vol
                 st[xp, yp, zp + 1] -=  parameters.LV * (2.155/1000.0) / self._Ref.rho0[zp]/vol*parameters.ICPD
+
+        Forcing_impl.large_scale_pgf(self._ug, self._vg, self._f, u, v, 0.0, 0.0, vt, ut)
 
 
         #self._Timers.end_timer("ForcingBomex_update")

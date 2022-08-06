@@ -61,7 +61,6 @@ class DumpFields_hdf:
         return
 
     def update(self):
-        print('Prepping ouptput')
         t0 = time.perf_counter()
         self._Timers.start_timer("DumpFields")
 
