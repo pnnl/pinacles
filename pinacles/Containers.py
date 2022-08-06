@@ -280,7 +280,7 @@ class ModelState:
 
 
         if not y:
-            if indx >= local_start[0] and indx <= local_end[0]  :
+            if indx >= local_start[1] and indx <= local_end[1]  :
                 local_data = self.get_field(name)[nh[0] : -nh[0],  indx, nh[2] : -nh[2]]
                 local_copy_of_global = np.zeros((n[0], n[2]), dtype=np.double)
         
@@ -288,7 +288,7 @@ class ModelState:
             else:
                 local_copy_of_global = np.zeros((n[0], n[2]), dtype=np.double)
         else:
-            if indx >= local_start[1] and indx <= local_end[1]:
+            if indx >= local_start[0] and indx <= local_end[0]:
                 local_data = self.get_field(name)[indx, nh[1] : -nh[1], nh[2] : -nh[2]]
                 local_copy_of_global = np.zeros((n[1], n[2]), dtype=np.double)
                 
