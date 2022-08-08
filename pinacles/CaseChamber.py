@@ -137,6 +137,7 @@ class ForcingChamber(Forcing.ForcingBase):
         st = self._ScalarState.get_tend("s")
         qvt = self._ScalarState.get_tend("qv")
         qct = self._ScalarState.get_tend("qc")
+        qnct = self._ScalarState.get_tend("qnc")
         sprayt = self._ScalarState.get_tend("spray")
 
         lx = self._Grid.l[0]
@@ -158,7 +159,7 @@ class ForcingChamber(Forcing.ForcingBase):
             
             on_rank = self._Grid.point_on_rank(noz_point[0], noz_point[1], noz_point[2])
         
-            if on_rank and  self._TimeSteppingController.time >= 240.0 and self._TimeSteppingController.time <= 250.0:
+            if on_rank and  self._TimeSteppingController.time >= 1.0 and self._TimeSteppingController.time <= 250.0:
                 
                 xl = self._Grid.x_local
                 yl = self._Grid.y_local
@@ -173,6 +174,7 @@ class ForcingChamber(Forcing.ForcingBase):
                 #print(vol)
                 wt[xp, yp, zp] += ((2.155/1000.0) * 16.0)/ self._Ref.rho0[zp]/vol
                 qct[xp, yp, zp + 1] += (2.155/1000.0) / self._Ref.rho0[zp]/vol
+                qnct[xp, yp, zp + 1] += (2.155 /1000.0)/((4.0/3.0)*np.pi*(4.0 * 50e-9)**3.0)*self._Ref.rho0[zp]/vol
                 sprayt[xp, yp, zp + 1] += (2.155/1000.0) / self._Ref.rho0[zp]/vol
                 st[xp, yp, zp + 1] -=  parameters.LV * (2.155/1000.0) / self._Ref.rho0[zp]/vol*parameters.ICPD
 

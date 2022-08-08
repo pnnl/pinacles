@@ -268,6 +268,15 @@ class ScalarWENO(ScalarAdvectionBase):
         v = self._VelocityState.get_field("v")
         w = self._VelocityState.get_field("w")
 
+        qc = self._ScalarState.get_field("qc")
+        qr = self._ScalarState.get_field("qr")
+        s = self._ScalarState.get_field("s")
+        s_t = self._ScalarState.get_tend("s")
+        
+        sd = s + (parameters.LV * (qc + qr))*parameters.ICPD
+        
+
+
         # Get the relevant reference variables
         # TODO there is acopy hiding here
         rho0 = self._Ref.rho0
@@ -293,6 +302,8 @@ class ScalarWENO(ScalarAdvectionBase):
         for var in self._ScalarState.names:
             phi_range = 1.0
 
+
+
             # Get a scalar field (No copy done here)
             phi = self._ScalarState.get_field(var)
             phi_t = self._ScalarState.get_tend(var)
@@ -300,6 +311,12 @@ class ScalarWENO(ScalarAdvectionBase):
             io_flux.fill(0)
             # Now compute the WENO fluxes
             flux_divergence_type = self._ScalarState.flux_divergence_type(var)
+            
+            
+            if var == 's':
+                phi = sd
+                
+            
             if flux_divergence_type != "DEFAULT":
 
                 if phi_has_nonzero(
@@ -335,6 +352,11 @@ class ScalarWENO(ScalarAdvectionBase):
                         fluxz_low,
                     )
 
+
+                    if var in ['qc', 'qr']:
+                        tend_before = np.copy(phi_t)
+                    
+                    
                     if flux_divergence_type == "EMONO":
                         # Essentially monotone advection scheme
                         flux_divergence_monotone(
@@ -397,6 +419,9 @@ class ScalarWENO(ScalarAdvectionBase):
                             phi_range,
                             phi_t,
                         )
+                    if var in ['qc', 'qr']:
+                        s_t -= (phi_t - tend_before) * parameters.LV*parameters.ICPD
+
 
             else:
                 phi_range = compute_phi_range(phi)

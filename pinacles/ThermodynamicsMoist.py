@@ -127,6 +127,15 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         qi = self._Micro.get_qi()
 
         return qv + qc + qi
+    
+    
+    def get_s_dry(self):
+        
+        s = self._ScalarState.get_field('s')
+        qc = self._Micro.get_qc('qc')
+        qi = self._Micro.get_qi('qi')
+        
+        return s - (parameters.LV * qc + parameters.LS * qi)/parameters.CPD
 
     def io_fields2d_update(self, fx):
 

@@ -131,7 +131,8 @@ def flux_divergence_monotone(
                 )
                 tmp = phi[i, j, k] + (tend_tmp * dt)
 
-                if tmp < smin or tmp > smax:
+
+                if tmp <= smin or tmp >= smax:
                     fluxx[i - 1, j, k] = fluxx_low[i - 1, j, k]
                     fluxx[i, j, k] = fluxx_low[i, j, k]
 
