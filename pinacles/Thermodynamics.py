@@ -52,6 +52,9 @@ class ThermodynamicsBase:
 
     def get_qi(self):
         return np.zeros((self._Grid.ngrid_local), dtype=np.double)
+    
+    def get_sd(self):
+        return
 
     @staticmethod
     @numba.njit(fastmath=True)

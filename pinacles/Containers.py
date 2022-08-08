@@ -25,6 +25,8 @@ class ModelState:
         self._loc = {}
         self._limit = {}
         self._flux_divergence = {}
+        self._is_prognosed_liquid = {}
+        self._is_prognosed_ice = {}
         self._identical_bcs = identical_bcs
 
         self.name = container_name
@@ -42,6 +44,8 @@ class ModelState:
             "name",
             "_limit",
             "_flux_divergence",
+            "_is_prognosed_liquid", 
+            "_is_prognosed_ice"
         ]
 
         return
@@ -54,6 +58,12 @@ class ModelState:
 
     def get_units(self, name):
         return self._units[name]
+    
+    def is_prognosed_liquid(self, name):
+        return self._is_prognosed_liquid[name]
+    
+    def is_prognosed_ice(self, name):
+        return self._is_prognosed_ice[name]
 
     @property
     def dofs(self):
@@ -87,6 +97,8 @@ class ModelState:
         loc="c",
         limit=False,
         flux_divergence="default",
+        is_prognosed_liquid = False, 
+        is_prognosed_ice = False
     ):
 
         # Do some correctness checks and warn for some behavior
@@ -107,7 +119,9 @@ class ModelState:
         self._loc[name] = loc
         self._limit[name] = limit
         self._flux_divergence[name] = flux_divergence
-
+        self._is_prognosed_liquid[name] = is_prognosed_liquid
+        self._is_prognosed_ice[name] = is_prognosed_ice
+        
         # Increment the bumber of variables
         self._nvars += 1
 

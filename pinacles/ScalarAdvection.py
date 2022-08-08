@@ -3,6 +3,7 @@ import numpy as np
 import time
 
 from pinacles import UtilitiesParallel, parameters
+from pinacles.ThermodynamicsMoist_impl import s_dry
 from pinacles.scalar_advection.flux_divergence import (
     flux_divergence,
     flux_divergence_bounded,
@@ -24,13 +25,14 @@ from mpi4py import MPI
 
 
 class ScalarAdvectionBase:
-    def __init__(self, Timers, Grid, Ref, ScalarState, VelocityState, TimeStepping):
+    def __init__(self, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeStepping):
 
         self._name = "ScalarAdvection"
         self._Timers = Timers
         self._Grid = Grid
         self._ScalarState = ScalarState
         self._VelocityState = VelocityState
+        self._DiagnosticState = DiagnosticState
         self._Ref = Ref
         self._TimeStepping = TimeStepping
 
@@ -78,10 +80,10 @@ def phi_has_nonzero(phi):
 
 class ScalarWENO(ScalarAdvectionBase):
     def __init__(
-        self, namelist, Timers, Grid, Ref, ScalarState, VelocityState, TimeStepping
+        self, namelist, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeStepping
     ):
         ScalarAdvectionBase.__init__(
-            self, Timers, Grid, Ref, ScalarState, VelocityState, TimeStepping
+            self, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeStepping
         )
         self._flux_profiles = {}
 
@@ -96,6 +98,8 @@ class ScalarWENO(ScalarAdvectionBase):
         self._fluxx_low = np.zeros_like(self._fluxx)
         self._fluxy_low = np.zeros_like(self._fluxx)
         self._fluxz_low = np.zeros_like(self._fluxx)
+        
+        self.tmp_q_tend =  np.zeros_like(self._fluxx)
 
         self._phi_norm = np.zeros_like(self._fluxx)
 
@@ -268,15 +272,12 @@ class ScalarWENO(ScalarAdvectionBase):
         v = self._VelocityState.get_field("v")
         w = self._VelocityState.get_field("w")
 
-        qc = self._ScalarState.get_field("qc")
-        qr = self._ScalarState.get_field("qr")
         s = self._ScalarState.get_field("s")
         s_t = self._ScalarState.get_tend("s")
         
-        sd = s + (parameters.LV * (qc + qr))*parameters.ICPD
+        s_dry = self._DiagnosticState.get_field('s_dry')
         
-
-
+        
         # Get the relevant reference variables
         # TODO there is acopy hiding here
         rho0 = self._Ref.rho0
@@ -302,7 +303,9 @@ class ScalarWENO(ScalarAdvectionBase):
         for var in self._ScalarState.names:
             phi_range = 1.0
 
-
+            var_is_liquid = self._ScalarState.is_prognosed_liquid(var)
+            var_is_ice = self._ScalarState.is_prognosed_ice(var)
+            
 
             # Get a scalar field (No copy done here)
             phi = self._ScalarState.get_field(var)
@@ -314,7 +317,7 @@ class ScalarWENO(ScalarAdvectionBase):
             
             
             if var == 's':
-                phi = sd
+                phi = s_dry
                 
             
             if flux_divergence_type != "DEFAULT":
@@ -353,8 +356,8 @@ class ScalarWENO(ScalarAdvectionBase):
                     )
 
 
-                    if var in ['qc', 'qr']:
-                        tend_before = np.copy(phi_t)
+                    if var_is_liquid or var_is_ice:
+                        self.tmp_q_tend[:,:,:] = phi_t[:,:,:]
                     
                     
                     if flux_divergence_type == "EMONO":
@@ -419,9 +422,15 @@ class ScalarWENO(ScalarAdvectionBase):
                             phi_range,
                             phi_t,
                         )
-                    if var in ['qc', 'qr']:
-                        s_t -= (phi_t - tend_before) * parameters.LV*parameters.ICPD
-
+                    if var_is_liquid:
+                        np.subtract(phi_t, self.tmp_q_tend, out=self.tmp_q_tend)#(phi_t - self.tmp_q_tend) * parameters.LV*parameters.ICPD
+                        np.multiply(self.tmp_q_tend, parameters.LV*parameters.ICPD, out= self.tmp_q_tend)
+                        s_t -= self.tmp_q_tend
+                    
+                    if var_is_ice:
+                        np.subtract(phi_t, self.tmp_q_tend, out=self.tmp_q_tend)#(phi_t - self.tmp_q_tend) * parameters.LV*parameters.ICPD
+                        np.multiply(self.tmp_q_tend, parameters.LS*parameters.ICPD, out= self.tmp_q_tend)
+                        s_t -= self.tmp_q_tend
 
             else:
                 phi_range = compute_phi_range(phi)

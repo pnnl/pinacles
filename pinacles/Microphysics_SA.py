@@ -96,6 +96,7 @@ class MicroSA(MicrophysicsBase):
             latex_name="q_c",
             limit=True,
             flux_divergence="EMONO",
+            is_prognosed_liquid=True
         )
         self._ScalarState.add_variable(
             "qr",
@@ -104,6 +105,7 @@ class MicroSA(MicrophysicsBase):
             latex_name="q_{r}",
             limit=True,
             flux_divergence="EMONO",
+            is_prognosed_liquid=True
         )
 
         self._Timers.add_timer("MicroSA_update")
