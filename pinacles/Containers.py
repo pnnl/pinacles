@@ -278,10 +278,10 @@ class ModelState:
         local_end = self._Grid.local_end
 
 
-
+       
         if not y:
             if indx >= local_start[1] and indx <= local_end[1]  :
-                local_data = self.get_field(name)[nh[0] : -nh[0],  indx, nh[2] : -nh[2]]
+                local_data = self.get_field(name)[nh[0] : -nh[0],  indx-local_start[1], nh[2] : -nh[2]]
                 local_copy_of_global = np.zeros((n[0], n[2]), dtype=np.double)
         
                 local_copy_of_global[ls[0] : ls[0] + nl[0], ls[2] : ls[2] + nl[2]] = local_data
@@ -289,7 +289,7 @@ class ModelState:
                 local_copy_of_global = np.zeros((n[0], n[2]), dtype=np.double)
         else:
             if indx >= local_start[0] and indx <= local_end[0]:
-                local_data = self.get_field(name)[indx, nh[1] : -nh[1], nh[2] : -nh[2]]
+                local_data = self.get_field(name)[indx-local_start[0], nh[1] : -nh[1], nh[2] : -nh[2]]
                 local_copy_of_global = np.zeros((n[1], n[2]), dtype=np.double)
                 
                 local_copy_of_global[ls[1] : ls[1] + nl[1], ls[2] : ls[2] + nl[2]] = local_data
@@ -512,7 +512,8 @@ class ModelState:
         if "restart_type" not in data_dict:
             for att in self._restart_attributes:
                 if att != "restart_type":
-                    assert self.__dict__[att] == data_dict[key][att]
+                   pass  
+                   #assert self.__dict__[att] == data_dict[key][att]
 
             # Update the internal arrays
             self._state_array.array[:, :, :, :] = data_dict[key]["_state_array"][

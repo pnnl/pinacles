@@ -145,19 +145,20 @@ class ForcingChamber(Forcing.ForcingBase):
     
 
         xlocs = [1.0 - 4*0.078125, 1.0, 1.0  + 4*0.078125]
-        ylocs = [5.0 - 4*0.078125, 5.0, 5.0  + 4*0.078125]
-        zloc  = 7.5
+        ylocs = [7.5 - 4*0.078125, 7.5, 7.5  + 4*0.078125]
+        zlocs  = [7.5 - 4*0.078125, 7.5,  7.5  + 4*0.078125] 
 
         noz_points = []
         for xl in xlocs:
             for yl in ylocs:
-                noz_points.append((xl, yl, zloc))
+                for zl in zlocs:
+                    noz_points.append((xl, yl, zl))
 
         for noz_point in noz_points:
             
             on_rank = self._Grid.point_on_rank(noz_point[0], noz_point[1], noz_point[2])
         
-            if on_rank and  self._TimeSteppingController.time >= 5.0 and self._TimeSteppingController.time <= 15.0:
+            if on_rank and  self._TimeSteppingController.time >= 240.0 and self._TimeSteppingController.time <= 250.0:
                 
                 xl = self._Grid.x_local
                 yl = self._Grid.y_local

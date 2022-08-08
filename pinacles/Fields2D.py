@@ -210,8 +210,8 @@ class Fields2D:
         return
 
     def output_horizontal(self, fx, container):
-        xla = self._Grid.local_axes[0]
-        yla = self._Grid.local_axes[1]
+        xla = self._Grid.global_axes[0]
+        yla = self._Grid.global_axes[1]
 
         for con in container:
             for v in con._dofs:
