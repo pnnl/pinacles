@@ -62,7 +62,7 @@ def main(namelist):
         # Adjust the integration to make sure output is at the correct time
         time = Sim.TimeSteppingController.time
         for idx, item in enumerate(io_classes):
-            if time - io_frequencies[idx] == last_io_time[idx]:
+            if np.round(time - io_frequencies[idx],10) == np.round(last_io_time[idx],10):
                 if hasattr(item, "output"):
                     item.output()
                 elif hasattr(item, "update"):
@@ -70,13 +70,12 @@ def main(namelist):
                 elif hasattr(item, "dump_restart"):
                     item.dump_restart(Sim.TimeSteppingController.time)
                 # We did output here so lets update last io-time
-                last_io_time[idx] = time
+                last_io_time[idx] = np.round(time, 10)
 
-        # Compute how long t
         integrate_by_dt = np.amin(last_io_time + io_frequencies - time)
-        if integrate_by_dt == 0:
-            integrate_by_dt = np.amin(io_frequencies)
-
+        
+        integrate_by_dt = np.round(integrate_by_dt, 10)
+        
     return
 
 

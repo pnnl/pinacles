@@ -108,7 +108,7 @@ class ForcingChamber(Forcing.ForcingBase):
         )
 
         zl = self._Grid.z_local
-        self._ug = np.zeros_like(zl) + 2.0
+        self._ug = np.zeros_like(zl) + 8.0
         self._vg = np.zeros_like(zl)
         self._f = 1.0e-4
         self._TimeSteppingController = TimeSteppingController
