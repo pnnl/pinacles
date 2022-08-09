@@ -129,6 +129,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
             bcs="value zero",
         )
 
+        self.ScalarState.add_variable(
+            "spray",
+            long_name="spray concentration",
+            units="kg/kg",
+            latex_name="spray",
+            flux_divergence='EMONO',
+            limit=True
+        )
+
+
+
         # Instantiate kinematics and the SGS model
         self.Kine = Kinematics.Kinematics(
             self.Timers,
@@ -290,6 +301,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Ref,
             self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.ScalarTimeStepping,
         )
 
@@ -343,7 +355,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self._namelist,
             self.ModelGrid,
             self.Ref,
+            self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.TimeSteppingController,
         )
 
@@ -548,6 +562,15 @@ class SimulationStandard(SimulationBase.SimulationBase):
             bcs="value zero",
         )
 
+        self.ScalarState.add_variable(
+            "spray",
+            long_name="spray concentration",
+            units="kg/kg",
+            latex_name="spray",
+            flux_divergence='EMONO',
+            limit=True
+        )
+
         # Instantiate kinematics and the SGS model
         self.Kine = Kinematics.Kinematics(
             self.Timers,
@@ -596,6 +619,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Ref,
             self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.ScalarTimeStepping,
         )
         self.MomAdv = MomentumAdvection.factory(
@@ -718,6 +742,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Ref,
             self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.ScalarTimeStepping,
         )
 
@@ -833,7 +858,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self._namelist,
             self.ModelGrid,
             self.Ref,
+            self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.TimeSteppingController,
         )
         self.Fields2d.add_class(self.Micro)

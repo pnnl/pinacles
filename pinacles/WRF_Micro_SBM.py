@@ -96,6 +96,12 @@ class MicroSBM(MicrophysicsBase):
         }
 
         for var in self._list_of_ScalarStatevars:
+            
+            if var == 'qc' or var == 'qr':
+                is_prognosed_liquid=True
+            else:
+                is_prognosed_liquid=False
+            
             self._ScalarState.add_variable(
                 var,
                 units="kg kg^-1",
@@ -103,6 +109,7 @@ class MicroSBM(MicrophysicsBase):
                 long_name=long_names[var],
                 limit=True,
                 flux_divergence="EMONO",
+                is_prognosed_liquid=is_prognosed_liquid
             )
 
         # Add new diag fields

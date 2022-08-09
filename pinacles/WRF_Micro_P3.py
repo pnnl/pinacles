@@ -164,6 +164,7 @@ class MicroP3(MicrophysicsBase):
             latex_name="q_c",
             limit=True,
             flux_divergence="EMONO",
+            is_prognosed_liquid=True
         )
         self._ScalarState.add_variable(
             "qnc",
@@ -180,6 +181,7 @@ class MicroP3(MicrophysicsBase):
             latex_name="q_{r}",
             limit=True,
             flux_divergence="EMONO",
+            is_prognosed_liquid=True
         )
         self._ScalarState.add_variable(
             "qnr",
@@ -196,6 +198,7 @@ class MicroP3(MicrophysicsBase):
             latex_name="q_{i}",
             limit=True,
             flux_divergence="EMONO",
+            is_prognosed_ice=True
         )
         self._ScalarState.add_variable(
             "qni1",
