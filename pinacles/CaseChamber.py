@@ -174,7 +174,7 @@ class ForcingChamber(Forcing.ForcingBase):
                 #print(vol)
                 wt[xp, yp, zp] += ((2.155/1000.0) * 16.0)/ self._Ref.rho0[zp]/vol
                 qct[xp, yp, zp + 1] += (2.155/1000.0) / self._Ref.rho0[zp]/vol
-                qnct[xp, yp, zp + 1] += (2.155 /1000.0)/((4.0/3.0)*np.pi*(4.0 * 50e-9)**3.0)*self._Ref.rho0[zp]/vol
+                qnct[xp, yp, zp + 1] += (2.155 /1000.0/1000.0)/((4.0/3.0)*np.pi*(4.0 * 50e-9)**3.0)*self._Ref.rho0[zp]/vol
                 sprayt[xp, yp, zp + 1] += (2.155/1000.0) / self._Ref.rho0[zp]/vol
                 st[xp, yp, zp + 1] -=  parameters.LV * (2.155/1000.0) / self._Ref.rho0[zp]/vol*parameters.ICPD
 
