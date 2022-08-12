@@ -105,13 +105,17 @@ class Fields2D:
             hours = s // 3600.
             s = s - (hours * 3600.)
             minutes = s // 60.
-            seconds = s - (minutes * 60.)
+            s = s - (minutes * 60.)
+            seconds = s
+            s = s - int(seconds)
+            ms = s * 1000.0
+
 
             fx = h5py.File(
                 os.path.join(
                     output_here,
-                    "{:02}d-{:02}h-{:02}m-{:02}s".format(
-                        int(days), int(hours), int(minutes), int(seconds))
+                    "{:02}d-{:02}h-{:02}m-{:02}s-{:03}ms".format(
+                        int(days), int(hours), int(minutes), int(seconds), int(ms)
                     )
                     + ".h5",
                 ),
