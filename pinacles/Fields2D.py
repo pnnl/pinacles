@@ -233,6 +233,23 @@ class Fields2D:
                             var_fx.dims[i].attach_scale(fx[d])
 
                         var_fx[:, :] = data
+                        
+                        
+                for yl in self._y_locs:
+                    
+                    yi = np.min(np.argmin(np.abs(xla - yl)))
+                    data = con.get_field_slice_h(v, yi, y=True)
+                    
+                    var_fx = fx.create_dataset(
+                                v + "_y_" + str(xl),
+                                (1, self._Grid.n[0], self._Grid.n[2]),
+                                dtype=np.double,
+                            )
+                    
+                    for i, d in enumerate(["time", "X", "Z"]):
+                        var_fx.dims[i].attach_scale(fx[d])
+                        
+                    var_fx[:, :] = data
         return
 
     def setup_directories(self):
