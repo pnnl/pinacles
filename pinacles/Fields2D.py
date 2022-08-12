@@ -12,7 +12,16 @@ except:
 
 
 class Fields2D:
-    def __init__(self, namelist, Grid, Ref, ScalarState,  VelocityState, DiagnosticState, TimeSteppingController):
+    def __init__(
+        self,
+        namelist,
+        Grid,
+        Ref,
+        ScalarState,
+        VelocityState,
+        DiagnosticState,
+        TimeSteppingController,
+    ):
         self._Grid = Grid
         self._Ref = Ref
         self._ScalarState = ScalarState
@@ -37,7 +46,6 @@ class Fields2D:
             self._x_locs = namelist["fields2d"]["x_locs"]
         except:
             self._x_locs = []
-
 
         try:
             self._y_locs = namelist["fields2d"]["y_locs"]
@@ -100,16 +108,15 @@ class Fields2D:
         fx = None
         if MPI.COMM_WORLD.Get_rank() == 0:
             s = self._TimeSteppingController.time
-            days = s // 86400.
-            s = s - (days * 86400.)
-            hours = s // 3600.
-            s = s - (hours * 3600.)
-            minutes = s // 60.
-            s = s - (minutes * 60.)
+            days = s // 86400.0
+            s = s - (days * 86400.0)
+            hours = s // 3600.0
+            s = s - (hours * 3600.0)
+            minutes = s // 60.0
+            s = s - (minutes * 60.0)
             seconds = s
             s = s - int(seconds)
             ms = s * 1000.0
-
 
             fx = h5py.File(
                 os.path.join(
@@ -132,7 +139,9 @@ class Fields2D:
         for aclass in self._classes:
             self._classes[aclass].io_fields2d_update(fx)
 
-        self.output_horizontal(fx, [self._ScalarState, self._DiagnosticState, self._VelocityState])
+        self.output_horizontal(
+            fx, [self._ScalarState, self._DiagnosticState, self._VelocityState]
+        )
         self.output_velocities(fx)
 
         # Sync and close netcdf file
@@ -161,13 +170,12 @@ class Fields2D:
             for k in self._output_levels:
                 z = self._Grid.z_global[nh[2] + k]
 
-                
                 if fx is not None:
                     var_fx = fx.create_dataset(
-                                v + "_" + str(z),
-                                (1, self._Grid.n[0], self._Grid.n[1]),
-                                dtype=np.double,
-                            )
+                        v + "_" + str(z),
+                        (1, self._Grid.n[0], self._Grid.n[1]),
+                        dtype=np.double,
+                    )
 
                     for i, d in enumerate(["time", "X", "Y"]):
                         var_fx.dims[i].attach_scale(fx[d])
@@ -187,10 +195,10 @@ class Fields2D:
 
                 if fx is not None:
                     var_fx = fx.create_dataset(
-                                v + "_" + str(z),
-                                (1, self._Grid.n[0], self._Grid.n[1]),
-                                dtype=np.double,
-                            )
+                        v + "_" + str(z),
+                        (1, self._Grid.n[0], self._Grid.n[1]),
+                        dtype=np.double,
+                    )
 
                     for i, d in enumerate(["time", "X", "Y"]):
                         var_fx.dims[i].attach_scale(fx[d])
@@ -208,7 +216,6 @@ class Fields2D:
                 if fx is not None:
                     var_fx[:, :] = recv_buffer
 
-                
         return
 
     def output_horizontal(self, fx, container):
@@ -218,37 +225,36 @@ class Fields2D:
         for con in container:
             for v in con._dofs:
                 for xl in self._x_locs:
-                    
+
                     xi = np.min(np.argmin(np.abs(yla - xl)))
                     data = con.get_field_slice_h(v, xi)
 
                     if fx is not None:
                         var_fx = fx.create_dataset(
-                                    v + "_x_" + str(xl),
-                                    (1, self._Grid.n[0], self._Grid.n[2]),
-                                    dtype=np.double,
-                                )
+                            v + "_x_" + str(xl),
+                            (1, self._Grid.n[0], self._Grid.n[2]),
+                            dtype=np.double,
+                        )
 
                         for i, d in enumerate(["time", "X", "Z"]):
                             var_fx.dims[i].attach_scale(fx[d])
 
                         var_fx[:, :] = data
-                        
-                        
+
                 for yl in self._y_locs:
-                    
+
                     yi = np.min(np.argmin(np.abs(xla - yl)))
                     data = con.get_field_slice_h(v, yi, y=True)
-                    
+
                     var_fx = fx.create_dataset(
-                                v + "_y_" + str(xl),
-                                (1, self._Grid.n[0], self._Grid.n[2]),
-                                dtype=np.double,
-                            )
-                    
+                        v + "_y_" + str(xl),
+                        (1, self._Grid.n[0], self._Grid.n[2]),
+                        dtype=np.double,
+                    )
+
                     for i, d in enumerate(["time", "X", "Z"]):
                         var_fx.dims[i].attach_scale(fx[d])
-                        
+
                     var_fx[:, :] = data
         return
 
@@ -304,7 +310,15 @@ class Fields2DNone:
         return
 
 
-def factory(namelist, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeSteppingController):
+def factory(
+    namelist,
+    Grid,
+    Ref,
+    ScalarState,
+    VelocityState,
+    DiagnosticState,
+    TimeSteppingController,
+):
     try:
         import h5py
 
@@ -315,6 +329,14 @@ def factory(namelist, Grid, Ref, ScalarState, VelocityState, DiagnosticState, Ti
         dofields2d = False
 
     if dofields2d:
-        return Fields2D(namelist, Grid, Ref, ScalarState, VelocityState, DiagnosticState,  TimeSteppingController)
+        return Fields2D(
+            namelist,
+            Grid,
+            Ref,
+            ScalarState,
+            VelocityState,
+            DiagnosticState,
+            TimeSteppingController,
+        )
     else:
         return Fields2DNone()

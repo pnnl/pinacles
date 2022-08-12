@@ -1,6 +1,7 @@
 import numpy as np
 import os
 from mpi4py import MPI
+
 try:
     import h5py
 except:
@@ -46,7 +47,6 @@ class DumpFields_hdf:
 
         self._classes = {}
         self._namelist = namelist
-        
 
         self._Timers.add_timer("DumpFields")
         return
@@ -79,12 +79,12 @@ class DumpFields_hdf:
         MPI.COMM_WORLD.barrier()
 
         s = self._TimeSteppingController.time
-        days = s // 86400.
-        s = s - (days * 86400.)
-        hours = s // 3600.
-        s = s - (hours * 3600.)
-        minutes = s // 60.
-        s = s - (minutes * 60.)
+        days = s // 86400.0
+        s = s - (days * 86400.0)
+        hours = s // 3600.0
+        s = s - (hours * 3600.0)
+        minutes = s // 60.0
+        s = s - (minutes * 60.0)
         seconds = s
         s = s - int(seconds)
         ms = s * 1000.0
@@ -101,8 +101,8 @@ class DumpFields_hdf:
             driver="mpio",
             comm=MPI.COMM_WORLD,
         )
-        fx.attrs['dt'] = self._TimeSteppingController.dt
-        
+        fx.attrs["dt"] = self._TimeSteppingController.dt
+
         nhalo = self._Grid.n_halo
         local_start = self._Grid._local_start
         local_end = self._Grid._local_end
