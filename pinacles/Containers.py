@@ -27,6 +27,8 @@ class ModelState:
         self._loc = {}
         self._limit = {}
         self._flux_divergence = {}
+        self._is_prognosed_liquid = {}
+        self._is_prognosed_ice = {}
         self._identical_bcs = identical_bcs
 
         self.name = container_name
@@ -48,6 +50,8 @@ class ModelState:
             "name",
             "_limit",
             "_flux_divergence",
+            "_is_prognosed_liquid",
+            "_is_prognosed_ice",
         ]
 
         return
@@ -60,6 +64,12 @@ class ModelState:
 
     def get_units(self, name):
         return self._units[name]
+
+    def is_prognosed_liquid(self, name):
+        return self._is_prognosed_liquid[name]
+
+    def is_prognosed_ice(self, name):
+        return self._is_prognosed_ice[name]
 
     @property
     def lbc_type(self):
@@ -97,6 +107,8 @@ class ModelState:
         loc="c",
         limit=False,
         flux_divergence="default",
+        is_prognosed_liquid=False,
+        is_prognosed_ice=False,
     ):
 
         # Do some correctness checks and warn for some behavior
@@ -117,6 +129,8 @@ class ModelState:
         self._loc[name] = loc
         self._limit[name] = limit
         self._flux_divergence[name] = flux_divergence
+        self._is_prognosed_liquid[name] = is_prognosed_liquid
+        self._is_prognosed_ice[name] = is_prognosed_ice
 
         # Increment the bumber of variables
         self._nvars += 1
@@ -339,6 +353,48 @@ class ModelState:
 
         return recv_buf
 
+    def get_field_slice_h(self, name, indx, y=False):
+        ls = self._Grid.local_start
+        nl = self._Grid.nl
+        nh = self._Grid.n_halo
+        n = self._Grid.n
+
+        local_start = self._Grid.local_start
+        local_end = self._Grid.local_end
+
+        if not y:
+            if indx >= local_start[1] and indx <= local_end[1]:
+                local_data = self.get_field(name)[
+                    nh[0] : -nh[0], indx - local_start[1], nh[2] : -nh[2]
+                ]
+                local_copy_of_global = np.zeros((n[0], n[2]), dtype=np.double)
+
+                local_copy_of_global[
+                    ls[0] : ls[0] + nl[0], ls[2] : ls[2] + nl[2]
+                ] = local_data
+            else:
+                local_copy_of_global = np.zeros((n[0], n[2]), dtype=np.double)
+        else:
+            if indx >= local_start[0] and indx <= local_end[0]:
+                local_data = self.get_field(name)[
+                    indx - local_start[0], nh[1] : -nh[1], nh[2] : -nh[2]
+                ]
+                local_copy_of_global = np.zeros((n[1], n[2]), dtype=np.double)
+
+                local_copy_of_global[
+                    ls[1] : ls[1] + nl[1], ls[2] : ls[2] + nl[2]
+                ] = local_data
+            else:
+                local_copy_of_global = np.zeros((n[1], n[2]), dtype=np.double)
+
+        recv_buf = np.empty_like(local_copy_of_global)
+
+        MPI.COMM_WORLD.Allreduce(local_copy_of_global, recv_buf, op=MPI.SUM)
+
+        return recv_buf
+
+
+
     def get_loc(self, var):
         return self._loc[var]
 
@@ -549,7 +605,8 @@ class ModelState:
         if "restart_type" not in data_dict:
             for att in self._restart_attributes:
                 if att != "restart_type":
-                    assert self.__dict__[att] == data_dict[key][att]
+                    pass
+                    # assert self.__dict__[att] == data_dict[key][att]
 
             # Update the internal arrays
             self._state_array.array[:, :, :, :] = data_dict[key]["_state_array"][

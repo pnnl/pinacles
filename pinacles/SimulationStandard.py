@@ -152,6 +152,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
             bcs="value zero",
         )
 
+        self.ScalarState.add_variable(
+            "spray",
+            long_name="spray concentration",
+            units="kg/kg",
+            latex_name="spray",
+            flux_divergence='EMONO',
+            limit=True
+        )
+
+
+
         # Instantiate kinematics and the SGS model
         self.Kine = Kinematics.Kinematics(
             self.Timers,
@@ -276,6 +287,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Timers,
             self.ModelGrid,
             self.Ref,
+            self.Ingest,
             self.ScalarState,
             self.DiagnosticState,
             self.Surf,
@@ -316,6 +328,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Ref,
             self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.ScalarTimeStepping,
         )
 
@@ -387,6 +400,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
         if self.Ingest is not None:
             self.Ingest.initialize()
 
+
+
+
         # Do case sepcific initalizations the initial profiles are integrated here
         Initialization.initialize(
             self._namelist,
@@ -396,6 +412,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.VelocityState,
             self.Ingest,
         )
+
+        # If necessary initialize Radiation initial profiles.
+        self.Rad.init_profiles()
 
         self.LBC.init_vars_on_boundary()
         self.LBCVel.init_vars_on_boundary()
@@ -409,8 +428,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Now that the initial profiles have been integrated, the pressure solver and be initialized
         self.PSolver.initialize()
 
-        # If necessary initialize Radiation initial profiles.
-        self.Rad.init_profiles()
+
 
         # Initialize mean profiles for top of domain damping
         # self.RayleighDamping.init_means()
@@ -427,7 +445,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self._namelist,
             self.ModelGrid,
             self.Ref,
+            self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.TimeSteppingController,
         )
 
@@ -700,6 +720,15 @@ class SimulationStandard(SimulationBase.SimulationBase):
             bcs="value zero",
         )
 
+        self.ScalarState.add_variable(
+            "spray",
+            long_name="spray concentration",
+            units="kg/kg",
+            latex_name="spray",
+            flux_divergence='EMONO',
+            limit=True
+        )
+
         # Instantiate kinematics and the SGS model
         self.Kine = Kinematics.Kinematics(
             self.Timers,
@@ -748,6 +777,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Ref,
             self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.ScalarTimeStepping,
         )
         self.MomAdv = MomentumAdvection.factory(
@@ -842,6 +872,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Timers,
             self.ModelGrid,
             self.Ref,
+            self.Ingest,
             self.ScalarState,
             self.DiagnosticState,
             self.Surf,
@@ -871,6 +902,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Ref,
             self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.ScalarTimeStepping,
         )
 
@@ -986,7 +1018,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self._namelist,
             self.ModelGrid,
             self.Ref,
+            self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.TimeSteppingController,
         )
         self.Fields2d.add_class(self.Micro)

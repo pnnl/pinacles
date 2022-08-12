@@ -213,6 +213,30 @@ class IngestWRF(IngestERA5):
         return lon, lat, t
     
 
+    def get_P(self, shift=0):
+        if MPI.COMM_WORLD.Get_rank() == 0:
+
+            atm_data = xr.open_dataset(
+                os.path.join(self._real_data, self.atm_data_file)
+            )
+
+            p = np.array(atm_data.P[self.sfc_timeindx + shift, :, :, :])
+
+            lat = atm_data.LAT.values[0,:,:]
+            lon = atm_data.LONG.values[0,:,:]
+
+        else:
+            p = None
+            lat = None
+            lon = None
+
+        lon = MPI.COMM_WORLD.bcast(lon)
+        lat = MPI.COMM_WORLD.bcast(lat)
+        p = MPI.COMM_WORLD.bcast(p)
+
+        return lon, lat, p
+
+
     def interp_T(self, lon, lat, height, shift=0):
 
         hgt_horizontal_interp = self.interp_height(
@@ -705,12 +729,5 @@ class IngestWRF(IngestERA5):
                     interp.__call__(height[nh[2] : -nh[2]]), nh[2], mode="edge"
                 )
 
-        #import pylab as plt
-        #vmin = np.amin(v[0,:,:])
-        #vmax = np.max(v[0,:,:])
-        #plt.pcolor(lon_v, lat_v, v[0,:,:])
-        #plt.pcolor(self._Grid.lon_local, self._Grid.lat_local, vi[:,:,0], vmin=vmin, vmax=vmax)
-        #plt.show()
-        #import sys; sys.exit()
 
         return vi
