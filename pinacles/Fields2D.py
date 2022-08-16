@@ -9,11 +9,17 @@ os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
 
 class Fields2D:
-    def __init__(self, namelist, Grid, Ref, VelocityState, TimeSteppingController):
+    def __init__(self, namelist, Grid, Ref, VelocityState, ScalarState, TimeSteppingController):
 
         self._Grid = Grid
         self._Ref = Ref
         self._VelocityState = VelocityState
+        self._ScalarState = ScalarState
+        
+        if "qad" in self._ScalarState._dofs:
+            self._scalar_list = ["qc","qnc","qad","qnad","qad2","qnad2"]
+        else:
+            self._scalar_list = ["qc","qnc"]
 
         """Set the output frequency, default it to the stats frequency 
         but allow in to be overridden """
@@ -117,6 +123,7 @@ class Fields2D:
             self._classes[aclass].io_fields2d_update(fx)
 
         self.output_velocities(fx)
+        self.output_scalars(fx)
 
         # Sync and close netcdf file
         if fx is not None:
@@ -155,6 +162,41 @@ class Fields2D:
                         var_fx.dims[i].attach_scale(fx[d])
 
                 var = self._VelocityState.get_field(v)
+                send_buffer.fill(0.0)
+                send_buffer[start[0] : end[0], start[1] : end[1]] = var[
+                    nh[0] : -nh[0], nh[1] : -nh[1], nh[2] + k
+                ]
+                MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+                if fx is not None:
+                    var_fx[:, :] = recv_buffer
+
+
+        return
+
+    def output_scalars(self, fx):
+
+        start = self._Grid.local_start
+        end = self._Grid._local_end
+        nh = self._Grid.n_halo
+
+        send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
+        recv_buffer = np.empty_like(send_buffer)
+
+        for v in self._scalar_list:
+            for k in self._output_levels:
+                z = self._Grid.z_global[nh[2] + k]
+
+                if fx is not None:
+                    var_fx = fx.create_dataset(
+                                v + "_" + str(z),
+                                (1, self._Grid.n[0], self._Grid.n[1]),
+                                dtype=np.double,
+                            )
+
+                    for i, d in enumerate(["time", "X", "Y"]):
+                        var_fx.dims[i].attach_scale(fx[d])
+
+                var = self._ScalarState.get_field(v)
                 send_buffer.fill(0.0)
                 send_buffer[start[0] : end[0], start[1] : end[1]] = var[
                     nh[0] : -nh[0], nh[1] : -nh[1], nh[2] + k

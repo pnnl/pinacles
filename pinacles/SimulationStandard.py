@@ -339,6 +339,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ModelGrid,
             self.Ref,
             self.VelocityState,
+            self.ScalarState,
             self.TimeSteppingController,
         )
 
