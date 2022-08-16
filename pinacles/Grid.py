@@ -75,6 +75,7 @@ class GridBase:
 
         self._compute_index_bounds()
 
+
         return
 
     def _compute_index_bounds(self):
@@ -453,7 +454,19 @@ class RegularCartesian(GridBase):
             self.compute_latlon()
             self.lat_lon = True
 
-        return
+
+
+        start =self._ibu_edge[0]-5 #-nh[1] - self.nudge_width - 1
+        end = self._ibu_edge[0] + 1 #-nh[1] - 1
+        
+        print( self.x_edge_local)
+        print(start, end, self.x_edge_local[start:end])
+  
+        start = self._ibl_edge[0] + 1
+        end = start +  5
+        #print(start, end, self.x_edge_local[start:end])
+        #import sys; sys.exit()
+        #return
 
     def compute_latlon(self):
 

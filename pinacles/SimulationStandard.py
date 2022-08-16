@@ -152,14 +152,14 @@ class SimulationStandard(SimulationBase.SimulationBase):
             bcs="value zero",
         )
 
-        self.ScalarState.add_variable(
-            "spray",
-            long_name="spray concentration",
-            units="kg/kg",
-            latex_name="spray",
-            flux_divergence='EMONO',
-            limit=True
-        )
+        #self.ScalarState.add_variable(
+        #    "spray",
+        #    long_name="spray concentration",
+        #    units="kg/kg",
+        #    latex_name="spray",
+        #    flux_divergence='EMONO',
+        #    limit=True
+        #)
 
 
 
@@ -720,14 +720,14 @@ class SimulationStandard(SimulationBase.SimulationBase):
             bcs="value zero",
         )
 
-        self.ScalarState.add_variable(
-            "spray",
-            long_name="spray concentration",
-            units="kg/kg",
-            latex_name="spray",
-            flux_divergence='EMONO',
-            limit=True
-        )
+        #self.ScalarState.add_variable(
+        #    "spray",
+        #    long_name="spray concentration",
+        #    units="kg/kg",
+        #    latex_name="spray",
+        #    flux_divergence='EMONO',
+        #    limit=True
+        #)
 
         # Instantiate kinematics and the SGS model
         self.Kine = Kinematics.Kinematics(
