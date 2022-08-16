@@ -159,7 +159,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         )
 
         self._windspeed_sfc *= np.random.uniform(
-            0.9, 1.1, size=(self._windspeed_sfc.shape[0], self._windspeed_sfc.shape[1])
+            0.5, 1.5, size=(self._windspeed_sfc.shape[0], self._windspeed_sfc.shape[1])
         )
 
         Surface_impl.compute_surface_layer_Ri(
