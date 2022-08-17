@@ -456,15 +456,37 @@ class RegularCartesian(GridBase):
 
 
 
-        start =self._ibu_edge[0]-5 #-nh[1] - self.nudge_width - 1
-        end = self._ibu_edge[0] + 1 #-nh[1] - 1
+        nh = self.n_halo
+
+        x_dist_edge = np.minimum(self.x_local[nh[0]:-nh[0]],np.abs(self.x_local[nh[0]:-nh[0]] - self.l[0]))
+        y_dist_edge = np.minimum(self.y_local[nh[1]:-nh[1]],np.abs(self.y_local[nh[1]:-nh[1]] - self.l[1]))  
         
-        print( self.x_edge_local)
-        print(start, end, self.x_edge_local[start:end])
-  
-        start = self._ibl_edge[0] + 1
-        end = start +  5
+        self._edge_dist = np.minimum(x_dist_edge[:,np.newaxis], y_dist_edge[np.newaxis,:])
+
+        x_dist_edge = np.minimum(self.x_edge_local[nh[0]:-nh[0]],np.abs(self.x_edge_local[nh[0]:-nh[0]] - self.l[0]))
+        y_dist_edge = np.minimum(self.y_local[nh[1]:-nh[1]],np.abs(self.y_local[nh[1]:-nh[1]] - self.l[1]))  
+
+        self._edge_dist_u = np.minimum(x_dist_edge[:,np.newaxis], y_dist_edge[np.newaxis,:])
+
+        x_dist_edge = np.minimum(self.x_local[nh[0]:-nh[0]],np.abs(self.x_local[nh[0]:-nh[0]] - self.l[0]))
+        y_dist_edge = np.minimum(self.y_edge_local[nh[1]:-nh[1]],np.abs(self.y_edge_local[nh[1]:-nh[1]] - self.l[1]))  
+        
+        self._edge_dist_v = np.minimum(x_dist_edge[:,np.newaxis], y_dist_edge[np.newaxis,:])
+ 
+ 
+#       import sys; sys.exit()
+
+
+        #start =self._ibu_edge[0]-5 #-nh[1] - self.nudge_width - 1
+        #end = self._ibu_edge[0] + 1 #-nh[1] - 1
+        
+        #print( self.x_edge_local)
         #print(start, end, self.x_edge_local[start:end])
+  
+        #end = self._ibu[0]
+        
+        #start = end -  5
+        #print(start, end, self.x_local[start:end])
         #import sys; sys.exit()
         #return
 

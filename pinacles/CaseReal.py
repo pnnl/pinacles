@@ -74,9 +74,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
 
         for tskin, shift in zip([self._TSKIN_pre, self._TSKIN_post], [0, 1]):
             # Compute reference profiles
-            print('Here')
             lon, lat, skin_T = self._Ingest.get_skin_T(shift=shift)
-            print('Here Here')
             #lon_grid, lat_grid = np.meshgrid(lon, lat)
             lon_lat = (lon.flatten(), lat.flatten())
 
@@ -355,6 +353,8 @@ class InitializeReanalysis:
         T = self._Ingest.interp_T(
             self._Grid.lon_local, self._Grid.lat_local, self._Grid.z_local
         )
+        
+        
         s = self._ScalarState.get_field("s")
 
         if MPI.COMM_WORLD.Get_rank() == 0:
@@ -937,9 +937,29 @@ class LateralBCsReanalysis(LateralBCsBase):
         nudge_width = self.nudge_width
         #weight = (nudge_width - np.arange(nudge_width))/nudge_width / (10.0 * self._TimeSteppingController.dt)
         # weight =  1.0/(2.0 * self._TimeSteppingController.dt)  / (1.0 + np.arange(nudge_width))
+
+
+        dx = self._Grid.dx
+        
+        assert(dx[0] == dx[1])
+        
         weight = (1.0 - np.tanh(np.arange(self.nudge_width) / 2)) / (
         10.0
         )
+        
+
+        
+        
+        weight_u =  (1.0 - np.tanh(self._Grid._edge_dist_u/dx[0] / 2)) / (
+        10.0
+        )
+        
+        weight_v =  (1.0 - np.tanh(self._Grid._edge_dist_v/dx[1] / 2)) / (
+        10.0
+        )
+        
+        
+        
         
 
         # weight = 1.0/(100.0 * self._TimeSteppingController.dt) * np.arange(self.nudge_width,0,-1)/self.nudge_width
@@ -968,13 +988,16 @@ class LateralBCsReanalysis(LateralBCsBase):
                     / self.ingest_freq
                 )
 
+                corner_low = nh[1] + self.nudge_width
+                corner_high = -nh[1] - self.nudge_width
+
                 start = self._Grid._ibl_edge[0] + 1
                 end = start +  self.nudge_width
 
                 if self._Grid.low_rank[0]:
-                    ut[start:end, :, :] -= (
-                        u[start:end, :, :] - u_nudge[1:, :, :]
-                    ) * weight[:, np.newaxis, np.newaxis]
+                    ut[start:end, corner_low:corner_high, :] -= (
+                        u[start:end, corner_low:corner_high, :] - u_nudge[1:, corner_low:corner_high, :]
+                    ) * weight_u[:self.nudge_width, self.nudge_width:-self.nudge_width, np.newaxis]
 
                 # print(self._previous_bdy['u']['x_high'][:-1,:,3] - u[start:end,:,3])
 
@@ -995,9 +1018,9 @@ class LateralBCsReanalysis(LateralBCsBase):
                 end = self._Grid.ibu_edge[0] 
                 
                 if self._Grid.high_rank[0]:
-                    ut[start:end, :, :] -= (
-                        u[start:end, :, :] - u_nudge[:-1, :, :]
-                    ) * weight[::-1, np.newaxis, np.newaxis]
+                    ut[start:end, corner_low:corner_high, :] -= (
+                        u[start:end, corner_low:corner_high, :] - u_nudge[:-1, corner_low:corner_high, :]
+                    ) *  weight_u[-self.nudge_width:,self.nudge_width:-self.nudge_width, np.newaxis]
 
 
                 u_nudge = (
@@ -1009,11 +1032,13 @@ class LateralBCsReanalysis(LateralBCsBase):
                     * (self._TimeSteppingController._time - self.time_previous)
                     / self.ingest_freq
                 )
-
-               # if self._Grid.low_rank[1]:
-               #     ut[:, start:end, :] -= (
-               #         u[:, start:end, :] - u_nudge[:, 1:, :]
-               #     ) * weight[np.newaxis, :, np.newaxis]
+                
+                start = self._Grid._ibl[1]
+                end = start + self.nudge_width
+                if self._Grid.low_rank[1]:
+                    ut[nh[0]:-nh[0], start:end, :] -= (
+                        u[nh[0]:-nh[0], start:end, :] - u_nudge[nh[0]:-nh[0], 1:, :]
+                    ) * weight_u[:, :self.nudge_width ,np.newaxis]#weight[np.newaxis, :, np.newaxis]
 
                 u_nudge = (
                     self._previous_bdy[var]["y_high"][:, :, :]
@@ -1025,23 +1050,21 @@ class LateralBCsReanalysis(LateralBCsBase):
                     / self.ingest_freq
                 )
 
-             #   start = -nh[1] - self.nudge_width
-             #   end = -nh[1]
-                
-
-                
-               # if self._Grid.high_rank[1]:
-               #     ut[:, start:end, :] -= (
-               #         u[:, start:end, :] - u_nudge[:, :-1, :]
-               #     ) * weight[np.newaxis, ::-1, np.newaxis]
-
+                end = self._Grid._ibu[1]
+                start = end - self.nudge_width
+                if self._Grid.high_rank[1]:
+                    if not self._Grid.high_rank[0]:
+                        ut[nh[0]:-nh[0], start:end, :] -= (
+                        u[nh[0]:-nh[0], start:end, :] - u_nudge[nh[0]:-nh[0], :-1, :]
+                        ) * weight_u[:, -self.nudge_width: ,np.newaxis] #weight[np.newaxis, ::-1, np.newaxis]
+                    else:
+                        ut[nh[0]:-nh[0], start:end, :] -= (
+                        u[nh[0]:-nh[0], start:end, :] - u_nudge[nh[0]:-nh[0], :-1, :]
+                        ) * weight_u[:, -self.nudge_width-1:-1 ,np.newaxis] #weight[np.newaxis, ::-1, np.newaxis]
             elif var == "v":
                 v = self._State.get_field(var)
                 vt = self._State.get_tend(var)
 
-
-                corner_low = nh[0] + self.nudge_width
-                corner_high = -nh[0] - self.nudge_width
 
                 v_nudge = (
                     self._previous_bdy[var]["x_low"][:, :, :]
@@ -1053,12 +1076,18 @@ class LateralBCsReanalysis(LateralBCsBase):
                     / self.ingest_freq
                 )
 
-                start = nh[0]
-                end = nh[0] + self.nudge_width
-            #    if self._Grid.low_rank[0]:
-            #        vt[start:end, :, :] -= (
-            #            v[start:end, :, :] - v_nudge[1:, :, :]
-            #        ) * weight[:, np.newaxis, np.newaxis]
+                start = self._Grid._ibl[0]
+                end = start + self.nudge_width
+                
+                corner_low = nh[0] + self.nudge_width
+                corner_high = -nh[0] - self.nudge_width
+   
+                
+                if self._Grid.low_rank[0]:
+                    
+                    vt[start:end, corner_low:corner_high, :] -= (
+                        v[start:end, corner_low:corner_high, :] - v_nudge[:-1, corner_low:corner_high, :]
+                    ) * weight_v[:self.nudge_width, self.nudge_width:-self.nudge_width,np.newaxis]
 
                 v_nudge = (
                     self._previous_bdy[var]["x_high"][:, :, :]
@@ -1070,10 +1099,17 @@ class LateralBCsReanalysis(LateralBCsBase):
                     / self.ingest_freq
                 )
 
-                #if self._Grid.high_rank[0]:
-                #    vt[start:end, corner_low:corner_high, :] -= (
-                #        v[start:end, corner_low:corner_high, :] - v_nudge[:-1, corner_low:corner_high, :]
-                #    ) * weight[::-1, np.newaxis, np.newaxis]
+                end = self._Grid._ibu[0]
+                start = end - self.nudge_width
+                
+                corner_low = nh[0] + self.nudge_width
+                corner_high = -nh[0] - self.nudge_width
+
+                
+                if self._Grid.high_rank[0]:
+                    vt[start:end, corner_low:corner_high, :] -= (
+                        v[start:end, corner_low:corner_high, :] - v_nudge[:-1, corner_low:corner_high, :]
+                    ) *  weight_v[-self.nudge_width:, self.nudge_width:-self.nudge_width,np.newaxis]
 
                 v_nudge = (
                     self._previous_bdy[var]["y_low"][:, :, :]
@@ -1088,9 +1124,9 @@ class LateralBCsReanalysis(LateralBCsBase):
                 start = self._Grid._ibl_edge[1] + 1
                 end = start +  self.nudge_width
                 if self._Grid.low_rank[1]:
-                    vt[:, start:end, :] -= (
-                        v[:, start:end, :] - v_nudge[:, 1:, :]
-                    ) * weight[np.newaxis, :, np.newaxis]
+                    vt[nh[0]:-nh[0], start:end, :] -= (
+                        v[nh[0]:-nh[0], start:end, :] - v_nudge[nh[0]:-nh[0], 1:, :]
+                    ) * weight_v[:,:self.nudge_width,np.newaxis]
 
                 v_nudge = (
                     self._previous_bdy[var]["y_high"][:, :, :]
@@ -1105,9 +1141,9 @@ class LateralBCsReanalysis(LateralBCsBase):
                 start =self._Grid._ibu_edge[1]-self.nudge_width #-nh[1] - self.nudge_width - 1
                 end = self._Grid._ibu_edge[1] #-nh[1] - 1
                 if self._Grid.high_rank[1]:
-                    vt[:, start:end, :] -= (
-                        v[:, start:end, :] - v_nudge[:, :-1, :]
-                    ) * weight[np.newaxis, ::-1, np.newaxis]
+                    vt[nh[0]:-nh[0], start:end, :] -= (
+                        v[nh[0]:-nh[0], start:end, :] - v_nudge[nh[0]:-nh[0], :-1, :]
+                    ) * weight_v[:,-self.nudge_width:,np.newaxis]
 
             # elif var == "w":
 
