@@ -32,6 +32,13 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
             units="K",
         )
 
+        DiagnosticState.add_variable(
+            "s_dry",
+            long_name = "Dry Static Energy", 
+            latex_name="s_d",
+            units="K"
+        )
+
         self._Timers.add_timer("ThermoDynamicsDry_update")
 
         return
@@ -53,6 +60,7 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         theta_ref = T0 / exner
 
         s = self._ScalarState.get_field("s")
+        s_dry = self._DiagnosticState.get_field("s_dry")
         qv = self._ScalarState.get_field("qv")
         T = self._DiagnosticState.get_field("T")
         alpha = self._DiagnosticState.get_field("alpha")
@@ -63,6 +71,10 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         buoyancy_gradient_mag = self._DiagnosticState.get_field("buoyancy_gradient_mag")
 
         ThermodynamicsDry_impl.eos(z, p0, alpha0, s, qv, T, tref, alpha, buoyancy)
+        
+        
+        s_dry[:,:,:] = s[:,:,:]
+        
         ThermodynamicsDry_impl.compute_bvf(
             n_halo, theta_ref, exner, T, qv, dz, thetav, bvf
         )
@@ -130,3 +142,5 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         # Todo this gets a copy. So modifying it does nothing!
         qv = self._ScalarState.get_field("qv")
         return np.copy(qv)
+    
+
