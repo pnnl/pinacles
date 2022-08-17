@@ -5,7 +5,10 @@ from numba.typed import Dict, List
 import time
 import os
 from mpi4py import MPI
-import h5py
+try:
+    import h5py
+except:
+    pass
 
 
 class ParticlesBase:
@@ -19,7 +22,6 @@ class ParticlesBase:
         ScalarState,
         DiagnosticState,
     ):
-
         # Initialize data
         self._namelist = namelist
         self._Grid = Grid
@@ -89,6 +91,7 @@ class ParticlesBase:
         self._interp_particle_dofs = 0
         self._nointerp_particle_dofs = 0
         self._particle_data = None
+        self._n = None
         self._initialzied = False
         self._n_buffer = 1024  # The size of the buffer
         self._minimum_particles = 2
@@ -139,6 +142,22 @@ class ParticlesBase:
         MPI.COMM_WORLD.Allreduce(
             np.array(np.sum(self._n), dtype=np.int), nglob, op=MPI.SUM
         )
+
+        # This is a list containing the attributes that we want to be restarted
+        self._restart_attributes = [
+            "injected",
+            "_particle_dofs",
+            "_particle_dofs",
+            "_interp_particle_dofs",
+            "_nointerp_particle_dofs",
+            "_initialzied",
+            "_n_buffer",
+            "_minimum_particles",
+            "_n",
+        ]
+
+        # Note that there is additional data that needs to handeld for restarting that are numba
+        # typed lists and dicts, these will have to be handled separately.
 
         return
 
@@ -1531,6 +1550,52 @@ class ParticlesBase:
             self._particle_varnames,
             self._particle_data,
         )
+
+        return
+
+    def restart(self, data_dict, **kwargs):
+        key = "PARTICLES"
+
+        for att in self._restart_attributes:
+            self.__dict__[att] = data_dict[key][att]
+
+        for att in [
+            "_particle_varnames",
+            "_interp_particle_varnames",
+            "_nointerp_particle_varnames",
+        ]:
+            in_dict = data_dict[key][att]
+            for k, item in in_dict.items():
+                self.__dict__[att][k] = item
+
+        for i, l in enumerate(data_dict[key]["_particle_data"]):
+            self._particle_data[i] = np.copy(l)
+
+        return
+
+    def dump_restart(self, data_dict):
+        # Get the name of this particualr container and create a dictionary for it in the
+        # restart data dict.
+
+        key = "PARTICLES"
+        data_dict[key] = {}
+
+        # Loop over the restart_attributes and add it to the data_dict
+        for att in self._restart_attributes:
+            data_dict[key][att] = self.__dict__[att]
+
+        # These are numba typed dicts that we need to pack into python dicts, we will have to
+        # do the inverse operation at restart
+        for att in [
+            "_particle_varnames",
+            "_interp_particle_varnames",
+            "_nointerp_particle_varnames",
+        ]:
+            data_dict[key][att] = dict(self.__dict__[att])
+
+        # This is a numba typed list, we will need ot pack this into a python list. We will need to
+        # do the inverse operation at restart
+        data_dict[key]["_particle_data"] = list(self._particle_data)
 
         return
 

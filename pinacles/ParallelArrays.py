@@ -279,7 +279,7 @@ class GhostArray(GhostArrayBase):
         return min
 
     def remove_mean(self, dof):
-        # TODO perhpas use numba here?
+        # TODO perhaps use numba here?
         mean = self.mean(dof)
         self.array[dof, :, :, :] = (
             self.array[dof, :, :, :] - mean[np.newaxis, np.newaxis, :]

@@ -81,10 +81,6 @@ class SurfaceBase:
             self.fac1 = (zl[k] - 10.0) / (zl[k] - zl[k - 1])
             self.fac2 = (10.0 - zl[k - 1]) / (zl[k] - zl[k - 1])
 
-            # self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
-            # self._taux_sfc = np.zeros_like(self._windspeed_sfc)
-            # self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
-            # self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
             self._naflux_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
             self._qaflux_sfc = np.zeros_like(self._naflux_sfc)
             self._na2flux_sfc = np.zeros_like(self._naflux_sfc)
@@ -202,6 +198,9 @@ class SurfaceBase:
         return
 
     def io_update(self, rt_grp):
+        return
+    
+    def io_fields2d_update(self, rt_grp):
         return
 
     def restart(self, data_dict, **kwargs):

@@ -2,12 +2,13 @@ from mpi4py import MPI
 import mpi4py_fft
 import numpy as np
 from mpi4py_fft.pencil import Subcomm
+import numba
 
 
 class GridBase:
     def __init__(self, namelist):
 
-        # List of class atributes that will be restarted
+        # List of class attributes that will be restarted
         self._restart_attributes = []
 
         # The total number of points in the domain NOT including halo/ghost points
@@ -36,12 +37,12 @@ class GridBase:
         self._local_end = None
         self._restart_attributes.append("_local_end")
 
-        # Lenght of each CRM domain side
+        # Length of each CRM domain side
         self._l = np.array(namelist["grid"]["l"], dtype=np.double)
         self._restart_attributes.append("_l")
         assert len(self._l) == 3
 
-        # The global x,y,z coordiantes
+        # The global x,y,z coordinates
         self._global_axes = None
         self._global_axes_edge = None
         self._local_axes = None
@@ -58,7 +59,7 @@ class GridBase:
         self._dxi = None
         self._restart_attributes.append("_dxi")
 
-        # Store sub-cummunicators created by mpi4py_fft
+        # Store sub-communicators created by mpi4py_fft
         self.subcomms = None
         self._create_subcomms()
 
@@ -79,7 +80,7 @@ class GridBase:
     def n(self):
         return self._n
         """ Returns the number of points in the domain w/o halos. 
-        This corresponds to namelist['grid']['n'] in the input namelsit.
+        This corresponds to namelist['grid']['n'] in the input namelist.
 
         Returns: 
             n: float ndarray of shape (3,)
@@ -126,7 +127,7 @@ class GridBase:
 
     @property
     def nl(self):
-        # TODO replace all instanes of local_shape with nl
+        # TODO replace all instances of local_shape with nl
         return self._local_shape
 
     @property
@@ -148,7 +149,7 @@ class GridBase:
     @property
     def x_global(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         return np.copy(self._global_axes[0])
@@ -156,7 +157,7 @@ class GridBase:
     @property
     def x_edge_global(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         return np.copy(self._global_axes_edge[0])
@@ -164,7 +165,7 @@ class GridBase:
     @property
     def y_global(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         return np.copy(self._global_axes[1])
@@ -172,7 +173,7 @@ class GridBase:
     @property
     def y_edge_global(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         return np.copy(self._global_axes_edge[1])
@@ -180,7 +181,7 @@ class GridBase:
     @property
     def z_global(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         return np.copy(self._global_axes[2])
@@ -188,7 +189,7 @@ class GridBase:
     @property
     def z_edge_global(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         return np.copy(self._global_axes_edge[2])
@@ -196,7 +197,7 @@ class GridBase:
     @property
     def global_axes(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         return self._global_axes.copy()
@@ -204,7 +205,7 @@ class GridBase:
     @property
     def x_local(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         start = self._local_start[0]
@@ -214,7 +215,7 @@ class GridBase:
     @property
     def y_local(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         start = self._local_start[1]
@@ -224,7 +225,7 @@ class GridBase:
     @property
     def z_local(self):
         """Copy here is forced to keep _global_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         start = self._local_start[2]
@@ -234,7 +235,7 @@ class GridBase:
     @property
     def local_axes(self):
         """Copy here is forced to keep _local_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         return np.copy(self._local_axes)
@@ -243,7 +244,7 @@ class GridBase:
     def local_axes_edge(self):
         """
         Copy here is forced to keep _local_axes externally immutable,
-        if performace becomes an issue we can provide a property that return a
+        if performance becomes an issue we can provide a property that return a
         view so that copy occurs.
         """
         return np.copy(self._local_axes_edge)
@@ -324,11 +325,11 @@ class RegularCartesian(GridBase):
     def __init__(self, namelist):
 
         GridBase.__init__(self, namelist)
-        self._compute_globalcoordiantes()
+        self._compute_globalcoordinates()
 
         return
 
-    def _compute_globalcoordiantes(self):
+    def _compute_globalcoordinates(self):
 
         self._global_axes = []
         self._global_axes_edge = []
@@ -431,3 +432,226 @@ class RegularCartesian(GridBase):
         z_index = np.argmin(np.abs(self.z_local - z))
 
         return (x_index, y_index, z_index)
+
+    def CreateGather(self, xrange, yrange):
+        return self._Gather(self, xrange, yrange)
+
+    class _Gather:
+        def __init__(self, ModelGrid, xrange, yrange):
+
+            self.xrange = xrange
+            self.yrange = yrange
+
+            self.ModelGrid = ModelGrid
+            assert type(xrange) is tuple
+            assert type(yrange) is tuple
+
+            my_rank = MPI.COMM_WORLD.Get_rank()
+
+            self.xranges_to_get = MPI.COMM_WORLD.allgather(xrange)
+            self.yranges_to_get = MPI.COMM_WORLD.allgather(yrange)
+
+            local_starts = MPI.COMM_WORLD.allgather(ModelGrid._local_start)
+
+            self.local_starts = np.array(local_starts)
+            local_ends = MPI.COMM_WORLD.allgather(ModelGrid._local_end)
+            self.local_ends = np.array(local_ends)
+
+            self.n_to_send = []
+            self.x_start = []
+            self.x_end = []
+            self.y_start = []
+            self.y_end = []
+
+            # First compute what I need to send
+            n = len(self.xranges_to_get)
+            for i in range(n):
+                n_local = local_ends[i] - local_starts[i]
+
+                xi_start = 0
+                xi_end = 0
+
+                x = np.arange(local_starts[my_rank][0], local_ends[my_rank][0])
+                mask = (x >= self.xranges_to_get[i][0]) & (
+                    x < self.xranges_to_get[i][1]
+                )
+                indicies = np.where(mask)[0]
+                nx = len(indicies)
+                if nx > 0:
+                    xi_start = np.amin(indicies)
+                    xi_end = np.amax(indicies) + 1
+
+                yi_start = 0
+                yi_end = 0
+                y = np.arange(local_starts[my_rank][1], local_ends[my_rank][1])
+                mask = (y >= self.yranges_to_get[i][0]) & (
+                    y < self.yranges_to_get[i][1]
+                )
+                indicies = np.where(mask)[0]
+                ny = len(indicies)
+                if ny > 0:
+                    yi_start = np.amin(indicies)
+                    yi_end = np.amax(indicies) + 1
+
+                self.n_to_send.append((nx * ny) * ModelGrid.n[2])
+                self.x_start.append(xi_start)
+                self.x_end.append(xi_end)
+                self.y_start.append(yi_start)
+                self.y_end.append(yi_end)
+
+            self.n_to_send = np.array(self.n_to_send)
+            self.send_size = np.sum(self.n_to_send)
+            self.x_start = np.array(self.x_start)
+            self.x_end = np.array(self.x_end)
+            self.y_start = np.array(self.y_start)
+            self.y_end = np.array(self.y_end)
+
+            disp = 0
+            self.send_disp = []
+            for i in range(self.n_to_send.shape[0]):
+                self.send_disp.append(disp)
+                disp += self.n_to_send[i]
+
+            n = np.empty((1,), dtype=np.int)
+            self.n_to_recv = []
+            for i in range(self.n_to_send.shape[0]):
+                MPI.COMM_WORLD.Scatter(self.n_to_send, n, root=i)
+                self.n_to_recv.append(n[0])
+
+            self.n_to_recv = np.array(self.n_to_recv)
+
+            # Now we scatter the global start
+            tmp = np.empty((1,), dtype=np.int)
+            self.x_start_recv = []
+            self.x_end_recv = []
+
+            self.y_start_recv = []
+            self.y_end_recv = []
+
+            for i in range(self.x_start.shape[0]):
+                MPI.COMM_WORLD.Scatter(
+                    self.x_start + ModelGrid._local_start[0], tmp, root=i
+                )
+                self.x_start_recv.append(tmp[0])
+
+                MPI.COMM_WORLD.Scatter(
+                    self.x_end + ModelGrid._local_start[0], tmp, root=i
+                )
+                self.x_end_recv.append(tmp[0])
+
+                MPI.COMM_WORLD.Scatter(
+                    self.y_start + ModelGrid._local_start[1], tmp, root=i
+                )
+                self.y_start_recv.append(tmp[0])
+
+                MPI.COMM_WORLD.Scatter(
+                    self.y_end + ModelGrid._local_start[1], tmp, root=i
+                )
+                self.y_end_recv.append(tmp[0])
+
+            self.x_start_recv = np.array(self.x_start_recv)
+            self.x_end_recv = np.array(self.x_end_recv)
+            self.y_start_recv = np.array(self.y_start_recv)
+            self.y_end_recv = np.array(self.y_end_recv)
+
+            disp = 0
+            self.recv_disp = []
+            for i in range(self.n_to_recv.shape[0]):
+                self.recv_disp.append(disp)
+                disp += self.n_to_recv[i]
+
+            self.recv_disp = np.array(self.recv_disp)
+
+            return
+
+        @staticmethod
+        @numba.njit()
+        def pack_send(nh, x_start, x_end, y_start, y_end, var, send_array):
+
+            shape = var.shape
+            n_procs = len(x_start)
+
+            count = 0
+            for n in range(n_procs):
+                for i in range(nh[0] + x_start[n], nh[0] + x_end[n]):
+                    for j in range(nh[1] + y_start[n], nh[1] + y_end[n]):
+                        for k in range(nh[2], shape[2] - nh[2]):
+                            send_array[count] = var[i, j, k]
+                            count += 1
+
+            return
+
+        @staticmethod
+        @numba.njit()
+        def unpack_send(
+            n_to_recv,
+            xrange_start,
+            yrange_start,
+            x_start_recv,
+            x_end_recv,
+            y_start_recv,
+            y_end_recv,
+            recv_array,
+            gathered_array,
+        ):
+
+            shape = gathered_array.shape
+
+            count = 0
+            for i in range(n_to_recv.shape[0]):
+
+                if n_to_recv[i] > 0:
+
+                    istart = x_start_recv[i] - xrange_start
+                    iend = x_end_recv[i] - xrange_start
+
+                    jstart = y_start_recv[i] - yrange_start
+                    jend = y_end_recv[i] - yrange_start
+
+                    for ii in range(istart, iend):
+                        for j in range(jstart, jend):
+                            for k in range(shape[2]):
+                                gathered_array[ii, j, k] = recv_array[count]
+                                count += 1
+
+            return
+
+        def call(self, var):
+
+            xrange = self.xrange
+            yrange = self.yrange
+
+            gathered_array = np.empty(
+                (xrange[1] - xrange[0], yrange[1] - yrange[0], self.ModelGrid.n[2]),
+                dtype=np.double,
+            )
+
+            nh = self.ModelGrid.n_halo
+            send_array = np.empty(self.send_size, dtype=np.double)
+            recv_array = np.empty(
+                (xrange[1] - xrange[0]) * (yrange[1] - yrange[0]) * self.ModelGrid.n[2],
+                dtype=np.double,
+            )
+
+            self.pack_send(
+                nh, self.x_start, self.x_end, self.y_start, self.y_end, var, send_array
+            )
+
+            sm = [send_array, (self.n_to_send, self.send_disp), MPI.DOUBLE]
+            rm = [recv_array, (self.n_to_recv, self.recv_disp), MPI.DOUBLE]
+
+            MPI.COMM_WORLD.Alltoallv(sm, rm)
+
+            self.unpack_send(
+                self.n_to_recv,
+                xrange[0],
+                yrange[0],
+                self.x_start_recv,
+                self.x_end_recv,
+                self.y_start_recv,
+                self.y_end_recv,
+                recv_array,
+                gathered_array,
+            )
+
+            return gathered_array

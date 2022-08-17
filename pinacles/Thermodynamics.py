@@ -17,7 +17,11 @@ class ThermodynamicsBase:
 
         # Add prognostic fields that are required by all thermodynamic classes
         self._ScalarState.add_variable(
-            "s", units="K", latex_name="s", long_name="static energy"
+            "s",
+            units="K",
+            latex_name="s",
+            long_name="static energy",
+            flux_divergence="EMONO",
         )  # TODO Move this elsewhere
 
         # Add diagnostic fields that are required by all thermodynamic classes
@@ -43,8 +47,6 @@ class ThermodynamicsBase:
 
         self.name = "ThermodynamicsBase"
 
-        return
-
     def get_qc(self):
         return np.zeros((self._Grid.ngrid_local), dtype=np.double)
 
@@ -64,8 +66,6 @@ class ThermodynamicsBase:
                         + ((b[i, j + 1, k] - b[i, j - 1, k]) * 0.5 * dxi[1]) ** 2.0
                         + ((b[i, j, k + 1] - b[i, j, k - 1]) * 0.5 * dxi[2]) ** 2.0
                     )
-
-        return
 
 
 from pinacles import ThermodynamicsDry

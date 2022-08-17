@@ -1,3 +1,4 @@
+from pinacles.Surface_impl import compute_ustar
 import numpy as np
 import numba
 from mpi4py import MPI
@@ -6,6 +7,26 @@ from pinacles import UtilitiesParallel
 from pinacles import parameters
 import pinacles.ThermodynamicsDry_impl as DryThermo
 
+
+@numba.njit()
+def compute_zi(nh, z_edge, thv):
+    shape = thv.shape
+    
+    zi = np.zeros((shape[0], shape[1]), dtype=np.double)
+    
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            k_grad_max = 0
+            grad = -999999.9
+            for k in range(nh[2], shape[2]-nh[2]-1):
+                tmp_grad = thv[i,j,k+1] - thv[i,j,k]
+                if tmp_grad > grad and z_edge[k] >= 500.0:
+                    k_grad_max = k
+                    grad = tmp_grad
+                
+            zi[i,j] = z_edge[k_grad_max]   
+    
+    return zi
 
 def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
@@ -35,7 +56,7 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     exner = Ref.exner
 
-    # Wind is uniform initiall
+    # Wind is initially uniform
     u.fill(1.0)
     v.fill(0.0)
     w.fill(0.0)
@@ -57,7 +78,7 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                     t = 300.0 + (zl[k] - 974.0) * 0.08
                     t *= exner[k]
                 else:
-                    t = 308.0 + (zl[k] - 1074.0) * 0.0034
+                    t = 308.0 + (zl[k] - 1074.0) * 0.003
                     t *= exner[k]
                 if zl[k] < 200.0:
                     t += perts[i, j, k]
@@ -65,6 +86,9 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     return
 
+
+
+        
 
 class SurfaceSullivanAndPatton(Surface.SurfaceBase):
     def __init__(
@@ -119,7 +143,7 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
         u0 = self._Ref.u0
         v0 = self._Ref.v0
 
-        # Get Tendnecies
+        # Get Tendencies
         ut = self._VelocityState.get_tend("u")
         vt = self._VelocityState.get_tend("v")
         st = self._ScalarState.get_tend("s")
@@ -256,6 +280,43 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
                 tflx * parameters.CPD * self._Ref.rho0_edge[n_halo[2] - 1]
             )
         return
+    
+    def io_fields2d_update(self, fx):
+        
+        start = self._Grid.local_start
+        end = self._Grid._local_end
+        send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
+        recv_buffer = np.empty_like(send_buffer)
+
+        # Compute the height of the maximum gradient in potential temperature
+        nh = self._Grid.n_halo
+        npts = self._Grid.n[0] * self._Grid.n[1]
+        z_edge = self._Grid.z_edge_global
+        s = self._ScalarState.get_field('s')
+
+
+        # PBL Height based on thv
+        zi = compute_zi(nh, z_edge, s)
+
+        if fx is not None:
+            zi_s = fx.create_dataset(
+                "zi_s",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
+
+            for i, d in enumerate(["time", "X", "Y"]):
+                zi_s.dims[i].attach_scale(fx[d])
+
+        send_buffer[start[0] : end[0], start[1] : end[1]] = zi[nh[0]:-nh[0],nh[1]:-nh[1]]
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        
+        
+        if fx is not None:
+            zi_s[:, :] = recv_buffer
+
+        
+        return
 
 
 class ForcingSullivanAndPatton(Forcing.ForcingBase):
@@ -299,3 +360,96 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
 
         self._Timers.end_timer("ForcingSullivanAndPatton_update")
         return
+
+class SullivanAndPattonDiagnostics:
+    
+    def __init__(self, Grid, Ref, Thermo, Micro, VelocityState, ScalarState, DiagnosticState):
+    
+        self._Grid = Grid
+        self._Ref = Ref
+        self._Thermo = Thermo
+        self._Micro = Micro
+        self._VelocityState = VelocityState
+        self._ScalarState = ScalarState
+        self._DiagnosticState = DiagnosticState
+        
+        
+    def io_initialize(self, this_grp):
+
+        my_rank = MPI.COMM_WORLD.Get_rank()
+
+        if my_rank != 0:
+            return
+
+        timeseries_grp = this_grp["timeseries"]
+        profiles_grp = this_grp["profiles"]
+
+        # Add PBL height based on thv
+        v = timeseries_grp.createVariable(
+            "zi", np.double, dimensions=("time",)
+        )
+        v.long_name = "Inversion height based on potential temperature"
+        v.unts = "m"
+        v.standard_name = "Inversion height"
+
+        # Add PBL height based on s
+        v = timeseries_grp.createVariable(
+            "zi_s", np.double, dimensions=("time",)
+        )
+        v.long_name = "Inversion height based on static energy"
+        v.unts = "m"
+        v.standard_name = "Inversion height"
+
+        
+        return
+        
+    def io_update(self, this_grp):
+
+        # Compute the height of the maximum gradient in potential temperature
+        nh = self._Grid.n_halo
+        npts = self._Grid.n[0] * self._Grid.n[1]
+        z_edge = self._Grid.z_edge_global
+        thv = self._DiagnosticState.get_field('thetav')
+        s = self._ScalarState.get_field('s')
+
+
+        # PBL Height based on thv
+        zi = compute_zi(nh, z_edge, thv)
+        
+        zi_loc = (
+            np.sum(zi[nh[0] : -nh[0], nh[1] : -nh[1]])
+            / npts
+        )
+        zi_glob = UtilitiesParallel.ScalarAllReduce(zi_loc)
+
+        MPI.COMM_WORLD.barrier()
+        my_rank = MPI.COMM_WORLD.Get_rank()
+        if my_rank == 0:
+            timeseries_grp = this_grp["timeseries"]
+            profiles_grp = this_grp["profiles"]
+
+            timeseries_grp["zi"][-1] = zi_glob
+
+        # PBL Height based on s
+        zi = compute_zi(nh, z_edge, s)
+
+        zi_loc = (
+                np.sum(zi[nh[0]: -nh[0], nh[1]: -nh[1]])
+                / npts
+        )
+        zi_glob = UtilitiesParallel.ScalarAllReduce(zi_loc)
+
+        MPI.COMM_WORLD.barrier()
+        my_rank = MPI.COMM_WORLD.Get_rank()
+        if my_rank == 0:
+            
+            timeseries_grp = this_grp["timeseries"]
+            profiles_grp = this_grp["profiles"]
+        
+            timeseries_grp["zi_s"][-1] = zi_glob
+        
+        
+        return
+    
+    
+
