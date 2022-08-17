@@ -3,6 +3,7 @@ import numpy as np
 import time
 
 from pinacles import UtilitiesParallel, parameters
+from pinacles.ThermodynamicsMoist_impl import s_dry
 from pinacles.scalar_advection.flux_divergence import (
     flux_divergence,
     flux_divergence_bounded,
@@ -24,13 +25,14 @@ from mpi4py import MPI
 
 
 class ScalarAdvectionBase:
-    def __init__(self, Timers, Grid, Ref, ScalarState, VelocityState, TimeStepping):
+    def __init__(self, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeStepping):
 
         self._name = "ScalarAdvection"
         self._Timers = Timers
         self._Grid = Grid
         self._ScalarState = ScalarState
         self._VelocityState = VelocityState
+        self._DiagnosticState = DiagnosticState
         self._Ref = Ref
         self._TimeStepping = TimeStepping
 
@@ -75,13 +77,22 @@ def phi_has_nonzero(phi):
                     return True
     return False
 
+@numba.njit(fastmath=True)
+def apply_condensed_water_st(phi_t, temp_q_tend, L, s_t):
+    
+    shape = s_t.shape
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            for k in range(shape[2]):
+                s_t[i,j,k] -= (phi_t[i,j,k] - temp_q_tend[i,j,k])*L * parameters.ICPD
+
 
 class ScalarWENO(ScalarAdvectionBase):
     def __init__(
-        self, namelist, Timers, Grid, Ref, ScalarState, VelocityState, TimeStepping
+        self, namelist, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeStepping
     ):
         ScalarAdvectionBase.__init__(
-            self, Timers, Grid, Ref, ScalarState, VelocityState, TimeStepping
+            self, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState, TimeStepping
         )
         self._flux_profiles = {}
 
@@ -96,6 +107,8 @@ class ScalarWENO(ScalarAdvectionBase):
         self._fluxx_low = np.zeros_like(self._fluxx)
         self._fluxy_low = np.zeros_like(self._fluxx)
         self._fluxz_low = np.zeros_like(self._fluxx)
+        
+        self.tmp_q_tend =  np.zeros_like(self._fluxx)
 
         self._phi_norm = np.zeros_like(self._fluxx)
 
@@ -268,6 +281,12 @@ class ScalarWENO(ScalarAdvectionBase):
         v = self._VelocityState.get_field("v")
         w = self._VelocityState.get_field("w")
 
+        s = self._ScalarState.get_field("s")
+        s_t = self._ScalarState.get_tend("s")
+        
+        s_dry = self._DiagnosticState.get_field('s_dry')
+        
+        
         # Get the relevant reference variables
         # TODO there is acopy hiding here
         rho0 = self._Ref.rho0
@@ -293,6 +312,10 @@ class ScalarWENO(ScalarAdvectionBase):
         for var in self._ScalarState.names:
             phi_range = 1.0
 
+            var_is_liquid = self._ScalarState.is_prognosed_liquid(var)
+            var_is_ice = self._ScalarState.is_prognosed_ice(var)
+            
+
             # Get a scalar field (No copy done here)
             phi = self._ScalarState.get_field(var)
             phi_t = self._ScalarState.get_tend(var)
@@ -300,6 +323,12 @@ class ScalarWENO(ScalarAdvectionBase):
             io_flux.fill(0)
             # Now compute the WENO fluxes
             flux_divergence_type = self._ScalarState.flux_divergence_type(var)
+            
+            
+            if var == 's':
+                phi = s_dry
+                
+            
             if flux_divergence_type != "DEFAULT":
 
                 if phi_has_nonzero(
@@ -335,6 +364,11 @@ class ScalarWENO(ScalarAdvectionBase):
                         fluxz_low,
                     )
 
+
+                    if var_is_liquid or var_is_ice:
+                        self.tmp_q_tend[:,:,:] = phi_t[:,:,:]
+                    
+                    
                     if flux_divergence_type == "EMONO":
                         # Essentially monotone advection scheme
                         flux_divergence_monotone(
@@ -397,6 +431,10 @@ class ScalarWENO(ScalarAdvectionBase):
                             phi_range,
                             phi_t,
                         )
+                if var_is_liquid:
+                    apply_condensed_water_st(phi_t, self.tmp_q_tend, parameters.LV, s_t)
+                if var_is_ice:
+                    apply_condensed_water_st(phi_t, self.tmp_q_tend, parameters.LS, s_t)
 
             else:
                 phi_range = compute_phi_range(phi)
@@ -413,6 +451,10 @@ class ScalarWENO(ScalarAdvectionBase):
                     fluxy,
                     fluxz,
                 )
+                
+                if var_is_liquid or var_is_ice:
+                    self.tmp_q_tend[:,:,:] = phi_t[:,:,:]
+                
                 # second_order(nhalo, rho0, rho0_edge, u, v, w, phi, fluxx, fluxy, fluxz, phi_t)
                 # Now compute the flux divergences
                 flux_divergence(
@@ -428,5 +470,11 @@ class ScalarWENO(ScalarAdvectionBase):
                     phi_range,
                     phi_t,
                 )
+                
+                if var_is_liquid:
+                    apply_condensed_water_st(phi_t, self.tmp_q_tend, parameters.LV, s_t)
+                if var_is_ice:
+                    apply_condensed_water_st(phi_t, self.tmp_q_tend, parameters.LS, s_t)
+
 
         self._Timers.end_timer("ScalarWENO_update")
