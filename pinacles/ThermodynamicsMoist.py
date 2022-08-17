@@ -32,6 +32,13 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
             units="kg/kg",
         )
 
+        DiagnosticState.add_variable(
+            "s_dry",
+            long_name = "Dry Static Energy", 
+            latex_name="s_d",
+            units="K"
+        )
+
         self._Timers.add_timer("ThermoDynamicsMoist_update")
 
         return
@@ -58,6 +65,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         qt = self._DiagnosticState.get_field("qt")
 
         T = self._DiagnosticState.get_field("T")
+        s_dry = self._DiagnosticState.get_field("s_dry")
         thetav = self._DiagnosticState.get_field("thetav")
         alpha = self._DiagnosticState.get_field("alpha")
         buoyancy = self._DiagnosticState.get_field("buoyancy")
@@ -66,7 +74,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         buoyancy_gradient_mag = self._DiagnosticState.get_field("buoyancy_gradient_mag")
 
         ThermodynamicsMoist_impl.eos(
-            z, p0, alpha0, s, qv, ql, qi, T, tref, alpha, buoyancy
+            z, p0, alpha0, s, s_dry, qv, ql, qi, T, tref, alpha, buoyancy
         )
 
         # Compute the buoyancy frequency
@@ -127,7 +135,8 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         qi = self._Micro.get_qi()
 
         return qv + qc + qi
-
+    
+  
     def io_fields2d_update(self, fx):
 
         start = self._Grid.local_start

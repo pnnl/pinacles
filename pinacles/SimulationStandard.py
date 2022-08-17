@@ -290,6 +290,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Ref,
             self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.ScalarTimeStepping,
         )
 
@@ -343,7 +344,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self._namelist,
             self.ModelGrid,
             self.Ref,
+            self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.TimeSteppingController,
         )
 
@@ -596,6 +599,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Ref,
             self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.ScalarTimeStepping,
         )
         self.MomAdv = MomentumAdvection.factory(
@@ -718,6 +722,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Ref,
             self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.ScalarTimeStepping,
         )
 
@@ -833,7 +838,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self._namelist,
             self.ModelGrid,
             self.Ref,
+            self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.TimeSteppingController,
         )
         self.Fields2d.add_class(self.Micro)

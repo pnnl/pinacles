@@ -36,6 +36,13 @@ def s(z, T, ql, qi):
         + (parameters.G * z - parameters.LV * ql - parameters.LS * qi) * parameters.ICPD
     )
 
+@numba.njit(fastmath=True)
+def s_dry(z, T):
+    return (
+        T
+        + (parameters.G * z) * parameters.ICPD
+    )
+
 
 @numba.njit(fastmath=True)
 def T(z, s, ql, qi):
@@ -211,7 +218,7 @@ def compute_moist_bvf(dz, n_halo, p0, rho0, T, qv, ql, qi, bvf):
 
 @numba.njit(fastmath=True)
 def eos(
-    z_in, P_in, alpha0, s_in, qv_in, ql_in, qi_in, T_out, tref, alpha_out, buoyancy_out
+    z_in, P_in, alpha0, s_in, s_dry_in, qv_in, ql_in, qi_in, T_out, tref, alpha_out, buoyancy_out
 ):
     shape = s_in.shape
     for i in range(shape[0]):
@@ -230,6 +237,9 @@ def eos(
                 buoyancy_out[i, j, k] = (
                     parameters.G * (alpha_out[i, j, k] - alpha0[k]) / alpha0[k]
                 )
+
+                # Compute the dry component of the static energy
+                s_dry_in[i,j,k] = s_dry(z_in[k], T_out[i,j,k])
 
     return
 
