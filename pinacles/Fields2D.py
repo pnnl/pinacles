@@ -22,7 +22,6 @@ class Fields2D:
         DiagnosticState,
         TimeSteppingController,
     ):
->>>>>>> pinacles/Fields2D.py
         self._Grid = Grid
         self._Ref = Ref
         self._ScalarState = ScalarState
