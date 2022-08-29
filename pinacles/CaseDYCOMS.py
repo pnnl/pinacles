@@ -136,12 +136,12 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
                 s[i, j, k] = MoistThermo.s(zl[k], t, ql, 0.0)
                 
-        if namelist["meta"]["casename"] == "dycoms_rotated":
-            u[:, :, k] =  8.4853 - z * 0.9192e-3
-            v[:, :, k] = -4.2426 + z * 7.0004e-3
-        else:
-            u[:, :, k] =  3.0 + z * 4.3e-3
-            v[:, :, k] = -9.0 + z * 5.6e-3
+            if namelist["meta"]["casename"] == "dycoms_rotated":
+                u[i, j, :] =  8.4853 - zl[:] * 0.9192e-3
+                v[i, j, :] = -4.2426 + zl[:] * 7.0004e-3
+            else:
+                u[i, j, :] =  3.0 + zl[:] * 4.3e-3
+                v[i, j, :] = -9.0 + zl[:] * 5.6e-3
             
     u -= Ref.u0
     v -= Ref.v0

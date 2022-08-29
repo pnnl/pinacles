@@ -142,6 +142,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="kg kg^{-1}",
                 latex_name="q_{c}",
                 limit=True,
+                is_prognosed_liquid=True,
             )
 
         if self._iqarray[2] > 0:
@@ -153,6 +154,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="kg kg^{-1}",
                 latex_name="q_{i}",
                 limit=True,
+                is_prognosed_ice=True,
             )
 
         if self._iqarray[3] > 0:
@@ -164,6 +166,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="kg kg^{-1}",
                 latex_name="q_{r}",
                 limit=True,
+                is_prognosed_liquid=True,
             )
 
         if self._iqarray[4] > 0:
@@ -175,6 +178,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="kg kg^{-1}",
                 latex_name="q_{s}",
                 limit=True,
+                is_prognosed_ice=True,
             )
 
         if self._iqarray[5] > 0:
@@ -186,6 +190,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="kg kg^{-1}",
                 latex_name="q_{g}",
                 limit=True,
+                is_prognosed_ice=True,
             )
 
         if self._iqarray[6] > 0:
