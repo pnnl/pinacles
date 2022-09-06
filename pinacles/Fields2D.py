@@ -227,6 +227,11 @@ class Fields2D:
     def output_horizontal(self, fx, container):
         xla = self._Grid.global_axes[0]
         yla = self._Grid.global_axes[1]
+        start = self._Grid.local_start
+        end = self._Grid._local_end
+        nh = self._Grid.n_halo    
+        send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[2]), dtype=np.double)
+        recv_buffer = np.empty_like(send_buffer)
 
         for con in container:
             for v in con._dofs:
@@ -238,11 +243,11 @@ class Fields2D:
                     if fx is not None:
                         var_fx = fx.create_dataset(
                             v + "_x_" + str(xl),
-                            (1, self._Grid.n[0], self._Grid.n[2]),
+                            (1, self._Grid.n[1], self._Grid.n[2]),
                             dtype=np.double,
                         )
 
-                        for i, d in enumerate(["time", "X", "Z"]):
+                        for i, d in enumerate(["time", "Y", "Z"]):
                             var_fx.dims[i].attach_scale(fx[d])
 
                         var_fx[:, :] = data
@@ -252,16 +257,39 @@ class Fields2D:
                     yi = np.min(np.argmin(np.abs(xla - yl)))
                     data = con.get_field_slice_h(v, yi, y=True)
 
+                    if fx is not None:
+                        var_fx = fx.create_dataset(
+                            v + "_y_" + str(xl),
+                            (1, self._Grid.n[0], self._Grid.n[2]),
+                            dtype=np.double,
+                        )
+
+                        for i, d in enumerate(["time", "X", "Z"]):
+                            var_fx.dims[i].attach_scale(fx[d])
+
+                        var_fx[:, :] = data
+                                               
+                if fx is not None:
                     var_fx = fx.create_dataset(
-                        v + "_y_" + str(xl),
+                        v + "_mean",
                         (1, self._Grid.n[0], self._Grid.n[2]),
                         dtype=np.double,
                     )
 
                     for i, d in enumerate(["time", "X", "Z"]):
                         var_fx.dims[i].attach_scale(fx[d])
-
-                    var_fx[:, :] = data
+                    
+                    # for i in range(start[0],end[0]):
+                    #     for k in range(start[2],end[2]):
+                    #        send_buffer[i, k] = data_3d[i, start[1] : end[1], k].sum()
+                
+                data_3d = con.get_field(v)
+                send_buffer.fill(0.0) 
+                send_buffer[start[0]:end[0], start[2]:end[2]] = np.sum(data_3d[nh[0] : -nh[0], nh[1] : -nh[1], nh[2] : -nh[2]], axis = 1)
+                MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)    
+                
+                if fx is not None:
+                    var_fx[:, :] = recv_buffer/self._Grid.n[1]
         return
 
     def output_scalars(self, fx):

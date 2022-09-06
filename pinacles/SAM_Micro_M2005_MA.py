@@ -1003,7 +1003,7 @@ class Micro_M2005_MA(MicrophysicsBase):
         return
 
     def get_qc(self):
-        return self._ScalarState.get_field("qc")  # + self._ScalarState.get_field("qr")
+        return self._ScalarState.get_field("qc") + self._ScalarState.get_field("qr")
 
     def get_qcloud(self):
         return self._ScalarState.get_field("qc")
