@@ -789,10 +789,10 @@ class MicroP3(MicrophysicsBase):
         vwp = UtilitiesParallel.ScalarAllReduce(vwp)
 
         # Compute cloud and rain fraction
-        cf = water_fraction(n_halo, npts, qc, threshold=1e-5)
+        cf = water_fraction(n_halo, npts, qc)
         cf = UtilitiesParallel.ScalarAllReduce(cf)
 
-        cf_prof = water_fraction_profile(n_halo, npts, qc, threshold=1e-5)
+        cf_prof = water_fraction_profile(n_halo, npts, qc)
         cf_prof = UtilitiesParallel.ScalarAllReduce(cf_prof)
 
         rf = water_fraction(n_halo, npts, qr)
@@ -801,7 +801,7 @@ class MicroP3(MicrophysicsBase):
         rainnc = np.sum(self._RAINNC) / npts
         rainnc = UtilitiesParallel.ScalarAllReduce(rainnc)
 
-        rf_prof = water_fraction_profile(n_halo, npts, qr, threshold=1e-5)
+        rf_prof = water_fraction_profile(n_halo, npts, qr)
         rf_prof = UtilitiesParallel.ScalarAllReduce(rf_prof)
 
         rainncv = np.sum(self._RAINNCV) / npts
