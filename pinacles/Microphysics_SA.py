@@ -236,16 +236,16 @@ class MicroSA(MicrophysicsBase):
         _vwp = UtilitiesParallel.ScalarAllReduce(_vwp)
 
         # Compute cloud fractions
-        _cf = water_fraction(_n_halo, _npts, _qc, threshold=1e-5)
+        _cf = water_fraction(_n_halo, _npts, _qc)
         _cf = UtilitiesParallel.ScalarAllReduce(_cf)
 
         # Compute cloud profile
-        _cf_prof = water_fraction_profile(_n_halo, _npts, _qc, threshold=1e-5)
+        _cf_prof = water_fraction_profile(_n_halo, _npts, _qc)
         _cf_prof = UtilitiesParallel.ScalarAllReduce(_cf_prof)
 
         # Compute cloud base
         _cloud_base, _cloud_top, _base_mean, _top_mean, count = compute_cloud_base_top(
-            _n_halo, _z, _qc, threshold=1e-5
+            _n_halo, _z, _qc
         )
 
         _cloud_base = UtilitiesParallel.ScalarAllReduce(
