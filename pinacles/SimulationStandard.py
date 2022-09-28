@@ -315,6 +315,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         Initialization.initialize(
             self._namelist,
             self.ModelGrid,
+            self.TimeSteppingController,
             self.Ref,
             self.ScalarState,
             self.VelocityState,
@@ -747,6 +748,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         Initialization.initialize(
             self._namelist,
             self.ModelGrid,
+            self.TimeSteppingController,
             self.Ref,
             self.ScalarState,
             self.VelocityState,

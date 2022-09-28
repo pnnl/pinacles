@@ -3,7 +3,7 @@ import glob
 import json
 import os
 import pickle as pkl
-
+import numpy as np
 import h5py
 import tqdm
 
@@ -38,21 +38,35 @@ def combine_restarts(inputdict):
         _n_halo = _rd["RegularCartesianGrid"]["_n_halo"]
         _l = _rd["RegularCartesianGrid"]["_l"]
 
+
         _local_start = _rd["RegularCartesianGrid"]["_local_start"]
         _local_end = _rd["RegularCartesianGrid"]["_local_end"]
 
-        _fx.attrs["nx"] = _n[0]
-        _fx.attrs["ny"] = _n[1]
-        _fx.attrs["nz"] = _n[2]
+        if n_file == 0:
+            _fx.attrs["nx"] = _n[0] 
+            _fx.attrs["ny"] = _n[1]
+            _fx.attrs["nz"] = _n[2]
 
-        _fx.attrs["lx"] = _l[0]
-        _fx.attrs["ly"] = _l[1]
-        _fx.attrs["lz"] = _l[2]
+            _fx.attrs["lx"] = _l[0]
+            _fx.attrs["ly"] = _l[1]
+            _fx.attrs["lz"] = _l[2]
+            
+            
+            _fx.attrs["x"] = _rd["RegularCartesianGrid"]["_global_axes"][0][:]
+            _fx.attrs["y"] = _rd["RegularCartesianGrid"]["_global_axes"][1][:]
+            _fx.attrs["z"] = _rd["RegularCartesianGrid"]["_global_axes"][2][:]
+            
+            _fx.attrs["x_edge"] = _rd["RegularCartesianGrid"]["_global_axes_edge"][0][:]
+            _fx.attrs["y_edge"] = _rd["RegularCartesianGrid"]["_global_axes_edge"][1][:]
+            _fx.attrs["z_edge"] = _rd["RegularCartesianGrid"]["_global_axes_edge"][2][:]
+            
+            _fx.attrs['time'] = _rd["TimeStepManager"]["_time"]
 
         if n_file == 0:
             for _c in containers:
                 for dof in _c["_dofs"]:
-                    dset = _fx.create_dataset(dof, tuple(_n), dtype="d")
+                    dset = _fx.create_dataset(dof, tuple(_n + 2*_n_halo), dtype="d")
+
 
         for _c in containers:
             state_array = _c["_state_array"]
@@ -62,14 +76,16 @@ def combine_restarts(inputdict):
 
                 arr = state_array[
                     indx,
-                    _n_halo[0] : -_n_halo[0],
-                    _n_halo[1] : -_n_halo[1],
-                    _n_halo[2] : -_n_halo[2],
+                    :,
+                    :,
+                    :,
                 ]
+                
+                
                 dset[
-                    _local_start[0] : _local_end[0],
-                    _local_start[1] : _local_end[1],
-                    _local_start[2] : _local_end[2],
+                    _local_start[0]  : _local_end[0] + 2*_n_halo[0],
+                    _local_start[1]: _local_end[1] + 2*_n_halo[1],
+                    _local_start[2] : _local_end[2] + 2*_n_halo[2],
                 ] = arr
 
             _c["_state_array"] = None
