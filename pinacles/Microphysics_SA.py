@@ -36,7 +36,7 @@ def sa(z, rho0, p, s_in, qv_in, ql_in):
     sigma_2 = -1.0
     
 
-    while delta_T >= 1e-4 or sigma_2 < 0.0:
+    while delta_T >= 1e-4:
         qv_star_2 = ThermodynamicsMoist_impl.compute_qvs(T_2, rho0, p)
         sigma_2 = qt_in - qv_star_2
         s_2 = ThermodynamicsMoist_impl.s(z, T_2, sigma_2, 0.0)
@@ -49,6 +49,8 @@ def sa(z, rho0, p, s_in, qv_in, ql_in):
 
     qc = max(qt_in - qv_star_2, 0.0)
     qv = qt_in - qc
+
+    T_1 = ThermodynamicsMoist_impl.T(z, s_in, qc, 0.0)
 
     return T_1, qv, qc
 
