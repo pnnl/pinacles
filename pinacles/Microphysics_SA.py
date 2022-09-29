@@ -32,12 +32,10 @@ def sa(z, rho0, p, s_in, qv_in, ql_in):
     T_2 = ThermodynamicsMoist_impl.T(z, s_in, sigma_1, 0.0)
     delta_T = np.abs(T_2 - T_1)
 
-    qv_star_2 = 0
+    qv_star_2 = ThermodynamicsMoist_impl.compute_qvs(T_2, rho0, p)
     sigma_2 = -1.0
-    
-
     while delta_T >= 1e-4 or sigma_2 < 0.0:
-        qv_star_2 = ThermodynamicsMoist_impl.compute_qvs(T_2, rho0, p)
+        
         sigma_2 = qt_in - qv_star_2
         s_2 = ThermodynamicsMoist_impl.s(z, T_2, sigma_2, 0.0)
         f_2 = s_in - s_2
@@ -45,14 +43,13 @@ def sa(z, rho0, p, s_in, qv_in, ql_in):
         T_1 = T_2
         T_2 = T_n
         f_1 = f_2
+        qv_star_2 = ThermodynamicsMoist_impl.compute_qvs(T_2, rho0, p)
         delta_T = np.abs(T_2 - T_1)
 
     qc = max(qt_in - qv_star_2, 0.0)
     qv = qt_in - qc
 
-    T_1 = ThermodynamicsMoist_impl.T(z, s_in, qc, 0.0)
-
-    return T_1, qv, qc
+    return T_2, qv, qc
 
 
 @numba.njit
