@@ -1,1 +1,16 @@
 site_name: PINACLES DOCS
+copyright: Copyright &copy; 2021 - 2022 PNNL
+
+nav:
+  - Home: 'index.md'
+  - Formulation:
+      - 'Dynamics': 'dynamics/dynamics.md'
+      - 'Numerics': numerics/numerics.md'
+      - 'Physics': 'physics/physics.md'
+  - Build: 'build.md'
+  - Publications: 'publications.md'
+
+extra_javascript:
+  - javascript/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js

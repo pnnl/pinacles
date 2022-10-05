@@ -12,3 +12,5 @@ The traditional software optimization strategy used in atmospheric models seeks 
 2. How long does it take for a scientific user to correctly express a new scientific idea or new scientific experiment within a model
 
 Our implementation of this optimization approach is very much inspired by the success that has been found within the machine learning community, in using languages like Python, and to a lesser extent Julia, to make cutting edge research tools and technological advances available to the masses, even those with little software engineering experience, with unprecedented speed and alacrity. In the context of machine learning, this has been referred to by [Chollet](https://dl.acm.org/doi/10.5555/3203489) as the democratization of machine learning. 
+
+
