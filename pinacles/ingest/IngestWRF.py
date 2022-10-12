@@ -35,6 +35,12 @@ class IngestWRF(IngestERA5):
         )
         
         
+        #Lat and lon bounds for interpolation
+        self.lat_margin = (600.0 / 1000.0)/110.0 * 10.0
+        self.lon_margin = (600.0 / 1000.0)/110.0 * 10.0
+        
+        
+        
         self.sfc_data_file = 'test_out.nc'
         self.atm_data_file = 'test_out.nc'
 
@@ -107,6 +113,9 @@ class IngestWRF(IngestERA5):
         lat = MPI.COMM_WORLD.bcast(lat)
         skin_T = MPI.COMM_WORLD.bcast(skin_T)
 
+        #print(np.amax(lon), np.amin(lon), np.amax(lat), np.amin(lat))
+       # import sys; sys.exit()
+
         return lon, lat, skin_T
 
 
@@ -143,14 +152,14 @@ class IngestWRF(IngestERA5):
         lat_hgt_grid = lat_hgt.flatten()
 
         # Mask data to make interpolation more efficient
-        mask = (lon_hgt_grid >= np.amin(lon) - 1.0) & (
-            lon_hgt_grid <= np.amax(lon) + 1.0
+        mask = (lon_hgt_grid >= np.amin(lon) - self.lon_margin) & (
+            lon_hgt_grid <= np.amax(lon) + self.lon_margin
         )
 
         mask = (
             mask
-            & (lat_hgt_grid >= np.amin(lat) - 1.0)
-            & (lat_hgt_grid <= np.amax(lat) + 1.0)
+            & (lat_hgt_grid >= np.amin(lat) - self.lat_margin)
+            & (lat_hgt_grid <= np.amax(lat) + self.lon_margin)
         )
         lon_lat = (lon_hgt_grid[mask], lat_hgt_grid[mask])
 
@@ -253,12 +262,12 @@ class IngestWRF(IngestERA5):
         lat_T_grid = lat_T.flatten()
 
         # Mask data to make interpolation more efficient
-        mask = (lon_T_grid >= np.amin(lon) - 1.0) & (lon_T_grid <= np.amax(lon) + 1.0)
+        mask = (lon_T_grid >= np.amin(lon) - self.lon_margin) & (lon_T_grid <= np.amax(lon) + self.lon_margin)
 
         mask = (
             mask
-            & (lat_T_grid >= np.amin(lat) - 1.0)
-            & (lat_T_grid <= np.amax(lat) + 1.0)
+            & (lat_T_grid >= np.amin(lat) - self.lat_margin)
+            & (lat_T_grid <= np.amax(lat) + self.lat_margin)
         )
         lon_lat = (lon_T_grid[mask], lat_T_grid[mask])
 
@@ -361,12 +370,12 @@ class IngestWRF(IngestERA5):
         lat_qv_grid = lat_qv.flatten()
 
         # Mask data to make interpolation more efficient
-        mask = (lon_qv_grid >= np.amin(lon) - 1.0) & (lon_qv_grid <= np.amax(lon) + 1.0)
+        mask = (lon_qv_grid >= np.amin(lon) - self.lon_margin) & (lon_qv_grid <= np.amax(lon) + self.lon_margin)
 
         mask = (
             mask
-            & (lat_qv_grid >= np.amin(lat) - 1.0)
-            & (lat_qv_grid <= np.amax(lat) + 1.0)
+            & (lat_qv_grid >= np.amin(lat) - self.lat_margin)
+            & (lat_qv_grid <= np.amax(lat) + self.lat_margin)
         )
         lon_lat = (lon_qv_grid[mask], lat_qv_grid[mask])
 
@@ -442,12 +451,12 @@ class IngestWRF(IngestERA5):
         lat_qc_grid = lat_qc.flatten()
 
         # Mask data to make interpolation more efficient
-        mask = (lon_qc_grid >= np.amin(lon) - 1.0) & (lon_qc_grid <= np.amax(lon) + 1.0)
+        mask = (lon_qc_grid >= np.amin(lon) - self.lon_margin) & (lon_qc_grid <= np.amax(lon) + self.lon_margin)
 
         mask = (
             mask
-            & (lat_qc_grid >= np.amin(lat) - 1.0)
-            & (lat_qc_grid <= np.amax(lat) + 1.0)
+            & (lat_qc_grid >= np.amin(lat) - self.lat_margin)
+            & (lat_qc_grid <= np.amax(lat) + self.lat_margin)
         )
         lon_lat = (lon_qc_grid[mask], lat_qc_grid[mask])
 
@@ -522,12 +531,12 @@ class IngestWRF(IngestERA5):
         lat_qi_grid = lat_qi.flatten()
 
         # Mask data to make interpolation more efficient
-        mask = (lon_qi_grid >= np.amin(lon) - 1.0) & (lon_qi_grid <= np.amax(lon) + 1.0)
+        mask = (lon_qi_grid >= np.amin(lon) - self.lon_margin) & (lon_qi_grid <= np.amax(lon) + self.lon_margin)
 
         mask = (
             mask
-            & (lat_qi_grid >= np.amin(lat) - 1.0)
-            & (lat_qi_grid <= np.amax(lat) + 1.0)
+            & (lat_qi_grid >= np.amin(lat) - self.lat_margin)
+            & (lat_qi_grid <= np.amax(lat) + self.lat_margin)
         )
         lon_lat = (lon_qi_grid[mask], lat_qi_grid[mask])
 
@@ -606,12 +615,12 @@ class IngestWRF(IngestERA5):
         lat_u_grid = lat_u.flatten()
 
         # Mask data to make interpolation more efficient
-        mask = (lon_u_grid >= np.amin(lon) - 1.0) & (lon_u_grid <= np.amax(lon) + 1.0)
+        mask = (lon_u_grid >= np.amin(lon) - self.lon_margin) & (lon_u_grid <= np.amax(lon) + self.lon_margin)
 
         mask = (
             mask
-            & (lat_u_grid >= np.amin(lat) - 1.0)
-            & (lat_u_grid <= np.amax(lat) + 1.0)
+            & (lat_u_grid >= np.amin(lat) - self.lat_margin)
+            & (lat_u_grid <= np.amax(lat) + self.lon_margin)
         )
         lon_lat = (lon_u_grid[mask], lat_u_grid[mask])
 
@@ -690,12 +699,12 @@ class IngestWRF(IngestERA5):
         lat_v_grid = lat_v.flatten()
 
         # Mask data to make interpolation more efficient
-        mask = (lon_v_grid >= np.amin(lon) - 1.0) & (lon_v_grid <= np.amax(lon) + 1.0)
+        mask = (lon_v_grid >= np.amin(lon) - self.lon_margin) & (lon_v_grid <= np.amax(lon) + self.lon_margin)
 
         mask = (
             mask
-            & (lat_v_grid >= np.amin(lat) - 1.0)
-            & (lat_v_grid <= np.amax(lat) + 1.0)
+            & (lat_v_grid >= np.amin(lat) - self.lat_margin)
+            & (lat_v_grid <= np.amax(lat) + self.lat_margin)
         )
         lon_lat = (lon_v_grid[mask], lat_v_grid[mask])
 
