@@ -1160,6 +1160,41 @@ class LateralBCsReanalysis(LateralBCsBase):
                         v[nh[0]:-nh[0], start:end, :] - v_nudge[nh[0]:-nh[0], :-1, :]
                     ) * weight_v[:,-self.nudge_width-1:-1,np.newaxis]
 
+
+            elif var == "s":
+                s = self._State.get_field(var)
+                st = self._State.get_tend(var)
+                
+                
+                
+                
+                nz_pert = 5
+                amp = 0.1
+                if self._Grid.low_rank[0]: 
+                    start = nh[0]           #     start = nh[0]
+                    end = nh[0] + self.nudge_width
+                    pert_shape = st[start:end, :, nh[2]:nh[2] + nz_pert].shape
+                    s[start:end, :, nh[2]:nh[2] + nz_pert] += np.random.uniform(low=-1.0*amp, high=1.0*amp, size=pert_shape)
+                
+                if self._Grid.high_rank[0]:
+                     start = -nh[0] - self.nudge_width
+                     end = -nh[0]
+                     pert_shape = st[start:end, :, nh[2]:nh[2] + nz_pert].shape
+                     s[start:end, :, nh[2]:nh[2] + nz_pert] += np.random.uniform(low=-1.0*amp, high=1.0*amp, size=pert_shape)
+
+                if self._Grid.low_rank[1]:
+                    start = nh[1]
+                    end = nh[1] + self.nudge_width    
+                    pert_shape = st[:, start:end, nh[2]:nh[2] + nz_pert].shape
+                    s[:, start:end, nh[2]:nh[2] + nz_pert] += np.random.uniform(low=-1.0*amp, high=1.0*amp, size=pert_shape)
+                
+                if self._Grid.high_rank[1]:
+                    start = -nh[1] - self.nudge_width
+                    end = -nh[1]
+                    pert_shape = st[:, start:end, nh[2]:nh[2] + nz_pert].shape
+                    s[:, start:end, nh[2]:nh[2] + nz_pert] += np.random.uniform(low=-1.0*amp, high=1.0*amp, size=pert_shape)
+                
+                
             # elif var == "w":
 
             #     w = self._State.get_field(var)
