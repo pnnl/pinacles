@@ -309,6 +309,8 @@ class InitializeReanalysis:
 
         lon, lat, skin_T = self._Ingest.get_skin_T()
 
+        print(np.mean(lat), np.mean(lon))
+
         lon_lat = (lon.flatten(), lat.flatten())
 
 
