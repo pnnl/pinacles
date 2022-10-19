@@ -22,14 +22,14 @@ def LateralBCsFactory(
     except:
         return LateralBCsDummy()
 
+
     if lbc["type"].lower() == "periodic":
         return LateralBCsDummy()
     elif lbc["type"].lower() == "open":
         try:
             boundary_treatment = lbc["open_boundary_treatment"]
         except:
-            UtilitiesParallel.print_root("Usinge mean boundary treatment.")
-            
+            UtilitiesParallel.print_root("Using mean boundary treatment.")
         if boundary_treatment.lower() == "mean":
             lbc_class = LateralBCsMean(Grid, State, VelocityState)
             UtilitiesParallel.print_root("Using mean boundary treatment.")
@@ -42,7 +42,8 @@ def LateralBCsFactory(
             )
             UtilitiesParallel.print_root("Using nested boundary conditions")
             
-        if boundary_treatment.lower() in "reanalysis" or "wrf":
+        if boundary_treatment.lower() in "reanalysis" or boundary_treatment.lower() in "wrf":
+            
             lbc_class = LateralBCsReanalysis(
                 namelist,
                 Grid,

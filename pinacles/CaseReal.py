@@ -179,15 +179,27 @@ class SurfaceReanalysis(Surface.SurfaceBase):
 
         self._z0[self._z0 < 0.0002] = 0.0002
 
+
+        # Surface_impl.compute_exchange_coefficients(
+        #     self._Ri,
+        #     z_edge[nh[2]] / 2.0,
+        #     self._z0,
+        #     self._cm,
+        #     self._ch,
+        #     self._psi_m,
+        #     self._psi_h
+        # )
+
+
         Surface_impl.compute_exchange_coefficients_charnock(
-            self._Ri,
-            z_edge[nh[2]] / 2.0,
-            self._z0,
-            self._windspeed_sfc,
-            self._cm,
-            self._ch,
-            self._psi_m,
-            self._psi_h
+           self._Ri,
+           z_edge[nh[2]] / 2.0,
+           self._z0,
+           self._windspeed_sfc,
+           self._cm,
+           self._ch,
+           self._psi_m,
+           self._psi_h
         )
         self._cq[:, :] = self._ch[:, :]
 
@@ -199,9 +211,8 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         u10_star = np.zeros_like(self._ustar)
         v10_star = np.zeros_like(self._ustar)
         
-        u10_star[1:,:] = np.sqrt(self._cm[1:,:]**2.0 * (0.5 * (usfc[1:,:] + usfc[:-1,:]))**2.0)
-        v10_star[:,1:] = np.sqrt(self._cm[:,1:]**2.0 * (0.5 * (vsfc[:,1:] + vsfc[:,:-1]))**2.0)
-
+        u10_star[:,:] = np.sqrt((self._cm[:,:]**2.0) * (usfc)**2.0)
+        v10_star[:,:] = np.sqrt((self._cm[:,:]**2.0) * (vsfc)**2.0)
 
         self._u10[:,:] = u10_star/0.41 * (np.log(10.0/self._z0) - self._psi_m)
         self._v10[:,:] = v10_star/0.41 * (np.log(10.0/self._z0) - self._psi_m)

@@ -350,6 +350,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.VelocityTimeStepping.initialize()
 
         if self.ParentNest is None:
+            print('Nest None')
             self.LBC = LateralBCsFactory.LateralBCsFactory(
                 self._namelist,
                 self.ModelGrid,
@@ -371,7 +372,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.Ingest,
             )
         else:
-            print("Initing Nest")
             self.LBC = LateralBCsFactory.LateralBCsFactory(
                 self._namelist,
                 self.ModelGrid,

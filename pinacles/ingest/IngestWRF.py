@@ -36,8 +36,8 @@ class IngestWRF(IngestERA5):
         
         
         #Lat and lon bounds for interpolation
-        self.lat_margin = (600.0 / 1000.0)/110.0 * 10.0
-        self.lon_margin = (600.0 / 1000.0)/110.0 * 10.0
+        self.lat_margin = (600.0 / 1000.0)/110.0 * 30.0
+        self.lon_margin = (600.0 / 1000.0)/110.0 * 30.0
         
         
         
@@ -151,6 +151,8 @@ class IngestWRF(IngestERA5):
         lon_hgt_grid = lon_hgt.flatten()
         lat_hgt_grid = lat_hgt.flatten()
 
+
+
         # Mask data to make interpolation more efficient
         mask = (lon_hgt_grid >= np.amin(lon) - self.lon_margin) & (
             lon_hgt_grid <= np.amax(lon) + self.lon_margin
@@ -161,6 +163,7 @@ class IngestWRF(IngestERA5):
             & (lat_hgt_grid >= np.amin(lat) - self.lat_margin)
             & (lat_hgt_grid <= np.amax(lat) + self.lon_margin)
         )
+        
         lon_lat = (lon_hgt_grid[mask], lat_hgt_grid[mask])
 
         hgt_horizontal = np.empty(
@@ -168,8 +171,18 @@ class IngestWRF(IngestERA5):
         )
         for i in range(hgt.shape[0]):
             hgt_horizontal[i, :, :] = interpolate.griddata(
-                lon_lat, hgt[i, :, :].flatten()[mask], (lon, lat), method="linear"
+                lon_lat, hgt[i, :, :].flatten()[mask], (lon, lat), method="linear",
             )
+            #lat_lon_array = np.vstack(lon_lat).T
+            
+            #rbf = interpolate.RBFInterpolator(
+            #    lat_lon_array, hgt[i, :, :].flatten()[mask], neighbors=16
+            #)
+            
+            #field = rbf(np.vstack((lon.flatten(), lat.flatten())).T)
+        
+            #hgt_horizontal[i, :, :] = field.reshape(
+            #    hgt_horizontal[i, :, :].shape)
 
         return hgt_horizontal
     
@@ -290,8 +303,11 @@ class IngestWRF(IngestERA5):
 
         Ti = np.empty((lon.shape[0], lon.shape[1], height.shape[0]), dtype=np.double)
         nh = self._Grid.n_halo
+        
         for i in range(T_horizontal.shape[1]):
             for j in range(T_horizontal.shape[2]):
+
+
 
                 z = hgt_horizontal_interp[:, i, j]
                 interp = interpolate.Akima1DInterpolator(z, T_horizontal[:, i, j])

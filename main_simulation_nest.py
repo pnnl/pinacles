@@ -95,7 +95,7 @@ def main(namelist):
     io_classes = []
     for Nest_i in ListOfSims:
         io_classes.append(
-            [Nest_i.StatsIO, Nest_i.FieldsIO, Nest_i.IOTower, Nest_i.Restart]
+            [Nest_i.StatsIO, Nest_i.FieldsIO, Nest_i.Fields2d,  Nest_i.IOTower, Nest_i.Restart]
         )
 
     # Determine all of the output frequencies
