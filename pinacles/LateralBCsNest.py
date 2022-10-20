@@ -210,7 +210,7 @@ class LateralBCsNest(LateralBCsBase):
 
                 child_data = self.gather_to_parent.call(self._State.get_field(var_name))
 
-            ndimage.uniform_filter(child_data, size=(3, 3, 0), output=child_data)
+            ndimage.uniform_filter(child_data, size=(self.factor[0], self.factor[1], 0), output=child_data)
 
             parent_data = self._NestState.get_field(var_name)
 
