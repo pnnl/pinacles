@@ -8,7 +8,7 @@ import uuid
 import datetime
 from pinacles import SimulationBase
 
-from pinacles import Initializaiton
+from pinacles import Initialization
 from pinacles import TerminalIO, Grid, ParallelArrays, Containers, Thermodynamics
 from pinacles import ScalarAdvectionFactory
 from pinacles import ScalarAdvection, TimeStepping, ReferenceState
@@ -36,6 +36,7 @@ from pinacles import ParticlesFactory
 from pinacles import Timers
 from pinacles import DiagnosticsCoarseGrain
 from pinacles import DiagnosticsCase
+from pinacles import reproducibility
 from mpi4py import MPI
 import numpy as np
 
@@ -55,8 +56,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         self._namelist = namelist
 
-        # Set-up the restart, restart modifies the namelist, so this call should not be moved
+        # Set up the restart, restart modifies the namelist, so this call should not be moved
         self.Restart = Restart.Restart(namelist)
+        Re = reproducibility.Reproducibility(namelist)
 
         # Initialize differently if this is a restart simulation
         if not self.Restart.restart_simulation:
@@ -108,10 +110,10 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.TimeSteppingController.add_timestepper(self.ScalarTimeStepping)
         self.TimeSteppingController.add_timestepper(self.VelocityTimeStepping)
 
-        # Instantaite the reference state
+        # Instantiate the reference state
         self.Ref = ReferenceState.factory(self._namelist, self.ModelGrid)
 
-        # Add three dimensional velocity compoonents
+        # Add three-dimensional velocity components
         self.VelocityState.add_variable(
             "u", long_name="u velocity component", units="m/s", latex_name="u"
         )
@@ -165,26 +167,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.VelocityState,
             self.DiagnosticState,
             self.Micro,
-        )
-
-        # Instantiate scalar advection
-        self.ScalarAdv = ScalarAdvectionFactory.factory(
-            self._namelist,
-            self.Timers,
-            self.ModelGrid,
-            self.Ref,
-            self.ScalarState,
-            self.VelocityState,
-            self.ScalarTimeStepping,
-        )
-
-        self.MomAdv = MomentumAdvection.factory(
-            self._namelist,
-            self.Timers,
-            self.ModelGrid,
-            self.Ref,
-            self.ScalarState,
-            self.VelocityState,
         )
 
         # Instantiate scalar diffusion
@@ -252,7 +234,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.TimeSteppingController,
         )
 
-        # Instatiate plumes if there are any
+        # Instantiate plumes if there are any
         self.Plumes = Plumes.Plumes(
             self._namelist,
             self.Timers,
@@ -285,7 +267,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.DiagnosticState,
         )
 
-
         # Add classes to restart
         self.Restart.add_class_to_restart(self.ModelGrid)
         self.Restart.add_class_to_restart(self.ScalarState)
@@ -299,19 +280,42 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Restart.add_class_to_restart(self.Parts)
 
         # Allocate memory for storage arrays in container classes. This should come after most classes are instantiated becuase the
-        # containter must know how much memory to allocate
+        # container must know how much memory to allocate
+
+        # Instantiate scalar advection
+        self.ScalarAdv = ScalarAdvectionFactory.factory(
+            self._namelist,
+            self.Timers,
+            self.ModelGrid,
+            self.Ref,
+            self.ScalarState,
+            self.VelocityState,
+            self.DiagnosticState,
+            self.ScalarTimeStepping,
+        )
+
+        self.MomAdv = MomentumAdvection.factory(
+            self._namelist,
+            self.Timers,
+            self.ModelGrid,
+            self.Ref,
+            self.ScalarState,
+            self.VelocityState,
+        )
+
         self.ScalarState.allocate()
         self.VelocityState.allocate()
         self.DiagnosticState.allocate()
 
-        # Allocate and initialze memory in the time-stepping routines
+        # Allocate and initialize memory in the time-stepping routines
         self.ScalarTimeStepping.initialize()
         self.VelocityTimeStepping.initialize()
 
-        # Do case sepcific initalizations the initial profiles are integrated here
-        Initializaiton.initialize(
+        # Do case specific initializations the initial profiles are integrated here
+        Initialization.initialize(
             self._namelist,
             self.ModelGrid,
+            self.TimeSteppingController,
             self.Ref,
             self.ScalarState,
             self.VelocityState,
@@ -320,16 +324,16 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Initialize any work arrays for the microphysics package
         self.Micro.initialize()
 
-        # Now that the initial profiles have been integrated, the pressure solver and be initialzied
+        # Now that the initial profiles have been integrated, the pressure solver and be initialized
         self.PSolver.initialize()
 
-        # If necessary initalize Radiation initial profiles.
+        # If necessary initialize Radiation initial profiles.
         self.Rad.init_profiles()
 
         # Initialize mean profiles for top of domain damping
         self.RayleighDamping.init_means()
 
-        # Intialize statistical output
+        # Initialize statistical output
         self.StatsIO = Stats(
             self._namelist,
             self.Timers,
@@ -341,7 +345,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self._namelist,
             self.ModelGrid,
             self.Ref,
+            self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.TimeSteppingController,
         )
 
@@ -362,7 +368,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         self.PlatSim.initialize()
 
-        # Initialze statistical diagnostics for turbulence and clouds
+        # Initialize statistical diagnostics for turbulence and clouds
         self.DiagClouds = DiagnosticsClouds.DiagnosticsClouds(
             self.ModelGrid,
             self.Ref,
@@ -390,10 +396,10 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Micro,
             self.VelocityState,
             self.ScalarState,
-            self.DiagnosticState
+            self.DiagnosticState,
         )
 
-        # Initalize memory for outputting Advective and Diffusive Fluxes
+        # Initialize memory for outputting Advective and Diffusive Fluxes
         self.ScalarDiff.initialize_io_arrays()
         self.ScalarAdv.initialize_io_arrays()
 
@@ -410,10 +416,10 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.StatsIO.add_class(self.DiagCase)
         self.StatsIO.add_class(self.Rad)
 
-        # Now iniitalzie the IO field
+        # Now initialize the IO field
         self.StatsIO.initialize()
 
-        # Now initialze for the output of 3D fields
+        # Now initialize for the output of 3D fields
         self.FieldsIO = DumpFields.DumpFieldsFactory(
             self._namelist, self.Timers, self.ModelGrid, self.TimeSteppingController
         )
@@ -438,8 +444,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.CoarseGrain.add_class(self.VelocityState)
         self.CoarseGrain.add_class(self.DiagnosticState)
 
-        # At this point the model is basically initalized, however we should also do boundary exchanges to insure
-        # the halo regions are set and the to a pressure solver to insure that the velocity field is initially satifies
+        # At this point the model is basically initialized, however we should also do boundary exchanges to ensure
+        # the halo regions are set and consistent with the pressure solver to ensure that the velocity field initially satisfies
         # the anelastic continuity equation
         for prog_state in [self.ScalarState, self.VelocityState]:
             prog_state.boundary_exchange()
@@ -457,30 +463,27 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Timers.add_timer("main")
         self.Timers.initialize()
 
+        # if MPI.COMM_WORLD.Get_rank() == 0:
+        #     gather =  self.ModelGrid.CreateGather((0,64), (0,64))
+        # else:
+        #     gather =  self.ModelGrid.CreateGather((0,64), (0,64))#
 
+        # u = self.VelocityState.get_field('u')
+        # u[:,:,:] = 10.0
+        # ug = gather.call(u)
+        # t0 = time.time()
+        # arr = gather.call(u)
+        # t1 = time.time()
+        # if MPI.COMM_WORLD.Get_rank() == 0:
+        #     print(t1 - t0)#
 
-       # if MPI.COMM_WORLD.Get_rank() == 0:
-       #     gather =  self.ModelGrid.CreateGather((0,64), (0,64))
-       # else:
-       #     gather =  self.ModelGrid.CreateGather((0,64), (0,64))#
-
-       # u = self.VelocityState.get_field('u')
-       # u[:,:,:] = 10.0
-       # ug = gather.call(u)
-       # t0 = time.time()
-       # arr = gather.call(u)
-       # t1 = time.time() 
-       # if MPI.COMM_WORLD.Get_rank() == 0:
-       #     print(t1 - t0)#
-
-       # if MPI.COMM_WORLD.Get_rank() == 0:
-       #     import pylab as plt
-       #     plt.pcolor(ug[5,:,:].T)
-       #     plt.colorbar()
-       #     plt.title('ug')
-       #     plt.show()
-        #import sys; sys.exit()
-
+        # if MPI.COMM_WORLD.Get_rank() == 0:
+        #     import pylab as plt
+        #     plt.pcolor(ug[5,:,:].T)
+        #     plt.colorbar()
+        #     plt.title('ug')
+        #     plt.show()
+        # import sys; sys.exit()
 
         return
 
@@ -488,10 +491,10 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Announce that this is a restart simulation
         if MPI.COMM_WORLD.Get_rank() == 0:
-            print("This is a restared simulation!")
+            print("This is a restarted simulation!")
             print("Simulation is being restarted from: ", self.Restart.infile)
 
-        # Instantiate required classes, this setsup the classes that will be need by the simulations.
+        # Instantiate required classes, this sets up the classes that will be need by the simulations.
         # Much of the data in many of these classes will be overwritten by the restart.
 
         # Instantiate the model grid
@@ -533,7 +536,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         self.Ref = ReferenceState.factory(self._namelist, self.ModelGrid)
 
-        # Add three dimensional velocity compoonents
+        # Add three-dimensional velocity components
         self.VelocityState.add_variable(
             "u", long_name="u velocity component", units="m/s", latex_name="u"
         )
@@ -597,6 +600,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Ref,
             self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.ScalarTimeStepping,
         )
         self.MomAdv = MomentumAdvection.factory(
@@ -674,7 +678,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.TimeSteppingController,
         )
 
-        # Instatiate plumes if there are any
+        # Instantiate plumes if there are any
         self.Plumes = Plumes.Plumes(
             self._namelist,
             self.Timers,
@@ -710,19 +714,41 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Restart.add_class_to_restart(self.Parts)
 
         # Allocate memory for storage arrays in container classes. This should come after most classes are instantiated becuase the
-        # containter must know how much memory to allocate
+        # container must know how much memory to allocate
+
+        self.ScalarAdv = ScalarAdvectionFactory.factory(
+            self._namelist,
+            self.Timers,
+            self.ModelGrid,
+            self.Ref,
+            self.ScalarState,
+            self.VelocityState,
+            self.DiagnosticState,
+            self.ScalarTimeStepping,
+        )
+
+        self.MomAdv = MomentumAdvection.factory(
+            self._namelist,
+            self.Timers,
+            self.ModelGrid,
+            self.Ref,
+            self.ScalarState,
+            self.VelocityState,
+        )
+
         self.ScalarState.allocate()
         self.VelocityState.allocate()
         self.DiagnosticState.allocate()
 
-        # Allocate and initialze memory in the time-stepping routines
+        # Allocate and initialize memory in the time-stepping routines
         self.ScalarTimeStepping.initialize()
         self.VelocityTimeStepping.initialize()
 
-        # Do case sepcific initalizations the initial profiles are integrated here
-        Initializaiton.initialize(
+        # Do case specific initializations the initial profiles are integrated here
+        Initialization.initialize(
             self._namelist,
             self.ModelGrid,
+            self.TimeSteppingController,
             self.Ref,
             self.ScalarState,
             self.VelocityState,
@@ -731,16 +757,16 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Initialize any work arrays for the microphysics package
         self.Micro.initialize()
 
-        # Now that the initial profiles have been integrated, the pressure solver and be initialzied
+        # Now that the initial profiles have been integrated, the pressure solver and be initialized
         self.PSolver.initialize()
 
-        # If necessary initalize Radiation initial profiles.
+        # If necessary initialize Radiation initial profiles.
         self.Rad.init_profiles()
 
         # Initialize mean profiles for top of domain damping
         self.RayleighDamping.init_means()
 
-        # Intialize statistical output
+        # Initialize statistical output
         self.StatsIO = Stats(
             self._namelist,
             self.Timers,
@@ -759,7 +785,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.IOTower.add_state_container(state)
         self.IOTower.initialize()
 
-        # Initialze statistical diagnostics for turbulence and clouds
+        # Initialize statistical diagnostics for turbulence and clouds
         self.DiagClouds = DiagnosticsClouds.DiagnosticsClouds(
             self.ModelGrid,
             self.Ref,
@@ -787,10 +813,10 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Micro,
             self.VelocityState,
             self.ScalarState,
-            self.DiagnosticState
+            self.DiagnosticState,
         )
 
-        # Initalize memory for outputting Advective and Diffusive Fluxes
+        # Initialize memory for outputting Advective and Diffusive Fluxes
         self.ScalarDiff.initialize_io_arrays()
         self.ScalarAdv.initialize_io_arrays()
 
@@ -807,14 +833,16 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.StatsIO.add_class(self.Rad)
         self.StatsIO.add_class(self.DiagCase)
 
-        # Now iniitalzie the IO field
+        # Now initialize the IO field
         self.StatsIO.initialize()
 
         self.Fields2d = Fields2D.factory(
             self._namelist,
             self.ModelGrid,
             self.Ref,
+            self.ScalarState,
             self.VelocityState,
+            self.DiagnosticState,
             self.TimeSteppingController,
         )
         self.Fields2d.add_class(self.Micro)
@@ -822,8 +850,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Fields2d.add_class(self.Plumes)
         self.Fields2d.add_class(self.Surf)
 
-        # Now initialze for the output of 3D fields
-        # Now initialze for the output of 3D fields
+        # Now initialize for the output of 3D fields
         self.FieldsIO = DumpFields.DumpFieldsFactory(
             self._namelist, self.Timers, self.ModelGrid, self.TimeSteppingController
         )
@@ -864,8 +891,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.PlatSim.initialize()
 
         # These boundary updates are probably not necessary, but just to be safe we will do them.
-        # At this point the model is basically initalized, however we should also do boundary exchanges to insure
-        # the halo regions are set and the to a pressure solver to insure that the velocity field is initially satifies
+        # At this point the model is basically initialized, however we should also do boundary exchanges to ensure
+        # the halo regions are set and consistent with the pressure solver to ensure that the velocity field initially satisfies
         # the anelastic continuity equation
         for prog_state in [self.ScalarState, self.VelocityState]:
             prog_state.boundary_exchange()
@@ -880,7 +907,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Timers.add_timer("BoundaryUpdate")
         self.Timers.add_timer("main")
         self.Timers.initialize()
-
 
         return
 

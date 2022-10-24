@@ -1,6 +1,7 @@
 import numpy as np
 import os
 from mpi4py import MPI
+
 try:
     import h5py
 except:
@@ -78,18 +79,21 @@ class DumpFields_hdf:
         MPI.COMM_WORLD.barrier()
 
         s = self._TimeSteppingController.time
-        days = s // 86400
-        s = s - (days * 86400)
-        hours = s // 3600
-        s = s - (hours * 3600)
-        minutes = s // 60
-        seconds = s - (minutes * 60)
+        days = s // 86400.0
+        s = s - (days * 86400.0)
+        hours = s // 3600.0
+        s = s - (hours * 3600.0)
+        minutes = s // 60.0
+        s = s - (minutes * 60.0)
+        seconds = s
+        s = s - int(seconds)
+        ms = s * 1000.0
 
         fx = h5py.File(
             os.path.join(
                 output_here,
-                "{:02}d-{:02}h-{:02}m-{:02}s".format(
-                    int(days), int(hours), int(minutes), int(seconds)
+                "{:02}d-{:02}h-{:02}m-{:02}s-{:03}ms".format(
+                    int(days), int(hours), int(minutes), int(seconds), int(ms)
                 )
                 + ".h5",
             ),
@@ -97,8 +101,8 @@ class DumpFields_hdf:
             driver="mpio",
             comm=MPI.COMM_WORLD,
         )
-        fx.attrs['dt'] = self._TimeSteppingController.dt
-        
+        fx.attrs["dt"] = self._TimeSteppingController.dt
+
         nhalo = self._Grid.n_halo
         local_start = self._Grid._local_start
         local_end = self._Grid._local_end
@@ -163,7 +167,7 @@ class DumpFields_hdf:
 
                     dset.attrs["units"] = ac.get_units(v)
                     dset.attrs["long_name"] = ac.get_long_name(v)
-                    dset.attrs["standar_name"] = ac.get_standard_name(v)
+                    dset.attrs["standard_name"] = ac.get_standard_name(v)
 
                 MPI.COMM_WORLD.barrier()
 

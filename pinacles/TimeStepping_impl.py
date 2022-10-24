@@ -22,9 +22,9 @@ def rk2ssp_s1(state_0, state_1, tend_1, dt):
         for i in range(shape[1]):
             for j in range(shape[2]):
                 for k in range(shape[3]):
-                    state_1[n, i, j, k] = 0.5 * (
+                    state_1[n, i, j, k] = (
                         state_0[n, i, j, k]
-                        + (state_1[n, i, j, k] + tend_1[n, i, j, k] * dt)
+                        + 0.5 * ( (state_1[n, i, j, k]  - state_0[n,i,j,k]) + tend_1[n, i, j, k] * dt)
                     )
                     tend_1[n, i, j, k] = 0.0
     return
@@ -53,7 +53,7 @@ def comput_local_cfl_max(nhalo, dxi, u, v, w):
 
 @numba.njit(fastmath=True)
 def compute_local_diff_num_max(nhalo, dxi, dt, Km):
-    """Retyrbs number diffusion number following
+    """Returns number diffusion number following
     Heus et al. (2010) for this MPI rank.
 
     Args:

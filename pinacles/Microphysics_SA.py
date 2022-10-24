@@ -7,13 +7,11 @@ from pinacles.Microphysics import (
     water_path,
     water_fraction,
     water_fraction_profile,
-    compute_cloud_base_top
+    compute_cloud_base_top,
 )
 from pinacles import ThermodynamicsMoist_impl
 from pinacles import UtilitiesParallel
 from pinacles import parameters
-
-
 
 
 @numba.njit(fastmath=True)
@@ -34,10 +32,10 @@ def sa(z, rho0, p, s_in, qv_in, ql_in):
     T_2 = ThermodynamicsMoist_impl.T(z, s_in, sigma_1, 0.0)
     delta_T = np.abs(T_2 - T_1)
 
-    qv_star_2 = 0
+    qv_star_2 = ThermodynamicsMoist_impl.compute_qvs(T_2, rho0, p)
     sigma_2 = -1.0
     while delta_T >= 1e-4 or sigma_2 < 0.0:
-        qv_star_2 = ThermodynamicsMoist_impl.compute_qvs(T_2, rho0, p)
+        
         sigma_2 = qt_in - qv_star_2
         s_2 = ThermodynamicsMoist_impl.s(z, T_2, sigma_2, 0.0)
         f_2 = s_in - s_2
@@ -45,12 +43,13 @@ def sa(z, rho0, p, s_in, qv_in, ql_in):
         T_1 = T_2
         T_2 = T_n
         f_1 = f_2
+        qv_star_2 = ThermodynamicsMoist_impl.compute_qvs(T_2, rho0, p)
         delta_T = np.abs(T_2 - T_1)
 
     qc = max(qt_in - qv_star_2, 0.0)
     qv = qt_in - qc
 
-    return T_1, qv, qc
+    return T_2, qv, qc
 
 
 @numba.njit
@@ -87,6 +86,7 @@ class MicroSA(MicrophysicsBase):
             units="kg kg^{-1}",
             latex_name="q_v",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qc",
@@ -94,6 +94,8 @@ class MicroSA(MicrophysicsBase):
             units="kg kg^{-1}",
             latex_name="q_c",
             limit=True,
+            flux_divergence="EMONO",
+            is_prognosed_liquid=True
         )
         self._ScalarState.add_variable(
             "qr",
@@ -101,6 +103,8 @@ class MicroSA(MicrophysicsBase):
             units="kg kg^{-1}",
             latex_name="q_{r}",
             limit=True,
+            flux_divergence="EMONO",
+            is_prognosed_liquid=True
         )
 
         self._Timers.add_timer("MicroSA_update")
@@ -169,37 +173,30 @@ class MicroSA(MicrophysicsBase):
         _v.long_name = "Cloud Fraction"
         _v.standard_name = "CF"
         _v.units = ""
-        
+
         # Now add cloud top and cloud base profiles
         _v = timeseries_grp.createVariable(
             "cloud_base",
             np.double,
-            dimensions=(
-                "time"
-            ),
+            dimensions=("time"),
         )
         _v.long_name = "Cloud Base"
         _v.standard_name = "Cloud Base"
         _v.units = "m"
-        
+
         _v = timeseries_grp.createVariable(
             "cloud_base_mean",
             np.double,
-            dimensions=(
-                "time"
-            ),
+            dimensions=("time"),
         )
         _v.long_name = "Cloud Base Mean"
         _v.standard_name = "Cloud Base Mean"
         _v.units = "m"
-        
 
         _v = timeseries_grp.createVariable(
             "cloud_top",
             np.double,
-            dimensions=(
-                "time"
-            ),
+            dimensions=("time"),
         )
         _v.long_name = "Cloud Top"
         _v.standard_name = "Cloud Top"
@@ -208,9 +205,7 @@ class MicroSA(MicrophysicsBase):
         _v = timeseries_grp.createVariable(
             "cloud_top_mean",
             np.double,
-            dimensions=(
-                "time"
-            ),
+            dimensions=("time"),
         )
         _v.long_name = "Cloud Top Mean"
         _v.standard_name = "Cloud Top Mean"
@@ -238,26 +233,27 @@ class MicroSA(MicrophysicsBase):
         _vwp = UtilitiesParallel.ScalarAllReduce(_vwp)
 
         # Compute cloud fractions
-        _cf = water_fraction(_n_halo, _npts, _qc, threshold=1e-5)
+        _cf = water_fraction(_n_halo, _npts, _qc)
         _cf = UtilitiesParallel.ScalarAllReduce(_cf)
 
         # Compute cloud profile
-        _cf_prof = water_fraction_profile(_n_halo, _npts, _qc, threshold=1e-5)
+        _cf_prof = water_fraction_profile(_n_halo, _npts, _qc)
         _cf_prof = UtilitiesParallel.ScalarAllReduce(_cf_prof)
 
         # Compute cloud base
-        _cloud_base, _cloud_top, _base_mean, _top_mean, count = compute_cloud_base_top(_n_halo, _z, _qc, threshold=1e-5)
-        
-        
-        _cloud_base = UtilitiesParallel.ScalarAllReduce(np.amin(_cloud_base), op = MPI.MIN)
-        _cloud_top = UtilitiesParallel.ScalarAllReduce(np.amax(_cloud_top), op = MPI.MAX)
+        _cloud_base, _cloud_top, _base_mean, _top_mean, count = compute_cloud_base_top(
+            _n_halo, _z, _qc
+        )
 
-        count =  UtilitiesParallel.ScalarAllReduce(count)
+        _cloud_base = UtilitiesParallel.ScalarAllReduce(
+            np.amin(_cloud_base), op=MPI.MIN
+        )
+        _cloud_top = UtilitiesParallel.ScalarAllReduce(np.amax(_cloud_top), op=MPI.MAX)
+
+        count = UtilitiesParallel.ScalarAllReduce(count)
         if count >= 1:
-            _base_mean =  UtilitiesParallel.ScalarAllReduce(_base_mean)/count
-            _top_mean =  UtilitiesParallel.ScalarAllReduce(_top_mean)/count
-
-
+            _base_mean = UtilitiesParallel.ScalarAllReduce(_base_mean) / count
+            _top_mean = UtilitiesParallel.ScalarAllReduce(_top_mean) / count
 
         if _cloud_base > 1e8:
             _cloud_base = -1.0
@@ -269,10 +265,10 @@ class MicroSA(MicrophysicsBase):
             timeseries_grp["CF"][-1] = _cf
             timeseries_grp["LWP"][-1] = _lwp
             timeseries_grp["VWP"][-1] = _vwp
-            timeseries_grp['cloud_base'][-1] = _cloud_base
-            timeseries_grp['cloud_top'][-1] = _cloud_top
-            timeseries_grp['cloud_base_mean'][-1] = _base_mean
-            timeseries_grp['cloud_top_mean'][-1] = _top_mean
+            timeseries_grp["cloud_base"][-1] = _cloud_base
+            timeseries_grp["cloud_top"][-1] = _cloud_top
+            timeseries_grp["cloud_base_mean"][-1] = _base_mean
+            timeseries_grp["cloud_top_mean"][-1] = _top_mean
 
             profiles_grp["CF"][-1, :] = _cf_prof[_n_halo[2] : -_n_halo[2]]
 
@@ -286,14 +282,13 @@ class MicroSA(MicrophysicsBase):
         # Compute and output the LWP
         if fx is not None:
             lwp = fx.create_dataset(
-                        "LWP",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "LWP",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 lwp.dims[i].attach_scale(fx[d])
-
 
         _nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
@@ -305,7 +300,7 @@ class MicroSA(MicrophysicsBase):
         send_buffer.fill(0.0)
         send_buffer[start[0] : end[0], start[1] : end[1]] = lwp_compute
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
-        
+
         if fx is not None:
             lwp[:, :] = recv_buffer
 

@@ -108,6 +108,7 @@ class MicroKessler(MicrophysicsBase):
             units="kg kg^{-1}",
             latex_name="q_v",
             limit=True,
+            flux_divergence="EMONO",
         )
         self._ScalarState.add_variable(
             "qc",
@@ -115,6 +116,8 @@ class MicroKessler(MicrophysicsBase):
             units="kg kg^{-1}",
             latex_name="q_c",
             limit=True,
+            flux_divergence="EMONO",
+            is_prognosed_liquid=True,
         )
         self._ScalarState.add_variable(
             "qr",
@@ -122,8 +125,9 @@ class MicroKessler(MicrophysicsBase):
             units="kg kg^{-1}",
             latex_name="q_{r}",
             limit=True,
+            flux_divergence="EMONO",
+            is_prognosed_liquid=True,
         )
-
         self._DiagnosticState.add_variable(
             "liq_sed", long_name="liquid water sedimentation", units="kg kg^{-1} s^{-1}"
         )
@@ -409,16 +413,16 @@ class MicroKessler(MicrophysicsBase):
         vwp = UtilitiesParallel.ScalarAllReduce(vwp)
 
         # Compute cloud and rain fraction
-        cf = water_fraction(n_halo, npts, qc, threshold=1e-5)
+        cf = water_fraction(n_halo, npts, qc)
         cf = UtilitiesParallel.ScalarAllReduce(cf)
 
-        cf_prof = water_fraction_profile(n_halo, npts, qc, threshold=1e-5)
+        cf_prof = water_fraction_profile(n_halo, npts, qc)
         cf_prof = UtilitiesParallel.ScalarAllReduce(cf_prof)
 
         rf = water_fraction(n_halo, npts, qr)
         rf = UtilitiesParallel.ScalarAllReduce(rf)
 
-        rf_prof = water_fraction_profile(n_halo, npts, qr, threshold=1e-5)
+        rf_prof = water_fraction_profile(n_halo, npts, qr)
         rf_prof = UtilitiesParallel.ScalarAllReduce(rf_prof)
 
         rainnc = np.sum(self._RAINNC) / npts
@@ -542,7 +546,7 @@ class MicroKessler(MicrophysicsBase):
         return
 
     def dump_restart(self, data_dict):
-        # Get the name of this particualr container and create a dictionary for it in the
+        # Get the name of this particular container and create a dictionary for it in the
         # restart data dict.
 
         key = "KESSLER"

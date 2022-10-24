@@ -36,7 +36,7 @@ def water_path_lasso(n_halo, dz, rho, qc):
 
 
 @numba.njit()
-def water_fraction(n_halo, npts, q, threshold=1e-8):
+def water_fraction(n_halo, npts, q, threshold=1e-20):
     frac = 0.0
     shape = q.shape
     for i in range(n_halo[0], shape[0] - n_halo[0]):
@@ -50,7 +50,7 @@ def water_fraction(n_halo, npts, q, threshold=1e-8):
 
 
 @numba.njit()
-def water_fraction_profile(n_halo, npts, q, threshold=1e-8):
+def water_fraction_profile(n_halo, npts, q, threshold=1e-20):
     frac = 0.0
     shape = q.shape
     frac = np.zeros((shape[2],), dtype=np.double)
@@ -64,7 +64,7 @@ def water_fraction_profile(n_halo, npts, q, threshold=1e-8):
 
 
 @numba.njit()
-def compute_cloud_base_top(n_halo, z, q, threshold=1e-8):
+def compute_cloud_base_top(n_halo, z, q, threshold=1e-20):
     base_mean = 0.0
     top_mean = 0.0
     count = 0

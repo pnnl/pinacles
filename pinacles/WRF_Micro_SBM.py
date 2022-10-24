@@ -73,7 +73,7 @@ class MicroSBM(MicrophysicsBase):
             TimeSteppingController,
         )
 
-        self._ScalarState.add_variable("qv")
+        self._ScalarState.add_variable("qv", flux_divergence="EMONO")
         # TODO for now adding these as prognostic variables but probably unnecessary
         self._list_of_ScalarStatevars = ["qc", "qr", "qnc", "qnr", "qna", "qna_nucl"]
 
@@ -96,12 +96,20 @@ class MicroSBM(MicrophysicsBase):
         }
 
         for var in self._list_of_ScalarStatevars:
+
+            if var == "qc" or var == "qr":
+                is_prognosed_liquid = True
+            else:
+                is_prognosed_liquid = False
+
             self._ScalarState.add_variable(
                 var,
                 units="kg kg^-1",
                 latex_name=var,
                 long_name=long_names[var],
                 limit=True,
+                flux_divergence="EMONO",
+                is_prognosed_liquid=is_prognosed_liquid,
             )
 
         # Add new diag fields
@@ -199,6 +207,7 @@ class MicroSBM(MicrophysicsBase):
                 units="kg kg^{-1}",
                 long_name="liquid bin mass " + str(i),
                 limit=True,
+                flux_divergence="EMONO",
             )
         self._qc_end = self._ScalarState.nvars
         # Add aersol bins
@@ -209,6 +218,7 @@ class MicroSBM(MicrophysicsBase):
                 units="kg kg^{-1}",
                 long_name="aerosol bin mass " + str(i),
                 limit=True,
+                flux_divergence="EMONO",
             )
 
         for i in range(1, 34):
@@ -218,6 +228,7 @@ class MicroSBM(MicrophysicsBase):
                 units="kg kg^{-1}",
                 long_name="(regeneration) aerosol bin mass " + str(i),
                 limit=True,
+                flux_divergence="EMONO",
             )
         self._bin_end = self._ScalarState.nvars
 
@@ -942,16 +953,16 @@ class MicroSBM(MicrophysicsBase):
         vwp = UtilitiesParallel.ScalarAllReduce(vwp)
 
         # Compute cloud and rain fraction
-        cf = water_fraction(n_halo, npts, qc, threshold=1e-5)
+        cf = water_fraction(n_halo, npts, qc)
         cf = UtilitiesParallel.ScalarAllReduce(cf)
 
-        cf_prof = water_fraction_profile(n_halo, npts, qc, threshold=1e-5)
+        cf_prof = water_fraction_profile(n_halo, npts, qc)
         cf_prof = UtilitiesParallel.ScalarAllReduce(cf_prof)
 
-        rf = water_fraction(n_halo, npts, qr, threshold=1e-5)
+        rf = water_fraction(n_halo, npts, qr)
         rf = UtilitiesParallel.ScalarAllReduce(rf)
 
-        rf_prof = water_fraction_profile(n_halo, npts, qr, threshold=1e-5)
+        rf_prof = water_fraction_profile(n_halo, npts, qr)
         rf_prof = UtilitiesParallel.ScalarAllReduce(rf_prof)
 
         rainnc = np.sum(self._RAINNC) / npts

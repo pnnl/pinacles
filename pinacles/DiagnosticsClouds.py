@@ -155,6 +155,7 @@ class DiagnosticsClouds:
         u,
         v,
         w,
+        b,
         cloud_count,
         core_count,
         u_cloud,
@@ -171,7 +172,7 @@ class DiagnosticsClouds:
                 for k in range(n_halo[2], shape[2] - n_halo[2]):
 
                     # Cloud stats
-                    if qc[i, j, k] > 1e-5:
+                    if qc[i, j, k] > 1e-20:
                         # Get a cell centered velocity
                         uc = 0.5 * (u[i, j, k] + u[i - 1, j, k])
                         vc = 0.5 * (v[i, j, k] + v[i, j - 1, k])
@@ -183,7 +184,7 @@ class DiagnosticsClouds:
                         w_cloud[k] += wc
 
                         # Cloud core stats
-                        if wc > 0.0:
+                        if b[i,j,k] > 0.0:
                             core_count[k] += 1.0
                             u_core[k] += uc
                             v_core[k] += vc
@@ -194,7 +195,7 @@ class DiagnosticsClouds:
     @staticmethod
     @numba.njit()
     def _comptue_cloud_conditional_scalars(
-        n_halo, qc, w, phi, cloud_count, core_count, phi_cloud, phi_core
+        n_halo, qc, b, phi, cloud_count, core_count, phi_cloud, phi_core
     ):
 
         shape = qc.shape
@@ -202,14 +203,14 @@ class DiagnosticsClouds:
             for j in range(n_halo[1], shape[1] - n_halo[1]):
                 for k in range(n_halo[2], shape[2] - n_halo[2]):
                     # Cloud stats
-                    if qc[i, j, k] > 1e-5:
+                    if qc[i, j, k] > 1e-20:
 
                         cloud_count[k] += 1.0
                         phi_cloud[k] += phi[i, j, k]
 
                         # Cloud core stats
-                        wc = 0.5 * (w[i, j, k] + w[i, j, k - 1])
-                        if wc > 0.0:
+                        #wc = 0.5 * (w[i, j, k] + w[i, j, k - 1])
+                        if b[i,j,k] > 0.0:
                             core_count[k] += 1.0
                             phi_core[k] += phi[i, j, k]
 
@@ -225,6 +226,7 @@ class DiagnosticsClouds:
         v = self._VelocityState.get_field("v")
         w = self._VelocityState.get_field("w")
         qc = self._ScalarState.get_field("qc")
+        buoyancy = self._DiagnosticState.get_field("buoyancy")
 
         cloud_count = np.zeros((qc.shape[2],), dtype=np.double, order="C")
         core_count = np.zeros_like(cloud_count)
@@ -243,6 +245,7 @@ class DiagnosticsClouds:
             u,
             v,
             w,
+            buoyancy,
             cloud_count,
             core_count,
             u_cloud,
@@ -291,6 +294,7 @@ class DiagnosticsClouds:
         # Get qc
         qc = self._ScalarState.get_field("qc")
         w = self._VelocityState.get_field("w")
+        b = self._DiagnosticState.get_field("buoyancy")
 
         cloud_count = np.empty((qc.shape[2],), dtype=np.double, order="C")
         core_count = np.empty_like(cloud_count)
@@ -313,10 +317,10 @@ class DiagnosticsClouds:
                 phi = container.get_field(var)
 
                 self._comptue_cloud_conditional_scalars(
-                    n_halo, qc, w, phi, cloud_count, core_count, phi_cloud, phi_core
+                    n_halo, qc, b, phi, cloud_count, core_count, phi_cloud, phi_core
                 )
 
-                # Todo precompute these they shouldn't change by varaible
+                # Todo precompute these they shouldn't change by variable
                 cloud_count = UtilitiesParallel.ScalarAllReduce(cloud_count)
                 core_count = UtilitiesParallel.ScalarAllReduce(core_count)
 
