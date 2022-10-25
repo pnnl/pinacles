@@ -1219,7 +1219,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 )
 
             # Here we use recursion to update all sub-nests
-            if len(ListOfSims) > self._nest_num + 1:
+            if len(ListOfSims) -1 > self._nest_num:
                 if MPI.COMM_WORLD.Get_rank() == 0:
                     print(
                         "Recursively calling update of Nest " + str(self._nest_num + 1),
@@ -1229,6 +1229,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 ListOfSims[self._nest_num + 1].update(
                     integrate_by_dt=self.TimeSteppingController._dt,
                     ParentNest=ListOfSims[self._nest_num],
+                    ListOfSims = ListOfSims
                 )
                 
             if ParentNest is not None and self.LBCVel.two_way:

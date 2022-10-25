@@ -157,7 +157,7 @@ class LateralBCsNest(LateralBCsBase):
         return
 
     @staticmethod
-    @numba.njit()
+    #@numba.njit()
     def update_parent_field(
         pnh,
         dt,
@@ -171,19 +171,23 @@ class LateralBCsNest(LateralBCsBase):
 
         shape = parent_data.shape
 
+        print(type(parent_data), type(child_data))
+
         for i in range(x_indx_in_parent.shape[0]):
             i_n = x_indx_in_nest[i]
             i_p = x_indx_in_parent[i]
             for j in range(y_indx_in_parent.shape[0]):
                 j_n = y_indx_in_nest[j]
                 j_p = y_indx_in_parent[j]
-                for k_p in range(pnh[2], shape[2] - pnh[2]):
-                    k_n = k_p - pnh[2]
-                    parent_data[i_p, j_p, k_p] -= (
-                        dt
-                        * (1.0 / (40.0 * dt))
-                        * (parent_data[i_p, j_p, k_p] - child_data[i_n, j_n, k_n])
-                    )
+                #for k_p in range(pnh[2], shape[2] - pnh[2]):
+                    #k_n = k_p - pnh[2]
+                    #parent_data[i_p, j_p, k_p] -= (
+                    #    dt
+                    #    * (1.0 / (40.0 * dt))
+                    #    * (parent_data[i_p, j_p, k_p] - child_data[i_n, j_n, k_n])
+                    #)
+                    
+
 
         return
 
@@ -196,7 +200,7 @@ class LateralBCsNest(LateralBCsBase):
         parent_nh = self._Parent.ModelGrid.n_halo
 
         for var_name in self._State._dofs:
-
+            print(var_name)
             if var_name == "u":
                 child_data = self.gather_to_parent_u.call(
                     self._State.get_field(var_name)
@@ -233,6 +237,7 @@ class LateralBCsNest(LateralBCsBase):
 
                 x_indx_in_nest = self.x_indx_in_nest
                 y_indx_in_nest = self.y_indx_in_nest
+
 
             self.update_parent_field(
                 parent_nh,

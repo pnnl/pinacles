@@ -124,20 +124,19 @@ def main(namelist):
     # This is the outerloop over time
     while Sim.TimeSteppingController.time < Sim.TimeSteppingController.time_max:
 
-        # for n, Nest_i in enumerate(ListOfSims):
+        #for n, Nest_i in enumerate(ListOfSims):
         #    print('Nest: ', n)
         #    # Integrate model forward by integrate_by_dt seconds
-        #    if n >= 1:
-        #        parent = ListOfSims[n-1]
-        #    else:
-        #        parent = None
-        #
+         #   if n >= 1:
+         #       parent = ListOfSims[n-1]
+         #   else:
+         #       parent = None
+        
         #    Nest_i.update(ParentNest=parent, integrate_by_dt=integrate_by_dt)
 
         # Adjust the integration to to make sure output is at the correct time
-
+        print(len(ListOfSims))
         ListOfSims[0].update(integrate_by_dt=integrate_by_dt, ListOfSims=ListOfSims)
-
         time = ListOfSims[0].TimeSteppingController.time
         for n, Nest_i in enumerate(ListOfSims):
             for idx, item in enumerate(io_classes[n]):
