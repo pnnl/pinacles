@@ -332,6 +332,11 @@ class MicroSBM(MicrophysicsBase):
 
         # Read in the aerosol file here which previously was read in the fortran code
         # and assumed to be named 'CCN_size_33bin.dat'
+        # Use a multiplicative aerosol_perturbation_factor for sensitivity tests
+        try:
+            aerosol_perturbation_factor = namelist["microphysics"]["aerosol_perturbation_factor"]
+        except:
+            aerosol_perturbation_factor = 1.0
         ccn_size_bin_dat = np.ones((33, 3), dtype=np.double, order="F") * -9999
         try:
             aerosol_file = namelist["microphysics"]["aerosol_file"]
@@ -339,7 +344,9 @@ class MicroSBM(MicrophysicsBase):
 
             if MPI.COMM_WORLD.Get_rank() == 0:
                 ccn_size_bin_dat = np.asfortranarray(np.loadtxt(aerosol_file))
+                ccn_size_bin_dat[:,1:] = ccn_size_bin_dat[:,1:] * aerosol_perturbation_factor
                 print(np.shape(ccn_size_bin_dat))
+                
 
             ccn_size_bin_dat = MPI.COMM_WORLD.bcast(ccn_size_bin_dat)
 
