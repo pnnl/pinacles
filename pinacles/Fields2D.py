@@ -277,6 +277,17 @@ class Fields2D:
             if MPI.COMM_WORLD.rank == 0:
                 dset[:] = self._Grid._global_axes[i][nhalo[i] : -nhalo[i]]
 
+        # If defined write the latitude and longitude
+        if hasattr(self._Grid, "lon_global") and hasattr(self._Grid, "lat_global"):
+            for v, name in zip(
+                [self._Grid.lon_global, self._Grid.lat_global], ["lon", "lat"]
+            ):
+                dset = fx.create_dataset(
+                    name, (self._Grid.n[0], self._Grid.n[1]), dtype="d"
+                )
+                if MPI.COMM_WORLD.rank == 0:
+                    dset[:, :] = v[nhalo[0] : -nhalo[0], nhalo[1]: -nhalo[1]]
+
         dset = fx.create_dataset("time", 1, dtype="d")
         dset.make_scale()
         dset[:] = self._TimeSteppingController.time

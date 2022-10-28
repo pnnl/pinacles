@@ -8,6 +8,27 @@ import datetime
 from pinacles.ingest.IngestBase import IngestBase
 from pinacles.ingest.IngestERA5 import IngestERA5
 
+def rbf_interp(lon_in, lat_in, lon_out, lat_out, var, mask, i):
+    
+    
+    lon_lat = (lon_in[mask], lat_in[mask])
+    lat_lon_array = np.vstack(lon_lat).T
+    
+    rbf = interpolate.RBFInterpolator(
+            lat_lon_array, var[i, :, :].flatten()[mask],smoothing=1.0
+    )
+    
+    
+    return rbf(np.vstack((lon_out.flatten(), lat_out.flatten())).T)
+
+def interp_griddata(lon_in, lat_in, lon_out, lat_out, var, mask, i):
+    
+    lon_lat = (lon_in[mask], lat_in[mask])
+    
+    return interpolate.griddata(
+                lon_lat,var[i, :, :].flatten()[mask], (lon_out, lat_out), method="linear")
+    
+#rbf_interp = interp_griddata
 
 class IngestWRF(IngestERA5):
     def __init__(self, namelist, Grid, TimeSteppingController):
@@ -34,15 +55,12 @@ class IngestWRF(IngestERA5):
         
         )
         
-        
         #Lat and lon bounds for interpolation
-        self.lat_margin = (9000.0 / 1000.0)/110.0 * 5.0
-        self.lon_margin = (9000.0 / 1000.0)/110.0 * 5.0
+        self.lat_margin = (9000.0 / 1000.0)/110.0 * 10.0
+        self.lon_margin = (9000.0 / 1000.0)/110.0 * 10.0
         
-        #
-        print(self.lat_margin, self.lon_margin)
-        
-        
+        #print(self.lat_margin, self.lon_margin)
+        #import sys; sys.exit()
         
         self.sfc_data_file = 'test_out.nc'
         self.atm_data_file = 'test_out.nc'
@@ -167,25 +185,13 @@ class IngestWRF(IngestERA5):
             & (lat_hgt_grid <= np.amax(lat) + self.lon_margin)
         )
         
-        lon_lat = (lon_hgt_grid[mask], lat_hgt_grid[mask])
+
 
         hgt_horizontal = np.empty(
             (hgt.shape[0], lon.shape[0], lon.shape[1]), dtype=np.double
         )
         for i in range(hgt.shape[0]):
-            hgt_horizontal[i, :, :] = interpolate.griddata(
-                lon_lat, hgt[i, :, :].flatten()[mask], (lon, lat), method="linear",
-            )
-            #lat_lon_array = np.vstack(lon_lat).T
-            
-            #rbf = interpolate.RBFInterpolator(
-            #    lat_lon_array, hgt[i, :, :].flatten()[mask], neighbors=16
-            #)
-            
-            #field = rbf(np.vstack((lon.flatten(), lat.flatten())).T)
-        
-            #hgt_horizontal[i, :, :] = field.reshape(
-            #    hgt_horizontal[i, :, :].shape)
+            hgt_horizontal[i, :, :] = interp_griddata(lon_hgt_grid, lat_hgt_grid, lon, lat, hgt, mask, i)
 
         return hgt_horizontal
     
@@ -285,20 +291,13 @@ class IngestWRF(IngestERA5):
             & (lat_T_grid >= np.amin(lat) - self.lat_margin)
             & (lat_T_grid <= np.amax(lat) + self.lat_margin)
         )
-        lon_lat = (lon_T_grid[mask], lat_T_grid[mask])
 
         T_horizontal = np.empty(
             (T.shape[0], lon.shape[0], lon.shape[1]), dtype=np.double
         )
         for i in range(T.shape[0]):
 
-            lat_lon_array = np.vstack(lon_lat).T
-
-            rbf = interpolate.RBFInterpolator(
-                lat_lon_array, T[i, :, :].flatten()[mask], neighbors=16
-            )
-
-            field = rbf(np.vstack((lon.flatten(), lat.flatten())).T)
+            field = rbf_interp(lon_T_grid, lat_T_grid, lon, lat, T, mask, i)
 
             T_horizontal[i, :, :] = field.reshape(
                 T_horizontal[i, :, :].shape)
@@ -396,20 +395,13 @@ class IngestWRF(IngestERA5):
             & (lat_qv_grid >= np.amin(lat) - self.lat_margin)
             & (lat_qv_grid <= np.amax(lat) + self.lat_margin)
         )
-        lon_lat = (lon_qv_grid[mask], lat_qv_grid[mask])
 
         qv_horizontal = np.empty(
             (qv.shape[0], lon.shape[0], lon.shape[1]), dtype=np.double
         )
         for i in range(qv.shape[0]):
 
-            lat_lon_array = np.vstack(lon_lat).T
-
-            rbf = interpolate.RBFInterpolator(
-                lat_lon_array, qv[i, :, :].flatten()[mask], neighbors=16
-            )
-
-            field = rbf(np.vstack((lon.flatten(), lat.flatten())).T)
+            field = rbf_interp(lon_qv_grid, lat_qv_grid, lon, lat, qv, mask, i)
 
             qv_horizontal[i, :, :] = field.reshape(
                 qv_horizontal[i, :, :].shape)
@@ -428,6 +420,7 @@ class IngestWRF(IngestERA5):
                     interp.__call__(height[nh[2] : -nh[2]]), nh[2], mode="edge"
                 )
 
+        # Make sure qv is positive otherwise bad things can happen.
 
         return qvi
     
@@ -477,20 +470,13 @@ class IngestWRF(IngestERA5):
             & (lat_qc_grid >= np.amin(lat) - self.lat_margin)
             & (lat_qc_grid <= np.amax(lat) + self.lat_margin)
         )
-        lon_lat = (lon_qc_grid[mask], lat_qc_grid[mask])
 
         qc_horizontal = np.empty(
             (qc.shape[0], lon.shape[0], lon.shape[1]), dtype=np.double
         )
         for i in range(qc.shape[0]):
 
-            lat_lon_array = np.vstack(lon_lat).T
-
-            rbf = interpolate.RBFInterpolator(
-                lat_lon_array, qc[i, :, :].flatten()[mask], neighbors=16
-            )
-
-            field = rbf(np.vstack((lon.flatten(), lat.flatten())).T)
+            field = rbf_interp(lon_qc_grid, lat_qc_grid, lon, lat, qc, mask, i)
 
             qc_horizontal[i, :, :] = field.reshape(
                 qc_horizontal[i, :, :].shape)
@@ -557,20 +543,13 @@ class IngestWRF(IngestERA5):
             & (lat_qi_grid >= np.amin(lat) - self.lat_margin)
             & (lat_qi_grid <= np.amax(lat) + self.lat_margin)
         )
-        lon_lat = (lon_qi_grid[mask], lat_qi_grid[mask])
 
         qi_horizontal = np.empty(
             (qi.shape[0], lon.shape[0], lon.shape[1]), dtype=np.double
         )
         for i in range(qi.shape[0]):
 
-            lat_lon_array = np.vstack(lon_lat).T
-
-            rbf = interpolate.RBFInterpolator(
-                lat_lon_array, qi[i, :, :].flatten()[mask], neighbors=16
-            )
-
-            field = rbf(np.vstack((lon.flatten(), lat.flatten())).T)
+            field = rbf_interp(lon_qi_grid, lat_qi_grid, lon, lat, qi, mask, i)
 
             qi_horizontal[i, :, :] = field.reshape(
                 qi_horizontal[i, :, :].shape)
@@ -641,19 +620,14 @@ class IngestWRF(IngestERA5):
             & (lat_u_grid >= np.amin(lat) - self.lat_margin)
             & (lat_u_grid <= np.amax(lat) + self.lon_margin)
         )
-        lon_lat = (lon_u_grid[mask], lat_u_grid[mask])
 
         u_horizontal = np.empty(
             (u.shape[0], lon.shape[0], lon.shape[1]), dtype=np.double
         )
         for i in range(u.shape[0]):
 
-            lat_lon_array = np.vstack(lon_lat).T
-            rbf = interpolate.RBFInterpolator(
-                lat_lon_array, u[i, :, :].flatten()[mask], neighbors=16
-            )
 
-            field = rbf(np.vstack((lon.flatten(), lat.flatten())).T)
+            field = rbf_interp(lon_u_grid, lat_u_grid, lon, lat, u, mask, i)
 
             u_horizontal[i, :, :] = field.reshape(
                 u_horizontal[i, :, :].shape
@@ -725,19 +699,14 @@ class IngestWRF(IngestERA5):
             & (lat_v_grid >= np.amin(lat) - self.lat_margin)
             & (lat_v_grid <= np.amax(lat) + self.lat_margin)
         )
-        lon_lat = (lon_v_grid[mask], lat_v_grid[mask])
 
         v_horizontal = np.empty(
             (v.shape[0], lon.shape[0], lon.shape[1]), dtype=np.double
         )
+        
         for i in range(v.shape[0]):
 
-            lat_lon_array = np.vstack(lon_lat).T
-            rbf = interpolate.RBFInterpolator(
-                lat_lon_array, v[i, :, :].flatten()[mask], neighbors=16
-            )
-
-            field = rbf(np.vstack((lon.flatten(), lat.flatten())).T)
+            field = rbf_interp(lon_v_grid, lat_v_grid, lon, lat, v, mask, i)
 
             v_horizontal[i, :, :] = field.reshape(
                 v_horizontal[i, :, :].shape

@@ -494,6 +494,7 @@ class RRTMG:
             # plt.show()
 
             # qv to rrtmg shape; convert to vmr
+            
             to_rrtmg_shape(
                 _nhalo,
                 self._ScalarState.get_field("qv"),
@@ -581,6 +582,13 @@ class RRTMG:
                 np.repeat(self._profile_o3[np.newaxis, :], _ncol, axis=0)
             )
 
+
+
+            # Let make sure variables that need to be positive are positive this corrects the vlaues for the 
+            # purposes of the radiation but doesn't change the prognostic variables. 
+            h2ovmr[h2ovmr < 1e-9] = 1e-9
+            cicewp[cicewp< 0.0] = 0.0
+            cliqwp[cliqwp < 0.0] = 0.0 
 
             self._lib_lw.c_rrtmg_lw(
                 _ncol,

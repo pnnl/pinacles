@@ -420,7 +420,8 @@ class InitializeReanalysis:
         # Remove condensate from qv
         qv[:, :, :] = qv[:, :, :] + qc_interp[:,:,:] + qi_interp[:,:,:]
 
-        # qv[qv < 1e-9] = 1e-9
+
+ 
 
 
 
