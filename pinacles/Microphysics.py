@@ -12,6 +12,19 @@ def water_path(n_halo, dz, npts, rho, q):
                 path += q[i, j, k] * rho[k] * dz
     return path / npts
 
+@numba.njit()
+def pseudo_albedo(n_halo, dz, npts, rho, q, re):
+    path = 0.0
+    shape = q.shape
+    g = 0.86
+    
+    for i in range(n_halo[0], shape[0] - n_halo[0]):
+        for j in range(n_halo[1], shape[1] - n_halo[1]):
+            for k in range(n_halo[2], shape[2] - n_halo[2]):
+                tau = 1.5 * q[i, j, k] * rho[k] * dz / (1e6 * re)
+                path += (1.0-g) * tau  / (2.0 + (1 - g) * tau)
+    return path / npts
+
 
 @numba.njit()
 def water_path_lasso(n_halo, dz, rho, qc):

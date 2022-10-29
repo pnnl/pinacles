@@ -915,7 +915,36 @@ class MicroP3(MicrophysicsBase):
         if fx is not None:
             lwp[:, :] = recv_buffer
 
-        # Compute and output the LWP
+
+        #Compute and output the pseudoalbedo
+        if fx is not None:
+            al  = fx.create_dataset(
+                "pseudo-albedo",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
+
+            for i, d in enumerate(["time", "X", "Y"]):
+                al.dims[i].attach_scale(fx[d])
+
+        nh = self._Grid.n_halo
+        rho0 = self._Ref.rho0
+        qc = self._ScalarState.get_field("qc")[nh[0] : -nh[0], nh[1] : -nh[1], :]
+        re = self._DiagnosticState.get_field("diag_effc_3d")[nh[0] : -nh[0], nh[1] : -nh[1], :]
+        tau = np.zeros_like(qc)
+        mask = re > 0.0
+        tau[mask] =  (1.5 * qc*1000.0 * rho0[np.newaxis, np.newaxis, 0])[mask] * self._Grid.dx[2]/ (1e6 * re[mask])
+        g = 0.86
+        re_compute = np.sum((1.0-g) * tau  / (2.0 + (1.0 - g) * tau),axis=2)
+
+
+        send_buffer.fill(0.0)
+        send_buffer[start[0] : end[0], start[1] : end[1]] = re_compute
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        if fx is not None:
+            al[:, :] = recv_buffer    
+
+        # Compute and output the IPW
         if fx is not None:
             iwp = fx.create_dataset(
                 "IWP",
@@ -929,13 +958,18 @@ class MicroP3(MicrophysicsBase):
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
         qc = self._ScalarState.get_field("qi1")[nh[0] : -nh[0], nh[1] : -nh[1], :]
-        iwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis, 0], axis=2)
+        iwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis, 0]* self._Grid.dx[2], axis=2)
 
         send_buffer.fill(0.0)
         send_buffer[start[0] : end[0], start[1] : end[1]] = iwp_compute
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
         if fx is not None:
             iwp[:, :] = recv_buffer
+
+
+
+
+
 
         return
 
