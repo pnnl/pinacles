@@ -51,7 +51,7 @@ class SurfaceBase:
             self._WHITECAP_COEF = 3.84e-6  # for surface salt aerosol flux,  from eq (5) for whitecap coverage in Clarke etal (2006)
             self._RHO_AEROSOL = 2160.0  # kg/m^3 aerosol density set for NaCl
             
-            self._SFLUX_NACC_COEF = 4.37e7  # coefficient of surface accumulation number flux
+            self._SFLUX_NACC_COEF = 2.29e9  # 4.37e7  # coefficient of surface accumulation number flux
             self._SFLUX_NAIT_COEF = 4.37e7  # coefficient of surface aitken number flux
             
             try:

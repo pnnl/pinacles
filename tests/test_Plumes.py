@@ -156,7 +156,7 @@ def test_update(standard_plume_mocks):
     return
 
 
-def test_boundary_outlfow(standard_plume_mocks):
+def test_boundary_outflow(standard_plume_mocks):
 
     # Loop over all sims
     for sims in standard_plume_mocks:
