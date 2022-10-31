@@ -98,6 +98,9 @@ def main(namelist):
             [Nest_i.StatsIO, Nest_i.FieldsIO, Nest_i.Fields2d,  Nest_i.IOTower, Nest_i.Restart]
         )
 
+        if Nest_i.Rad.time_synced:
+            io_classes.append(Nest_i.Rad)
+
     # Determine all of the output frequencies
     io_frequencies = []
     for nest_i in range(len(ListOfSims)):
@@ -105,7 +108,6 @@ def main(namelist):
             io_frequencies.append(ic.frequency)
     io_frequencies = np.array(io_frequencies)
 
-    print(io_frequencies)
 
     # Iterate through io classes and do first IO
     for nest_i in range(len(ListOfSims)):
@@ -114,7 +116,6 @@ def main(namelist):
             if hasattr(item, "update"):
                 item.update()
             elif hasattr(item, "dump_restart"):
-                # print(nest_i)
                 item.dump_restart(Nest.TimeSteppingController.time)
 
     # Compute how long the first integration step should be
@@ -135,7 +136,6 @@ def main(namelist):
         #    Nest_i.update(ParentNest=parent, integrate_by_dt=integrate_by_dt)
 
         # Adjust the integration to to make sure output is at the correct time
-        print(len(ListOfSims))
         ListOfSims[0].update(integrate_by_dt=integrate_by_dt, ListOfSims=ListOfSims)
         time = ListOfSims[0].TimeSteppingController.time
         for n, Nest_i in enumerate(ListOfSims):
