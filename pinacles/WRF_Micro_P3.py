@@ -934,8 +934,9 @@ class MicroP3(MicrophysicsBase):
         tau = np.zeros_like(qc)
         mask = re > 0.0
         tau[mask] =  (1.5 * qc*1000.0 * rho0[np.newaxis, np.newaxis, 0])[mask] * self._Grid.dx[2]/ (1e6 * re[mask])
+        tau = np.sum(tau,axis=2)
         g = 0.86
-        re_compute = np.sum((1.0-g) * tau  / (2.0 + (1.0 - g) * tau),axis=2)
+        re_compute = (1.0-g) * tau  / (2.0 + (1.0 - g) * tau)
 
 
         send_buffer.fill(0.0)
