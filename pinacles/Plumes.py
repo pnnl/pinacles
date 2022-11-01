@@ -34,9 +34,6 @@ class Plume:
         
         # if "qad" in self._ScalarState._dofs:  #check for fluxes
         #     self._scalar_list = ["qc","qnc","qad","qnad","qad2","qnad2"]
-        # else:
-        #     self._scalar_list = ["qc","qnc"]
-        # UtilitiesParallel.print_root(self._scalar_list)
 
         # Determine if plume is emitted on this rank
         self._plume_on_rank = self._Grid.point_on_rank(
@@ -70,17 +67,6 @@ class Plume:
                 x_local = self._Grid.x_local
                 x_global = self._Grid.x_global
                 npts = self._Grid.n[0] * self._Grid.n[1]
-#                 for micro_name in self._scalar_list:
-#                     item = self._ScalarState.get_field(micro_name)
-#                     item_mean = UtilitiesParallel.ScalarAllReduce(np.sum(np.sum(item[n_halo[0] : -n_halo[0], n_halo[1] : -n_halo[1], :], axis=0),axis=0)/ npts)
-
-#                     if np.amin(x_local) == np.amin(x_global):
-#                         for k in range(item.shape[2]):
-#                             item[: n_halo[0], :, k][plume_value[: n_halo[0], :, k] > 1.0] = item_mean[k]
-
-#                     if np.amax(x_local) == np.amax(x_global):
-#                         for k in range(item.shape[2]):
-#                             item[-n_halo[0] :, :, k][plume_value[-n_halo[0] :, :, k] > 1.0] = item_mean[k]
 
                 if np.amin(x_local) == np.amin(x_global):
                     plume_value[: n_halo[0], :, :] = 0
@@ -478,18 +464,19 @@ class Plumes:
         self._Timers.start_timer("Plumes_update")
         
         # Iterate over the list of plumes and update them
-        for plume_i in self._list_of_plumes:
         
-            if self._boundary_outflow[0]:
-                x_local = self._Grid.x_local
-                x_global = self._Grid.x_global
-                npts = self._Grid.n[0] * self._Grid.n[1]
-                n_halo = self._Grid.n_halo
-                plume_value = self._ScalarState.get_field(plume_i._scalar_name)
+        if self._boundary_outflow[0]:
+            x_local = self._Grid.x_local
+            x_global = self._Grid.x_global
+            npts = self._Grid.n[0] * self._Grid.n[1]
+            n_halo = self._Grid.n_halo
 
-                for micro_name in self._scalar_list:
-                    item = self._ScalarState.get_field(micro_name)
-                    item_mean = UtilitiesParallel.ScalarAllReduce(np.sum(np.sum(item[n_halo[0] : -n_halo[0], n_halo[1] : -n_halo[1], :], axis=0),axis=0)/ npts)
+            for micro_name in self._scalar_list:
+                item = self._ScalarState.get_field(micro_name)
+                item_mean = UtilitiesParallel.ScalarAllReduce(np.sum(np.sum(item[n_halo[0] : n_halo[0] + 5, n_halo[1] : -n_halo[1], :], axis=0),axis=0)/ npts)  #temp
+
+                for plume_i in self._list_of_plumes:
+                    plume_value = self._ScalarState.get_field(plume_i._scalar_name)
 
                     if np.amin(x_local) == np.amin(x_global):
                         for k in range(item.shape[2]):
@@ -498,6 +485,27 @@ class Plumes:
                     if np.amax(x_local) == np.amax(x_global):
                         for k in range(item.shape[2]):
                             item[-n_halo[0] :, :, k][plume_value[-n_halo[0] :, :, k] > 1.0] = item_mean[k]
+                                    
+        if self._boundary_outflow[1]:
+            y_local = self._Grid.y_local
+            y_global = self._Grid.y_global
+            npts = self._Grid.n[0] * self._Grid.n[1]
+            n_halo = self._Grid.n_halo
+
+            for micro_name in self._scalar_list:
+                item = self._ScalarState.get_field(micro_name)
+                item_mean = UtilitiesParallel.ScalarAllReduce(np.sum(np.sum(item[n_halo[0] : -n_halo[0], n_halo[1] : n_halo[1] + 5, :], axis=0),axis=0)/ npts)
+
+                for plume_i in self._list_of_plumes:
+                    plume_value = self._ScalarState.get_field(plume_i._scalar_name)
+
+                    if np.amin(y_local) == np.amin(y_global):
+                        for k in range(item.shape[2]):
+                            item[:, : n_halo[1], k][plume_value[:, : n_halo[1], k] > 1.0] = item_mean[k]
+
+                    if np.amax(y_local) == np.amax(y_global):
+                        for k in range(item.shape[2]):
+                            item[:, -n_halo[1] :, k][plume_value[:, -n_halo[1] :, k] > 1.0] = item_mean[k]
             
             
             plume_i.update()
