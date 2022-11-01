@@ -514,7 +514,7 @@ class Plumes:
                         for k in range(item.shape[2]):
                             item[:, -n_halo[1] :, k][plume_value[:, -n_halo[1] :, k] > self._plume_reset_threshold] = item_mean[k]
             
-            
+        for plume_i in self._list_of_plumes:
             plume_i.update()
 
         self._Timers.end_timer("Plumes_update")
