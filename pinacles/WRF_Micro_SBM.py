@@ -331,7 +331,11 @@ class MicroSBM(MicrophysicsBase):
             ro_solute_in = 1.79
 
         # Read in the aerosol file here which previously was read in the fortran code
+<<<<<<< HEAD
         # and assumed to be named 'CCN_size_33bin.dat'
+=======
+        # and assumed to be named 'CCN_size_33bin.dat'--now a name can be specified
+>>>>>>> 43869f6285b4899c1f033a0488a9963143ff68f9
         # Use a multiplicative aerosol_perturbation_factor for sensitivity tests
         try:
             aerosol_perturbation_factor = namelist["microphysics"]["aerosol_perturbation_factor"]
