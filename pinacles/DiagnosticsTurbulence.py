@@ -28,123 +28,271 @@ class DiagnosticsTurbulence:
 
         # Add velocity moments
         # 2nd moments
-        v = profiles_grp.createVariable("u2", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "u2",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "second central moment of u velocity"
         v.latex_name = "\overline{u^\prime u^\prime}"
         v.units = "m^2 s^{-2}"
 
-        v = profiles_grp.createVariable("v2", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "v2",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "second central moment of v velocity"
         v.latex_name = "\overline{v^\prime v^\prime}"
         v.units = "m^2 s^{-2}"
 
-        v = profiles_grp.createVariable("w2", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "w2",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "second central moment of w velocity"
         v.latex_name = "\overline{w^\prime w^\prime}"
         v.units = "m^2 s^{-2}"
 
         # Cross-correlations
-        v = profiles_grp.createVariable("uv", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "uv",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "cross-correlation of u and v velocity"
         v.latex_name = "\overline{u^\prime v^\prime}"
         v.units = "m^2 s^{-2}"
 
-        v = profiles_grp.createVariable("uw", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "uw",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "cross-correlation of u and w velocity"
         v.latex_name = "\overline{u^\prime w^\prime}"
         v.units = "m^2 s^{-2}"
 
-        v = profiles_grp.createVariable("vw", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "vw",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "cross-correlation of v and w velocity"
         v.latex_name = "\overline{v^\prime w^\prime}"
         v.units = "m^2 s^{-2}"
 
-        v = profiles_grp.createVariable("tke", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "tke",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "resolved turbulence kinetic energy"
         v.latex_name = "e"
         v.units = "m^2 s^{-2}"
 
         # 3rd moments
-        v = profiles_grp.createVariable("u3", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "u3",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "third central moment of u velocity"
         v.latex_name = "\overline{u^\prime u^\prime u^\prime}"
         v.units = "m^3 s^{-3}"
 
-        v = profiles_grp.createVariable("v3", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "v3",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "third central moment of v velocity"
         v.latex_name = "\overline{v^\prime v^\prime v^\prime}"
         v.units = "m^3 s^{-3}"
 
-        v = profiles_grp.createVariable("w3", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "w3",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "third central moment of w velocity"
         v.latex_name = "\overline{w^\prime w^\prime w^\prime}"
         v.units = "m^3 s^{-3}"
 
         # 4th moments
-        v = profiles_grp.createVariable("u4", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "u4",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "fourth central moment of u velocity"
         v.latex_name = "\overline{u^\prime u^\prime u^\prime u^\prime}"
         v.units = "m^4 s^{-4}"
 
-        v = profiles_grp.createVariable("v4", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "v4",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "fourth central moment of v velocity"
         v.latex_name = "\overline{v^\prime v^\prime v^\prime v^\prime}"
         v.units = "m^4 s^{-4}"
 
-        v = profiles_grp.createVariable("w4", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "w4",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "fourth central moment of w velocity"
         v.latex_name = "\overline{w^\prime w^\prime w^\prime w^\prime}"
         v.units = "m^4 s^{-4}"
 
         # Add thermodynamic field moments
         v = profiles_grp.createVariable(
-            "thetali", np.double, dimensions=("time", "z",),
+            "thetali",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
         )
         v.long_name = "liquid-ice potential temperature"
         v.latex_name = "\theta_{li}"
         v.units = "K"
 
-        v = profiles_grp.createVariable("qt", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "qt",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "total water mixing ratio"
         v.latex_name = "q_t"
         v.units = "kg kg^{-1}"
 
         # 2nd moments
-        v = profiles_grp.createVariable("s2", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "s2",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "second central moment of frozen static energy"
         v.latex_name = "\overline{s^\prime s^\prime}"
         v.units = "K^2"
 
-        v = profiles_grp.createVariable("qv2", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "qv2",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "second central moment of water vapor mixing ratio"
         v.latex_name = "\overline{q_v^\prime q_v^\prime}"
         v.units = "kg^2 kg^{-2}"
 
         v = profiles_grp.createVariable(
-            "thetali2", np.double, dimensions=("time", "z",),
+            "thetali2",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
         )
         v.long_name = "second central moment of liquid-ice potential temperature"
         v.latex_name = "\overline{\theta_{li}^\prime \theta_{li}^\prime}"
         v.units = "K^2"
 
-        v = profiles_grp.createVariable("qt2", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "qt2",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "second central moment of total water mixing ratio"
         v.latex_name = "\overline{q_t^\prime q_t^\prime}"
         v.units = "kg^2 kg^{-2}"
 
         # 3rd moments
-        v = profiles_grp.createVariable("s3", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "s3",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "third central moment of frozen static energy"
         v.latex_name = "\overline{s^\prime s^\prime s^\prime}"
         v.units = "K^3"
 
-        v = profiles_grp.createVariable("qv3", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "qv3",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "third central moment of water vapor mixing ratio"
         v.latex_name = "\overline{q_v^\prime q_v^\prime q_v^\prime}"
         v.units = "kg^3 kg^{-3}"
 
         v = profiles_grp.createVariable(
-            "thetali3", np.double, dimensions=("time", "z",),
+            "thetali3",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
         )
         v.long_name = "third central moment of liquid-ice potential temperature"
         v.latex_name = (
@@ -152,42 +300,87 @@ class DiagnosticsTurbulence:
         )
         v.units = "K^3"
 
-        v = profiles_grp.createVariable("qt3", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "qt3",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "third central moment of total water mixing ratio"
         v.latex_name = "\overline{q_t^\prime q_t^\prime q_t^\prime}"
         v.units = "kg^3 kg^{-3}"
 
         # 4th moments
-        v = profiles_grp.createVariable("s4", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "s4",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "fourth central moment of frozen static energy"
         v.latex_name = "\overline{s^\prime s^\prime s^\prime s^\prime}"
         v.units = "K^4"
 
-        v = profiles_grp.createVariable("qv4", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "qv4",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "fourth central moment of water vapor mixing ratio"
         v.latex_name = "\overline{q_v^\prime q_v^\prime q_v^\prime q_v^\prime}"
         v.units = "kg^4 kg^{-4}"
 
         v = profiles_grp.createVariable(
-            "thetali4", np.double, dimensions=("time", "z",),
+            "thetali4",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
         )
         v.long_name = "fourth central moment of liquid-ice potential temperature"
         v.latex_name = "\overline{\theta_{li}^\prime \theta_{li}^\prime \theta_{li}^\prime \theta_{li}^\prime}"
         v.units = "K^4"
 
-        v = profiles_grp.createVariable("qt4", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "qt4",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "fourth central moment of total water mixing ratio"
         v.latex_name = "\overline{q_t^\prime q_t^\prime q_t^\prime q_t^\prime}"
         v.units = "kg^4 kg^{-4}"
 
         #  Add resolved turbulent fluxes
-        v = profiles_grp.createVariable("wqt", np.double, dimensions=("time", "z",),)
+        v = profiles_grp.createVariable(
+            "wqt",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
+        )
         v.long_name = "resolved total water vertical flux"
         v.latex_name = "\overline{w^\prime q_t^\prime}"
         v.units = "m s^{-1} kg kg^{-1}"
 
         v = profiles_grp.createVariable(
-            "wthetali", np.double, dimensions=("time", "z",),
+            "wthetali",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
         )
         v.long_name = "resolved liquid-ice potential temperature vertical flux"
         v.latex_name = "\overline{w^\prime \theta_{li}^\prime}"
@@ -196,7 +389,12 @@ class DiagnosticsTurbulence:
         for var in self._ScalarState.names:
             if not "ff" in var:  # Avoid SBM Bins
                 v = profiles_grp.createVariable(
-                    "w" + var, np.double, dimensions=("time", "z",),
+                    "w" + var,
+                    np.double,
+                    dimensions=(
+                        "time",
+                        "z",
+                    ),
                 )
                 v.long_name = (
                     "resolved " + self._ScalarState._long_names[var] + " vertical flux"
@@ -207,7 +405,12 @@ class DiagnosticsTurbulence:
                 v.units = "m s^-1 " + self._ScalarState._units[var]
 
         v = profiles_grp.createVariable(
-            "qtthetali", np.double, dimensions=("time", "z",),
+            "qtthetali",
+            np.double,
+            dimensions=(
+                "time",
+                "z",
+            ),
         )
         v.long_name = "correlation between total water mixing ratio and liquid-ice potential temperature"
         v.latex_name = "\overline{q_t^\prime \theta_{li} ^\prime}"

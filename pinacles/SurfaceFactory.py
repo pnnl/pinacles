@@ -31,7 +31,7 @@ def factory(
         return CaseBOMEX.SurfaceBOMEX(
             namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
-    elif casename == "dycoms":
+    elif (casename == "dycoms" or casename == "dycoms_rotated"):
         return CaseDYCOMS.SurfaceDYCOMS(
             namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
