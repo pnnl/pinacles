@@ -65,7 +65,7 @@ def standard_plume_mocks(tmpdir):
     namelist["plumes"]["starttimes"] = [0.0, 20.0]
     namelist["plumes"]["plume_flux"] = [1.0, 2.0]
     namelist["plumes"]["qv_flux"] = [1e-05, 1e-5]
-    namelist["plumes"]["ql_flux"] = [0.0, 0.0]
+    namelist["plumes"]["qc_flux"] = [0.0, 0.0]
     namelist["plumes"]["heat_flux"] = [100.0, 100.0]
     namelist["plumes"]["boundary_outflow"] = [[True, True], [False, False]]
 
@@ -98,7 +98,7 @@ def test_plume_attributes(standard_plume_mocks):
         list_of_plumes = sims.Plumes._list_of_plumes
 
         for count, plume in enumerate(list_of_plumes):
-            assert sims._namelist["plumes"]["ql_flux"][count] == plume.plume_ql_flux
+            assert sims._namelist["plumes"]["qc_flux"][count] == plume.plume_qc_flux
             assert sims._namelist["plumes"]["qv_flux"][count] == plume.plume_qv_flux
             assert sims._namelist["plumes"]["heat_flux"][count] == plume.plume_heat_flux
             assert sims._namelist["plumes"]["plume_flux"][count] == plume.plume_flux
