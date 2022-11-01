@@ -74,9 +74,19 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         np.random.seed(namelist["meta"]["random_seed"] + rank)
     except:
         pass
+    
+    # The 'dycoms_rotated' case is a modification of the standard dycoms case (DYCOMS RF02, Ackerman et al, MWR, 2009) 
+    # originally motivated by plume-lofting simulations. It rotates the wind direction of the standard dycoms case 
+    # to better align the mean winds with the x-direction of the computational domain and increase the downstream distance 
+    # over which the plume can develop. The Galilean transformation velocities (u0,v0) are set to zero to keep 
+    # plume release locations fixed. All other properties of the case correspond to standard dycoms values
 
     # Integrate the reference profile.
-    Ref.set_surface(Psfc=1017.8e2, Tsfc=289.76, u0=6.22, v0=-4.8)
+    if namelist["meta"]["casename"] == "dycoms_rotated":
+        Ref.set_surface(Psfc=1017.8e2, Tsfc=289.76, u0=0, v0=0)
+    else:
+        Ref.set_surface(Psfc=1017.8e2, Tsfc=289.76, u0=6.22, v0=-4.8)
+        
     Ref.integrate()
 
     u = VelocityState.get_field("u")
@@ -125,10 +135,14 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
                     t += perts[i, j, k]
 
                 s[i, j, k] = MoistThermo.s(zl[k], t, ql, 0.0)
-
-                u[i, j, k] = 3.0 + z * 4.3e-3
-                v[i, j, k] = -9.0 + z * 5.6e-3
-
+                
+            if namelist["meta"]["casename"] == "dycoms_rotated":
+                u[i, j, :] =  8.4853 - zl[:] * 0.9192e-3
+                v[i, j, :] = -4.2426 + zl[:] * 7.0004e-3
+            else:
+                u[i, j, :] =  3.0 + zl[:] * 4.3e-3
+                v[i, j, :] = -9.0 + zl[:] * 5.6e-3
+            
     u -= Ref.u0
     v -= Ref.v0
 
@@ -156,13 +170,15 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
         self._ustar = 0.25  # m/s
         self._theta_surface = 290.0  # K
         self.T_surface = 289.76
+        
+        self._windspeed_sfc = None
 
         nl = self._Grid.ngrid_local
 
         self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
         self._taux_sfc = np.zeros_like(self._windspeed_sfc)
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
-        # self._bflx_sfc = np.zeros_like(self._windspeed_sfc) + self._buoyancy_flux
+        
         self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
 
         self._Timers.add_timer("SurfaceDycoms_update")
@@ -257,6 +273,9 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
     def update(self):
         
         self._Timers.start_timer("SurfaceDycoms_update")
+        
+        Surface.SurfaceBase.update(self)
+        
         nh = self._Grid.n_halo
         dxi2 = self._Grid.dxi[2]
         z_edge = self._Grid.z_edge_global
@@ -343,10 +362,15 @@ class ForcingDYCOMS(Forcing.ForcingBase):
 
         # Set Geostrophic wind
         self._ug = np.zeros_like(self._Grid.z_global)
-        self._vg = np.zeros_like(self._ug)
-        for k in range(zl.shape[0]):
-            self._ug[k] = 3.0 + (4.3e-3) * zl[k]
-            self._vg[k] = -9.0 + (5.6e-3) * zl[k]
+        self._vg = np.zeros_like(self._ug)        
+        if namelist["meta"]["casename"] == "dycoms_rotated":
+            for k in range(zl.shape[0]):
+                self._ug[k] =  8.4853 - 0.9192e-3 * zl[k]
+                self._vg[k] = -4.2426 + 7.0004e-3 * zl[k]
+        else:
+            for k in range(zl.shape[0]):
+                self._ug[k] =  3.0 + (4.3e-3) * zl[k]
+                self._vg[k] = -9.0 + (5.6e-3) * zl[k]
 
         # Set subsidence
         self._subsidence = np.zeros_like(self._Grid.z_global)

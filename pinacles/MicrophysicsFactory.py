@@ -1,6 +1,7 @@
 from pinacles import Microphysics
 from pinacles import WRF_Micro_Kessler
 from pinacles import WRF_Micro_P3
+from pinacles import SAM_Micro_M2005_MA
 from pinacles import WRF_Micro_SBM
 from pinacles import Microphysics_SA
 
@@ -53,6 +54,17 @@ def factory(
         )
     elif scheme == "p3":
         return WRF_Micro_P3.MicroP3(
+            namelist,
+            Timers,
+            Grid,
+            Ref,
+            ScalarState,
+            VelocityState,
+            DiagnosticState,
+            TimeSteppingController,
+        )
+    elif scheme == "m2005_ma":
+        return SAM_Micro_M2005_MA.Micro_M2005_MA(
             namelist,
             Timers,
             Grid,
