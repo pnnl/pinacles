@@ -56,8 +56,8 @@ class IngestWRF(IngestERA5):
         )
         
         #Lat and lon bounds for interpolation
-        self.lat_margin = (9000.0 / 1000.0)/110.0 * 10.0
-        self.lon_margin = (9000.0 / 1000.0)/110.0 * 10.0
+        self.lat_margin = (9000.0 / 1000.0)/110.0 * 2.0
+        self.lon_margin = (9000.0 / 1000.0)/110.0 * 2.0
         
         #print(self.lat_margin, self.lon_margin)
         #import sys; sys.exit()

@@ -395,8 +395,6 @@ class GridBase:
         self._low_rank = tuple(self._low_rank)
         self._high_rank = tuple(self._high_rank)
 
-        print(self.low_rank, self.high_rank)
-
         return
 
     def _get_local_grid_indicies(self):
@@ -494,6 +492,7 @@ class RegularCartesian(GridBase):
 
 
         # Compute domain half width
+        halfwidth = None
         if 'parent_grid' not in self._namelist:
             halfwidth = (self.l[0] / 2.0, self.l[1] / 2.0)
         else:
@@ -503,6 +502,7 @@ class RegularCartesian(GridBase):
         local_axis = self._local_axes
         local_axis_edge = self._local_axes_edge
 
+        self.halfwidth = halfwidth 
 
         #print(local_axis[0])
         #print(local_axis_edge[0])
@@ -578,6 +578,10 @@ class RegularCartesian(GridBase):
 
 
         return
+
+    def latlon_to_xy(self, lat, lon):
+        x, y = self.MapProj.compute_xy(lat, lon)
+        return x + self.halfwidth[0], y + self.halfwidth[1]
 
     def _compute_globalcoordinates(self):
 

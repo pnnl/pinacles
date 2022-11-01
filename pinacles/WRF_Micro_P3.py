@@ -967,11 +967,6 @@ class MicroP3(MicrophysicsBase):
         if fx is not None:
             iwp[:, :] = recv_buffer
 
-
-
-
-
-
         return
 
     def get_qc(self):

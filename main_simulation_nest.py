@@ -94,12 +94,18 @@ def main(namelist):
     # Put all of the output classes into a list (these are just references)
     io_classes = []
     for Nest_i in ListOfSims:
+        
+        classes = [] 
+        if Nest_i.Rad.time_synced:
+            classes += [Nest_i.Rad]
+        
+        classes += [Nest_i.StatsIO, Nest_i.FieldsIO, Nest_i.Fields2d,  Nest_i.IOTower, Nest_i.Restart]
+        
         io_classes.append(
-            [Nest_i.StatsIO, Nest_i.FieldsIO, Nest_i.Fields2d,  Nest_i.IOTower, Nest_i.Restart]
+           classes
         )
 
-        if Nest_i.Rad.time_synced:
-            io_classes.append(Nest_i.Rad)
+
 
     # Determine all of the output frequencies
     io_frequencies = []

@@ -320,8 +320,6 @@ class InitializeReanalysis:
 
         lon, lat, skin_T = self._Ingest.get_skin_T()
 
-        print(np.mean(lat), np.mean(lon))
-
         lon_lat = (lon.flatten(), lat.flatten())
 
 
@@ -679,10 +677,6 @@ class LateralBCsReanalysis(LateralBCsBase):
 
                         bdy_data["T"][bdy][:, :] = T
 
-                        print(
-                            np.amax(bdy_data[var][bdy][:, :]),
-                            np.amin(bdy_data[var][bdy][:, :]),
-                        )
                     elif var == "qv":
 
                         qc = self._Ingest.interp_qc(
