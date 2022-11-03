@@ -187,11 +187,20 @@ class IngestWRF(IngestERA5):
         
 
 
-        hgt_horizontal = np.empty(
+        hgt_horizontal = np.zeros(
             (hgt.shape[0], lon.shape[0], lon.shape[1]), dtype=np.double
         )
+        
         for i in range(hgt.shape[0]):
-            hgt_horizontal[i, :, :] = interp_griddata(lon_hgt_grid, lat_hgt_grid, lon, lat, hgt, mask, i)
+            field = interp_griddata(lon_hgt_grid, lat_hgt_grid, lon, lat, hgt, mask, i)
+            hgt_horizontal[i, :, :] = field.reshape(
+                hgt_horizontal[i, :, :].shape)
+
+            if np.isnan(hgt_horizontal[i, :, :]).any() == True:
+                import pylab as plt 
+                plt.pcolor(hgt_horizontal[i, :, :])
+                plt.show()
+
 
         return hgt_horizontal
     
