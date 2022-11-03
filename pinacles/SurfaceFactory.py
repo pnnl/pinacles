@@ -6,6 +6,7 @@ from pinacles import CaseRICO
 from pinacles import CaseATEX
 from pinacles import CaseTestbed
 from pinacles import Surface
+from pinacles import CaseReal
 
 
 def factory(
@@ -17,6 +18,7 @@ def factory(
     ScalarState,
     DiagnosticState,
     TimeSteppingController,
+    Ingest,
 ):
     casename = namelist["meta"]["casename"]
     if casename == "sullivan_and_patton":
@@ -53,6 +55,17 @@ def factory(
             ScalarState,
             DiagnosticState,
             TimeSteppingController,
+        )
+    elif casename == "real":
+        return CaseReal.SurfaceReanalysis(
+            namelist,
+            Timers,
+            Grid,
+            Ref,
+            VelocityState,
+            ScalarState,
+            DiagnosticState,
+            Ingest,
         )
     else:
         return Surface.SurfaceBase(

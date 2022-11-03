@@ -8,7 +8,7 @@ from scipy import interpolate
 import netCDF4 as nc
 from cffi import FFI
 import ctypes
-
+import datetime
 
 ffi = FFI()
 
@@ -20,6 +20,7 @@ class RRTMG:
         Timers,
         Grid,
         Ref,
+        Ingest,
         ScalarState,
         DiagnosticState,
         Surf,
@@ -30,6 +31,7 @@ class RRTMG:
         self._Timers = Timers
         self._Grid = Grid
         self._Ref = Ref
+        self._Ingest = Ingest
         self._ScalarState = ScalarState
         self._DiagnosticState = DiagnosticState
         self._Surf = Surf
@@ -64,7 +66,7 @@ class RRTMG:
         try:
             self._radiation_frequency = namelist["radiation"]["update_frequency"]
         except:
-            self._radiation_frequency = 30.0
+            self._radiation_frequency = 600.0
 
         self.frequency = self._radiation_frequency  # This is used for time syncing
 
@@ -120,18 +122,27 @@ class RRTMG:
         nl = self._Grid.ngrid_local
 
         self._radiation_file_path = namelist["radiation"]["input_filepath"]
-        data = nc.Dataset(self._radiation_file_path, "r")
+        # data = nc.Dataset(self._radiation_file_path, "r")
         try:
             rad_data = data.groups["radiation_varanal"]
             UtilitiesParallel.print_root("\t \t radiation profiles from analysis")
             # rad_data = data.groups['radiation_sonde']
             # print('radiation profiles from sonde')
         except:
-            rad_data = data.groups["radiation"]
-        self._latitude = rad_data.variables["latitude"][0]
-        self._longitude = rad_data.variables["longitude"][0]
-        day = rad_data.variables["day_of_year"][0]
-        self._hourz_init = rad_data.variables["hour_utc"][0]
+            rad_data = None  # data.groups["radiation"]
+        # self._latitude = rad_data.variables["latitude"][0]
+        # self._longitude = rad_data.variables["longitude"][0]
+        date = datetime.datetime(
+            namelist["time"]["year"],
+            namelist["time"]["month"],
+            namelist["time"]["day"],
+            namelist["time"]["hour"],
+        )
+
+        day = (
+            date.timetuple().tm_yday
+        )  # namelist['time']['day'] #rad_data.variables["day_of_year"][0]
+        self._hourz_init = namelist["time"]["hour"]  # rad_data.variables["hour_utc"][0]
 
         self._dyofyr_init = np.floor(day) + self._hourz_init / 24.0
         try:
@@ -146,7 +157,7 @@ class RRTMG:
         self._adir = albedo
         self._adif = albedo
 
-        data.close()
+        # data.close()
 
         # CL WRF values based on 2005 values from 2007 IPCC report
         self._vmr_co2 = 379.0e-6
@@ -187,8 +198,17 @@ class RRTMG:
         self._toa_lw_up = 0.0
         self._toa_lw_dn = 0.0
 
-        self._toa_sw_dn_2d = None
-        self._surf_sw_dn_2d = None
+        self._toa_sw_dn_2d = np.zeros(
+            (self._Grid.local_shape[0], self._Grid.local_shape[1]), dtype=np.double
+        )
+        self._surf_sw_dn_2d = np.zeros(
+            (self._Grid.local_shape[0], self._Grid.local_shape[1]), dtype=np.double
+        )
+
+        self._toa_lw_up_2d = np.zeros(
+            (self._Grid.local_shape[0], self._Grid.local_shape[1]), dtype=np.double
+        )
+
 
         self._restart_attributes = [
             "time_elapsed",
@@ -208,30 +228,46 @@ class RRTMG:
         if not self._compute_radiation:
             return
         n_halo = self._Grid.n_halo[2]
+        
+        lon, lat, p = self._Ingest.get_P(shift=0)
+        lon, lat, T = self._Ingest.get_T(shift=0)
+        lon, lat, qv = self._Ingest.get_qv(shift=0)
+        
+        p = np.mean(p,axis=(1,2))
+        T = np.mean(T,axis=(1,2))
+        qv = np.mean(qv,axis=(1,2))
+        
 
-        data = nc.Dataset(self._radiation_file_path, "r")
-        try:
-            rad_data = data.groups["radiation_varanal"]
-            UtilitiesParallel.print_root("\t \t radiation profiles from analysis")
-            # rad_data = data.groups['radiation_sonde']
-            # print('radiation profiles from sonde')
-        except:
-            rad_data = data.groups["radiation"]
-        p_data = rad_data.variables["pressure"][:]
-        t_data = rad_data.variables["temperature"][:]
-        qv_data = rad_data.variables["vapor_mixing_ratio"][:]
-        ql_data = rad_data.variables["liquid_mixing_ratio"][:]
-        qi_data = rad_data.variables["ice_mixing_ratio"][:]
-        data.close()
+
+
+        
+        # data = nc.Dataset(self._radiation_file_path, "r")
+        # try:
+        #    rad_data = data.groups["radiation_varanal"]
+        #    UtilitiesParallel.print_root("\t \t radiation profiles from analysis")
+        #    # rad_data = data.groups['radiation_sonde']
+        #    # print('radiation profiles from sonde')
+        # except:
+        #    rad_data = data.groups["radiation"]
+        p_data = p
+        t_data = T
+        qv_data = qv
+        ql_data = np.zeros_like(qv)#rad_data.variables["liquid_mixing_ratio"][:]
+        qi_data = np.zeros_like(qv)#rad_data.variables["ice_mixing_ratio"][:]
+        # data.close()
 
         # Configure a few buffer points in the pressure profile
         dp_model_top = np.abs(
             self._Ref._P0_edge[-n_halo] - self._Ref._P0_edge[-n_halo - 1]
         )
         p_trial = p_data[p_data < self._Ref._P0[-n_halo]]
+
+        
         dp_trial = np.abs(p_trial[1] - p_trial[2])
         dp_geom = np.geomspace(dp_model_top * 1.5, dp_trial, num=10)
         p_buffer = np.array([self._Ref._P0_edge[-n_halo]])
+
+
 
         i = 0
         while p_buffer[i] + 2 * dp_trial > p_trial[1] and i < 10:
@@ -255,6 +291,8 @@ class RRTMG:
             self._Ref._P0_edge[_nhalo[2] - 1 : -_nhalo[2]],
             0.5 * (p_ext_full + np.append(p_ext_full[1:], 0)),
         )
+
+
         lw_input_file = self._rrtmg_lib_path + "rrtmg_lw.nc"
         lw_gas = nc.Dataset(lw_input_file, "r")
 
@@ -279,8 +317,7 @@ class RRTMG:
 
         # plt.figure(2)
         # plt.plot(lw_pressure,lw_absorber[:,index_o3],'o')
-        # plt.plot(play_col,self._profile_o3, 's')
-        # plt.show()
+
 
         return
 
@@ -320,7 +357,7 @@ class RRTMG:
             if self.hourz > 24.0:
                 self.hourz = np.remainder(self.hourz, 24.0)
             self.coszen = cos_sza(
-                self.dyofyr, self.hourz, self._latitude, self._longitude
+                self.dyofyr, self.hourz, self._Grid.lat_local, self._Grid.lon_local
             )
 
             # RRTMG flags. Hardwiring for now
@@ -345,15 +382,17 @@ class RRTMG:
             _nlay = (
                 _ngrid_local[2]
                 - 2 * _nhalo[2]
-                + np.shape(self.p_extension)[0]
-                + np.shape(self.p_buffer)[0]
+                   + np.shape(self.p_extension)[0]
+                   + np.shape(self.p_buffer)[0]
             )
             # inputs to RRTMG
             play = np.zeros((_ncol, _nlay), dtype=np.double, order="F")  # hPA !!!
             plev = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")  # hPA !!!
             tlay = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             tlev = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")
-            tsfc = np.ones((_ncol), dtype=np.double, order="F") * self._Surf.T_surface
+            tsfc = np.ravel(
+                self._Surf.T_surface[_nhalo[0]:-_nhalo[0], _nhalo[1]:-_nhalo[1]]
+            )  # np.ones((_ncol), dtype=np.double, order="F") * self._Surf.T_surface
             h2ovmr = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             o3vmr = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             co2vmr = np.ones((_ncol, _nlay), dtype=np.double, order="F") * self._vmr_co2
@@ -378,7 +417,9 @@ class RRTMG:
             cliqwp = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             reice = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             reliq = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
-            coszen = np.ones((_ncol), dtype=np.double, order="F") * self.coszen
+            coszen = np.ravel(
+                self.coszen[_nhalo[0] : -_nhalo[0], _nhalo[1] : -_nhalo[1]]
+            )
             asdir = np.ones((_ncol), dtype=np.double, order="F") * self._adir
             asdif = np.ones((_ncol), dtype=np.double, order="F") * self._adif
             aldir = np.ones((_ncol), dtype=np.double, order="F") * self._adir
@@ -435,7 +476,7 @@ class RRTMG:
 
             # Interpolate temperature to the levels
             # Extrapolate to surface temp between the lowest pressure layer and surface
-            t_temp = np.insert(tlay, 0, self._Surf.T_surface, axis=1)
+            t_temp = np.insert(tlay, 0, tsfc, axis=1)
             p_temp = np.insert(play, 0, self._Ref._Psfc, axis=1)
             # extrapolate as isothermal between top pressure layer and TOA
             t_temp = np.append(t_temp, np.expand_dims(t_temp[:, -1], axis=1), axis=1)
@@ -453,6 +494,7 @@ class RRTMG:
             # plt.show()
 
             # qv to rrtmg shape; convert to vmr
+            
             to_rrtmg_shape(
                 _nhalo,
                 self._ScalarState.get_field("qv"),
@@ -539,6 +581,14 @@ class RRTMG:
             o3vmr = np.asfortranarray(
                 np.repeat(self._profile_o3[np.newaxis, :], _ncol, axis=0)
             )
+
+
+
+            # Let make sure variables that need to be positive are positive this corrects the vlaues for the 
+            # purposes of the radiation but doesn't change the prognostic variables. 
+            h2ovmr[h2ovmr < 1e-9] = 1e-9
+            cicewp[cicewp< 0.0] = 0.0
+            cliqwp[cliqwp < 0.0] = 0.0 
 
             self._lib_lw.c_rrtmg_lw(
                 _ncol,
@@ -641,13 +691,11 @@ class RRTMG:
             self._toa_lw_dn = np.sum(dflx_lw[:, -1]) / npts
             self._toa_lw_up = np.sum(uflx_lw[:, -1]) / npts
 
-            self._toa_sw_dn_2d = dflx_sw[:, -1]
-            self._surf_sw_dn_2d = dflx_sw[:, 0]
+            self._toa_sw_dn_2d[:,:]= dflx_sw[:, -1].reshape(self._toa_sw_dn_2d.shape, order='C')
+            self._surf_sw_dn_2d[:,:] = dflx_sw[:, 0].reshape(self._toa_sw_dn_2d.shape, order='C')
+            self._toa_lw_up_2d[:,:] = uflx_lw[:, -1].reshape(self._toa_sw_dn_2d.shape, order='C')
 
-            # ds_uflux_lw = self._DiagnosticState.get_field('uflux_lw')
-            # ds_dflux_lw = self._DiagnosticState.get_field('dflux_lw')
-            # ds_uflux_sw = self._DiagnosticState.get_field('uflux_sw')
-            # ds_dflux_sw = self._DiagnosticState.get_field('dflux_sw')
+
             ds_hr_lw = self._DiagnosticState.get_field("heating_rate_lw")
             ds_hr_sw = self._DiagnosticState.get_field("heating_rate_sw")
 
@@ -655,16 +703,6 @@ class RRTMG:
 
             to_our_shape(_nhalo, hr_lw, ds_hr_lw)
             to_our_shape(_nhalo, hr_sw, ds_hr_sw)
-            # to_our_shape(_nhalo, uflx_lw, ds_uflux_lw)
-            # to_our_shape(_nhalo, dflx_lw, ds_dflux_lw)
-            # to_our_shape(_nhalo, uflx_sw, ds_uflux_sw)
-            # to_our_shape(_nhalo, dflx_sw, ds_dflux_sw)
-
-            # _ngrid_local = self._Grid._ngrid_local
-            # for i in range(_ngrid_local[0]):
-            #     for j in range(_ngrid_local[1]):
-            #         for k in range(_ngrid_local[2]):
-            #             ds_dTdt_rad[i,j,k] =  (ds_hr_lw[i,j,k] + ds_hr_sw[i,j,k])  /86400.0
 
             ds_dTdt_rad[:, :, :] = (ds_hr_lw + ds_hr_sw) / 86400.0
             ds_hr_lw[:, :, :] *= (
@@ -808,6 +846,29 @@ class RRTMG:
         return
 
     def io_fields2d_update(self, fx):
+        
+        start = self._Grid.local_start
+        end = self._Grid._local_end
+        send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
+        recv_buffer = np.empty_like(send_buffer)
+
+        if fx is not None:
+            toa = fx.create_dataset(
+                "LW_UP_TOA",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
+
+            for i, d in enumerate(["time", "X", "Y"]):
+                toa.dims[i].attach_scale(fx[d])
+
+        send_buffer[start[0] : end[0], start[1] : end[1]] = self._toa_lw_up_2d
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        
+        if fx is not None:
+            toa[:, :] = recv_buffer
+        
+        
         return
 
     @property
@@ -867,6 +928,35 @@ def to_rrtmg_shape(
             count += 1
 
     return
+
+
+# Does this work for plev?
+# @numba.njit
+# def to_rrtmg_shape(nhalo, our_array, rrtmg_array):
+#     shape = our_array.shape
+#     count = 0
+
+#     # n_buffer = p_buffer.shape[0]
+#     # n_ext = extension_array.shape[0]
+#     # mt_index = shape[2] - nhalo[2] - 1
+
+#     for i in range(nhalo[0], shape[0] - nhalo[0]):
+#         for j in range(nhalo[1], shape[1] - nhalo[1]):
+#             # slope = (extension_array[0] - our_array[i, j, mt_index]) / (p_ext - p_mt)
+#             for k in range(nhalo[2], shape[2] - nhalo[2]):
+#                 k_rrtmg = k - nhalo[2]  # shape[2] - 1 - k
+#                 rrtmg_array[count, k_rrtmg] = our_array[i, j, k]
+#             # for k in range(n_buffer):
+#             #    k_rrtmg = shape[2] - 2 * nhalo[2] + k
+#             #    rrtmg_array[count, k_rrtmg] = (
+#             #        slope * (p_buffer[k] - p_mt) + our_array[i, j, mt_index]
+#             #    )
+#             # for k in range(n_ext):
+#             #    k_rrtmg = shape[2] - 2 * nhalo[2] + n_buffer + k
+#             #    rrtmg_array[count, k_rrtmg] = extension_array[k]
+#             count += 1
+
+#     return
 
 
 # does this work for plev?

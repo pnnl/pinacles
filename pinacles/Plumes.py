@@ -6,13 +6,22 @@ import numpy as np
 
 class Plume:
     def __init__(
-        self, location, start_time, n, Grid, Ref, ScalarState, TimeSteppingController
+        self,
+        location,
+        start_time,
+        n,
+        Grid,
+        Ref,
+        ScalarState,
+        VelocityState,
+        TimeSteppingController,
     ):
 
         self._Grid = Grid
         self._Ref = Ref
         self._TimeSteppingController = TimeSteppingController
         self._ScalarState = ScalarState
+        self._VelocityState = VelocityState
 
         # These are the plume properties
         self._location = location
@@ -164,18 +173,16 @@ class Plume:
         send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
         recv_buffer = np.empty_like(send_buffer)
 
-
         # Compute and output the LWP
         if fx is not None:
             var_nc = fx.create_dataset(
-                        self._scalar_name + "_" + str(z),
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                self._scalar_name + "_" + str(z),
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 var_nc.dims[i].attach_scale(fx[d])
-                
 
         s = self._ScalarState.get_field(self._scalar_name)
 
@@ -186,7 +193,7 @@ class Plume:
 
         if fx is not None:
             var_nc[:, :] = recv_buffer
-            
+
         return
 
     @property
@@ -288,13 +295,27 @@ class Plume:
 
 class Plumes:
     def __init__(
-        self, namelist, Timers, Grid, Ref, ScalarState, TimeSteppingController
+        self,
+        namelist,
+        Timers,
+        Grid,
+        Ref,
+        ScalarState,
+        VelocityState,
+        TimeSteppingController,
+        nest_level,
     ):
+
+        self._n = 0
+
+        # if namelist['plumes']['nest_level'] != nest_level:
+        #    return
         self._Timers = Timers
         self._Grid = Grid
         self._Ref = Ref
         self._TimeSteppingController = TimeSteppingController
         self._ScalarState = ScalarState
+        self._VelocityState = VelocityState
         self._locations = None
         self._startimes = None
 
@@ -412,6 +433,7 @@ class Plumes:
                     self._Grid,
                     self._Ref,
                     self._ScalarState,
+                    self._VelocityState,
                     self._TimeSteppingController,
                 )
             )

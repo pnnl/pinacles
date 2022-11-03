@@ -4,6 +4,7 @@ from pinacles import CaseDYCOMS
 from pinacles import CaseRICO
 from pinacles import CaseATEX
 from pinacles import CaseTestbed
+from pinacles import CaseReal
 from pinacles import Forcing
 
 
@@ -58,6 +59,11 @@ def factory(
             DiagnosticState,
             TimeSteppingController,
         )
+    elif casename == "real":
+        return CaseReal.ForcingReanalysis(
+            namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+        )
+
     else:
         return Forcing.ForcingBase(
             namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState

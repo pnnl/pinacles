@@ -5,7 +5,9 @@ from mpi4py import MPI
 
 
 class ModelState:
-    def __init__(self, Grid, container_name, prognostic=False, identical_bcs=False):
+    def __init__(
+        self, namelist, Grid, container_name, prognostic=False, identical_bcs=False
+    ):
 
         self._Grid = Grid  # The grid to use for this ModelState container
 
@@ -30,6 +32,10 @@ class ModelState:
         self._identical_bcs = identical_bcs
 
         self.name = container_name
+        assert "lbc" in namelist
+        assert "type" in namelist["lbc"]
+        self._lbc_type = namelist["lbc"]["type"]
+        assert self._lbc_type in ["open", "periodic"]
 
         self._restart_attributes = [
             "_prognostic",
@@ -65,6 +71,13 @@ class ModelState:
     def is_prognosed_ice(self, name):
         return self._is_prognosed_ice[name]
 
+<<<<<<< HEAD
+=======
+    @property
+    def lbc_type(self):
+        return self._lbc_type
+
+>>>>>>> f5fc59432c51a8e42e904ff73084e6c98f8f8f5f
     @property
     def dofs(self):
         return self._dofs
@@ -131,12 +144,16 @@ class ModelState:
         # Todo add error handling here, for example check to see if memory is already allocated.
 
         # Allocate tendency array
-        self._state_array = ParallelArrays.GhostArray(self._Grid, ndof=self._nvars)
+        self._state_array = ParallelArrays.GhostArray(
+            self._Grid, self.lbc_type, ndof=self._nvars
+        )
         self._state_array.zero()
 
         # Only allocate tendency array if this is a container for prognostic variables
         if self._prognostic:
-            self._tend_array = ParallelArrays.GhostArray(self._Grid, ndof=self._nvars)
+            self._tend_array = ParallelArrays.GhostArray(
+                self._Grid, self.lbc_type, ndof=self._nvars
+            )
             self._tend_array.zero()
         return
 
@@ -237,15 +254,21 @@ class ModelState:
         dof = self._dofs[name]
         return self._tend_array.array[dof, :, :, :]
 
-    def remove_mean(self, name):
+    def remove_mean(self, name, tend=False):
         # This removes the mean from a field
         dof = self._dofs[name]
-        self._state_array.remove_mean(dof)
+        if not tend:
+            self._state_array.remove_mean(dof)
+        else:
+            self._tend_array.remove_mean(dof)
         return
 
-    def mean(self, name, pow=1.0):
+    def mean(self, name, pow=1.0, tend=False):
         dof = self._dofs[name]
-        return self._state_array.mean(dof, pow=pow)
+        if not tend:
+            return self._state_array.mean(dof, pow=pow)
+        else:
+            return self._tend_array.mean(dof, pow=pow)
 
     def max_prof(self, name):
         dof = self._dofs[name]
@@ -281,6 +304,61 @@ class ModelState:
 
         return recv_buf
 
+<<<<<<< HEAD
+=======
+    def get_slab_x(self, name, indx_range):
+
+        ls = self._Grid.local_start
+        le = self._Grid.local_end
+        nl = self._Grid.nl
+        nh = self._Grid.n_halo
+        n = self._Grid.n
+
+        local_data = self.get_field(name)
+        local_copy_of_global = np.zeros(
+            (indx_range[1] - indx_range[0], n[1], n[2]), dtype=np.double
+        )
+
+        si = 0
+        for i in range(indx_range[0], indx_range[1]):
+            if i >= ls[0] and i < le[0]:
+                local_copy_of_global[si, ls[1] : le[1], :] = local_data[
+                    i - ls[0], nh[1] : -nh[1], nh[2] : -nh[2]
+                ]
+            si += 1
+
+        recv_buf = np.empty_like(local_copy_of_global)
+        MPI.COMM_WORLD.Allreduce(local_copy_of_global, recv_buf, op=MPI.SUM)
+
+        return recv_buf
+
+    def get_slab_y(self, name, indx_range):
+
+        ls = self._Grid.local_start
+        le = self._Grid.local_end
+        nl = self._Grid.nl
+        nh = self._Grid.n_halo
+        n = self._Grid.n
+
+        local_data = self.get_field(name)
+        local_copy_of_global = np.zeros(
+            (n[0], indx_range[1] - indx_range[0], n[2]), dtype=np.double
+        )
+
+        si = 0
+        for i in range(indx_range[0], indx_range[1]):
+            if i >= ls[1] and i < le[1]:
+                local_copy_of_global[ls[0] : le[0], si, :] = local_data[
+                    nh[0] : -nh[0], i - ls[1], nh[2] : -nh[2]
+                ]
+            si += 1
+
+        recv_buf = np.empty_like(local_copy_of_global)
+        MPI.COMM_WORLD.Allreduce(local_copy_of_global, recv_buf, op=MPI.SUM)
+
+        return recv_buf
+
+>>>>>>> f5fc59432c51a8e42e904ff73084e6c98f8f8f5f
     def get_field_slice_h(self, name, indx, y=False):
         ls = self._Grid.local_start
         nl = self._Grid.nl
@@ -321,6 +399,11 @@ class ModelState:
 
         return recv_buf
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> f5fc59432c51a8e42e904ff73084e6c98f8f8f5f
     def get_loc(self, var):
         return self._loc[var]
 
@@ -566,7 +649,6 @@ class ModelState:
                     our_dof, nh[0] : -nh[0], nh[1] : -nh[1], nh[2] : -nh[2]
                 ] = in_var
 
-            # import sys; sys.exit()
 
         return
 

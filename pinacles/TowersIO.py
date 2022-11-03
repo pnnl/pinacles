@@ -1,11 +1,13 @@
 import numpy as np
 import netCDF4 as nc
 from mpi4py import MPI
+from pinacles import UtilitiesParallel
 import os
+import copy 
 
 
 class Tower:
-    def __init__(self, namelist, Grid, TimeSteppingController, loc=(10.0, 10.0)):
+    def __init__(self, namelist, Grid, TimeSteppingController, loc=(10.0, 10.0), location_in_latlon=False):
 
         self._Grid = Grid
         self._TimeSteppingController = TimeSteppingController
@@ -16,9 +18,16 @@ class Tower:
         ybnds = self._Grid.y_range_local
         dx = self._Grid.dx
 
+
+        if location_in_latlon:
+            self.latlon_loc = copy.deepcopy(loc)
+        x, y = self._Grid.latlon_to_xy(loc[0], loc[1])        
+        loc = (x, y)
+
+
         # Get the tower indicies
-        self._i_indx = int((loc[0] - xbnds[0]) // dx[0]) + self._Grid.n_halo[0]
-        self._j_indx = int((loc[1] - ybnds[0]) // dx[1]) + self._Grid.n_halo[1]
+        self._i_indx = int((loc[0] - xbnds[0]) // dx[0]) + self._Grid.n_halo[0] - 1
+        self._j_indx = int((loc[1] - ybnds[0]) // dx[1]) + self._Grid.n_halo[1] - 1 
 
         try:
             self._frequency = namelist["towers"]["frequency"]
@@ -40,9 +49,15 @@ class Tower:
         self._out_file = os.path.join(
             namelist["meta"]["output_directory"], namelist["meta"]["simname"]
         )
-        self._out_file = os.path.join(
-            self._out_file, "tower_" + str(loc[0]) + "_" + str(loc[1]) + ".nc"
-        )
+        if not location_in_latlon:
+            self._out_file = os.path.join(
+                self._out_file, "tower_" + str(loc[0]) + "_" + str(loc[1]) + ".nc"
+            )
+        else:
+            self._out_file = os.path.join(
+                self._out_file, "tower_" + str(self.latlon_loc[0]) + "_" + str(self.latlon_loc[1]) + ".nc"
+            )
+            
 
         return
 
@@ -86,9 +101,6 @@ class Tower:
         return
 
     def update(self):
-
-        if not np.allclose(self._TimeSteppingController._time % self._frequency, 0.0):
-            return
 
         if not self._tower_on_this_rank:
             return
@@ -156,9 +168,15 @@ class Towers:
 
         tower_locations = namelist["towers"]["location"]
 
+        self.location_in_latlon = False
+        if 'location_in_latlon' in namelist["towers"]:
+            self.location_in_latlon = namelist["towers"]['location_in_latlon']
+            UtilitiesParallel.print_root('\t \t Tower locations taken to be in lat-lon.')
+        assert(type(self.location_in_latlon is type(bool)))
+                                                
         for loc in tower_locations:
             self._list_of_towers.append(
-                Tower(namelist, Grid, TimeSteppingController, loc=tuple(loc))
+                Tower(namelist, Grid, TimeSteppingController, loc=tuple(loc), location_in_latlon = self.location_in_latlon)
             )
 
         return

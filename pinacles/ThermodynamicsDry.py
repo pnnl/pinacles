@@ -81,6 +81,7 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
 
         if apply_buoyancy:
             ThermodynamicsDry_impl.apply_buoyancy(buoyancy, w_t)
+            # self._VelocityState.remove_mean("w", tend=True)
 
         self._DiagnosticState.remove_mean("buoyancy")
 
@@ -102,14 +103,13 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         # Output Temperature
         if fx is not None:
             t = fx.create_dataset(
-                        "T",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "T",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 t.dims[i].attach_scale(fx[d])
-                
 
         T = self._DiagnosticState.get_field("T")
         send_buffer[start[0] : end[0], start[1] : end[1]] = T[

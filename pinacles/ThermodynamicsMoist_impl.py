@@ -22,7 +22,7 @@ def compute_qvs(temp, rho0, pressure):
     svp1 = 0.6112
     svp2 = 17.67
     svp3 = 29.65
-    svpt0 = 273.15
+    svpt0 = 273.1
     _es = 1000.0 * svp1 * np.exp(svp2 * (temp - svpt0) / (temp - svp3))
     rhov = _es / (parameters.RV * temp)
 

@@ -1,6 +1,15 @@
 import numpy as np
+<<<<<<< HEAD
 from scipy import interpolate
 from pinacles import CaseStableBubble
+=======
+import pinacles.ThermodynamicsDry_impl as DryThermo
+import pinacles.ThermodynamicsMoist_impl as MoistThermo
+from pinacles.CaseReal import InitializeReanalysis
+import netCDF4 as nc
+from scipy import interpolate
+from pinacles import UtilitiesParallel
+>>>>>>> f5fc59432c51a8e42e904ff73084e6c98f8f8f5f
 from mpi4py import MPI
 from pinacles import UtilitiesParallel
 import pinacles.CaseSullivanAndPatton as CaseSullivanAndPatton
@@ -20,7 +29,18 @@ CASENAMES = [
     "rico",
     "atex",
     "testbed",
+    "real",
 ]
+
+
+def real(namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest):
+
+    init_class = InitializeReanalysis(
+        namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest
+    )
+    init_class.initialize()
+
+    return
 
 
 def factory(namelist):
@@ -40,12 +60,15 @@ def factory(namelist):
         return CaseATEX.initialize
     elif namelist["meta"]["casename"] == "testbed":
         return CaseTestbed.initialize
+    elif namelist["meta"]["casename"] == "real":
+        return real
     else:
         UtilitiesParallel.print_root(
             "Caanot find initialization for: ", namelist["meta"]["casename"]
         )
 
 
+<<<<<<< HEAD
 def initialize(namelist, ModelGrid, TimeStepManager, Ref, ScalarState, VelocityState):
     init_function = factory(namelist)
     
@@ -136,5 +159,16 @@ def initialize(namelist, ModelGrid, TimeStepManager, Ref, ScalarState, VelocityS
      
     if MPI.COMM_WORLD.Get_rank() == 0:
         df.close() 
+=======
+def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest=None):
+    init_function = factory(namelist)
+
+    try:
+        UtilitiesParallel.print_root('\t Initializing without ingest option')
+        init_function(namelist, ModelGrid, Ref, ScalarState, VelocityState)
+    except:
+        UtilitiesParallel.print_root('\t Initializing with ingest option')
+        init_function(namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest)
+>>>>>>> f5fc59432c51a8e42e904ff73084e6c98f8f8f5f
     
     return

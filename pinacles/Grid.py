@@ -1,16 +1,23 @@
 from mpi4py import MPI
 import mpi4py_fft
 import numpy as np
+from numba import stencil
 from mpi4py_fft.pencil import Subcomm
+from pinacles import ProjectionLCC
 import numba
 
 
 class GridBase:
-    def __init__(self, namelist):
+    def __init__(self, namelist, llx, lly, llz):
+
+        self._namelist = namelist
 
         # List of class attributes that will be restarted
         self._restart_attributes = []
 
+        self._ll_corner = (llx, lly, llz)
+
+        # print(self._ll_corner)
         # The total number of points in the domain NOT including halo/ghost points
         self._n = np.array(namelist["grid"]["n"], dtype=np.int)
         self._restart_attributes.append("_n")
@@ -66,6 +73,28 @@ class GridBase:
         # Get local grid information
         self._get_local_grid_indicies()
 
+        self._compute_index_bounds()
+
+
+        return
+
+    def _compute_index_bounds(self):
+
+        """compute the local indicies of the non-halo grid points. For the case of vairables defined on
+        the grid edges, the indicies include the variabiles on the domain boundary.
+        """
+
+        # Low-index for edge arrays
+        self._ibl_edge = tuple(np.array(self.n_halo) - 1)
+
+        # High-index for edge array
+        self._ibu_edge = tuple(np.array(self._ibl_edge) + np.array(self.local_shape))
+
+        # Low-index for cell-center arrays
+        self._ibl = tuple(self.n_halo)
+
+        # High index for cell-center arrays
+        self._ibu = tuple(np.array(self._ibl) + np.array(self.local_shape) - 1)
         return
 
     def restart(self, data_dict, **kwargs):
@@ -75,6 +104,38 @@ class GridBase:
     def dump_restart(self, data_dict):
 
         return
+
+    @property
+    def subcomm_rank(self):
+        return self._subcomm_rank
+
+    @property
+    def subcomm_size(self):
+        return self._subcomm_size
+
+    @property
+    def low_rank(self):
+        return self._low_rank
+
+    @property
+    def high_rank(self):
+        return self._high_rank
+
+    @property
+    def ibl(self):
+        return self._ibl
+
+    @property
+    def ibu(self):
+        return self._ibu
+
+    @property
+    def ibl_edge(self):
+        return self._ibl_edge
+
+    @property
+    def ibu_edge(self):
+        return self._ibu_edge
 
     @property
     def n(self):
@@ -223,6 +284,26 @@ class GridBase:
         return np.copy(self._global_axes[1][start:end])
 
     @property
+    def x_edge_local(self):
+        """Copy here is forced to keep _global_axes externally immutable,
+        if performace becomes an issue we can provide a property that return a
+        view so that copy occurs.
+        """
+        start = self._local_start[0]
+        end = self._local_end[0] + 2 * self._n_halo[0]
+        return np.copy(self._global_axes_edge[0][start:end])
+
+    @property
+    def y_edge_local(self):
+        """Copy here is forced to keep _global_axes externally immutable,
+        if performace becomes an issue we can provide a property that return a
+        view so that copy occurs.
+        """
+        start = self._local_start[1]
+        end = self._local_end[1] + 2 * self._n_halo[1]
+        return np.copy(self._global_axes_edge[1][start:end])
+
+    @property
     def z_local(self):
         """Copy here is forced to keep _global_axes externally immutable,
         if performance becomes an issue we can provide a property that return a
@@ -230,7 +311,7 @@ class GridBase:
         """
         start = self._local_start[2]
         end = self._local_end[2] + 2 * self._n_halo[2]
-        return np.copy(self._global_axes[2][start:end])
+        return np.copy(self._local_axes[2][start:end])
 
     @property
     def local_axes(self):
@@ -296,6 +377,24 @@ class GridBase:
 
     def _create_subcomms(self):
         self.subcomms = Subcomm(MPI.COMM_WORLD, dims=[0, 0, 1])
+
+        self._subcomm_size = []
+        self._subcomm_rank = []
+
+        self._low_rank = []
+        self._high_rank = []
+
+        for i, comm in enumerate(self.subcomms):
+            self._subcomm_size.append(comm.Get_size())
+            self._subcomm_rank.append(comm.Get_rank())
+            self._low_rank.append(self._subcomm_rank[-1] == 0)
+            self._high_rank.append(self._subcomm_size[-1] - 1 == self._subcomm_rank[-1])
+
+        self._subcomm_rank = tuple(self._subcomm_size)
+        self._subcomm_size = tuple(self._subcomm_size)
+        self._low_rank = tuple(self._low_rank)
+        self._high_rank = tuple(self._high_rank)
+
         return
 
     def _get_local_grid_indicies(self):
@@ -320,14 +419,169 @@ class GridBase:
 
         return
 
+    @stencil
+    def upt_to_vpt(u):
+        return 0.25 * (u[0, 0, 0] + u[1, 0, 0] + u[0, -1, 0] + u[1, -1, 0])
+
+    @stencil
+    def vpt_to_upt(v):
+        return 0.25 * (v[0, 0, 0] + v[0, 1, 0] + v[-1, 0, 0] + v[-1, 1, 0])
+
 
 class RegularCartesian(GridBase):
-    def __init__(self, namelist):
+    def __init__(self, namelist, llx=0.0, lly=0.0, llz=0.0):
 
-        GridBase.__init__(self, namelist)
+        GridBase.__init__(self, namelist, llx=llx, lly=lly, llz=llz)
+
         self._compute_globalcoordinates()
 
+        self.lat_lon = False
+
+        if "center_latlon" in namelist["grid"]:
+            self._center_latlon = tuple(namelist["grid"]["center_latlon"])
+            self._conic_intersection = tuple(namelist["grid"]["conic_intersection"])
+
+            self.MapProj = ProjectionLCC.LambertConformal(
+                6.3781e6,
+                self._conic_intersection[0],
+                self._conic_intersection[1],
+                self._center_latlon[0],
+                self._center_latlon[1],
+            )
+
+            self.compute_latlon()
+            self.lat_lon = True
+
+
+
+        nh = self.n_halo
+
+        x_dist_edge = np.minimum(self.x_local[nh[0]:-nh[0]],np.abs(self.x_local[nh[0]:-nh[0]] - self.l[0]))
+        y_dist_edge = np.minimum(self.y_local[nh[1]:-nh[1]],np.abs(self.y_local[nh[1]:-nh[1]] - self.l[1]))  
+        
+        self._edge_dist = np.minimum(x_dist_edge[:,np.newaxis], y_dist_edge[np.newaxis,:])
+
+        x_dist_edge = np.minimum(self.x_edge_local[nh[0]:-nh[0]],np.abs(self.x_edge_local[nh[0]:-nh[0]] - self.l[0]))
+        y_dist_edge = np.minimum(self.y_local[nh[1]:-nh[1]],np.abs(self.y_local[nh[1]:-nh[1]] - self.l[1]))  
+
+        self._edge_dist_u = np.minimum(x_dist_edge[:,np.newaxis], y_dist_edge[np.newaxis,:])
+
+        x_dist_edge = np.minimum(self.x_local[nh[0]:-nh[0]],np.abs(self.x_local[nh[0]:-nh[0]] - self.l[0]))
+        y_dist_edge = np.minimum(self.y_edge_local[nh[1]:-nh[1]],np.abs(self.y_edge_local[nh[1]:-nh[1]] - self.l[1]))  
+        
+        self._edge_dist_v = np.minimum(x_dist_edge[:,np.newaxis], y_dist_edge[np.newaxis,:])
+ 
+ 
+#       import sys; sys.exit()
+
+
+        #start =self._ibu_edge[0]-5 #-nh[1] - self.nudge_width - 1
+        #end = self._ibu_edge[0] + 1 #-nh[1] - 1
+        
+        #print( self.x_edge_local)
+        #print(start, end, self.x_edge_local[start:end])
+  
+        #end = self._ibu[0]
+        
+        #start = end -  5
+        #print(start, end, self.x_local[start:end])
+        #import sys; sys.exit()
+        #return
+
+    def compute_latlon(self):
+
+
+        # Compute domain half width
+        halfwidth = None
+        if 'parent_grid' not in self._namelist:
+            halfwidth = (self.l[0] / 2.0, self.l[1] / 2.0)
+        else:
+            lp = self._namelist['parent_grid']['l']
+            halfwidth = (lp[0] / 2.0, lp[1] / 2.0)
+
+        local_axis = self._local_axes
+        local_axis_edge = self._local_axes_edge
+
+        self.halfwidth = halfwidth 
+
+        #print(local_axis[0])
+        #print(local_axis_edge[0])
+        #import sys; sys.exit()
+
+        x_global_mesh, y_global_mesh = np.meshgrid(
+            self.x_global[:] - halfwidth[0],
+            self.y_global[:] - halfwidth[1],
+            indexing="ij",
+        )
+
+        x_local_mesh, y_local_mesh = np.meshgrid(
+            local_axis[0] - halfwidth[0], local_axis[1] - halfwidth[1], indexing="ij"
+        )
+
+        # print(np.shape(x_local_mesh), np.shape(local_axis[0]))
+        # import sys; sys.exit()
+
+        # Longitude-Latitude at the u point
+        x_local_mesh_edge_x, y_local_mesh_edge_x = np.meshgrid(
+            local_axis_edge[0] - halfwidth[0],
+            local_axis[1] - halfwidth[1],
+            indexing="ij",
+        )
+
+        # Longitude-Latitude at the v point
+        x_local_mesh_edge_y, y_local_mesh_edge_y = np.meshgrid(
+            local_axis[0] - halfwidth[0],
+            local_axis_edge[1] - halfwidth[1],
+            indexing="ij",
+        )
+
+        self.lon_global, self.lat_global = self.MapProj.compute_latlon(
+            x_global_mesh, y_global_mesh
+        )
+        self.lon_local, self.lat_local = self.MapProj.compute_latlon(
+            x_local_mesh, y_local_mesh
+        )
+        self.lon_local_edge_x, self.lat_local_edge_x = self.MapProj.compute_latlon(
+            x_local_mesh_edge_x, y_local_mesh_edge_x
+        )
+        self.lon_local_edge_y, self.lat_local_edge_y = self.MapProj.compute_latlon(
+            x_local_mesh_edge_y, y_local_mesh_edge_y
+        )
+
+        # u = np.ones_like(self.lon_local)
+        # v = np.zeros_like(self.lon_local)
+
+        # u = np.ones((3,3,3))
+
+        # uv = self.upt_to_vpt(u)
+        # print(uv)
+
+        # urot, vrot = self.MapProj.rotate_wind(self.lon_local, u, v)
+        # import pylab as plt
+        # plt.quiver(self.lon_local, self.lat_local, urot, vrot)
+        # plt.colorbar()
+        # plt.show()
+
+        self.lon_max = MPI.COMM_WORLD.allreduce(
+            np.max(self.lon_local_edge_x), op=MPI.MAX
+        )
+        self.lon_min = MPI.COMM_WORLD.allreduce(
+            np.min(self.lon_local_edge_x), op=MPI.MIN
+        )
+
+        self.lat_max = MPI.COMM_WORLD.allreduce(
+            np.max(self.lat_local_edge_y), op=MPI.MAX
+        )
+        self.lat_min = MPI.COMM_WORLD.allreduce(
+            np.min(self.lat_local_edge_y), op=MPI.MIN
+        )
+
+
         return
+
+    def latlon_to_xy(self, lat, lon):
+        x, y = self.MapProj.compute_xy(lat, lon)
+        return x + self.halfwidth[0], y + self.halfwidth[1]
 
     def _compute_globalcoordinates(self):
 
@@ -347,7 +601,9 @@ class RegularCartesian(GridBase):
             ux = ((self._n[i] + self._n_halo[i]) - 0.5) * dx
 
             # Generate an axis based on upper and lower points
-            self._global_axes.append(np.linspace(lx, ux, self.ngrid[i]))
+            self._global_axes.append(
+                np.linspace(lx, ux, self.ngrid[i]) + self._ll_corner[i]
+            )
             self._global_axes_edge.append(self._global_axes[i] + 0.5 * dx)
 
             # Compute the local axes form the global axes
@@ -359,6 +615,10 @@ class RegularCartesian(GridBase):
         self._dx = np.array(dx_list)
         self._dxi = 1.0 / self._dx
         return
+
+    @property
+    def ll_corner(self):
+        return self._ll_corner
 
     def restart(self, data_dict, **kwargs):
         """
@@ -433,11 +693,13 @@ class RegularCartesian(GridBase):
 
         return (x_index, y_index, z_index)
 
-    def CreateGather(self, xrange, yrange):
-        return self._Gather(self, xrange, yrange)
+
+
+    def CreateGather(self, xrange, yrange, x_edge=False, y_edge=False):
+        return self._Gather(self, xrange, yrange, x_edge, y_edge)
 
     class _Gather:
-        def __init__(self, ModelGrid, xrange, yrange):
+        def __init__(self, ModelGrid, xrange, yrange, x_edge=False, y_edge=False):
 
             self.xrange = xrange
             self.yrange = yrange
@@ -463,10 +725,18 @@ class RegularCartesian(GridBase):
             self.y_start = []
             self.y_end = []
 
-            # First compute what I need to send
             n = len(self.xranges_to_get)
             for i in range(n):
-                n_local = local_ends[i] - local_starts[i]
+                if x_edge:
+                    local_ends[i][0] += 1
+                if y_edge:
+                    local_ends[i][1] += 1
+
+            self.local_ends = np.array(local_ends)
+
+            # First compute what I need to send
+
+            for i in range(n):
 
                 xi_start = 0
                 xi_end = 0

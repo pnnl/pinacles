@@ -115,6 +115,25 @@ class DumpFields_hdf:
         dset.make_scale()
         dset[:] = self._TimeSteppingController.time
 
+
+        # Now output lat and lon
+        if self._Grid.lat_lon:
+            
+            dset = fx.create_dataset('lon', (self._Grid.n[0],self._Grid.n[1]), dtype="d")
+            for i, d in enumerate(["X", "Y"]):
+                dset.dims[i].attach_scale(fx[d])
+            dset[local_start[0] : local_end[0],
+                local_start[1] : local_end[1]] = self._Grid.lon_local[nhalo[0] : -nhalo[0],nhalo[1] : -nhalo[1]]
+                
+            dset = fx.create_dataset('lat', (self._Grid.n[0],self._Grid.n[1]), dtype="d")
+            for i, d in enumerate(["X", "Y"]):
+                dset.dims[i].attach_scale(fx[d])
+            dset[local_start[0] : local_end[0],
+                local_start[1] : local_end[1]] = self._Grid.lat_local[nhalo[0] : -nhalo[0],nhalo[1] : -nhalo[1]]             
+
+                
+
+
         # import sys; sys.exit()
         for ac in self._classes:
             # Loop over all variables

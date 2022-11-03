@@ -1,5 +1,4 @@
 import time
-
 global_start_time = time.perf_counter()
 import numba
 import json
@@ -14,7 +13,7 @@ from pinacles import ScalarAdvectionFactory
 from pinacles import ScalarAdvection, TimeStepping, ReferenceState
 from pinacles import ScalarDiffusion, MomentumDiffusion
 from pinacles import MomentumAdvection
-from pinacles import PressureSolver
+from pinacles import PressureSolverFactory
 from pinacles import Damping
 from pinacles import SurfaceFactory
 from pinacles import ForcingFactory
@@ -34,20 +33,28 @@ from pinacles import Restart
 from pinacles import UtilitiesParallel
 from pinacles import ParticlesFactory
 from pinacles import Timers
+from pinacles import LateralBCsFactory
+from pinacles.ingest import Ingest
 from pinacles import DiagnosticsCoarseGrain
 from pinacles import DiagnosticsCase
 from pinacles import reproducibility
 from mpi4py import MPI
 import numpy as np
-
 import os
 from termcolor import colored
 
-os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
-
 
 class SimulationStandard(SimulationBase.SimulationBase):
-    def __init__(self, namelist):
+    def __init__(
+        self, namelist, llx=0.0, lly=0.0, llz=0.0, ParentNest=None, nest_num=0
+    ):
+
+        self.ParentNest = ParentNest
+
+        self._ll_corner = (llx, lly, llz)
+
+        assert type(nest_num) == int
+        self._nest_num = nest_num
 
         # This is used to keep track of how long the model has been running.
         self.t_init = time.perf_counter()
@@ -62,31 +69,47 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Initialize differently if this is a restart simulation
         if not self.Restart.restart_simulation:
-            self.initialize()
+            self.initialize(self.ParentNest)
         else:
             self.initialize_from_restart()
 
         return
 
-    def initialize(self):
+    def initialize(self, ParentNest=None):
 
         # Instantiate the model grid
-        self.ModelGrid = Grid.RegularCartesian(self._namelist)
+        self.ModelGrid = Grid.RegularCartesian(
+            self._namelist,
+            llx=self._ll_corner[0],
+            lly=self._ll_corner[1],
+            llz=self._ll_corner[2],
+        )
 
         # Instantiate variables for storing containers
         self.ScalarState = Containers.ModelState(
-            self.ModelGrid, container_name="ScalarState", prognostic=True
+            self._namelist,
+            self.ModelGrid,
+            container_name="ScalarState",
+            prognostic=True,
         )
         self.VelocityState = Containers.ModelState(
-            self.ModelGrid, container_name="VelocityState", prognostic=True
+            self._namelist,
+            self.ModelGrid,
+            container_name="VelocityState",
+            prognostic=True,
         )
 
         self.DiagnosticState = Containers.ModelState(
-            self.ModelGrid, container_name="DiagnosticState"
+            self._namelist, self.ModelGrid, container_name="DiagnosticState"
         )
 
         self.TimeSteppingController = TimeStepping.TimeSteppingController(
             self._namelist, self.ModelGrid, self.DiagnosticState, self.VelocityState
+        )
+
+        #Ingest data
+        self.Ingest = Ingest.IngestFactory(
+            self._namelist, self.ModelGrid, self.TimeSteppingController
         )
 
         self.Timers = Timers.Timer(self._namelist, self.TimeSteppingController)
@@ -100,7 +123,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
 
         # Instantiate Raleigh Damping
-        self.RayleighDamping = Damping.RayleighInitial(
+        self.RayleighDamping = Damping.Rayleigh(
             self._namelist, self.Timers, self.ModelGrid
         )
         self.RayleighDamping.add_state(self.VelocityState)
@@ -128,6 +151,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
             loc="z",
             bcs="value zero",
         )
+
+        #self.ScalarState.add_variable(
+        #    "spray",
+        #    long_name="spray concentration",
+        #    units="kg/kg",
+        #    latex_name="spray",
+        #    flux_divergence='EMONO',
+        #    limit=True
+        #)
+
+
 
         # Instantiate kinematics and the SGS model
         self.Kine = Kinematics.Kinematics(
@@ -189,7 +223,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
 
         # Instantiate the pressure solver
-        self.PSolver = PressureSolver.factory(
+        self.PSolver = PressureSolverFactory.factory(
             self._namelist,
             self.Timers,
             self.ModelGrid,
@@ -232,6 +266,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ScalarState,
             self.DiagnosticState,
             self.TimeSteppingController,
+            self.Ingest,
         )
 
         # Instantiate plumes if there are any
@@ -241,7 +276,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
+            self.VelocityState,
             self.TimeSteppingController,
+            self._nest_num,
         )
 
         # Instantiate radiation
@@ -250,6 +287,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Timers,
             self.ModelGrid,
             self.Ref,
+            self.Ingest,
             self.ScalarState,
             self.DiagnosticState,
             self.Surf,
@@ -311,7 +349,61 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.ScalarTimeStepping.initialize()
         self.VelocityTimeStepping.initialize()
 
-        # Do case specific initializations the initial profiles are integrated here
+        if self.ParentNest is None:
+            print('Nest None')
+            self.LBC = LateralBCsFactory.LateralBCsFactory(
+                self._namelist,
+                self.ModelGrid,
+                self.Ref,
+                self.DiagnosticState,
+                self.ScalarState,
+                self.VelocityState,
+                self.TimeSteppingController,
+                self.Ingest,
+            )
+            self.LBCVel = LateralBCsFactory.LateralBCsFactory(
+                self._namelist,
+                self.ModelGrid,
+                self.Ref,
+                self.DiagnosticState,
+                self.VelocityState,
+                self.VelocityState,
+                self.TimeSteppingController,
+                self.Ingest,
+            )
+        else:
+            self.LBC = LateralBCsFactory.LateralBCsFactory(
+                self._namelist,
+                self.ModelGrid,
+                self.Ref,
+                self.DiagnosticState,
+                self.ScalarState,
+                self.VelocityState,
+                self.TimeSteppingController,
+                self.Ingest,
+                Parent=self.ParentNest,
+                NestState=self.ParentNest.ScalarState,
+            )
+            self.LBCVel = LateralBCsFactory.LateralBCsFactory(
+                self._namelist,
+                self.ModelGrid,
+                self.Ref,
+                self.DiagnosticState,
+                self.VelocityState,
+                self.VelocityState,
+                self.TimeSteppingController,
+                self.Ingest,
+                Parent=self.ParentNest,
+                NestState=self.ParentNest.VelocityState,
+            )
+
+        if self.Ingest is not None:
+            self.Ingest.initialize()
+
+
+
+
+        # Do case sepcific initalizations the initial profiles are integrated here
         Initialization.initialize(
             self._namelist,
             self.ModelGrid,
@@ -319,7 +411,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Ref,
             self.ScalarState,
             self.VelocityState,
+            self.Ingest,
         )
+
+        # If necessary initialize Radiation initial profiles.
+        self.Rad.init_profiles()
+
+        self.LBC.init_vars_on_boundary()
+        self.LBCVel.init_vars_on_boundary()
+
+        # import sys; sys.exit()
+        self.Surf.initialize()
 
         # Initialize any work arrays for the microphysics package
         self.Micro.initialize()
@@ -327,11 +429,10 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Now that the initial profiles have been integrated, the pressure solver and be initialized
         self.PSolver.initialize()
 
-        # If necessary initialize Radiation initial profiles.
-        self.Rad.init_profiles()
+
 
         # Initialize mean profiles for top of domain damping
-        self.RayleighDamping.init_means()
+        # self.RayleighDamping.init_means()
 
         # Initialize statistical output
         self.StatsIO = Stats(
@@ -354,6 +455,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Fields2d.add_class(self.Micro)
         self.Fields2d.add_class(self.Thermo)
         self.Fields2d.add_class(self.Plumes)
+        self.Fields2d.add_class(self.Rad)
         self.Fields2d.add_class(self.Surf)
 
         # Instantiate optional TowerIO
@@ -423,6 +525,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.FieldsIO = DumpFields.DumpFieldsFactory(
             self._namelist, self.Timers, self.ModelGrid, self.TimeSteppingController
         )
+
         # Add container classes that will dump 3D fields
         self.FieldsIO.add_class(self.ScalarState)
         self.FieldsIO.add_class(self.VelocityState)
@@ -447,14 +550,74 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # At this point the model is basically initialized, however we should also do boundary exchanges to ensure
         # the halo regions are set and consistent with the pressure solver to ensure that the velocity field initially satisfies
         # the anelastic continuity equation
+
+        self.ScalarState.boundary_exchange()
+        self.VelocityState.update_all_bcs()
+        self.ScalarState.update_all_bcs()
+
+        for lbc in [self.LBC, self.LBCVel]:
+            # lbc.set_vars_on_boundary_to_mean()
+            lbc.set_vars_on_boundary(ParentNest=self.ParentNest)
+
         for prog_state in [self.ScalarState, self.VelocityState]:
             prog_state.boundary_exchange()
             prog_state.update_all_bcs()
+
+        for lbc in [self.LBC, self.LBCVel]:
+            lbc.update()
+
+        u = self.VelocityState.get_field("u")
+        v = self.VelocityState.get_field("v")
+        s = self.ScalarState.get_field("s")
+        qv = self.ScalarState.get_field("qv")
+
+        # import pylab as plt
+        # plt.subplot(311)
+        # plt.plot(u[:,5,5],'.')
+        # plt.plot(u[5,:,5],'.')
+        # plt.subplot(312)
+        # plt.plot(v[:,5,5],'.')
+        # plt.plot(v[5,:,5],'.')
+        # plt.subplot(313)
+        # plt.plot(s[:,5,5], '.')
+        # plt.plot(s[5,:,5], '.')
+        # plt.show()
+
+        # import pylab as plt
+        # plt.plot(u[:,5,5])
 
         # Update thermo this is mostly for IO at time 0
         self.Thermo.update(apply_buoyancy=False)
         self.Rad.update(force=True)
         self.PSolver.update()
+
+        # import pylab as plt
+        # plt.subplot(311)
+        # plt.plot(u[:,5,5],'.')
+        # plt.subplot(312)
+        # plt.plot(v[:,5,5],'.')
+        # plt.subplot(313)
+        # plt.plot(s[:,5,5], '.')
+        # plt.show()
+
+        # for prog_state in [self.ScalarState, self.VelocityState]:
+        #    prog_state.boundary_exchange()
+        #    prog_state.update_all_bcs()
+
+        self.ScalarState.boundary_exchange()
+        self.VelocityState.update_all_bcs()
+        self.ScalarState.update_all_bcs()
+
+        # for lbc in [self.LBC, self.LBCVel]:
+        self.LBC.update()
+        self.LBCVel.update(normal=False)
+
+        for prog_state in [self.ScalarState, self.VelocityState]:
+            prog_state.boundary_exchange()
+            prog_state.update_all_bcs()
+
+        # plt.plot(u[:,5,5])
+        # plt.show()
 
         # Initialize timers
         self.Timers.add_timer("Restart")
@@ -502,13 +665,19 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Instantiate variables for storing containers
         self.ScalarState = Containers.ModelState(
-            self.ModelGrid, container_name="ScalarState", prognostic=True
+            self._namelist,
+            self.ModelGrid,
+            container_name="ScalarState",
+            prognostic=True,
         )
         self.VelocityState = Containers.ModelState(
-            self.ModelGrid, container_name="VelocityState", prognostic=True
+            self._namelist,
+            self.ModelGrid,
+            container_name="VelocityState",
+            prognostic=True,
         )
         self.DiagnosticState = Containers.ModelState(
-            self.ModelGrid, container_name="DiagnosticState"
+            self._namelist, self.ModelGrid, container_name="DiagnosticState"
         )
 
         self.TimeSteppingController = TimeStepping.TimeSteppingController(
@@ -525,7 +694,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self._namelist, self.Timers, self.ModelGrid, self.VelocityState
         )
 
-        self.RayleighDamping = Damping.RayleighInitial(
+        self.RayleighDamping = Damping.Rayleigh(
             self._namelist, self.Timers, self.ModelGrid
         )
         self.RayleighDamping.add_state(self.VelocityState)
@@ -551,6 +720,15 @@ class SimulationStandard(SimulationBase.SimulationBase):
             loc="z",
             bcs="value zero",
         )
+
+        #self.ScalarState.add_variable(
+        #    "spray",
+        #    long_name="spray concentration",
+        #    units="kg/kg",
+        #    latex_name="spray",
+        #    flux_divergence='EMONO',
+        #    limit=True
+        #)
 
         # Instantiate kinematics and the SGS model
         self.Kine = Kinematics.Kinematics(
@@ -633,7 +811,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
 
         # Instantiate the pressure solver
-        self.PSolver = PressureSolver.factory(
+        self.PSolver = PressureSolverFactory.factory(
             self._namelist,
             self.Timers,
             self.ModelGrid,
@@ -676,6 +854,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ScalarState,
             self.DiagnosticState,
             self.TimeSteppingController,
+            self.Ingest,
         )
 
         # Instantiate plumes if there are any
@@ -694,6 +873,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.Timers,
             self.ModelGrid,
             self.Ref,
+            self.Ingest,
             self.ScalarState,
             self.DiagnosticState,
             self.Surf,
@@ -910,12 +1090,20 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         return
 
-    def update(self, integrate_by_dt=0.0):
+    def update(self, ParentNest=None, ListOfSims=[], integrate_by_dt=0.0):
+
+        u = self.VelocityState.get_field("u")
+        v = self.VelocityState.get_field("v")
+        s = self.ScalarState.get_field("s")
 
         """This function integrates the model forward by integrate_by_dt seconds."""
         # Compute the startime and endtime for this integration
         start_time = self.TimeSteppingController.time
         end_time = start_time + integrate_by_dt
+
+        # Update boundaries for nest if this is Simulation is a nest
+        # if ParentNest is not None:
+        #    self.Nest.update_boundaries(ParentNest)
 
         while self.TimeSteppingController.time < end_time:
             self.Timers.start_timer("main")
@@ -924,7 +1112,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
             # Loop over the Runge-Kutta steps
             for n in range(self.ScalarTimeStepping.n_rk_step):
-
                 # Adjust the timestep at the beginning of the step
                 self.TimeSteppingController.adjust_timestep(n, end_time)
 
@@ -952,12 +1139,33 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.ScalarDiff.update()
                 self.MomDiff.update()
 
+                #self.PBL.update()
+
                 # Do Damping
                 self.RayleighDamping.update()
+
+                self.LBC.lateral_nudge()
+                self.LBCVel.lateral_nudge()
+
+                # if ParentNest is not None:
+                #    self.Nest.update(ParentNest)
 
                 # Do time stepping
                 self.ScalarTimeStepping.update()
                 self.VelocityTimeStepping.update()
+
+                self.VelocityState.boundary_exchange()
+                self.VelocityState.update_all_bcs()
+
+                self.LBCVel.update()
+
+                # Call pressure solver
+                self.PSolver.update()
+
+                for lbcs in [self.LBC, self.LBCVel]:
+                    lbcs.set_vars_on_boundary(ParentNest=self.ParentNest)
+
+                self.LBCVel.update(normal=False)
 
                 self.Timers.start_timer("ScalarLimiter")
                 self.ScalarState.apply_limiter()
@@ -965,14 +1173,11 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 # Update boundary conditions
                 self.Timers.start_timer("BoundaryUpdate")
-                self.ScalarState.boundary_exchange()
-                self.VelocityState.boundary_exchange()
-                self.ScalarState.update_all_bcs()
-                self.VelocityState.update_all_bcs()
-                self.Timers.end_timer("BoundaryUpdate")
 
-                # Call pressure solver
-                self.PSolver.update()
+                self.ScalarState.boundary_exchange()
+                self.ScalarState.update_all_bcs()
+
+                self.Timers.end_timer("BoundaryUpdate")
 
                 if n == 1:
                     self.Thermo.update(apply_buoyancy=False)
@@ -991,6 +1196,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                     # Get a consistant temperature for io
                     self.Thermo.update(apply_buoyancy=False)
+
+            self.LBC.update()
 
             self.Timers.finish_timestep()
             self.TimeSteppingController._time += self.TimeSteppingController._dt
@@ -1012,6 +1219,39 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     colored("\tModeltime/Walltime: ", "green"),
                     colored(self.TimeSteppingController._dt / (t1 - t0), "green"),
                 )
+
+            # Here we use recursion to update all sub-nests
+            if len(ListOfSims) -1 > self._nest_num:
+                if MPI.COMM_WORLD.Get_rank() == 0:
+                    print(
+                        "Recursively calling update of Nest " + str(self._nest_num + 1),
+                        " from Nest: ",
+                        str(self._nest_num),
+                    )
+                ListOfSims[self._nest_num + 1].update(
+                    integrate_by_dt=self.TimeSteppingController._dt,
+                    ParentNest=ListOfSims[self._nest_num],
+                    ListOfSims = ListOfSims
+                )
+                
+            if ParentNest is not None and self.LBCVel.two_way:
+                self.LBC.update_parent(dt=self.TimeSteppingController.dt)
+                ParentNest.ScalarState.boundary_exchange()
+                ParentNest.ScalarState.update_all_bcs()
+                
+                self.LBCVel.update_parent(dt=self.TimeSteppingController.dt)
+                ParentNest.VelocityState.boundary_exchange()
+                ParentNest.VelocityState.update_all_bcs()
+                ParentNest.LBCVel.update()
+                # Call pressure solver
+                ParentNest.PSolver.update()
+
+                for lbcs in [ParentNest.LBC, ParentNest.LBCVel]:
+                    lbcs.set_vars_on_boundary(ParentNest=ParentNest)
+
+                ParentNest.LBCVel.update(normal=False)
+
+
 
         return
 

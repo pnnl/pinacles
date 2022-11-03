@@ -1,5 +1,6 @@
 from pinacles.Surface_impl import compute_ustar
 import numpy as np
+import numpy as np
 import numba
 from mpi4py import MPI
 from pinacles import Surface, Surface_impl, Forcing_impl, Forcing
@@ -40,7 +41,7 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
         pass
 
     # Integrate the reference profile.
-    Ref.set_surface(Tsfc=300.0, u0=1.0, v0=0.0)
+    Ref.set_surface(Tsfc=300.0, u0=0.0, v0=0.0)
     Ref.integrate()
 
     u = VelocityState.get_field("u")
@@ -118,6 +119,7 @@ class SurfaceSullivanAndPatton(Surface.SurfaceBase):
         self._tflx = np.zeros_like(self._windspeed_sfc)
 
         self._Timers.add_timer("SurfaceSullivanAndPatton_update")
+
         return
 
     def update(self):
@@ -336,7 +338,7 @@ class ForcingSullivanAndPatton(Forcing.ForcingBase):
 
         self._f = 1.0e-4
 
-        self._ug = np.zeros_like(self._Grid.z_global) + 1.0
+        self._ug = np.zeros_like(self._Grid.z_global) + 5.0
         self._vg = np.zeros_like(self._ug)
 
         self._Timers.add_timer("ForcingSullivanAndPatton_update")

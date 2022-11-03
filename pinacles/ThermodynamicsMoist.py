@@ -41,6 +41,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
 
         self._Timers.add_timer("ThermoDynamicsMoist_update")
 
+        self.name = "ThermodynamicsMoist"
         return
 
     def update(self, apply_buoyancy=True):
@@ -86,14 +87,15 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
 
         if apply_buoyancy:
             ThermodynamicsMoist_impl.apply_buoyancy(buoyancy, w_t)
+            #self._VelocityState.remove_mean("w", tend=True)
 
         # Remove mean from buoyancy
         self._DiagnosticState.remove_mean("buoyancy")
 
         self.compute_buoyancy_gradient(dxi, buoyancy, buoyancy_gradient_mag)
-        
-        qt[:,:,:] = self.get_qt()
-        
+
+        qt[:, :, :] = self.get_qt()
+
         self._Timers.end_timer("ThermoDynamicsMoist_update")
         return
 
@@ -136,7 +138,15 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
 
         return qv + qc + qi
     
-  
+    
+    def get_s_dry(self):
+        
+        s = self._ScalarState.get_field('s')
+        qc = self._Micro.get_qc('qc')
+        qi = self._Micro.get_qi('qi')
+        
+        return s - (parameters.LV * qc + parameters.LS * qi)/parameters.CPD
+
     def io_fields2d_update(self, fx):
 
         start = self._Grid.local_start
@@ -149,10 +159,10 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         # Output Temperature
         if fx is not None:
             t = fx.create_dataset(
-                        "T",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "T",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 t.dims[i].attach_scale(fx[d])
@@ -168,10 +178,10 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         # Output specific humidity
         if fx is not None:
             qv_var = fx.create_dataset(
-                        "qv",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "qv",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 qv_var.dims[i].attach_scale(fx[d])
@@ -185,5 +195,4 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         if fx is not None:
             qv_var[:, :] = recv_buffer
 
- 
         return

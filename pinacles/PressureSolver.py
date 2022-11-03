@@ -67,6 +67,7 @@ class PressureSolver:
 
         self._Timers.start_timer("PressureSolver_update")
 
+        self._VelocityState.update_all_bcs()
         self._VelocityState.remove_mean("w")
 
         # First get views in to the velocity components
@@ -88,14 +89,8 @@ class PressureSolver:
         div_hat_2 = self.FFT.forward(self._div_work)
 
         # The TDM solver goes here
-        # divh2_real = div_hat_2.real
-        # divh2_img = div_hat_2.imag
-
-        # Place the pressure solve here
-        # self._TMDA_solve.solve(divh2_real)
         self._TMDA_solve.solve(div_hat_2)
 
-        # div_hat_2 = divh2_real + divh2_img * 1j
         if self._wavenumber_substarts[0] == 0 and self._wavenumber_substarts[1] == 0:
             div_hat_2[0, 0, :] = 0.0 + 0j
 

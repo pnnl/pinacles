@@ -1,0 +1,87 @@
+{
+    "Thermodynamics": {
+        "type": "dry"
+    },
+    "damping": {
+        "depth": 250.0,
+        "timescale": 50.0,
+        "vars": [
+            "u",
+            "v",
+            "w",
+            "s"
+        ]
+    },
+    "fields": {
+        "frequency": 30.0,
+        "io_type": "HDF5"
+    },
+    "grid": {
+        "l": [
+            5120.0,
+            5120.0,
+            2048.0
+        ],
+        "n": [
+            128, 
+            128,
+            128 
+        ],
+        "n_halo": [
+            3,
+            3,
+            3
+        ]
+    },
+    "meta": {
+        "casename": "sullivan_and_patton",
+        "output_directory": "./",
+        "random_seed": 1,
+        "simname": "sullivan_and_patton"
+    },
+    "microphysics": {
+        "scheme": "base"
+    },
+    "momentum_advection": {
+        "type": "weno5"
+    },
+    "restart": {
+        "frequency": 600.0,
+        "infile": "/",
+        "restart_simulation": false 
+    },
+    "scalar_advection": {
+        "type": "weno5"
+    },
+    "sgs": {
+        "model": "tke",
+        "smagorinsky": {
+            "cs": 0.17,
+            "prt": 1.0 
+        }
+    },
+    "stats": {
+        "frequency": 60.0,
+        "modules": []
+    },
+    "time": {
+        "cfl": 0.8,
+        "time_max": 10800.0
+    },
+    "towers": {
+        "frequency": 600.0,
+        "location": []
+    },
+    "lbc": {
+        "type": "periodic",
+        "open_boundary_treatment": "nest"
+    },
+    "nests": {
+        "n": 1,
+        "two_way": false,
+        "factor": [[3, 3, 1]],
+        "parent_points": [[64,64,64]],
+        "ll_corner": [[16, 16, 16]]
+    }
+}
+
