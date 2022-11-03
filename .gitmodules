@@ -13,3 +13,6 @@
 [submodule "pinacles/externals/wrf_fast_sbm_wrapper"]
 	path = pinacles/externals/wrf_fast_sbm_wrapper
 	url = ssh://git@gitlab.pnnl.gov:2222/pinacles/wrf_fast_sbm_wrapper.git 
+[submodule "pinacles/externals/sam_m2005_ma_wrapper"]
+	path = pinacles/externals/sam_m2005_ma_wrapper
+	url = ssh://git@gitlab.pnnl.gov:2222/pinacles/sam_m2005_ma_wrapper.git
