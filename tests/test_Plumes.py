@@ -59,6 +59,9 @@ def standard_plume_mocks(tmpdir):
     namelist["sgs"] = {}
     namelist["sgs"]["model"] = "smagorinsky"
 
+    namelist["lbc"] = {}
+    namelist["lbc"]["type"] = "periodic"
+
     #
     namelist["plumes"] = {}
     namelist["plumes"]["locations"] = [[500.0, 500.0, 100.0], [1000.0, 1000.0, 500.0]]

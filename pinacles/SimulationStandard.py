@@ -663,6 +663,10 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Instantiate the model grid
         self.ModelGrid = Grid.RegularCartesian(self._namelist)
 
+        # This is so we can restart non-real cases
+        # restart of real cases needs more work
+
+        self.Ingest = None
         # Instantiate variables for storing containers
         self.ScalarState = Containers.ModelState(
             self._namelist,
@@ -864,7 +868,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ModelGrid,
             self.Ref,
             self.ScalarState,
+            self.VelocityState,
             self.TimeSteppingController,
+            self._nest_num
         )
 
         # Instantiate radiation

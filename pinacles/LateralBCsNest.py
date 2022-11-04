@@ -22,7 +22,7 @@ class LateralBCsNest(LateralBCsBase):
         self.root_point = nest_namelist["root_point"]
         assert "two_way" in nest_namelist
         self.two_way = nest_namelist["two_way"]
-
+        print('two way? ', self.two_way)
         self._NestState = NestState
         self._Parent = Parent
 
@@ -193,7 +193,9 @@ class LateralBCsNest(LateralBCsBase):
 
     def update_parent(self, dt):
         if not self.two_way:
+            print('i return')
             return
+        print('staying in update parent')
 
         parent_start = np.array(self._Parent.ModelGrid._local_start)
         parent_end = np.array(self._Parent.ModelGrid._local_end)
@@ -270,6 +272,10 @@ class LateralBCsNest(LateralBCsBase):
 
             # Compute the domain mean of the variables
             x_low, x_high, y_low, y_high = self.get_vars_on_boundary(var_name)
+
+            # Colleen--I think this should leave the values as 0 for the plumes
+            if 'plume_' in var_name:
+                return
 
             center_point_x = parent_nhalo[0] + self.root_point[0]
             center_point_y = parent_nhalo[1] + self.root_point[1]

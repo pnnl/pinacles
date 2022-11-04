@@ -253,7 +253,7 @@ class SurfaceRICO(Surface.SurfaceBase):
         self._qvflx = -self._cq * self._windspeed_sfc * (qvsfc - self._qs0)
         Surface_impl.momentum_bulk_aero(
             self._windspeed_sfc,
-            self._cm,
+            self._cm * np.ones_like(usfc),
             usfc,
             vsfc,
             self._Ref.u0,

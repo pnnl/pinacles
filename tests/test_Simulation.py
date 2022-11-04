@@ -81,6 +81,9 @@ def standard_mocks(tmpdir):
     namelist["sgs"] = {}
     namelist["sgs"]["model"] = "smagorinsky"
 
+    namelist["lbc"] = {}
+    namelist["lbc"]["type"] = "periodic"
+
     # Generate simulations for dry cases
     base_mocks.append(SimulationStandard.SimulationStandard(copy.deepcopy(namelist)))
 

@@ -71,13 +71,10 @@ class ModelState:
     def is_prognosed_ice(self, name):
         return self._is_prognosed_ice[name]
 
-<<<<<<< HEAD
-=======
     @property
     def lbc_type(self):
         return self._lbc_type
 
->>>>>>> f5fc59432c51a8e42e904ff73084e6c98f8f8f5f
     @property
     def dofs(self):
         return self._dofs
@@ -304,8 +301,6 @@ class ModelState:
 
         return recv_buf
 
-<<<<<<< HEAD
-=======
     def get_slab_x(self, name, indx_range):
 
         ls = self._Grid.local_start
@@ -358,7 +353,6 @@ class ModelState:
 
         return recv_buf
 
->>>>>>> f5fc59432c51a8e42e904ff73084e6c98f8f8f5f
     def get_field_slice_h(self, name, indx, y=False):
         ls = self._Grid.local_start
         nl = self._Grid.nl
@@ -399,11 +393,7 @@ class ModelState:
 
         return recv_buf
 
-<<<<<<< HEAD
-=======
 
-
->>>>>>> f5fc59432c51a8e42e904ff73084e6c98f8f8f5f
     def get_loc(self, var):
         return self._loc[var]
 

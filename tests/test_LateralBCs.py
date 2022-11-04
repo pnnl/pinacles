@@ -10,12 +10,13 @@ namelist[key]["n"] = (5, 5, 5)
 namelist[key]["n_halo"] = (1, 1, 1)
 namelist[key]["l"] = (1000.0, 1000.0, 1000.0)
 
-
+namelist['lbc'] ={}
+namelist['lbc']['type'] = 'open'
 def test_LateralBCs():
 
     ModelGrid = Grid.RegularCartesian(namelist)
-    VelocityState = Containers.ModelState(ModelGrid, "VelocityState")
-    ScalarState = Containers.ModelState(ModelGrid, "ScalarState")
+    VelocityState = Containers.ModelState(namelist,ModelGrid, "VelocityState")
+    ScalarState = Containers.ModelState(namelist,ModelGrid, "ScalarState")
 
     VelocityState.add_variable("u")
     VelocityState.add_variable("v")
@@ -27,8 +28,8 @@ def test_LateralBCs():
     VelocityState.allocate()
     ScalarState.allocate()
 
-    LBC = LateralBCs.LateralBCs(ModelGrid, ScalarState, VelocityState)
-    LBCVel = LateralBCs.LateralBCs(ModelGrid, VelocityState, VelocityState)
+    LBC = LateralBCs.LateralBCsBase(ModelGrid, ScalarState, VelocityState)
+    LBCVel = LateralBCs.LateralBCsBase(ModelGrid, VelocityState, VelocityState)
 
     LBC.init_vars_on_boundary()
     LBCVel.init_vars_on_boundary()

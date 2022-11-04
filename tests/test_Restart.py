@@ -310,6 +310,9 @@ def mock_namelist(tmpdir):
     namelist["sgs"] = {}
     namelist["sgs"]["model"] = "smagorinsky"
 
+    namelist['lbc'] = {}
+    namelist['lbc']['type'] = 'periodic'
+
     # Generate simulations for dry cases
     list_of_mock_namelists.append(copy.deepcopy(namelist))
 

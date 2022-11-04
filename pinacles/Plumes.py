@@ -306,6 +306,8 @@ class Plumes:
         nest_level,
     ):
 
+
+
         self._n = 0
 
         # if namelist['plumes']['nest_level'] != nest_level:
@@ -328,6 +330,8 @@ class Plumes:
         # This is a list that will store one instance of the Plume class for each physical plume
         self._list_of_plumes = []
 
+        if nest_level == 0:
+            return
         if "plumes" in namelist:
 
             # Store the plume locations
@@ -494,19 +498,20 @@ class Plumes:
         
         # Iterate over the list of plumes and update them
         
-        if self._boundary_outflow[0]:
-            x_local = self._Grid.x_local
-            x_global = self._Grid.x_global
-            npts = self._Grid.n[0] * self._Grid.n[1]
-            n_halo = self._Grid.n_halo
+        
+        x_local = self._Grid.x_local
+        x_global = self._Grid.x_global
+        npts = self._Grid.n[0] * self._Grid.n[1]
+        n_halo = self._Grid.n_halo
 
-            for micro_name in self._scalar_list:
-                item = self._ScalarState.get_field(micro_name)
-                item_mean = UtilitiesParallel.ScalarAllReduce(np.sum(np.sum(item[n_halo[0] : n_halo[0] + self._boundary_average_npts, n_halo[1] : -n_halo[1], :], axis=0),axis=0)/ npts)  #temp
+        for micro_name in self._scalar_list:
+            item = self._ScalarState.get_field(micro_name)
+            item_mean = UtilitiesParallel.ScalarAllReduce(np.sum(np.sum(item[n_halo[0] : n_halo[0] + self._boundary_average_npts, n_halo[1] : -n_halo[1], :], axis=0),axis=0)/ npts)  #temp
 
-                for plume_i in self._list_of_plumes:
-                    plume_value = self._ScalarState.get_field(plume_i._scalar_name)
+            for plume_i in self._list_of_plumes:
+                plume_value = self._ScalarState.get_field(plume_i._scalar_name)
 
+                if plume_i._boundary_outflow[0]:
                     if np.amin(x_local) == np.amin(x_global):
                         for k in range(item.shape[2]):
                             item[: n_halo[0], :, k][plume_value[: n_halo[0], :, k] > self._plume_reset_threshold] = item_mean[k]
@@ -515,19 +520,20 @@ class Plumes:
                         for k in range(item.shape[2]):
                             item[-n_halo[0] :, :, k][plume_value[-n_halo[0] :, :, k] > self._plume_reset_threshold] = item_mean[k]
                                     
-        if self._boundary_outflow[1]:
-            y_local = self._Grid.y_local
-            y_global = self._Grid.y_global
-            npts = self._Grid.n[0] * self._Grid.n[1]
-            n_halo = self._Grid.n_halo
+       
+        y_local = self._Grid.y_local
+        y_global = self._Grid.y_global
+        npts = self._Grid.n[0] * self._Grid.n[1]
+        n_halo = self._Grid.n_halo
 
-            for micro_name in self._scalar_list:
-                item = self._ScalarState.get_field(micro_name)
-                item_mean = UtilitiesParallel.ScalarAllReduce(np.sum(np.sum(item[n_halo[0] : -n_halo[0], n_halo[1] : n_halo[1] + self._boundary_average_npts, :], axis=0),axis=0)/ npts)
+        for micro_name in self._scalar_list:
+            item = self._ScalarState.get_field(micro_name)
+            item_mean = UtilitiesParallel.ScalarAllReduce(np.sum(np.sum(item[n_halo[0] : -n_halo[0], n_halo[1] : n_halo[1] + self._boundary_average_npts, :], axis=0),axis=0)/ npts)
 
-                for plume_i in self._list_of_plumes:
-                    plume_value = self._ScalarState.get_field(plume_i._scalar_name)
+            for plume_i in self._list_of_plumes:
+                plume_value = self._ScalarState.get_field(plume_i._scalar_name)
 
+                if plume_i._boundary_outflow[1]:
                     if np.amin(y_local) == np.amin(y_global):
                         for k in range(item.shape[2]):
                             item[:, : n_halo[1], k][plume_value[:, : n_halo[1], k] > self._plume_reset_threshold] = item_mean[k]

@@ -15,6 +15,9 @@ class Damping:
     def update(self):
 
         return
+    
+    def init_means(self):
+        return
 
     def add_state(self, State):
         self._states.append(State)
