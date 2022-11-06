@@ -480,7 +480,7 @@ class LateralBCsReanalysis(LateralBCsBase):
         self.time_previous = self._TimeSteppingController._time
 
         self.nudge_width = 5
-        self.ingest_freq = 1800.0
+        self.ingest_freq = 3600.0
 
         return
 
