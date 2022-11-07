@@ -22,7 +22,7 @@ class LateralBCsNest(LateralBCsBase):
         self.root_point = nest_namelist["root_point"]
         assert "two_way" in nest_namelist
         self.two_way = nest_namelist["two_way"]
-        print('two way? ', self.two_way)
+    
         self._NestState = NestState
         self._Parent = Parent
 
@@ -192,17 +192,16 @@ class LateralBCsNest(LateralBCsBase):
         return
 
     def update_parent(self, dt):
+        
         if not self.two_way:
-            print('i return')
+           
             return
-        print('staying in update parent')
-
+       
         parent_start = np.array(self._Parent.ModelGrid._local_start)
         parent_end = np.array(self._Parent.ModelGrid._local_end)
         parent_nh = self._Parent.ModelGrid.n_halo
 
         for var_name in self._State._dofs:
-            print(var_name)
             if var_name == "u":
                 child_data = self.gather_to_parent_u.call(
                     self._State.get_field(var_name)

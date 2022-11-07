@@ -28,7 +28,7 @@ class Plume:
         self._start_time = start_time
         self._plume_number = n
         self._scalar_name = "plume_" + str(self._plume_number)
-        self._boundary_outflow = [True, True]
+        self._boundary_outflow = [False, False]
 
         self._plume_flux = 0.0
         self._plume_qv_flux = 0.0
