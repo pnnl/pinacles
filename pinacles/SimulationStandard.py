@@ -124,7 +124,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Instantiate Raleigh Damping
         self.RayleighDamping = Damping.Rayleigh(
-            self._namelist, self.Timers, self.ModelGrid
+            self._namelist, self.Timers, self.ModelGrid, self.DiagnosticState
         )
         self.RayleighDamping.add_state(self.VelocityState)
         self.RayleighDamping.add_state(self.ScalarState)
@@ -694,7 +694,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
 
         self.RayleighDamping = Damping.Rayleigh(
-            self._namelist, self.Timers, self.ModelGrid
+            self._namelist, self.Timers, self.ModelGrid, self.DiagnosticState
         )
         self.RayleighDamping.add_state(self.VelocityState)
         self.RayleighDamping.add_state(self.ScalarState)

@@ -3,12 +3,14 @@ from pinacles import Damping_impl
 
 
 class Damping:
-    def __init__(self, namelist, Timers, Grid):
+    def __init__(self, namelist, Timers, Grid, DiagnosticState):
 
         self._vars = namelist["damping"]["vars"]
         self._states = []
         self._Timers = Timers
         self._Grid = Grid
+        self._DiagnosticState = DiagnosticState
+        
 
         return
 
@@ -26,8 +28,8 @@ class Damping:
 
 
 class Rayleigh(Damping):
-    def __init__(self, namelist, Timers, Grid):
-        Damping.__init__(self, namelist, Timers, Grid)
+    def __init__(self, namelist, Timers, Grid, DiagnosticState):
+        Damping.__init__(self, namelist, Timers, Grid, DiagnosticState)
 
         self._depth = namelist["damping"]["depth"]
         self._timescale = namelist["damping"]["timescale"]
@@ -66,6 +68,11 @@ class Rayleigh(Damping):
                             Damping_impl.rayleigh(
                                 self._timescale_profile_edge, mean, field, tend
                             )
+                            
+                        N2 = self._DiagnosticState.get_field('bvf')
+                        Damping_impl.rayleigh_N2(1.0/1800.0, N2,  field, tend)    
+                            
+                            
 
         self._Timers.end_timer("Rayleigh_update")
 
