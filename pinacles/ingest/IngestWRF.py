@@ -15,7 +15,7 @@ def rbf_interp(lon_in, lat_in, lon_out, lat_out, var, mask, i):
     lat_lon_array = np.vstack(lon_lat).T
     
     rbf = interpolate.RBFInterpolator(
-            lat_lon_array, var[i, :, :].flatten()[mask],smoothing=0.0, kernel='linear', neighbors = 9
+            lat_lon_array, var[i, :, :].flatten()[mask], neighbors = 16
     )
     
     
