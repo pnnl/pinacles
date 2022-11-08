@@ -101,13 +101,13 @@ class Plume:
 
             # Add the plume scalar flux
             plume_tend = self._ScalarState.get_tend(self._scalar_name)
-            plume_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
+            plume_tend[self._indicies[0], self._indicies[1], self._indicies[2]] += (
                 self._plume_flux / grid_cell_mass
             )
 
             # Add the plume heat flux
             s_tend = self._ScalarState.get_tend("s")
-            s_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
+            s_tend[self._indicies[0], self._indicies[1], self._indicies[2]]+= (
                 self._plume_heat_flux / grid_cell_mass * parameters.ICPD
                 - parameters.LV * self._plume_qc_flux / grid_cell_mass * parameters.ICPD
             )
@@ -115,49 +115,49 @@ class Plume:
             # Add the plume vapor flux
             if "qv" in self._ScalarState._dofs:
                 qv_tend = self._ScalarState.get_tend("qv")
-                qv_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
+                qv_tend[self._indicies[0], self._indicies[1], self._indicies[2]] += (
                     self._plume_qv_flux / grid_cell_mass
                 )
 
             # Add the plume liquid flux
             if "qc" in self._ScalarState._dofs:
                 qc_tend = self._ScalarState.get_tend("qc")
-                qc_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
+                qc_tend[self._indicies[0], self._indicies[1], self._indicies[2]] += (
                     self._plume_qc_flux / grid_cell_mass
                 )
 
             # Add the plume liquid number flux
             if "qnc" in self._ScalarState._dofs:
                 qnc_tend = self._ScalarState.get_tend("qnc")
-                qnc_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
+                qnc_tend[self._indicies[0], self._indicies[1], self._indicies[2]] += (
                     self._plume_qnc_flux / grid_cell_mass
                 )
 
             # Add the plume aerosol flux
             if "qad" in self._ScalarState._dofs:
                 qad_tend = self._ScalarState.get_tend("qad")
-                qad_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
+                qad_tend[self._indicies[0], self._indicies[1], self._indicies[2]] += (
                     self._plume_qad_flux / grid_cell_mass
                 )
 
             # Add the plume aerosol number flux
             if "qnad" in self._ScalarState._dofs:
                 qnad_tend = self._ScalarState.get_tend("qnad")
-                qnad_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
+                qnad_tend[self._indicies[0], self._indicies[1], self._indicies[2]] += (
                     self._plume_qnad_flux / grid_cell_mass
                 )
 
             # Add the plume aerosol flux
             if "qad2" in self._ScalarState._dofs:
                 qad2_tend = self._ScalarState.get_tend("qad2")
-                qad2_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
+                qad2_tend[self._indicies[0], self._indicies[1], self._indicies[2]] += (
                     self._plume_qad2_flux / grid_cell_mass
                 )
 
             # Add the plume aerosol number flux
             if "qnad2" in self._ScalarState._dofs:
                 qnad2_tend = self._ScalarState.get_tend("qnad2")
-                qnad2_tend[self._indicies[0], self._indicies[1], self._indicies[2]] = (
+                qnad2_tend[self._indicies[0], self._indicies[1], self._indicies[2]] += (
                     self._plume_qnad2_flux / grid_cell_mass
                 )
 
