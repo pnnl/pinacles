@@ -26,9 +26,9 @@ def interp_griddata(lon_in, lat_in, lon_out, lat_out, var, mask, i):
     lon_lat = (lon_in[mask], lat_in[mask])
     
     return interpolate.griddata(
-                lon_lat,var[i, :, :].flatten()[mask], (lon_out, lat_out), method="linear")
+                lon_lat,var[i, :, :].flatten()[mask], (lon_out, lat_out), method="cubic")
     
-#rbf_interp = interp_griddata
+rbf_interp = interp_griddata
 
 class IngestWRF(IngestERA5):
     def __init__(self, namelist, Grid, TimeSteppingController):

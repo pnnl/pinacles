@@ -113,6 +113,106 @@ class SurfaceReanalysis(Surface.SurfaceBase):
     def io_update(self, rt_grp):
 
         return
+    
+    def io_fields2d_update(self, fx):
+        start = self._Grid.local_start
+        end = self._Grid._local_end
+        send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
+        recv_buffer = np.empty_like(send_buffer)
+        nh = self._Grid.n_halo
+        z = self._Grid.z_global 
+        
+        
+        k80_below = np.argmin(np.abs(z - 80.0))
+        if z[k80_below] > 80.0:
+            k80_below -= 1
+        k80_above = k80_below + 1
+        
+        dz = z[k80_above] - z[k80_below]
+         
+                
+        rho0_edge = self._Ref.rho0_edge[nh[0]-1]
+        
+        u = self._VelocityState.get_field("u")
+        v = self._VelocityState.get_field("v")
+        
+        #Output the latent heat flux
+        if fx is not None:
+            lhf = fx.create_dataset(
+                "LHF",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
+
+            for i, d in enumerate(["time", "X", "Y"]):
+                lhf.dims[i].attach_scale(fx[d])
+
+        send_buffer[start[0] : end[0], start[1] : end[1]] =  rho0_edge * parameters.LV * self._qvflx[nh[0]:-nh[0], nh[1]:-nh[1]]
+        
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        if fx is not None:
+            lhf[:, :] = recv_buffer
+        
+        #Output the sensible heat flux    
+        if fx is not None:
+            shf = fx.create_dataset(
+                "SHF",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
+
+            for i, d in enumerate(["time", "X", "Y"]):
+                shf.dims[i].attach_scale(fx[d])
+
+        send_buffer[start[0] : end[0], start[1] : end[1]] =  rho0_edge * parameters.CPD * self._tflx[nh[0]:-nh[0], nh[1]:-nh[1]]
+        
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        if fx is not None:
+            shf[:, :] = recv_buffer
+            
+            
+        u80 = u[:,:,k80_below] + (80.0 - z[k80_below]) * (u[:,:,k80_above] - u[:,:,k80_below]) / dz
+        u80[1:,:] = 0.5 * (u80[1:,:] + u80[:-1,:])
+        v80 = v[:,:,k80_below] + (80.0 - z[k80_below]) * (v[:,:,k80_above] - v[:,:,k80_below]) / dz
+        v80[:,1:] =  0.5 * (v80[:,1:] + v80[:,:-1])
+            
+        
+        #Output the sensible heat flux    
+        if fx is not None:
+            U80 = fx.create_dataset(
+                "u80",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
+
+            for i, d in enumerate(["time", "X", "Y"]):
+                U80.dims[i].attach_scale(fx[d])
+
+        send_buffer[start[0] : end[0], start[1] : end[1]] =  u80[nh[0]:-nh[0], nh[1]:-nh[1]]
+        
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        if fx is not None:
+            U80[:, :] = recv_buffer
+        
+        #Output the sensible heat flux    
+        if fx is not None:
+            V80 = fx.create_dataset(
+                "v80",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
+
+            for i, d in enumerate(["time", "X", "Y"]):
+                V80.dims[i].attach_scale(fx[d])
+
+        send_buffer[start[0] : end[0], start[1] : end[1]] =  v80[nh[0]:-nh[0], nh[1]:-nh[1]]
+        
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        if fx is not None:
+            V80[:, :] = recv_buffer
+            
+            
+        return
 
     def update(self):
 
@@ -156,9 +256,10 @@ class SurfaceReanalysis(Surface.SurfaceBase):
             usfc, vsfc, self._Ref.u0, self._Ref.v0, self.gustiness, self._windspeed_sfc
         )
 
-        self._windspeed_sfc *= np.random.uniform(
-            0.5, 1.5, size=(self._windspeed_sfc.shape[0], self._windspeed_sfc.shape[1])
-        )
+
+        #self._windspeed_sfc *= np.random.uniform(
+        #    0.5, 1.5, size=(self._windspeed_sfc.shape[0], self._windspeed_sfc.shape[1])
+        #)
 
         Surface_impl.compute_surface_layer_Ri(
             nh,
