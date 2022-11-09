@@ -69,8 +69,8 @@ class Rayleigh(Damping):
                                 self._timescale_profile_edge, mean, field, tend
                             )
                             
-                        N2 = self._DiagnosticState.get_field('bvf')
-                        Damping_impl.rayleigh_N2(1.0/1800.0, N2,  field, tend)    
+                        #N2 = self._DiagnosticState.get_field('bvf')
+                        #Damping_impl.rayleigh_N2(1.0/1800.0, N2,  field, tend)    
                             
                             
 

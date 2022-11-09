@@ -930,11 +930,17 @@ class MicroP3(MicrophysicsBase):
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
         qc = self._ScalarState.get_field("qc")[nh[0] : -nh[0], nh[1] : -nh[1], :]
+        qi = self._ScalarState.get_field("qi1")[nh[0] : -nh[0], nh[1] : -nh[1], :]
         re = self._DiagnosticState.get_field("diag_effc_3d")[nh[0] : -nh[0], nh[1] : -nh[1], :]
+        rei = self._DiagnosticState.get_field("diag_effi_3d")[nh[0] : -nh[0], nh[1] : -nh[1], :]
         tau = np.zeros_like(qc)
+        tau_i = np.zeros_like(qc)
         mask = re > 0.0
-        tau[mask] =  (1.5 * qc*1000.0 * rho0[np.newaxis, np.newaxis, 0])[mask] * self._Grid.dx[2]/ (1e6 * re[mask])
-        tau = np.sum(tau,axis=2)
+        mask_i = rei > 0.0 
+        
+        tau[mask] =  (1.5 * qc*1000.0 * rho0[np.newaxis, np.newaxis, :])[mask] * self._Grid.dx[2]/ (1e6 * re[mask])
+        tau_i[mask] =  (1.5 * qi*1000.0 * rho0[np.newaxis, np.newaxis, :])[mask] * self._Grid.dx[2]/ (1e6 * rei[mask])
+        tau = np.sum(tau,axis=2) + np.sum(tau_i, axis=2)
         g = 0.86
         re_compute = (1.0-g) * tau  / (2.0 + (1.0 - g) * tau)
 

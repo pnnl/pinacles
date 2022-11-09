@@ -325,3 +325,29 @@ def compute_surface_layer_Ri(
             Ri[i, j] = N2[i, j] * z_b * z_b / (windspeed[i, j] * windspeed[i, j])
 
     return
+
+
+@numba.njit()
+def compute_surface_layer_Ri_N2_passed(
+    nh,
+    z_b,
+    T_b,
+    exner_b,
+    p_b,
+    qv_b,
+    T_surface,
+    exner_surface,
+    qv_surface,
+    windspeed,
+    N2,
+    Ri,
+):
+    # Compute the surface layer richardson number
+    shape = Ri.shape
+    for i in range(nh[0], shape[0] - nh[0]):
+        for j in range(nh[1], shape[1] - nh[1]):
+        
+            # Compute the local richardson number
+            Ri[i, j] = N2[i, j] * z_b * z_b / (windspeed[i, j] * windspeed[i, j])
+
+    return

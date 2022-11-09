@@ -136,6 +136,24 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         u = self._VelocityState.get_field("u")
         v = self._VelocityState.get_field("v")
         
+        
+        #Output the drag coefficnet
+        if fx is not None:
+            cm = fx.create_dataset(
+                "drag_coefficient",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
+
+            for i, d in enumerate(["time", "X", "Y"]):
+                cm.dims[i].attach_scale(fx[d])
+
+        send_buffer[start[0] : end[0], start[1] : end[1]] =  self._cm[nh[0]:-nh[0], nh[1]:-nh[1]]
+        
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        if fx is not None:
+            cm[:, :] = recv_buffer
+        
         #Output the latent heat flux
         if fx is not None:
             lhf = fx.create_dataset(
@@ -237,6 +255,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         s = self._ScalarState.get_field("s")
 
         T = self._DiagnosticState.get_field("T")
+        N2 = self._DiagnosticState.get_field("bvf")
         # Get Tendnecies
         ut = self._VelocityState.get_tend("u")
         vt = self._VelocityState.get_tend("v")
@@ -249,7 +268,10 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         Ssfc = s[:, :, nh[2]]
         qvsfc = qv[:, :, nh[2]]
         Tsfc = T[:, :, nh[2]]
+        N2sfc = N2[:,:,nh[2]]
 
+
+        self._N[:,:] = N2sfc
         self._TSKIN[:, :] = self._TSKIN_pre[:, :]
 
         Surface_impl.compute_windspeed_sfc(
@@ -261,7 +283,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         #    0.5, 1.5, size=(self._windspeed_sfc.shape[0], self._windspeed_sfc.shape[1])
         #)
 
-        Surface_impl.compute_surface_layer_Ri(
+        Surface_impl.compute_surface_layer_Ri_N2_passed(
             nh,
             z_edge[nh[2]] / 2.0,
             self._TSKIN,
@@ -281,30 +303,31 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         self._z0[self._z0 < 0.0002] = 0.0002
 
 
-        # Surface_impl.compute_exchange_coefficients(
-        #     self._Ri,
-        #     z_edge[nh[2]] / 2.0,
-        #     self._z0,
-        #     self._cm,
-        #     self._ch,
-        #     self._psi_m,
-        #     self._psi_h
-        # )
+        Surface_impl.compute_exchange_coefficients(
+             self._Ri,
+             z_edge[nh[2]] / 2.0,
+             self._z0,
+             self._cm,
+             self._ch,
+             self._psi_m,
+             self._psi_h
+         )
 
 
-        Surface_impl.compute_exchange_coefficients_charnock(
-           self._Ri,
-           z_edge[nh[2]] / 2.0,
-           self._z0,
-           self._windspeed_sfc,
-           self._cm,
-           self._ch,
-           self._psi_m,
-           self._psi_h
-        )
+        #Surface_impl.compute_exchange_coefficients_charnock(
+        #   self._Ri,
+        #   z_edge[nh[2]] / 2.0,
+        #   self._z0,
+        #   self._windspeed_sfc,
+        #   self._cm,
+        #   self._ch,
+        #   self._psi_m,
+        #   self._psi_h
+        #)
         self._cq[:, :] = self._ch[:, :]
+        
 
-        self._tflx = -self._ch * self._windspeed_sfc * (Ssfc - self._TSKIN)
+        self._tflx = -self._ch * self._windspeed_sfc * (Tsfc - self._TSKIN)
         self._qvflx = -self._cq * self._windspeed_sfc * (qvsfc - self._qv0)
         self._ustar = np.sqrt(self._cm**2.0 * self._windspeed_sfc**2.0)
 
@@ -1270,40 +1293,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                     ) * weight_v[:,-self.nudge_width-1:-1,np.newaxis]
 
 
-            elif var == "s":
-                s = self._State.get_field(var)
-                st = self._State.get_tend(var)
-                
-                
-                
-                
-                nz_pert = 5
-                amp = 0.1
-                if self._Grid.low_rank[0]: 
-                    start = nh[0]           #     start = nh[0]
-                    end = nh[0] + self.nudge_width
-                    pert_shape = st[start:end, :, nh[2]:nh[2] + nz_pert].shape
-                    s[start:end, :, nh[2]:nh[2] + nz_pert] += np.random.uniform(low=-1.0*amp, high=1.0*amp, size=pert_shape)
-                
-                if self._Grid.high_rank[0]:
-                     start = -nh[0] - self.nudge_width
-                     end = -nh[0]
-                     pert_shape = st[start:end, :, nh[2]:nh[2] + nz_pert].shape
-                     s[start:end, :, nh[2]:nh[2] + nz_pert] += np.random.uniform(low=-1.0*amp, high=1.0*amp, size=pert_shape) 
 
-                if self._Grid.low_rank[1]:
-                    start = nh[1]
-                    end = nh[1] + self.nudge_width    
-                    pert_shape = st[:, start:end, nh[2]:nh[2] + nz_pert].shape
-                    s[:, start:end, nh[2]:nh[2] + nz_pert] += np.random.uniform(low=-1.0*amp, high=1.0*amp, size=pert_shape) 
-                
-                if self._Grid.high_rank[1]:
-                    start = -nh[1] - self.nudge_width
-                    end = -nh[1]
-                    pert_shape = st[:, start:end, nh[2]:nh[2] + nz_pert].shape
-                    s[:, start:end, nh[2]:nh[2] + nz_pert] += np.random.uniform(low=-1.0*amp, high=1.0*amp, size=pert_shape)
-                
-                
             # elif var == "w":
 
             #     w = self._State.get_field(var)
@@ -1338,120 +1328,153 @@ class LateralBCsReanalysis(LateralBCsBase):
             #          - w[:, start: end, :] 
             #      ) * weight[np.newaxis, ::-1, np.newaxis]
 
-            # elif (
-            #     var == "s" or var == "qv"
-            # ):  # or var == "qc" or var=="qi" or var == 'qi1':
-            #     pass 
-                # phi = self._State.get_field(var)
-                # phi_t = self._State.get_tend(var)
-                # s_t = self._State.get_tend("s")
+            elif (
+                var == "s" or var == "qv"
+            ):  # or var == "qc" or var=="qi" or var == 'qi1':
+                pass 
+                phi = self._State.get_field(var)
+                phi_t = self._State.get_tend(var)
+                s_t = self._State.get_tend("s")
 
-                # if var == "s":
-                #     var = "T"
-                #     phi = self._DiagnosticState.get_field("T")
+                if var == "s":
+                    var = "T"
+                    phi = self._DiagnosticState.get_field("T")
 
-                # # Needed for energy source term
-                # L = 0.0
-                # if var == "qc":
-                #     L = parameters.LV
-                # elif var == "qi" or var == "qi1":
-                #     L = parameters.LS
+                # Needed for energy source term
+                L = 0.0
+                if var == "qc":
+                    L = parameters.LV
+                elif var == "qi" or var == "qi1":
+                    L = parameters.LS
 
-                # phi_nudge = (
-                #     self._previous_bdy[var]["x_low"][:, :, :]
-                #     + (
-                #         self._post_bdy[var]["x_low"][:, :, :]
-                #         - self._previous_bdy[var]["x_low"][:, :, :]
-                #     )
-                #     * (self._TimeSteppingController._time - self.time_previous)
-                #     / self.ingest_freq
-                # )
+                phi_nudge = (
+                    self._previous_bdy[var]["x_low"][:, :, :]
+                    + (
+                        self._post_bdy[var]["x_low"][:, :, :]
+                        - self._previous_bdy[var]["x_low"][:, :, :]
+                    )
+                    * (self._TimeSteppingController._time - self.time_previous)
+                    / self.ingest_freq
+                )
 
-                # start = nh[0]
-                # end = nh[0] + self.nudge_width
-                # if self._Grid.low_rank[0]:
-                #     phi_t[start:end, :, :] -= (
-                #         phi[start:end, :, :] - phi_nudge[1:, :, :]
-                #     ) * weight[:, np.newaxis, np.newaxis]
+                start = nh[0]
+                end = nh[0] + self.nudge_width
+                if self._Grid.low_rank[0]:
+                    phi_t[start:end, :, :] -= (
+                        phi[start:end, :, :] - phi_nudge[1:, :, :]
+                    ) * weight[:, np.newaxis, np.newaxis]
 
-                #     s_t[start:end, :, :] += (
-                #         L
-                #         * (phi[start:end, :, :] - phi_nudge[1:, :, :])
-                #         * weight[:, np.newaxis, np.newaxis]
-                #         / parameters.CPD
-                #     )
+                    s_t[start:end, :, :] += (
+                        L
+                        * (phi[start:end, :, :] - phi_nudge[1:, :, :])
+                        * weight[:, np.newaxis, np.newaxis]
+                        / parameters.CPD
+                    )
 
-                # phi_nudge = (
-                #     self._previous_bdy[var]["x_high"][:, :, :]
-                #     + (
-                #         self._post_bdy[var]["x_high"][:, :, :]
-                #         - self._previous_bdy[var]["x_high"][:, :, :]
-                #     )
-                #     * (self._TimeSteppingController._time - self.time_previous)
-                #     / self.ingest_freq
-                # )
+                phi_nudge = (
+                    self._previous_bdy[var]["x_high"][:, :, :]
+                    + (
+                        self._post_bdy[var]["x_high"][:, :, :]
+                        - self._previous_bdy[var]["x_high"][:, :, :]
+                    )
+                    * (self._TimeSteppingController._time - self.time_previous)
+                    / self.ingest_freq
+                )
 
-                # start = -nh[0] - self.nudge_width
-                # end = -nh[0]
+                start = -nh[0] - self.nudge_width
+                end = -nh[0]
 
-                # if self._Grid.high_rank[0]:
-                #     phi_t[start:end, :, :] -= (
-                #         phi[start:end, :, :] - phi_nudge[:-1, :, :]
-                #     ) * weight[::-1, np.newaxis, np.newaxis]
+                if self._Grid.high_rank[0]:
+                    phi_t[start:end, :, :] -= (
+                        phi[start:end, :, :] - phi_nudge[:-1, :, :]
+                    ) * weight[::-1, np.newaxis, np.newaxis]
 
-                #     s_t[start:end, :, :] += (
-                #         L
-                #         * (phi[start:end, :, :] - phi_nudge[:-1, :, :])
-                #         * weight[::-1, np.newaxis, np.newaxis]
-                #         / parameters.CPD
-                #     )
+                    s_t[start:end, :, :] += (
+                        L
+                        * (phi[start:end, :, :] - phi_nudge[:-1, :, :])
+                        * weight[::-1, np.newaxis, np.newaxis]
+                        / parameters.CPD
+                    )
 
-                # phi_nudge = (
-                #     self._previous_bdy[var]["y_low"][:, :, :]
-                #     + (
-                #         self._post_bdy[var]["y_low"][:, :, :]
-                #         - self._previous_bdy[var]["y_low"][:, :, :]
-                #     )
-                #     * (self._TimeSteppingController._time - self.time_previous)
-                #     / self.ingest_freq
-                # )
+                phi_nudge = (
+                    self._previous_bdy[var]["y_low"][:, :, :]
+                    + (
+                        self._post_bdy[var]["y_low"][:, :, :]
+                        - self._previous_bdy[var]["y_low"][:, :, :]
+                    )
+                    * (self._TimeSteppingController._time - self.time_previous)
+                    / self.ingest_freq
+                )
 
-                # start = nh[1]
-                # end = nh[1] + self.nudge_width
-                # if self._Grid.low_rank[1]:
-                #     phi_t[:, start:end, :] -= (
-                #         phi[:, start:end, :] - phi_nudge[:, 1:, :]
-                #     ) * weight[np.newaxis, :, np.newaxis]
+                start = nh[1]
+                end = nh[1] + self.nudge_width
+                if self._Grid.low_rank[1]:
+                    phi_t[:, start:end, :] -= (
+                        phi[:, start:end, :] - phi_nudge[:, 1:, :]
+                    ) * weight[np.newaxis, :, np.newaxis]
 
-                #     s_t[:, start:end, :] += (
-                #         L
-                #         * (phi[:, start:end, :] - phi_nudge[:, 1:, :])
-                #         * weight[np.newaxis, :, np.newaxis]
-                #         / parameters.CPD
-                #     )
+                    s_t[:, start:end, :] += (
+                        L
+                        * (phi[:, start:end, :] - phi_nudge[:, 1:, :])
+                        * weight[np.newaxis, :, np.newaxis]
+                        / parameters.CPD
+                    )
 
-                # phi_nudge = (
-                #     self._previous_bdy[var]["y_high"][:, :, :]
-                #     + (
-                #         self._post_bdy[var]["y_high"][:, :, :]
-                #         - self._previous_bdy[var]["y_high"][:, :, :]
-                #     )
-                #     * (self._TimeSteppingController._time - self.time_previous)
-                #     / self.ingest_freq
-                # )
+                phi_nudge = (
+                    self._previous_bdy[var]["y_high"][:, :, :]
+                    + (
+                        self._post_bdy[var]["y_high"][:, :, :]
+                        - self._previous_bdy[var]["y_high"][:, :, :]
+                    )
+                    * (self._TimeSteppingController._time - self.time_previous)
+                    / self.ingest_freq
+                )
 
-                # start = -nh[1] - self.nudge_width
-                # end = -nh[1]
-                # if self._Grid.high_rank[1]:
-                #     phi_t[:, start:end, :] -= (
-                #         phi[:, start:end, :] - phi_nudge[:, :-1, :]
-                #     ) * weight[np.newaxis, ::-1, np.newaxis]
+                start = -nh[1] - self.nudge_width
+                end = -nh[1]
+                if self._Grid.high_rank[1]:
+                    phi_t[:, start:end, :] -= (
+                        phi[:, start:end, :] - phi_nudge[:, :-1, :]
+                    ) * weight[np.newaxis, ::-1, np.newaxis]
 
-                #     s_t[:, start:end, :] += (
-                #         L
-                #         * (phi[:, start:end, :] - phi_nudge[:, :-1, :])
-                #         * weight[np.newaxis, ::-1, np.newaxis]
-                #         / parameters.CPD
-                #     )
+                    s_t[:, start:end, :] += (
+                        L
+                        * (phi[:, start:end, :] - phi_nudge[:, :-1, :])
+                        * weight[np.newaxis, ::-1, np.newaxis]
+                        / parameters.CPD
+                    )
+
+            if var == "s":
+                s = self._State.get_field(var)      
+                nz_pert = 5
+                amp = 0.1
+                if self._Grid.low_rank[0]: 
+                    start = nh[0]           #     start = nh[0]
+                    end = nh[0] + self.nudge_width + 1
+                    pert_shape = s[start:end, :, nh[2]:nh[2] + nz_pert].shape
+                    s[start:end, :, nh[2]:nh[2] + nz_pert] += np.random.uniform(low=-1.0*amp, high=1.0*amp, size=pert_shape)
+                
+                if self._Grid.high_rank[0]:
+                     start = -nh[0] - self.nudge_width - 1
+                     end = -nh[0]
+                     pert_shape = s[start:end, :, nh[2]:nh[2] + nz_pert].shape
+                     s[start:end, :, nh[2]:nh[2] + nz_pert] += np.random.uniform(low=-1.0*amp, high=1.0*amp, size=pert_shape) 
+
+                if self._Grid.low_rank[1]:
+                    start = nh[1]
+                    end = nh[1] + self.nudge_width + 1    
+                    pert_shape = s[:, start:end, nh[2]:nh[2] + nz_pert].shape
+                    s[:, start:end, nh[2]:nh[2] + nz_pert] += np.random.uniform(low=-1.0*amp, high=1.0*amp, size=pert_shape) 
+                
+                if self._Grid.high_rank[1]:
+                    start = -nh[1] - self.nudge_width
+                    end = -nh[1] -1
+                    pert_shape = s[:, start:end, nh[2]:nh[2] + nz_pert].shape
+                    s[:, start:end, nh[2]:nh[2] + nz_pert] += np.random.uniform(low=-1.0*amp, high=1.0*amp, size=pert_shape)
+                
+                
+
+
+
 
         return
