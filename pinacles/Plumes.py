@@ -330,8 +330,19 @@ class Plumes:
         # This is a list that will store one instance of the Plume class for each physical plume
         self._list_of_plumes = []
 
-        if nest_level == 0:
+
+
+        # if nest_level == 0:
+        #     return
+        try:
+            self._number_of_nests = namelist['nests']["n"]
+        except:
+            self._number_of_nests = 0
+        
+        if self._number_of_nests > 0 and nest_level ==0:
             return
+
+        
         if "plumes" in namelist:
 
             # Store the plume locations
