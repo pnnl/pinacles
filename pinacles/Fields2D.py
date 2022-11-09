@@ -31,7 +31,7 @@ class Fields2D:
         if "qad" in self._ScalarState._dofs:
             self._scalar_list = ["qc","qnc","qad","qnad","qad2","qnad2"]
         else:
-            self._scalar_list = ["qc","qnc"]
+            self._scalar_list = ["qc"]  #,"qnc"]
 
         """Set the output frequency, default it to the stats frequency 
         but allow in to be overridden """
