@@ -26,12 +26,12 @@ class Plume:
         self._plume_heat_flux = 0.0
         self._plume_qc_flux = 0.0
         self._plume_qnc_flux = 0.0
-        
+
         self._plume_qad_flux = 0.0
         self._plume_qnad_flux = 0.0
         self._plume_qad2_flux = 0.0
         self._plume_qnad2_flux = 0.0
-        
+
         # if "qad" in self._ScalarState._dofs:  #check for fluxes
         #     self._scalar_list = ["qc","qnc","qad","qnad","qad2","qnad2"]
 
@@ -73,7 +73,7 @@ class Plume:
 
                 if np.amax(x_local) == np.amax(x_global):
                     plume_value[-n_halo[0] :, :, :] = 0
-                    
+
             if self._boundary_outflow[1]:
                 y_local = self._Grid.y_local
                 y_global = self._Grid.y_global
@@ -164,18 +164,16 @@ class Plume:
         send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
         recv_buffer = np.empty_like(send_buffer)
 
-
         # Compute and output the LWP
         if fx is not None:
             var_nc = fx.create_dataset(
-                        self._scalar_name + "_" + str(z),
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                self._scalar_name + "_" + str(z),
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 var_nc.dims[i].attach_scale(fx[d])
-                
 
         s = self._ScalarState.get_field(self._scalar_name)
 
@@ -186,7 +184,7 @@ class Plume:
 
         if fx is not None:
             var_nc[:, :] = recv_buffer
-            
+
         return
 
     @property
@@ -301,7 +299,7 @@ class Plumes:
         self._n = 0
 
         self.name = "Plumes"
-        
+
         self._scalar_list = []
 
         # This is a list that will store one instance of the Plume class for each physical plume
@@ -310,75 +308,85 @@ class Plumes:
         if "plumes" in namelist:
 
             # Store the plume locations
-            self._locations = namelist["plumes"]["locations"]
+            self._locations_list = namelist["plumes"]["locations"]
 
             # Store when the plumes start
-            self._startimes = namelist["plumes"]["starttimes"]
+            self._starttimes_list = namelist["plumes"]["starttimes"]
 
             # Store the scalar flux of the plumes
-            self._plume_flux = namelist["plumes"]["plume_flux"]
+            self._plume_flux_list = namelist["plumes"]["plume_flux"]
 
             # Store the water vapor flux fo the plumes
-            if 'qv_flux' in namelist['plumes'].keys():
-                self._plume_qv_flux = namelist["plumes"]["qv_flux"]
+            if "qv_flux" in namelist["plumes"].keys():
+                self._plume_qv_flux_list = namelist["plumes"]["qv_flux"]
             else:
-                self._plume_qv_flux = np.zeros_like(self._plume_flux)
+                self._plume_qv_flux_list = np.zeros_like(self._plume_flux_list)
 
             # Store the sensible heat flux of the plumes
-            if 'heat_flux' in namelist['plumes'].keys():
-                self._plume_heat_flux = namelist["plumes"]["heat_flux"]
+            if "heat_flux" in namelist["plumes"].keys():
+                self._plume_heat_flux_list = namelist["plumes"]["heat_flux"]
             else:
-                self._plume_heat_flux = np.zeros_like(self._plume_flux)
+                self._plume_heat_flux_list = np.zeros_like(self._plume_flux_list)
 
             # Store the liquid water flux of the plumes
-            if 'qc_flux' in namelist['plumes'].keys():
-                self._plume_qc_flux = namelist["plumes"]["qc_flux"]
+            if "qc_flux" in namelist["plumes"].keys():
+                self._plume_qc_flux_list = namelist["plumes"]["qc_flux"]
             else:
-                self._plume_qc_flux = np.zeros_like(self._plume_flux)
+                self._plume_qc_flux_list = np.zeros_like(self._plume_flux_list)
 
             # Store the liquid water flux of the plumes
-            if 'qnc_flux' in namelist['plumes'].keys():
-                self._plume_qnc_flux = namelist["plumes"]["qnc_flux"]
+            if "qnc_flux" in namelist["plumes"].keys():
+                self._plume_qnc_flux_list = namelist["plumes"]["qnc_flux"]
             else:
-                self._plume_qnc_flux = np.zeros_like(self._plume_flux)
+                self._plume_qnc_flux_list = np.zeros_like(self._plume_flux_list)
 
             # Store the liquid water flux of the plumes
-            if 'qad_flux' in namelist['plumes'].keys():
-                self._plume_qad_flux = namelist["plumes"]["qad_flux"]
+            if "qad_flux" in namelist["plumes"].keys():
+                self._plume_qad_flux_list = namelist["plumes"]["qad_flux"]
             else:
-                self._plume_qad_flux = np.zeros_like(self._plume_flux)
+                self._plume_qad_flux_list = np.zeros_like(self._plume_flux_list)
 
             # Store the liquid water flux of the plumes
-            if 'qnad_flux' in namelist['plumes'].keys():
-                self._plume_qnad_flux = namelist["plumes"]["qnad_flux"]
+            if "qnad_flux" in namelist["plumes"].keys():
+                self._plume_qnad_flux_list = namelist["plumes"]["qnad_flux"]
             else:
-                self._plume_qnad_flux = np.zeros_like(self._plume_flux)
+                self._plume_qnad_flux_list = np.zeros_like(self._plume_flux_list)
 
             # Store the liquid water flux of the plumes
-            if 'qad2_flux' in namelist['plumes'].keys():
-                self._plume_qad2_flux = namelist["plumes"]["qad2_flux"]
+            if "qad2_flux" in namelist["plumes"].keys():
+                self._plume_qad2_flux_list = namelist["plumes"]["qad2_flux"]
             else:
-                self._plume_qad2_flux = np.zeros_like(self._plume_flux)
+                self._plume_qad2_flux_list = np.zeros_like(self._plume_flux_list)
 
             # Store the liquid water flux of the plumes
-            if 'qnad2_flux' in namelist['plumes'].keys():
-                self._plume_qnad2_flux = namelist["plumes"]["qnad2_flux"]
+            if "qnad2_flux" in namelist["plumes"].keys():
+                self._plume_qnad2_flux_list = namelist["plumes"]["qnad2_flux"]
             else:
-                self._plume_qnad2_flux = np.zeros_like(self._plume_flux)
+                self._plume_qnad2_flux_list = np.zeros_like(self._plume_flux_list)
 
             # Store the boundary treatment
-            self._boundary_outflow = namelist["plumes"]["boundary_outflow"]
+            self._boundary_outflow_list = namelist["plumes"]["boundary_outflow"]
+            self._boundary_outflow_x = False
+            self._boundary_outflow_y = False
+
+            print("boundary outflow shape", np.shape((self._boundary_outflow_list)))
 
             try:
                 self._field2d_zindex = namelist["plumes"]["fields2d_zindex"]
             except:
                 self._field2d_zindex = [0]
-                
-            
-            #number of points used to get an average for resetting outflow boundaries, may need to be adjusted
+
+            # number of points used to get an average for resetting outflow boundaries, may need to be adjusted
             self._boundary_average_npts = 5
 
             # threshold value of plume scalar for resetting other scalars on outflow boundaries, may need to be adjusted
+
+            # Setting it relative to the plume source size
+            # dxs = self._Grid.dx
+            # grid_cell_volume = dxs[0] * dxs[1] * dxs[2]
+            # self._plume_reset_threshold = 1e-6*np.amax(self._plume_flux_list)/grid_cell_volume
+
+            # Fixed value threshold
             self._plume_reset_threshold = 1.0
 
         else:
@@ -386,14 +394,14 @@ class Plumes:
             # to do.
             return
 
-        assert len(self._locations) == len(self._startimes)
-        self._n = len(self._startimes)
+        assert len(self._locations_list) == len(self._starttimes_list)
+        self._n = len(self._starttimes_list)
 
         # Initialize the plumes and update them and print to terminal
         UtilitiesParallel.print_root("Adding, " + str(self._n) + " plumes.")
 
         count = 0
-        for loc, start in zip(self._locations, self._startimes):
+        for loc, start in zip(self._locations_list, self._starttimes_list):
 
             UtilitiesParallel.print_root(
                 "\t Plume added at: "
@@ -421,43 +429,51 @@ class Plumes:
         for i, plume in enumerate(self._list_of_plumes):
 
             # The plume scalar flux    # Todo set units
-            plume.set_plume_flux(self._plume_flux[i])
+            plume.set_plume_flux(self._plume_flux_list[i])
 
             # The plume water vapor flux  # Todo set units
-            plume.set_plume_qv_flux(self._plume_qv_flux[i])
+            plume.set_plume_qv_flux(self._plume_qv_flux_list[i])
 
             # The plume liquid flux  # Todo set units
-            plume.set_plume_qc_flux(self._plume_qc_flux[i])
+            plume.set_plume_qc_flux(self._plume_qc_flux_list[i])
 
             # The plume liquid number flux  # Todo set units
-            plume.set_plume_qnc_flux(self._plume_qnc_flux[i])
+            plume.set_plume_qnc_flux(self._plume_qnc_flux_list[i])
 
             # The plume aerosol flux  # Todo set units   # update scalar_list here
-            plume.set_plume_qad_flux(self._plume_qad_flux[i])
-            if ("qad" not in self._scalar_list and self._plume_qad_flux[i] != 0.0):
-                self._scalar_list.append("qad")            
+            plume.set_plume_qad_flux(self._plume_qad_flux_list[i])
+            if "qad" not in self._scalar_list and self._plume_qad_flux_list[i] != 0.0:
+                self._scalar_list.append("qad")
 
             # The plume aerosol number flux  # Todo set units   # update scalar_list here
-            plume.set_plume_qnad_flux(self._plume_qnad_flux[i])
-            if ("qnad" not in self._scalar_list and self._plume_qad_flux[i] != 0.0):
+            plume.set_plume_qnad_flux(self._plume_qnad_flux_list[i])
+            if "qnad" not in self._scalar_list and self._plume_qnad_flux_list[i] != 0.0:
                 self._scalar_list.append("qnad")
 
             # The plume aerosol flux  # Todo set units   # update scalar_list here
-            plume.set_plume_qad2_flux(self._plume_qad2_flux[i])
-            if ("qad2" not in self._scalar_list and self._plume_qad_flux[i] != 0.0):
+            plume.set_plume_qad2_flux(self._plume_qad2_flux_list[i])
+            if "qad2" not in self._scalar_list and self._plume_qad2_flux_list[i] != 0.0:
                 self._scalar_list.append("qad2")
 
             # The plume aerosol number flux  # Todo set units
-            plume.set_plume_qnad2_flux(self._plume_qnad2_flux[i])
-            if ("qnad2" not in self._scalar_list and self._plume_qad_flux[i] != 0.0):
+            plume.set_plume_qnad2_flux(self._plume_qnad2_flux_list[i])
+            if (
+                "qnad2" not in self._scalar_list
+                and self._plume_qnad2_flux_list[i] != 0.0
+            ):
                 self._scalar_list.append("qnad2")
 
             # The plume heat flux   # Todo set units
-            plume.set_plume_heat_flux(self._plume_heat_flux[i])
+            plume.set_plume_heat_flux(self._plume_heat_flux_list[i])
 
             # set the treatment of the plume scalars on the boundary
-            plume.set_boundary_outflow(self._boundary_outflow[i])
-            
+            plume.set_boundary_outflow(self._boundary_outflow_list[i])
+            # Keep track whether there's *any* boundary outflow to be applied in either direction
+            if self._boundary_outflow_list[i][0]:
+                self._boundary_outflow_x = True
+            if self._boundary_outflow_list[i][1]:
+                self._boundary_outflow_y = True
+
         UtilitiesParallel.print_root(self._scalar_list)
 
         self._Timers.add_timer("Plumes_update")
@@ -469,10 +485,10 @@ class Plumes:
             return
 
         self._Timers.start_timer("Plumes_update")
-        
+
         # Iterate over the list of plumes and update them
-        
-        if self._boundary_outflow[0]:
+
+        if self._boundary_outflow_x:
             x_local = self._Grid.x_local
             x_global = self._Grid.x_global
             npts = self._Grid.n[0] * self._Grid.n[1]
@@ -480,20 +496,40 @@ class Plumes:
 
             for micro_name in self._scalar_list:
                 item = self._ScalarState.get_field(micro_name)
-                item_mean = UtilitiesParallel.ScalarAllReduce(np.sum(np.sum(item[n_halo[0] : n_halo[0] + self._boundary_average_npts, n_halo[1] : -n_halo[1], :], axis=0),axis=0)/ npts)  #temp
+                item_mean = UtilitiesParallel.ScalarAllReduce(
+                    np.sum(
+                        np.sum(
+                            item[
+                                n_halo[0] : n_halo[0] + self._boundary_average_npts,
+                                n_halo[1] : -n_halo[1],
+                                :,
+                            ],
+                            axis=0,
+                        ),
+                        axis=0,
+                    )
+                    / npts
+                )  # temp
 
                 for plume_i in self._list_of_plumes:
-                    plume_value = self._ScalarState.get_field(plume_i._scalar_name)
+                    if plume_i._boundary_outflow[0]:
+                        plume_value = self._ScalarState.get_field(plume_i._scalar_name)
 
-                    if np.amin(x_local) == np.amin(x_global):
-                        for k in range(item.shape[2]):
-                            item[: n_halo[0], :, k][plume_value[: n_halo[0], :, k] > self._plume_reset_threshold] = item_mean[k]
+                        if np.amin(x_local) == np.amin(x_global):
+                            for k in range(item.shape[2]):
+                                item[: n_halo[0], :, k][
+                                    plume_value[: n_halo[0], :, k]
+                                    > self._plume_reset_threshold
+                                ] = item_mean[k]
 
-                    if np.amax(x_local) == np.amax(x_global):
-                        for k in range(item.shape[2]):
-                            item[-n_halo[0] :, :, k][plume_value[-n_halo[0] :, :, k] > self._plume_reset_threshold] = item_mean[k]
-                                    
-        if self._boundary_outflow[1]:
+                        if np.amax(x_local) == np.amax(x_global):
+                            for k in range(item.shape[2]):
+                                item[-n_halo[0] :, :, k][
+                                    plume_value[-n_halo[0] :, :, k]
+                                    > self._plume_reset_threshold
+                                ] = item_mean[k]
+
+        if self._boundary_outflow_y:
             y_local = self._Grid.y_local
             y_global = self._Grid.y_global
             npts = self._Grid.n[0] * self._Grid.n[1]
@@ -501,19 +537,39 @@ class Plumes:
 
             for micro_name in self._scalar_list:
                 item = self._ScalarState.get_field(micro_name)
-                item_mean = UtilitiesParallel.ScalarAllReduce(np.sum(np.sum(item[n_halo[0] : -n_halo[0], n_halo[1] : n_halo[1] + self._boundary_average_npts, :], axis=0),axis=0)/ npts)
+                item_mean = UtilitiesParallel.ScalarAllReduce(
+                    np.sum(
+                        np.sum(
+                            item[
+                                n_halo[0] : -n_halo[0],
+                                n_halo[1] : n_halo[1] + self._boundary_average_npts,
+                                :,
+                            ],
+                            axis=0,
+                        ),
+                        axis=0,
+                    )
+                    / npts
+                )
 
                 for plume_i in self._list_of_plumes:
-                    plume_value = self._ScalarState.get_field(plume_i._scalar_name)
+                    if plume_i._boundary_outflow[1]:
+                        plume_value = self._ScalarState.get_field(plume_i._scalar_name)
 
-                    if np.amin(y_local) == np.amin(y_global):
-                        for k in range(item.shape[2]):
-                            item[:, : n_halo[1], k][plume_value[:, : n_halo[1], k] > self._plume_reset_threshold] = item_mean[k]
+                        if np.amin(y_local) == np.amin(y_global):
+                            for k in range(item.shape[2]):
+                                item[:, : n_halo[1], k][
+                                    plume_value[:, : n_halo[1], k]
+                                    > self._plume_reset_threshold
+                                ] = item_mean[k]
 
-                    if np.amax(y_local) == np.amax(y_global):
-                        for k in range(item.shape[2]):
-                            item[:, -n_halo[1] :, k][plume_value[:, -n_halo[1] :, k] > self._plume_reset_threshold] = item_mean[k]
-            
+                        if np.amax(y_local) == np.amax(y_global):
+                            for k in range(item.shape[2]):
+                                item[:, -n_halo[1] :, k][
+                                    plume_value[:, -n_halo[1] :, k]
+                                    > self._plume_reset_threshold
+                                ] = item_mean[k]
+
         for plume_i in self._list_of_plumes:
             plume_i.update()
 
