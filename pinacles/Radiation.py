@@ -9,6 +9,7 @@ import netCDF4 as nc
 from cffi import FFI
 import ctypes
 import datetime
+from pysolar.solar import get_altitude
 
 ffi = FFI()
 
@@ -132,19 +133,20 @@ class RRTMG:
             rad_data = None  # data.groups["radiation"]
         # self._latitude = rad_data.variables["latitude"][0]
         # self._longitude = rad_data.variables["longitude"][0]
-        date = datetime.datetime(
+        self.date_base = date = datetime.datetime(
             namelist["time"]["year"],
             namelist["time"]["month"],
             namelist["time"]["day"],
             namelist["time"]["hour"],
+            tzinfo=datetime.timezone.utc,
         )
 
-        day = (
-            date.timetuple().tm_yday
-        )  # namelist['time']['day'] #rad_data.variables["day_of_year"][0]
-        self._hourz_init = namelist["time"]["hour"]  # rad_data.variables["hour_utc"][0]
+        # day = (
+        #    date.timetuple().tm_yday
+        # )  # namelist['time']['day'] #rad_data.variables["day_of_year"][0]
+        # self._hourz_init = namelist["time"]["hour"]  # rad_data.variables["hour_utc"][0]
 
-        self._dyofyr_init = np.floor(day) + self._hourz_init / 24.0
+        # self._dyofyr_init = np.floor(day) + self._hourz_init / 24.0
         try:
             self._emis = rad_data.variables["emissivity"][0]
         except:
@@ -209,7 +211,6 @@ class RRTMG:
             (self._Grid.local_shape[0], self._Grid.local_shape[1]), dtype=np.double
         )
 
-
         self._restart_attributes = [
             "time_elapsed",
             "_profile_o3",
@@ -228,19 +229,15 @@ class RRTMG:
         if not self._compute_radiation:
             return
         n_halo = self._Grid.n_halo[2]
-        
+
         lon, lat, p = self._Ingest.get_P(shift=0)
         lon, lat, T = self._Ingest.get_T(shift=0)
         lon, lat, qv = self._Ingest.get_qv(shift=0)
-        
-        p = np.mean(p,axis=(1,2))
-        T = np.mean(T,axis=(1,2))
-        qv = np.mean(qv,axis=(1,2))
-        
 
+        p = np.mean(p, axis=(1, 2))
+        T = np.mean(T, axis=(1, 2))
+        qv = np.mean(qv, axis=(1, 2))
 
-
-        
         # data = nc.Dataset(self._radiation_file_path, "r")
         # try:
         #    rad_data = data.groups["radiation_varanal"]
@@ -252,8 +249,8 @@ class RRTMG:
         p_data = p
         t_data = T
         qv_data = qv
-        ql_data = np.zeros_like(qv)#rad_data.variables["liquid_mixing_ratio"][:]
-        qi_data = np.zeros_like(qv)#rad_data.variables["ice_mixing_ratio"][:]
+        ql_data = np.zeros_like(qv)  # rad_data.variables["liquid_mixing_ratio"][:]
+        qi_data = np.zeros_like(qv)  # rad_data.variables["ice_mixing_ratio"][:]
         # data.close()
 
         # Configure a few buffer points in the pressure profile
@@ -262,12 +259,9 @@ class RRTMG:
         )
         p_trial = p_data[p_data < self._Ref._P0[-n_halo]]
 
-        
         dp_trial = np.abs(p_trial[1] - p_trial[2])
         dp_geom = np.geomspace(dp_model_top * 1.5, dp_trial, num=10)
         p_buffer = np.array([self._Ref._P0_edge[-n_halo]])
-
-
 
         i = 0
         while p_buffer[i] + 2 * dp_trial > p_trial[1] and i < 10:
@@ -291,7 +285,6 @@ class RRTMG:
             self._Ref._P0_edge[_nhalo[2] - 1 : -_nhalo[2]],
             0.5 * (p_ext_full + np.append(p_ext_full[1:], 0)),
         )
-
 
         lw_input_file = self._rrtmg_lib_path + "rrtmg_lw.nc"
         lw_gas = nc.Dataset(lw_input_file, "r")
@@ -317,7 +310,6 @@ class RRTMG:
 
         # plt.figure(2)
         # plt.plot(lw_pressure,lw_absorber[:,index_o3],'o')
-
 
         return
 
@@ -350,15 +342,27 @@ class RRTMG:
                 # i.e. at the beginning of a restarted run
                 self.time_elapsed = 0.0
             # TODO: testing of this code
-            self.hourz = self._hourz_init + self._TimeSteppingController.time / 3600.0
-            self.dyofyr = self._dyofyr_init + np.floor_divide(
-                self._TimeSteppingController.time, 86400.0
-            )
-            if self.hourz > 24.0:
-                self.hourz = np.remainder(self.hourz, 24.0)
-            self.coszen = cos_sza(
-                self.dyofyr, self.hourz, self._Grid.lat_local, self._Grid.lon_local
-            )
+            # self.hourz = self._hourz_init + self._TimeSteppingController.time / 3600.0
+            # self.dyofyr = self._dyofyr_init + np.floor_divide(
+            #    self._TimeSteppingController.time, 86400.0
+            # )
+            # if self.hourz > 24.0:
+            #    self.hourz = np.remainder(self.hourz, 24.0)
+            self.coszen = np.cos(
+                np.pi
+                / 180.0
+                * (
+                    90.0
+                    - get_altitude(
+                        self._Grid.lat_local,
+                        self._Grid.lon_local,
+                        self.date_base
+                        + datetime.timedelta(seconds=self._TimeSteppingController.time),
+                    )
+                )
+            )  # cos_sza(
+            # self.dyofyr, self.hourz, self._Grid.lat_local, self._Grid.lon_local
+            # )
 
             # RRTMG flags. Hardwiring for now
             icld = 1
@@ -382,8 +386,8 @@ class RRTMG:
             _nlay = (
                 _ngrid_local[2]
                 - 2 * _nhalo[2]
-                   + np.shape(self.p_extension)[0]
-                   + np.shape(self.p_buffer)[0]
+                + np.shape(self.p_extension)[0]
+                + np.shape(self.p_buffer)[0]
             )
             # inputs to RRTMG
             play = np.zeros((_ncol, _nlay), dtype=np.double, order="F")  # hPA !!!
@@ -391,7 +395,7 @@ class RRTMG:
             tlay = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             tlev = np.zeros((_ncol, _nlay + 1), dtype=np.double, order="F")
             tsfc = np.ravel(
-                self._Surf.T_surface[_nhalo[0]:-_nhalo[0], _nhalo[1]:-_nhalo[1]]
+                self._Surf.T_surface[_nhalo[0] : -_nhalo[0], _nhalo[1] : -_nhalo[1]]
             )  # np.ones((_ncol), dtype=np.double, order="F") * self._Surf.T_surface
             h2ovmr = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
             o3vmr = np.zeros((_ncol, _nlay), dtype=np.double, order="F")
@@ -494,7 +498,7 @@ class RRTMG:
             # plt.show()
 
             # qv to rrtmg shape; convert to vmr
-            
+
             to_rrtmg_shape(
                 _nhalo,
                 self._ScalarState.get_field("qv"),
@@ -582,13 +586,11 @@ class RRTMG:
                 np.repeat(self._profile_o3[np.newaxis, :], _ncol, axis=0)
             )
 
-
-
-            # Let make sure variables that need to be positive are positive this corrects the vlaues for the 
-            # purposes of the radiation but doesn't change the prognostic variables. 
+            # Let make sure variables that need to be positive are positive this corrects the vlaues for the
+            # purposes of the radiation but doesn't change the prognostic variables.
             h2ovmr[h2ovmr < 1e-9] = 1e-9
-            cicewp[cicewp< 0.0] = 0.0
-            cliqwp[cliqwp < 0.0] = 0.0 
+            cicewp[cicewp < 0.0] = 0.0
+            cliqwp[cliqwp < 0.0] = 0.0
 
             self._lib_lw.c_rrtmg_lw(
                 _ncol,
@@ -691,10 +693,15 @@ class RRTMG:
             self._toa_lw_dn = np.sum(dflx_lw[:, -1]) / npts
             self._toa_lw_up = np.sum(uflx_lw[:, -1]) / npts
 
-            self._toa_sw_dn_2d[:,:]= dflx_sw[:, -1].reshape(self._toa_sw_dn_2d.shape, order='C')
-            self._surf_sw_dn_2d[:,:] = dflx_sw[:, 0].reshape(self._toa_sw_dn_2d.shape, order='C')
-            self._toa_lw_up_2d[:,:] = uflx_lw[:, -1].reshape(self._toa_sw_dn_2d.shape, order='C')
-
+            self._toa_sw_dn_2d[:, :] = dflx_sw[:, -1].reshape(
+                self._toa_sw_dn_2d.shape, order="C"
+            )
+            self._surf_sw_dn_2d[:, :] = dflx_sw[:, 0].reshape(
+                self._toa_sw_dn_2d.shape, order="C"
+            )
+            self._toa_lw_up_2d[:, :] = uflx_lw[:, -1].reshape(
+                self._toa_sw_dn_2d.shape, order="C"
+            )
 
             ds_hr_lw = self._DiagnosticState.get_field("heating_rate_lw")
             ds_hr_sw = self._DiagnosticState.get_field("heating_rate_sw")
@@ -846,7 +853,7 @@ class RRTMG:
         return
 
     def io_fields2d_update(self, fx):
-        
+
         start = self._Grid.local_start
         end = self._Grid._local_end
         send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
@@ -864,11 +871,10 @@ class RRTMG:
 
         send_buffer[start[0] : end[0], start[1] : end[1]] = self._toa_lw_up_2d
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
-        
+
         if fx is not None:
             toa[:, :] = recv_buffer
-        
-        
+
         return
 
     @property
@@ -984,6 +990,8 @@ def as_pointer(numpy_array):
 
 @numba.njit
 def cos_sza(jday, hourz, dlat, dlon):
+
+    dlon += 180.0
 
     epsiln = 0.016733
     sinob = 0.3978
