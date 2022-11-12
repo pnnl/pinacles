@@ -353,6 +353,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         nh = self._Grid.n_halo
         dxi2 = self._Grid.dxi[2]
         z_edge = self._Grid.z_edge_global
+        zsfc = self._Grid.z_local[nh[2]]
 
         alpha0 = self._Ref.alpha0
         alpha0_edge = self._Ref.alpha0_edge
@@ -448,7 +449,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         )
         self._cq[:, :] = self._ch[:, :]
 
-        self._tflx = -self._ch * self._windspeed_sfc * (Tsfc - self._TSKIN)
+        self._tflx = -self._ch * self._windspeed_sfc * ((Tsfc + parameters.G*parameters.ICPD * zsfc) - self._TSKIN)
         self._qvflx = -self._cq * self._windspeed_sfc * (qvsfc - self._qv0)
 
 
