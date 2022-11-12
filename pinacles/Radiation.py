@@ -203,13 +203,36 @@ class RRTMG:
         self._toa_sw_dn_2d = np.zeros(
             (self._Grid.local_shape[0], self._Grid.local_shape[1]), dtype=np.double
         )
+   
+        self._toa_sw_up_2d = np.zeros(
+            (self._Grid.local_shape[0], self._Grid.local_shape[1]), dtype=np.double
+        )     
+        
+        self._toa_lw_dn_2d = np.zeros(
+            (self._Grid.local_shape[0], self._Grid.local_shape[1]), dtype=np.double
+        )
+        
+        self._toa_lw_up_2d = np.zeros(
+            (self._Grid.local_shape[0], self._Grid.local_shape[1]), dtype=np.double
+        )
+        
         self._surf_sw_dn_2d = np.zeros(
             (self._Grid.local_shape[0], self._Grid.local_shape[1]), dtype=np.double
         )
 
-        self._toa_lw_up_2d = np.zeros(
+        self._surf_sw_up_2d = np.zeros(
             (self._Grid.local_shape[0], self._Grid.local_shape[1]), dtype=np.double
         )
+    
+        self._surf_lw_dn_2d = np.zeros(
+            (self._Grid.local_shape[0], self._Grid.local_shape[1]), dtype=np.double
+        )
+
+        self._surf_lw_up_2d = np.zeros(
+            (self._Grid.local_shape[0], self._Grid.local_shape[1]), dtype=np.double
+        )
+    
+
 
         self._restart_attributes = [
             "time_elapsed",
@@ -696,10 +719,33 @@ class RRTMG:
             self._toa_sw_dn_2d[:, :] = dflx_sw[:, -1].reshape(
                 self._toa_sw_dn_2d.shape, order="C"
             )
+            
+            self._toa_sw_up_2d[:, :] = uflx_sw[:, -1].reshape(
+                self._toa_sw_dn_2d.shape, order="C"
+            )
+            
+            self._toa_lw_dn_2d[:, :] = dflx_lw[:, -1].reshape(
+                self._toa_sw_dn_2d.shape, order="C"
+            )
+            
+            self._toa_lw_up_2d[:, :] = uflx_lw[:, -1].reshape(
+                self._toa_sw_dn_2d.shape, order="C"
+            )
+            
+            
             self._surf_sw_dn_2d[:, :] = dflx_sw[:, 0].reshape(
                 self._toa_sw_dn_2d.shape, order="C"
             )
-            self._toa_lw_up_2d[:, :] = uflx_lw[:, -1].reshape(
+            
+            self._surf_sw_up_2d[:, :] = uflx_sw[:, 0].reshape(
+                self._toa_sw_dn_2d.shape, order="C"
+            )
+            
+            self._surf_lw_dn_2d[:, :] = dflx_lw[:, 0].reshape(
+                self._toa_sw_dn_2d.shape, order="C"
+            )
+            
+            self._surf_lw_up_2d[:, :] = uflx_lw[:, 0].reshape(
                 self._toa_sw_dn_2d.shape, order="C"
             )
 
@@ -858,23 +904,59 @@ class RRTMG:
         end = self._Grid._local_end
         send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[1]), dtype=np.double)
         recv_buffer = np.empty_like(send_buffer)
+        nh = self._Grid.n_halo
 
-        if fx is not None:
-            toa = fx.create_dataset(
-                "LW_UP_TOA",
-                (1, self._Grid.n[0], self._Grid.n[1]),
-                dtype=np.double,
-            )
+        out_list = []
+        out_list.append({'name':'LW_UP_TOA', 'data': self._toa_lw_up_2d})
+        out_list.append({'name':'LW_DN_TOA', 'data': self._toa_lw_dn_2d})
+        out_list.append({'name':'SW_UP_TOA', 'data': self._toa_sw_up_2d})
+        out_list.append({'name':'SW_DN_TOA', 'data': self._toa_sw_dn_2d})
 
-            for i, d in enumerate(["time", "X", "Y"]):
-                toa.dims[i].attach_scale(fx[d])
+        out_list.append({'name':'LW_UP_SURF', 'data': self._surf_lw_up_2d})
+        out_list.append({'name':'LW_DN_SURF', 'data': self._surf_lw_dn_2d})
+        out_list.append({'name':'SW_UP_SURF', 'data': self._surf_sw_up_2d})
+        out_list.append({'name':'SW_DN_SURF', 'data': self._surf_sw_dn_2d})
 
-        send_buffer[start[0] : end[0], start[1] : end[1]] = self._toa_lw_up_2d
-        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+        #Output the sensible heat flux    
+        for out_var in out_list:
+            if fx is not None:
+                vh = fx.create_dataset(
+                    out_var['name'],
+                    (1, self._Grid.n[0], self._Grid.n[1]),
+                    dtype=np.double,
+                )
 
-        if fx is not None:
-            toa[:, :] = recv_buffer
+                for i, d in enumerate(["time", "X", "Y"]):
+                    vh.dims[i].attach_scale(fx[d])
 
+            send_buffer[start[0] : end[0], start[1] : end[1]] = out_var['data'][:,:]
+            
+            MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+            if fx is not None:
+                vh[:, :] = recv_buffer
+            
+
+        return
+
+    def io_tower_init(self, rt_grp):
+        vars = ["LW_UP_SURF", "LW_DN_SURF", "SW_UP_SURF", "SW_DN_SURF"]
+
+        for v in vars:
+            rt_grp.createVariable(v, np.double, dimensions=("time"))
+
+    def io_tower(self, rt_grp, i_indx, j_indx):
+
+        out_list = []
+        
+        out_list.append({"name": "LW_UP_SURF", "data": self._surf_lw_up_2d})
+        out_list.append({"name": "LW_DN_SURF", "data": self._surf_lw_dn_2d})
+        out_list.append({"name": "SW_UP_SURF", "data": self._surf_sw_up_2d})
+        out_list.append({"name": "SW_DN_SURF", "data": self._surf_sw_dn_2d})
+                
+        for out_var in out_list:
+            rt_grp[out_var['name']][-1] = out_var['data'][i_indx, j_indx]
+
+                
         return
 
     @property

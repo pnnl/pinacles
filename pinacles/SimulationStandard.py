@@ -1,4 +1,5 @@
 import time
+
 global_start_time = time.perf_counter()
 import numba
 import json
@@ -107,7 +108,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self._namelist, self.ModelGrid, self.DiagnosticState, self.VelocityState
         )
 
-        #Ingest data
+        # Ingest data
         self.Ingest = Ingest.IngestFactory(
             self._namelist, self.ModelGrid, self.TimeSteppingController
         )
@@ -152,16 +153,14 @@ class SimulationStandard(SimulationBase.SimulationBase):
             bcs="value zero",
         )
 
-        #self.ScalarState.add_variable(
+        # self.ScalarState.add_variable(
         #    "spray",
         #    long_name="spray concentration",
         #    units="kg/kg",
         #    latex_name="spray",
         #    flux_divergence='EMONO',
         #    limit=True
-        #)
-
-
+        # )
 
         # Instantiate kinematics and the SGS model
         self.Kine = Kinematics.Kinematics(
@@ -350,7 +349,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.VelocityTimeStepping.initialize()
 
         if self.ParentNest is None:
-            print('Nest None')
+            print("Nest None")
             self.LBC = LateralBCsFactory.LateralBCsFactory(
                 self._namelist,
                 self.ModelGrid,
@@ -400,9 +399,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
         if self.Ingest is not None:
             self.Ingest.initialize()
 
-
-
-
         # Do case sepcific initalizations the initial profiles are integrated here
         Initialization.initialize(
             self._namelist,
@@ -427,8 +423,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Now that the initial profiles have been integrated, the pressure solver and be initialized
         self.PSolver.initialize()
-
-
 
         # Initialize mean profiles for top of domain damping
         # self.RayleighDamping.init_means()
@@ -459,7 +453,12 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Instantiate optional TowerIO
         self.IOTower = TowersIO.Towers(
-            self._namelist, self.Timers, self.ModelGrid, self.TimeSteppingController
+            self._namelist,
+            self.Timers,
+            self.ModelGrid,
+            self.TimeSteppingController,
+            self.Surf,
+            self.Rad,
         )
         # Add state container to TowerIO
         # Todo move this inside of TowerIO class instantiation
@@ -589,6 +588,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Thermo.update(apply_buoyancy=False)
         self.Rad.update(force=True)
         self.PSolver.update()
+        self.Surf.update()
 
         # import pylab as plt
         # plt.subplot(311)
@@ -720,14 +720,14 @@ class SimulationStandard(SimulationBase.SimulationBase):
             bcs="value zero",
         )
 
-        #self.ScalarState.add_variable(
+        # self.ScalarState.add_variable(
         #    "spray",
         #    long_name="spray concentration",
         #    units="kg/kg",
         #    latex_name="spray",
         #    flux_divergence='EMONO',
         #    limit=True
-        #)
+        # )
 
         # Instantiate kinematics and the SGS model
         self.Kine = Kinematics.Kinematics(
@@ -955,7 +955,12 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Instantiate optional TowerIO
         self.IOTower = TowersIO.Towers(
-            self._namelist, self.Timers, self.ModelGrid, self.TimeSteppingController
+            self._namelist,
+            self.Timers,
+            self.ModelGrid,
+            self.TimeSteppingController,
+            self.Surf,
+            self.Rad,
         )
         # Add state container to TowerIO
         # Todo move this inside of TowerIO class instantiation
@@ -1137,7 +1142,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.ScalarDiff.update()
                 self.MomDiff.update()
 
-                #self.PBL.update()
+                # self.PBL.update()
 
                 # Do Damping
                 self.RayleighDamping.update()
@@ -1219,7 +1224,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 )
 
             # Here we use recursion to update all sub-nests
-            if len(ListOfSims) -1 > self._nest_num:
+            if len(ListOfSims) - 1 > self._nest_num:
                 if MPI.COMM_WORLD.Get_rank() == 0:
                     print(
                         "Recursively calling update of Nest " + str(self._nest_num + 1),
@@ -1229,14 +1234,14 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 ListOfSims[self._nest_num + 1].update(
                     integrate_by_dt=self.TimeSteppingController._dt,
                     ParentNest=ListOfSims[self._nest_num],
-                    ListOfSims = ListOfSims
+                    ListOfSims=ListOfSims,
                 )
-                
+
             if ParentNest is not None and self.LBCVel.two_way:
                 self.LBC.update_parent(dt=self.TimeSteppingController.dt)
                 ParentNest.ScalarState.boundary_exchange()
                 ParentNest.ScalarState.update_all_bcs()
-                
+
                 self.LBCVel.update_parent(dt=self.TimeSteppingController.dt)
                 ParentNest.VelocityState.boundary_exchange()
                 ParentNest.VelocityState.update_all_bcs()
@@ -1248,8 +1253,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     lbcs.set_vars_on_boundary(ParentNest=ParentNest)
 
                 ParentNest.LBCVel.update(normal=False)
-
-
 
         return
 

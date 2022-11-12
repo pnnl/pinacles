@@ -48,7 +48,7 @@ def factory(
     elif casename == "testbed":
         return CaseTestbed.SurfaceTestbed(
             namelist,
-            Timers,
+            Timers, 
             Grid,
             Ref,
             VelocityState,
@@ -66,6 +66,7 @@ def factory(
             ScalarState,
             DiagnosticState,
             Ingest,
+            TimeSteppingController
         )
     else:
         return Surface.SurfaceBase(

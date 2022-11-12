@@ -267,7 +267,7 @@ def exchange_coefficients_charnock(Ri, zb, z0, windspeed):
         u_star = np.sqrt(cm) * windspeed
         z0 = 0.015 * u_star * u_star / parameters.G
 
-    return cm, ch, psi_m, psi_h
+    return cm, ch, psi_m, psi_h, z0
 
 
 @numba.njit()
@@ -286,8 +286,9 @@ def compute_exchange_coefficients_charnock(Ri, zb, z0, windspeed, cm, ch, psi_m,
     shape = cm.shape
     for i in range(1, shape[0]):
         for j in range(1, shape[1]):
-            cm[i, j], ch[i, j], psi_m[i,j], psi_h[i,j]= exchange_coefficients_charnock(
-                Ri[i, j], zb, z0[i, j], windspeed[i, j]
+            z0_i = z0[i,j]
+            cm[i, j], ch[i, j], psi_m[i,j], psi_h[i,j], z0[i,j]= exchange_coefficients_charnock(
+                Ri[i, j], zb, z0_i, windspeed[i, j]
             )  # , cm[i,j], ch[i,j])
     return 
 
