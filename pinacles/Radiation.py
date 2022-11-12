@@ -946,6 +946,7 @@ class RRTMG:
 
     def io_tower(self, rt_grp, i_indx, j_indx):
 
+	nh = self._Grid.n_halo
         out_list = []
         
         out_list.append({"name": "LW_UP_SURF", "data": self._surf_lw_up_2d})
@@ -954,7 +955,7 @@ class RRTMG:
         out_list.append({"name": "SW_DN_SURF", "data": self._surf_sw_dn_2d})
                 
         for out_var in out_list:
-            rt_grp[out_var['name']][-1] = out_var['data'][i_indx, j_indx]
+            rt_grp[out_var['name']][-1] = out_var['data'][i_indx-nh[0], j_indx-nh[1]]
 
                 
         return
