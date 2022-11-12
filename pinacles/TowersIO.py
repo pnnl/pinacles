@@ -104,7 +104,7 @@ class Tower:
             self._Surface.io_tower_init(rt_grp)
 
         if hasattr(self._Rad, 'io_tower_init'):
-            self._Surface.io_tower_init(rt_grp)
+            self._Rad.io_tower_init(rt_grp)
 
         rt_grp.close()
         return
