@@ -946,7 +946,7 @@ class RRTMG:
 
     def io_tower(self, rt_grp, i_indx, j_indx):
 
-	nh = self._Grid.n_halo
+        nh = self._Grid.n_halo
         out_list = []
         
         out_list.append({"name": "LW_UP_SURF", "data": self._surf_lw_up_2d})
