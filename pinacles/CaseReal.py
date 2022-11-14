@@ -65,6 +65,8 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         self._windspeed10 = np.zeros_like(self._windspeed_sfc)
         self._u10 = np.zeros_like(self._windspeed_sfc)
         self._v10 = np.zeros_like(self._windspeed_sfc)
+        self._deltas_sfc = np.zeros_like(self._windspeed_sfc)
+        self._deltaqv_sfc = np.zeros_like(self._windspeed_sfc)
 
         self._u4 = np.zeros_like(self._windspeed_sfc)
         self._v4 = np.zeros_like(self._windspeed_sfc)
@@ -145,25 +147,6 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         u = self._VelocityState.get_field("u")
         v = self._VelocityState.get_field("v")
 
-        # Output the drag coefficnet
-        if fx is not None:
-            cm = fx.create_dataset(
-                "drag_coefficient",
-                (1, self._Grid.n[0], self._Grid.n[1]),
-                dtype=np.double,
-            )
-
-            for i, d in enumerate(["time", "X", "Y"]):
-                cm.dims[i].attach_scale(fx[d])
-
-        send_buffer[start[0] : end[0], start[1] : end[1]] = self._cm[
-            nh[0] : -nh[0], nh[1] : -nh[1]
-        ]
-
-        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
-        if fx is not None:
-            cm[:, :] = recv_buffer
-
         # Output the latent heat flux
         if fx is not None:
             lhf = fx.create_dataset(
@@ -215,6 +198,10 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         out_list.append({"name": "z0", "data": self._z0})
         out_list.append({"name": "T4", "data": self._T4})
         out_list.append({"name": "qv4", "data": self._qv4})
+        out_list.append({"name": "cm", "data": self._cm})
+        out_list.append({"name": "cq", "data": self._cq})
+        out_list.append({"name": "deltaS_sfc", "data": self._deltas_sfc})
+        out_list.append({"name": "deltaqv_sfc", "data": self._deltaqv_sfc})
         # Output the sensible heat flux
         for out_var in out_list:
             if fx is not None:
@@ -319,7 +306,11 @@ class SurfaceReanalysis(Surface.SurfaceBase):
             "tauy",
             "z0",
             "T4", 
-            "qv4"
+            "qv4",
+            "cm", 
+            "cq",
+            "deltaS_sfc", 
+            "deltaqv_sfc"
         ]
         for v in vars:
             rt_grp.createVariable(v, np.double, dimensions=("time"))
@@ -338,8 +329,12 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         out_list.append({"name": "z0", "data": self._z0})
         out_list.append({"name": "T4", "data": self._T4})
         out_list.append({"name": "qv4", "data": self._qv4})
-        out_list.append({"name": "LHF", "data": self._shf})
-        out_list.append({"name": "SHF", "data": self._lhf})
+        out_list.append({"name": "LHF", "data": self._lhf})
+        out_list.append({"name": "SHF", "data": self._shf})
+        out_list.append({"name": "cm", "data": self._cm})
+        out_list.append({"name": "cq", "data": self._cq})
+        out_list.append({"name": "deltaS_sfc", "data": self._deltas_sfc})
+        out_list.append({"name": "deltaqv_sfc", "data": self._deltaqv_sfc})
         
         for out_var in out_list:
             rt_grp[out_var['name']][-1] = out_var['data'][i_indx, j_indx]
@@ -354,6 +349,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         dxi2 = self._Grid.dxi[2]
         z_edge = self._Grid.z_edge_global
         zsfc = self._Grid.z_local[nh[2]]
+
 
         alpha0 = self._Ref.alpha0
         alpha0_edge = self._Ref.alpha0_edge
@@ -449,8 +445,11 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         )
         self._cq[:, :] = self._ch[:, :]
 
-        self._tflx = -self._ch * self._windspeed_sfc * ((Tsfc + parameters.G*parameters.ICPD * zsfc) - self._TSKIN)
-        self._qvflx = -self._cq * self._windspeed_sfc * (qvsfc - self._qv0)
+
+        self._deltas_sfc = ((Tsfc + parameters.G*parameters.ICPD * zsfc) - self._TSKIN)
+        self._deltaqv_sfc = (qvsfc - self._qv0)
+        self._tflx = -self._ch * self._windspeed_sfc * self._deltas_sfc
+        self._qvflx = -self._cq * self._windspeed_sfc * self._deltaqv_sfc
 
 
         self._lhf = self._qvflx * parameters.LV * rho0_edge[nh[0] - 1]
