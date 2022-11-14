@@ -258,8 +258,8 @@ class RRTMG:
         lon, lat, qv = self._Ingest.get_qv(shift=0)
 
         p = np.mean(p, axis=(1, 2))
-        T = np.mean(T, axis=(1, 2))
-        qv = np.mean(qv, axis=(1, 2))
+        T = np.mean(T[1:], axis=(1, 2))
+        qv = np.mean(qv[1:], axis=(1, 2))
 
         # data = nc.Dataset(self._radiation_file_path, "r")
         # try:

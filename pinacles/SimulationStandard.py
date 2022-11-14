@@ -459,6 +459,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.TimeSteppingController,
             self.Surf,
             self.Rad,
+            self.Micro
         )
         # Add state container to TowerIO
         # Todo move this inside of TowerIO class instantiation
@@ -961,6 +962,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.TimeSteppingController,
             self.Surf,
             self.Rad,
+            self.Micro
         )
         # Add state container to TowerIO
         # Todo move this inside of TowerIO class instantiation

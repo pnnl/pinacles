@@ -906,7 +906,7 @@ class MicroP3(MicrophysicsBase):
         rho0 = self._Ref.rho0
         qc = self._ScalarState.get_field("qc")[nh[0] : -nh[0], nh[1] : -nh[1], :]
         lwp_compute = np.sum(
-            qc * rho0[np.newaxis, np.newaxis, 0] * self._Grid.dx[2], axis=2
+            qc * rho0[np.newaxis, np.newaxis, :] * self._Grid.dx[2], axis=2
         )
 
         send_buffer.fill(0.0)
@@ -965,7 +965,7 @@ class MicroP3(MicrophysicsBase):
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
         qc = self._ScalarState.get_field("qi1")[nh[0] : -nh[0], nh[1] : -nh[1], :]
-        iwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis, 0]* self._Grid.dx[2], axis=2)
+        iwp_compute = np.sum(qc * rho0[np.newaxis, np.newaxis, :]* self._Grid.dx[2], axis=2)
 
         send_buffer.fill(0.0)
         send_buffer[start[0] : end[0], start[1] : end[1]] = iwp_compute
@@ -996,6 +996,23 @@ class MicroP3(MicrophysicsBase):
         for att in self._restart_attributes:
             self.__dict__[att] = data_dict[key][att]
 
+        return
+
+
+    def io_tower_init(self, rt_grp):
+       rt_grp.createVariable("LWP", np.double, dimensions=("time"))
+
+    def io_tower(self, rt_grp, i_indx, j_indx):
+        
+
+        rho0 = self._Ref.rho0
+        qc = self._ScalarState.get_field("qc")[i_indx, j_indx, :]
+        lwp_compute = np.sum(
+            qc * rho0[:] * self._Grid.dx[2]
+        )
+        
+        rt_grp['LWP'][-1] = lwp_compute
+        
         return
 
     def dump_restart(self, data_dict):

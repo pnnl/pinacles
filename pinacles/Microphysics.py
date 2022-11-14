@@ -141,6 +141,12 @@ class MicrophysicsBase:
 
     def io_fields2d_update(self, nc_grp):
         return
+    
+    def io_tower(self, rt_grp, i_indx, j_indx):
+        return
+
+    def io_tower_init(self, rt_grp):
+       return
 
     def get_qc(self):
         return np.zeros((self._Grid._ngrid_local), dtype=np.double)
