@@ -1537,7 +1537,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                     pert_shape = s[start:end, :, nh[2] : nh[2] + nz_pert].shape
                     s[start:end, :, nh[2] : nh[2] + nz_pert] += np.random.uniform(
                         low=-1.0 * amp, high=1.0 * amp, size=pert_shape
-                    )  # * 0.0
+                    )   * 0.0
 
                 if self._Grid.high_rank[0]:
                     start = -nh[0] - self.nudge_width
@@ -1545,7 +1545,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                     pert_shape = s[start:end, :, nh[2] : nh[2] + nz_pert].shape
                     s[start:end, :, nh[2] : nh[2] + nz_pert] += np.random.uniform(
                         low=-1.0 * amp, high=1.0 * amp, size=pert_shape
-                    )  # * 0.0
+                    )   * 0.0
 
                 if self._Grid.low_rank[1]:
                     start = nh[1]
@@ -1553,7 +1553,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                     pert_shape = s[:, start:end, nh[2] : nh[2] + nz_pert].shape
                     s[:, start:end, nh[2] : nh[2] + nz_pert] += np.random.uniform(
                         low=-1.0 * amp, high=1.0 * amp, size=pert_shape
-                    )  # * 0.0
+                    )   * 0.0
 
                 if self._Grid.high_rank[1]:
                     start = -nh[1] - self.nudge_width
@@ -1561,6 +1561,6 @@ class LateralBCsReanalysis(LateralBCsBase):
                     pert_shape = s[:, start:end, nh[2] : nh[2] + nz_pert].shape
                     s[:, start:end, nh[2] : nh[2] + nz_pert] += np.random.uniform(
                         low=-1.0 * amp, high=1.0 * amp, size=pert_shape
-                    )  # * 0.0
+                    )   * 0.0
 
         return
