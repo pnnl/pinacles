@@ -26,6 +26,7 @@ from pinacles import Kinematics
 from pinacles import SGSFactory
 from pinacles import DiagnosticsTurbulence
 from pinacles import DiagnosticsClouds
+from pinacles import DiagnosticsPlumes
 from pinacles import TowersIO
 from pinacles import Plumes
 from pinacles import PlatformSimulator
@@ -350,7 +351,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.VelocityTimeStepping.initialize()
 
         if self.ParentNest is None:
-            print('Nest None')
+            UtilitiesParallel.print_root('Nest None')
             self.LBC = LateralBCsFactory.LateralBCsFactory(
                 self._namelist,
                 self.ModelGrid,
@@ -480,6 +481,16 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ScalarState,
             self.DiagnosticState,
         )
+        self.DiagPlumes = DiagnosticsPlumes.DiagnosticsPlumes(
+            self.ModelGrid,
+            self.Ref,
+            self.Thermo,
+            self.Micro,
+            self.VelocityState,
+            self.ScalarState,
+            self.DiagnosticState,
+            self.Plumes,
+        )
         self.DiagTurbulence = DiagnosticsTurbulence.DiagnosticsTurbulence(
             self.ModelGrid,
             self.Ref,
@@ -515,6 +526,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.StatsIO.add_class(self.Micro)
         self.StatsIO.add_class(self.DiagTurbulence)
         self.StatsIO.add_class(self.DiagClouds)
+        self.StatsIO.add_class(self.DiagPlumes)
         self.StatsIO.add_class(self.DiagCase)
         self.StatsIO.add_class(self.Rad)
 
@@ -981,6 +993,16 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ScalarState,
             self.DiagnosticState,
         )
+        self.DiagPlumes = DiagnosticsPlumes.DiagnosticsPlumes(
+            self.ModelGrid,
+            self.Ref,
+            self.Thermo,
+            self.Micro,
+            self.VelocityState,
+            self.ScalarState,
+            self.DiagnosticState,
+            self.Plumes,
+        )
         self.DiagTurbulence = DiagnosticsTurbulence.DiagnosticsTurbulence(
             self.ModelGrid,
             self.Ref,
@@ -1016,6 +1038,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.StatsIO.add_class(self.Micro)
         self.StatsIO.add_class(self.DiagTurbulence)
         self.StatsIO.add_class(self.DiagClouds)
+        self.StatsIO.add_class(self.DiagPlumes)
         self.StatsIO.add_class(self.Rad)
         self.StatsIO.add_class(self.DiagCase)
 
