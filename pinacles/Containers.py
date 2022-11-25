@@ -302,6 +302,16 @@ class ModelState:
         return recv_buf
 
     def get_slab_x(self, name, indx_range):
+        """ Returns a global 3-d y-z slab of data that is continuous across MPI ranks in the
+        x-dimension. Needs to be called from all MPI ranks.
+
+        Args:
+            name (str): variable name to be 
+            indx_range (int tuple): global indicies in y of the slab. That is the width of the slab.
+
+        Returns:
+            array: the slab
+        """
 
         ls = self._Grid.local_start
         le = self._Grid.local_end
