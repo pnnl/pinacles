@@ -171,7 +171,6 @@ class LateralBCsNest(LateralBCsBase):
 
         shape = parent_data.shape
 
-        print(type(parent_data), type(child_data))
 
         for i in range(x_indx_in_parent.shape[0]):
             i_n = x_indx_in_nest[i]
@@ -198,7 +197,6 @@ class LateralBCsNest(LateralBCsBase):
         parent_nh = self._Parent.ModelGrid.n_halo
 
         for var_name in self._State._dofs:
-            print(var_name)
             if var_name == "u":
                 child_data = self.gather_to_parent_u.call(
                     self._State.get_field(var_name)
@@ -297,13 +295,21 @@ class LateralBCsNest(LateralBCsBase):
 
             slab_filter = ndimage.uniform_filter(
                 slab_repeate,
-                size=(3, 1, 1),
+                size=(self.factor[0], 1, 1),
             )
+            
+            #slab_filter = slab_repeate
 
-            y_low[:, nh[2] : -nh[2]] = slab_filter[
-                local_part_of_parent[0]
-                * self.factor[0] - nh[0]: local_part_of_parent[1]
-                * self.factor[0] + nh[0],
+            odd_shift = 0
+            if var_name == 'u':
+                odd_shift = self.factor[0]//2
+
+            si = local_part_of_parent[0] * self.factor[0] - nh[0] - odd_shift
+            ei = si + y_low.shape[0] 
+            
+
+            
+            y_low[:, nh[2] : -nh[2]] = slab_filter[si:ei,
                 :,
                 :,
             ][
@@ -332,18 +338,31 @@ class LateralBCsNest(LateralBCsBase):
 
             slab_filter = ndimage.uniform_filter(
                 slab_repeate,
-                size=(3, 1, 1),
+                size=(self.factor[0], 1, 1),
             )
+            #import time
+            #time.sleep(MPI.COMM_WORLD.Get_rank()+0.01)
+            #print(local_part_of_parent, si, ei)
+            #print('ll_corner:', self._Grid._ll_corner)
+            #print('RANK:', MPI.COMM_WORLD.Get_rank())
+            #print('slab:', slab_filter[si:ei,0,0][:6]/2.0)
+            #print('local_axes:', self._Grid.local_axes_edge[0][:6])
+            #MPI.COMM_WORLD.Barrier()
+            
+            #import sys; sys.exit()
+
+            #slab_filter = slab_repeate
+
 
             y_high[:, nh[2] : -nh[2]] = slab_filter[
-                local_part_of_parent[0]
-                * self.factor[0] -nh[0]: local_part_of_parent[1]
-                * self.factor[0] + nh[0],
+                si:ei,
                 :,
                 :,
             ][
                 :, 0, :
             ]
+
+
 
             # Now get the indicies of the subset on this rank
             start = (local_start[1]) // self.factor[1] + self.root_point[1]
@@ -364,14 +383,28 @@ class LateralBCsNest(LateralBCsBase):
                 )
 
             slab_filter = ndimage.uniform_filter(slab_repeate,
-                size=(1, 3, 1),
+                size=(1, self.factor[1], 1),
             )
+
+            #slab_filter = slab_repeate
+        
+            odd_shift = 0
+            if var_name == 'u':
+                odd_shift = self.factor[0]//2
+
+            
+            si = local_part_of_parent[0] * self.factor[1] - nh[1] - odd_shift
+            ei = si + x_low.shape[0]
+
+
+            if var_name == 'v':
+                si +=  1#self.factor[1]
+                ei +=  1 #self.factor[1]
+
 
             x_low[:, nh[2] : -nh[2]] = slab_filter[
                 :,
-                local_part_of_parent[0]
-                * self.factor[0]  - nh[1]: local_part_of_parent[1]
-                * self.factor[0] + nh[1],
+                si:ei,
                 :,
             ][
                 0, :, :
@@ -395,14 +428,14 @@ class LateralBCsNest(LateralBCsBase):
                 )
 
             slab_filter = ndimage.uniform_filter(slab_repeate,
-                size=(1, 3, 1),
+                size=(1, self.factor[1], 1),
             )
+
+            #slab_filter = slab_repeate
 
             x_high[:, nh[2] : -nh[2]] = slab_filter[
                 :,
-                local_part_of_parent[0]
-                * self.factor[0] - nh[1]: local_part_of_parent[1]
-                * self.factor[0] + nh[1],
+                si:ei,
                 :,
             ][
                 0, :, :

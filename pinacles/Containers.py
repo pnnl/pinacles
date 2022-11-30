@@ -3,7 +3,6 @@ import numpy as np
 import numba
 from mpi4py import MPI
 
-
 class ModelState:
     def __init__(
         self, namelist, Grid, container_name, prognostic=False, identical_bcs=False
@@ -357,8 +356,9 @@ class ModelState:
                     nh[0] : -nh[0], i - ls[1], nh[2] : -nh[2]
                 ]
             si += 1
-
+            
         recv_buf = np.empty_like(local_copy_of_global)
+
         MPI.COMM_WORLD.Allreduce(local_copy_of_global, recv_buf, op=MPI.SUM)
 
         return recv_buf

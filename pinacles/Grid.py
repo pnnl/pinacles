@@ -76,6 +76,7 @@ class GridBase:
         self._compute_index_bounds()
 
 
+
         return
 
     def _compute_index_bounds(self):
@@ -454,6 +455,7 @@ class RegularCartesian(GridBase):
 
 
 
+
         nh = self.n_halo
 
         x_dist_edge = np.minimum(self.x_local[nh[0]:-nh[0]],np.abs(self.x_local[nh[0]:-nh[0]] - self.l[0]))
@@ -487,7 +489,8 @@ class RegularCartesian(GridBase):
         #print(start, end, self.x_local[start:end])
         #import sys; sys.exit()
         #return
-
+       # print(self._global_axes_edge[0]); import sys; sys.exit()
+        
     def compute_latlon(self):
 
 
