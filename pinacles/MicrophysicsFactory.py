@@ -63,6 +63,7 @@ def factory(
             TimeSteppingController,
         )
     elif scheme == "m2005_ma":
+        from pinacles import SAM_Micro_M2005_MA
         return SAM_Micro_M2005_MA.Micro_M2005_MA(
             namelist,
             Timers,

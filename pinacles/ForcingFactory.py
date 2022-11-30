@@ -25,6 +25,7 @@ def factory(
             namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
     elif (casename == "dycoms" or casename == "dycoms_rotated"):
+        from pinacles import CaseDYCOMS
         return CaseDYCOMS.ForcingDYCOMS(
             namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
