@@ -267,7 +267,7 @@ def exchange_coefficients_charnock(Ri, zb, z0, windspeed):
         u_star = np.sqrt(cm) * windspeed
         z0 = 0.015 * u_star * u_star / parameters.G
 
-    return cm, ch, psi_m, psi_h
+    return cm, ch, psi_m, psi_h, z0
 
 
 @numba.njit()
@@ -286,8 +286,9 @@ def compute_exchange_coefficients_charnock(Ri, zb, z0, windspeed, cm, ch, psi_m,
     shape = cm.shape
     for i in range(1, shape[0]):
         for j in range(1, shape[1]):
-            cm[i, j], ch[i, j], psi_m[i,j], psi_h[i,j]= exchange_coefficients_charnock(
-                Ri[i, j], zb, z0[i, j], windspeed[i, j]
+            z0_i = z0[i,j]
+            cm[i, j], ch[i, j], psi_m[i,j], psi_h[i,j], z0[i,j]= exchange_coefficients_charnock(
+                Ri[i, j], zb, z0_i, windspeed[i, j]
             )  # , cm[i,j], ch[i,j])
     return 
 
@@ -368,5 +369,28 @@ def compute_u10_arr(u, v, u0, v0, fac1, fac2, gustiness, u10arr):
             )
             spd = np.sqrt(ui * ui + vi * vi)
             u10arr[i, j] = max(spd, gustiness)
+    return
+    
+def compute_surface_layer_Ri_N2_passed(
+    nh,
+    z_b,
+    T_b,
+    exner_b,
+    p_b,
+    qv_b,
+    T_surface,
+    exner_surface,
+    qv_surface,
+    windspeed,
+    N2,
+    Ri,
+):
+    # Compute the surface layer richardson number
+    shape = Ri.shape
+    for i in range(nh[0], shape[0] - nh[0]):
+        for j in range(nh[1], shape[1] - nh[1]):
+        
+            # Compute the local richardson number
+            Ri[i, j] = N2[i, j] * z_b * z_b / (windspeed[i, j] * windspeed[i, j])
 
     return

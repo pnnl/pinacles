@@ -595,7 +595,7 @@ class DiagnosticsTurbulence:
         if 'tke_sgs' in self._DiagnosticState._dofs:
             tke_sgs = self._DiagnosticState.get_field('tke_sgs')
         elif 'tke_sgs' in self._ScalarState._dofs:
-            tke_sgs = self._ScalarState.dofs('tke_sgs')
+            tke_sgs = self._ScalarState.get_field('tke_sgs')
             
         tke_sgs = np.sum(tke_sgs[n_halo[0]:-n_halo[0], n_halo[1]:-n_halo[1],:],axis=(0,1))
         tke_sgs = UtilitiesParallel.ScalarAllReduce(tke_sgs / npts)

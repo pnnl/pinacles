@@ -3,7 +3,6 @@ import numpy as np
 import numba
 from mpi4py import MPI
 
-
 class ModelState:
     def __init__(
         self, namelist, Grid, container_name, prognostic=False, identical_bcs=False
@@ -302,6 +301,16 @@ class ModelState:
         return recv_buf
 
     def get_slab_x(self, name, indx_range):
+        """ Returns a global 3-d y-z slab of data that is continuous across MPI ranks in the
+        x-dimension. Needs to be called from all MPI ranks.
+
+        Args:
+            name (str): variable name to be 
+            indx_range (int tuple): global indicies in y of the slab. That is the width of the slab.
+
+        Returns:
+            array: the slab
+        """
 
         ls = self._Grid.local_start
         le = self._Grid.local_end
@@ -347,8 +356,9 @@ class ModelState:
                     nh[0] : -nh[0], i - ls[1], nh[2] : -nh[2]
                 ]
             si += 1
-
+            
         recv_buf = np.empty_like(local_copy_of_global)
+
         MPI.COMM_WORLD.Allreduce(local_copy_of_global, recv_buf, op=MPI.SUM)
 
         return recv_buf

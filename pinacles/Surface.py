@@ -204,7 +204,9 @@ class SurfaceBase:
     def io_update(self, rt_grp):
         return
     
-    def io_fields2d_update(self, rt_grp):
+    def io_fields2d_update(self, fx):
+        
+        
         return
 
     def restart(self, data_dict, **kwargs):

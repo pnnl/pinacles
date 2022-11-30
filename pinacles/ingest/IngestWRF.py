@@ -15,7 +15,7 @@ def rbf_interp(lon_in, lat_in, lon_out, lat_out, var, mask, i):
     lat_lon_array = np.vstack(lon_lat).T
     
     rbf = interpolate.RBFInterpolator(
-            lat_lon_array, var[i, :, :].flatten()[mask],smoothing=0.0
+            lat_lon_array, var[i, :, :].flatten()[mask], neighbors = 16
     )
     
     
@@ -26,9 +26,9 @@ def interp_griddata(lon_in, lat_in, lon_out, lat_out, var, mask, i):
     lon_lat = (lon_in[mask], lat_in[mask])
     
     return interpolate.griddata(
-                lon_lat,var[i, :, :].flatten()[mask], (lon_out, lat_out), method="linear")
+                lon_lat,var[i, :, :].flatten()[mask], (lon_out, lat_out), method="cubic")
     
-#rbf_interp = interp_griddata
+rbf_interp = interp_griddata
 
 class IngestWRF(IngestERA5):
     def __init__(self, namelist, Grid, TimeSteppingController):
@@ -56,8 +56,8 @@ class IngestWRF(IngestERA5):
         )
         
         #Lat and lon bounds for interpolation
-        self.lat_margin = (9000.0 / 1000.0)/110.0 * 2.0
-        self.lon_margin = (9000.0 / 1000.0)/110.0 * 2.0
+        self.lat_margin = (3000.0 / 1000.0)/110.0 * 5.0
+        self.lon_margin = (3000.0 / 1000.0)/110.0 * 5.0
         
         #print(self.lat_margin, self.lon_margin)
         #import sys; sys.exit()
@@ -83,7 +83,11 @@ class IngestWRF(IngestERA5):
         
             wrf_data = xr.open_dataset(os.path.join(self._real_data, "test_out.nc"))
         
-            self.time_atm = wrf_data.XTIME.values
+            
+            try:
+                self.time_atm = wrf_data.XTIME.values
+            except:
+                self.time_atm = wrf_data.time.values
             self.time_sfc = self.time_atm
             
             print(self.time_atm, self.time_atm[-1] - self.end_time )
@@ -121,8 +125,8 @@ class IngestWRF(IngestERA5):
                 os.path.join(self._real_data, self.sfc_data_file)
             )
             skin_T = sfc_data.SST.values[self.sfc_timeindx + shift, :, :]
-            lon = sfc_data.XLONG.values[0,:,:]
-            lat = sfc_data.XLAT.values[0,:,:]
+            lon = sfc_data.XLONG.values[:,:]
+            lat = sfc_data.XLAT.values[:,:]
             
 
         else:
@@ -134,10 +138,9 @@ class IngestWRF(IngestERA5):
         lat = MPI.COMM_WORLD.bcast(lat)
         skin_T = MPI.COMM_WORLD.bcast(skin_T)
 
-        #print(np.amax(lon), np.amin(lon), np.amax(lat), np.amin(lat))
-       # import sys; sys.exit()
-
         return lon, lat, skin_T
+
+    
 
 
     def get_slp(self, shift=0):
@@ -147,8 +150,8 @@ class IngestWRF(IngestERA5):
                 os.path.join(self._real_data, self.sfc_data_file)
             )
             slp = sfc_data.PSFC.values[self.sfc_timeindx + shift, :, :]
-            lon = sfc_data.XLONG.values[0,:,:]
-            lat = sfc_data.XLAT.values[0,:,:]
+            lon = sfc_data.XLONG.values[:,:]
+            lat = sfc_data.XLAT.values[:,:]
         else:
             lon = None
             lat = None
@@ -174,6 +177,7 @@ class IngestWRF(IngestERA5):
 
 
 
+    
         # Mask data to make interpolation more efficient
         mask = (lon_hgt_grid >= np.amin(lon) - self.lon_margin) & (
             lon_hgt_grid <= np.amax(lon) + self.lon_margin
@@ -213,8 +217,8 @@ class IngestWRF(IngestERA5):
 
             hgt = atm_data.Z.values[self.sfc_timeindx + shift, :, :, :]
 
-            lat = atm_data.LAT.values[0,:,:]
-            lon = atm_data.LONG.values[0,:,:]
+            lat = atm_data.LAT.values[:,:]
+            lon = atm_data.LONG.values[:,:]
 
         else:
             lon = None
@@ -225,9 +229,9 @@ class IngestWRF(IngestERA5):
         lat = MPI.COMM_WORLD.bcast(lat)
         hgt = MPI.COMM_WORLD.bcast(hgt)
 
-        hgt[0,:,:] = 0.0
+        #hgt[0,:,:] = 0.0
 
-        return lon, lat, 0.5 * (hgt[1:,:,:] + hgt[:-1,:,:])
+        return lon, lat, hgt #0.5 * (hgt[1:,:,:] + hgt[:-1,:,:])
 
     def get_T(self, shift=0):
         if MPI.COMM_WORLD.Get_rank() == 0:
@@ -237,9 +241,11 @@ class IngestWRF(IngestERA5):
             )
 
             t = np.array(atm_data.T[self.sfc_timeindx + shift, :, :, :])
+            t2m = np.array(atm_data.T2m[self.sfc_timeindx + shift, :, :])
 
-            lat = atm_data.LAT.values[0,:,:]
-            lon = atm_data.LONG.values[0,:,:]
+            t = np.concatenate((t2m.reshape(1, t2m.shape[0], t2m.shape[1]), t), axis=0)
+            lat = atm_data.LAT.values[:,:]
+            lon = atm_data.LONG.values[:,:]
 
         else:
             t = None
@@ -262,8 +268,8 @@ class IngestWRF(IngestERA5):
 
             p = np.array(atm_data.P[self.sfc_timeindx + shift, :, :, :])
 
-            lat = atm_data.LAT.values[0,:,:]
-            lon = atm_data.LONG.values[0,:,:]
+            lat = atm_data.LAT.values[:,:]
+            lon = atm_data.LONG.values[:,:]
 
         else:
             p = None
@@ -282,6 +288,7 @@ class IngestWRF(IngestERA5):
         hgt_horizontal_interp = self.interp_height(
             self._Grid.lon_local, self._Grid.lat_local
         )
+
 
         lat_shape = lat.shape
         lon_shape = lon.shape
@@ -321,6 +328,10 @@ class IngestWRF(IngestERA5):
 
 
                 z = hgt_horizontal_interp[:, i, j]
+                
+                
+                z = np.concatenate(([2.0], z))
+                
                 interp = interpolate.Akima1DInterpolator(z, T_horizontal[:, i, j])
                 Ti[i, j, :] = np.pad(
                     interp.__call__(height[nh[2] : -nh[2]]), nh[2], mode="edge"
@@ -333,28 +344,28 @@ class IngestWRF(IngestERA5):
     
     
 
-    def get_T(self, shift=0):
-        if MPI.COMM_WORLD.Get_rank() == 0:
+    # def get_T(self, shift=0):
+    #     if MPI.COMM_WORLD.Get_rank() == 0:
 
-            atm_data = xr.open_dataset(
-                os.path.join(self._real_data, self.atm_data_file)
-            )
+    #         atm_data = xr.open_dataset(
+    #             os.path.join(self._real_data, self.atm_data_file)
+    #         )
 
-            t = np.array(atm_data.T[self.sfc_timeindx + shift, :, :, :])
+    #         t = np.array(atm_data.T[self.sfc_timeindx + shift, :, :, :])
 
-            lat = atm_data.LAT.values[0,:,:]
-            lon = atm_data.LONG.values[0,:,:]
+    #         lat = atm_data.LAT.values[:,:]
+    #         lon = atm_data.LONG.values[:,:]
 
-        else:
-            t = None
-            lat = None
-            lon = None
+    #     else:
+    #         t = None
+    #         lat = None
+    #         lon = None
 
-        lon = MPI.COMM_WORLD.bcast(lon)
-        lat = MPI.COMM_WORLD.bcast(lat)
-        t = MPI.COMM_WORLD.bcast(t)
+    #     lon = MPI.COMM_WORLD.bcast(lon)
+    #     lat = MPI.COMM_WORLD.bcast(lat)
+    #     t = MPI.COMM_WORLD.bcast(t)
 
-        return lon, lat, t
+    #     return lon, lat, t
     
 
     def get_qv(self, shift=0):
@@ -365,9 +376,11 @@ class IngestWRF(IngestERA5):
             )
 
             qv = np.array(atm_data.QV[self.sfc_timeindx + shift, :, :, :])
+            qv2m = np.array(atm_data.QV2m[self.sfc_timeindx + shift, :, :])
+            qv = np.concatenate((qv2m.reshape(1, qv2m.shape[0], qv2m.shape[1]), qv), axis=0)
 
-            lat = atm_data.LAT.values[0,:,:]
-            lon = atm_data.LONG.values[0,:,:]
+            lat = atm_data.LAT.values[:,:]
+            lon = atm_data.LONG.values[:,:]
 
         else:
             qv = None
@@ -422,6 +435,7 @@ class IngestWRF(IngestERA5):
             for j in range(qv_horizontal.shape[2]):
 
                 z = hgt_horizontal_interp[:, i, j]
+                z = np.concatenate(([2.0], z))
                 interp = interpolate.Akima1DInterpolator(z, qv_horizontal[:, i, j])
                 
                 
@@ -441,9 +455,10 @@ class IngestWRF(IngestERA5):
             )
 
             qc = np.array(atm_data.QC[self.sfc_timeindx + shift, :, :, :])
+            qc = np.concatenate((np.zeros((1, qc.shape[1], qc.shape[2])), qc), axis=0)
 
-            lat = atm_data.LAT.values[0,:,:]
-            lon = atm_data.LONG.values[0,:,:]
+            lat = atm_data.LAT.values[:,:]
+            lon = atm_data.LONG.values[:,:]
 
         else:
             qc = None
@@ -497,6 +512,7 @@ class IngestWRF(IngestERA5):
             for j in range(qc_horizontal.shape[2]):
 
                 z = hgt_horizontal_interp[:, i, j]
+                z = np.concatenate(([0.0], z))
                 interp = interpolate.Akima1DInterpolator(z, qc_horizontal[:, i, j])
                 qci[i, j, :] = np.pad(
                     interp.__call__(height[nh[2] : -nh[2]]), nh[2], mode="edge"
@@ -514,9 +530,10 @@ class IngestWRF(IngestERA5):
             )
 
             qi = np.array(atm_data.QI[self.sfc_timeindx + shift, :, :, :])
+            qi = np.concatenate((np.zeros((1, qi.shape[1], qi.shape[2])), qi), axis=0)
 
-            lat = atm_data.LAT.values[0,:,:]
-            lon = atm_data.LONG.values[0,:,:]
+            lat = atm_data.LAT.values[:,:]
+            lon = atm_data.LONG.values[:,:]
 
         else:
             qi = None
@@ -570,6 +587,7 @@ class IngestWRF(IngestERA5):
             for j in range(qi_horizontal.shape[2]):
 
                 z = hgt_horizontal_interp[:, i, j]
+                z = np.concatenate(([0.0], z))
                 interp = interpolate.Akima1DInterpolator(z, qi_horizontal[:, i, j])
                 qii[i, j, :] = np.pad(
                     interp.__call__(height[nh[2] : -nh[2]]), nh[2], mode="edge"
@@ -588,10 +606,12 @@ class IngestWRF(IngestERA5):
 
             # u10 = np.array(sfc_data.u10[self.sfc_timeindx + shift, :, :])
             u = np.array(atm_data.U[self.atm_timeindx + shift, :, :, :])
+            u10m = np.array(atm_data.U10m[self.sfc_timeindx + shift, :, :])
+            u = np.concatenate((u10m.reshape(1,u10m.shape[0], u10m.shape[1]), u), axis=0)            
             # u = np.concatenate((u10.reshape(1,u10.shape[0], u10.shape[1]), u), axis=0)
 
-            lat = atm_data.LAT_U.values[0,:,:]
-            lon = atm_data.LONG_U.values[0,:,:]
+            lat = atm_data.LAT_U.values[:,:]
+            lon = atm_data.LONG_U.values[:,:]
             
             
 
@@ -650,7 +670,7 @@ class IngestWRF(IngestERA5):
             for j in range(u_horizontal.shape[2]):
 
                 z = hgt_horizontal_interp[:, i, j]
-
+                z = np.concatenate(([10.0], z))
                 interp = interpolate.Akima1DInterpolator(z[:], u_horizontal[:, i, j])
                 ui[i, j, :] = np.pad(
                     interp.__call__(height[nh[2] : -nh[2]]), nh[2], mode="edge"
@@ -669,10 +689,11 @@ class IngestWRF(IngestERA5):
 
             # u10 = np.array(sfc_data.u10[self.sfc_timeindx + shift, :, :])
             v = np.array(atm_data.V[self.atm_timeindx + shift, :, :, :])
-            # u = np.concatenate((u10.reshape(1,u10.shape[0], u10.shape[1]), u), axis=0)
+            v10m = np.array(atm_data.V10m[self.sfc_timeindx + shift, :, :])
+            v = np.concatenate((v10m.reshape(1,v10m.shape[0], v10m.shape[1]), v), axis=0)
 
-            lat = atm_data.LAT_V.values[0,:,:]
-            lon = atm_data.LONG_V.values[0,:,:]
+            lat = atm_data.LAT_V.values[:,:]
+            lon = atm_data.LONG_V.values[:,:]
             
             
 
@@ -729,7 +750,7 @@ class IngestWRF(IngestERA5):
             for j in range(v_horizontal.shape[2]):
 
                 z = hgt_horizontal_interp[:, i, j]
-
+                z = np.concatenate(([10.0], z))
                 interp = interpolate.Akima1DInterpolator(z[:], v_horizontal[:, i, j])
                 vi[i, j, :] = np.pad(
                     interp.__call__(height[nh[2] : -nh[2]]), nh[2], mode="edge"
