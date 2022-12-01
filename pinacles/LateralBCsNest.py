@@ -441,4 +441,12 @@ class LateralBCsNest(LateralBCsBase):
                 0, :, :
             ]
 
+
+            if var_name == 's':
+   
+                x_high[:, :3] += np.random.uniform(-0.1, 0.1, size=(x_high.shape[0], 3))
+                x_low[:, :3] += np.random.uniform(-0.1, 0.1, size=(x_low.shape[0], 3))
+                y_low[:, :3] += np.random.uniform(-0.1, 0.1, size=(y_low.shape[0], 3))
+                y_high[:, :3] += np.random.uniform(-0.1, 0.1, size=(y_high.shape[0], 3))
+
         return
