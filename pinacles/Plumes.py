@@ -107,11 +107,7 @@ class Plume:
 
             # Add the plume heat flux
             s_tend = self._ScalarState.get_tend("s")
-<<<<<<< HEAD
             s_tend[self._indicies[0], self._indicies[1], self._indicies[2]] += (
-=======
-            s_tend[self._indicies[0], self._indicies[1], self._indicies[2]]+= (
->>>>>>> 70e0f69b9fff36e3818921b2b29e6c4fee6538ca
                 self._plume_heat_flux / grid_cell_mass * parameters.ICPD
                 - parameters.LV * self._plume_qc_flux / grid_cell_mass * parameters.ICPD
             )
@@ -334,8 +330,19 @@ class Plumes:
         # This is a list that will store one instance of the Plume class for each physical plume
         self._list_of_plumes = []
 
-        if nest_level == 0:
+
+
+        # if nest_level == 0:
+        #     return
+        try:
+            self._number_of_nests = namelist['nests']["n"]
+        except:
+            self._number_of_nests = 0
+        
+        if self._number_of_nests > 0 and nest_level ==0:
             return
+
+        
         if "plumes" in namelist:
 
             # Store the plume locations

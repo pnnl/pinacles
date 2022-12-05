@@ -7,9 +7,12 @@ import copy
 
 
 class Tower:
-    def __init__(self, namelist, Grid, TimeSteppingController, loc=(10.0, 10.0), location_in_latlon=False):
+    def __init__(self, namelist, Grid, TimeSteppingController, Surface, Rad, Micro, loc=(10.0, 10.0), location_in_latlon=False):
 
         self._Grid = Grid
+        self._Surface = Surface
+        self._Rad = Rad
+        self._Micro = Micro
         self._TimeSteppingController = TimeSteppingController
         self._containers = []
         self._out_file = None
@@ -97,6 +100,17 @@ class Tower:
                 else:
                     rt_grp.createVariable(var, np.double, dimensions=("time", "z_edge"))
 
+
+        if hasattr(self._Surface, 'io_tower_init'):
+            self._Surface.io_tower_init(rt_grp)
+
+        if hasattr(self._Rad, 'io_tower_init'):
+            self._Rad.io_tower_init(rt_grp)
+
+
+        if hasattr(self._Rad, 'io_tower_init'):
+            self._Micro.io_tower_init(rt_grp)
+
         rt_grp.close()
         return
 
@@ -145,6 +159,13 @@ class Tower:
                         rt_grp[var][-1, :] = phi[
                             self._i_indx, self._j_indx, nh[2] - 1 : -nh[2]
                         ]
+        if hasattr(self._Surface, 'io_tower'):
+            self._Surface.io_tower(rt_grp, self._i_indx, self._j_indx)
+        if hasattr(self._Rad, 'io_tower'):
+            self._Rad.io_tower(rt_grp, self._i_indx, self._j_indx)
+        if hasattr(self._Micro, 'io_tower'):
+            self._Micro.io_tower(rt_grp, self._i_indx, self._j_indx)
+
 
         rt_grp.close()
 
@@ -152,7 +173,7 @@ class Tower:
 
 
 class Towers:
-    def __init__(self, namelist, Timers, Grid, TimeSteppingController):
+    def __init__(self, namelist, Timers, Grid, TimeSteppingController, Surface, Rad, Micro):
 
         self._list_of_towers = []
         self._Timers = Timers
@@ -176,7 +197,7 @@ class Towers:
                                                 
         for loc in tower_locations:
             self._list_of_towers.append(
-                Tower(namelist, Grid, TimeSteppingController, loc=tuple(loc), location_in_latlon = self.location_in_latlon)
+                Tower(namelist, Grid, TimeSteppingController, Surface, Rad, Micro, loc=tuple(loc), location_in_latlon = self.location_in_latlon)
             )
 
         return

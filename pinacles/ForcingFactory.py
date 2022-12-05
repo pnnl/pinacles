@@ -1,10 +1,4 @@
-from pinacles import CaseSullivanAndPatton
-from pinacles import CaseBOMEX
-from pinacles import CaseDYCOMS
-from pinacles import CaseRICO
-from pinacles import CaseATEX
-from pinacles import CaseTestbed
-from pinacles import CaseReal
+
 from pinacles import Forcing
 
 
@@ -20,23 +14,28 @@ def factory(
     TimeSteppingController,
 ):
     casename = namelist["meta"]["casename"]
+    from pinacles import CaseSullivanAndPatton
     if casename == "sullivan_and_patton":
         return CaseSullivanAndPatton.ForcingSullivanAndPatton(
             namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
     elif casename == "bomex":
+        from pinacles import CaseBOMEX
         return CaseBOMEX.ForcingBOMEX(
             namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
     elif (casename == "dycoms" or casename == "dycoms_rotated"):
+        from pinacles import CaseDYCOMS
         return CaseDYCOMS.ForcingDYCOMS(
             namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
     elif casename == "rico":
+        from pinacles import CaseRICO   
         return CaseRICO.ForcingRICO(
             namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
     elif casename == "atex":
+        from pinacles import CaseATEX
         return CaseATEX.ForcingATEX(
             namelist,
             Timers,
@@ -49,6 +48,7 @@ def factory(
             TimeSteppingController,
         )
     elif casename == "testbed":
+        from pinacles import CaseTestbed
         return CaseTestbed.ForcingTestbed(
             namelist,
             Timers,
@@ -60,6 +60,7 @@ def factory(
             TimeSteppingController,
         )
     elif casename == "real":
+        from pinacles import CaseReal
         return CaseReal.ForcingReanalysis(
             namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
