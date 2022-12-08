@@ -655,8 +655,8 @@ class InitializeReanalysis:
             / parameters.CPD
         )
 
-        #random = np.random.uniform(-0.1, 0.1, size=(s.shape[0], s.shape[1], 3))
-        #s[:, :, nhalo[2] : nhalo[2] + 3] += random
+        random = np.random.uniform(-0.1, 0.1, size=(s.shape[0], s.shape[1], 3))
+        s[:, :, nhalo[2] : nhalo[2] + 3] += random
 
         # Remove condensate from qv
         qv[:, :, :] = qv[:, :, :] + qc_interp[:, :, :] + qi_interp[:, :, :]
@@ -701,7 +701,7 @@ class LateralBCsReanalysis(LateralBCsBase):
 
         self.time_previous = self._TimeSteppingController._time
 
-        self.nudge_width = 5
+        self.nudge_width = 3
         self.ingest_freq = 3600.0
 
         return
@@ -1427,8 +1427,8 @@ class LateralBCsReanalysis(LateralBCsBase):
             #          - w[:, start: end, :]
             #      ) * weight[np.newaxis, ::-1, np.newaxis]
 
-            elif (var == "s" or var == "qv" and False
-            ):  # or var == "qc" or var=="qi" or var == 'qi1':
+            elif False: #(var == "s" or var == "qv" and False
+            #):  # or var == "qc" or var=="qi" or var == 'qi1':
                 phi = self._State.get_field(var)
                 phi_t = self._State.get_tend(var)
                 # s_t = self._State.get_tend("s")
@@ -1527,38 +1527,59 @@ class LateralBCsReanalysis(LateralBCsBase):
             if var == "s":
 
                 s = self._State.get_field(var)
-                nz_pert = 5
+                u = self._VelocityState.get_field('u')
+                v = self._VelocityState.get_field('v')
+                nz_pert = 1
                 amp = 0.1
+                Ek =0.16 
+                
                 if self._Grid.low_rank[0]:
                     start = nh[0]  #     start = nh[0]
-                    end = nh[0] + self.nudge_width
+                    end = nh[0] + 1 #self.nudge_width
+                    
+                    speed = u[start:end, :, nh[2] : nh[2] + nz_pert] ** 2.0 + v[start:end, :, nh[2] : nh[2] + nz_pert]**2.0
+                    s_p = (speed)/(1250.0 * Ek)
+                    
                     pert_shape = s[start:end, :, nh[2] : nh[2] + nz_pert].shape
                     s[start:end, :, nh[2] : nh[2] + nz_pert] += np.random.uniform(
-                        low=-1.0 * amp, high=1.0 * amp, size=pert_shape
-                    )   
+                        low=-1.0 , high=1.0 , size=pert_shape
+                    )    * s_p
 
                 if self._Grid.high_rank[0]:
-                    start = -nh[0] - self.nudge_width
+                    start = -nh[0] - 1#self.nudge_width
                     end = -nh[0]
+                    
+                    speed = u[start:end, :, nh[2] : nh[2] + nz_pert] ** 2.0 + v[start:end, :, nh[2] : nh[2] + nz_pert]**2.0
+                    s_p = (speed)/(1250.0 * Ek)
+                    
                     pert_shape = s[start:end, :, nh[2] : nh[2] + nz_pert].shape
                     s[start:end, :, nh[2] : nh[2] + nz_pert] += np.random.uniform(
-                        low=-1.0 * amp, high=1.0 * amp, size=pert_shape
-                    )  
+                        low=-1.0, high=1.0, size=pert_shape
+                    ) * s_p
 
                 if self._Grid.low_rank[1]:
                     start = nh[1]
-                    end = nh[1] + self.nudge_width
+                    end = nh[1] + 1 #self.nudge_width
                     pert_shape = s[:, start:end, nh[2] : nh[2] + nz_pert].shape
+        
+                    speed = u[:, start:end, nh[2] : nh[2]+ nz_pert] ** 2.0 + v[:, start:end, nh[2] : nh[2]+ nz_pert]**2.0
+                    s_p = (speed)/(1250.0 * Ek)
+                                
+                    
                     s[:, start:end, nh[2] : nh[2] + nz_pert] += np.random.uniform(
-                        low=-1.0 * amp, high=1.0 * amp, size=pert_shape
-                    )   
+                        low=-1.0, high=1.0 , size=pert_shape
+                    ) * s_p
 
                 if self._Grid.high_rank[1]:
-                    start = -nh[1] - self.nudge_width
+                    start = -nh[1] - 1 #self.nudge_width
                     end = -nh[1]
                     pert_shape = s[:, start:end, nh[2] : nh[2] + nz_pert].shape
+                    
+                    speed = u[:, start:end, nh[2] : nh[2]+ nz_pert] ** 2.0 + v[:, start:end, nh[2] : nh[2]+ nz_pert]**2.0
+                    s_p = (speed)/(1250.0 * Ek)
+                    
                     s[:, start:end, nh[2] : nh[2] + nz_pert] += np.random.uniform(
-                        low=-1.0 * amp, high=1.0 * amp, size=pert_shape
-                    )  
+                        low=-1.0 , high=1.0 , size=pert_shape
+                    )  * s_p
 
         return

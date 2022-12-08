@@ -557,6 +557,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         for lbc in [self.LBC, self.LBCVel]:
             # lbc.set_vars_on_boundary_to_mean()
             lbc.set_vars_on_boundary(ParentNest=self.ParentNest)
+        self.LBC.inflow_pert(self.LBCVel)
 
         for prog_state in [self.ScalarState, self.VelocityState]:
             prog_state.boundary_exchange()
@@ -1170,6 +1171,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 for lbcs in [self.LBC, self.LBCVel]:
                     lbcs.set_vars_on_boundary(ParentNest=self.ParentNest)
 
+                self.LBC.inflow_pert(self.LBCVel)
                 self.LBCVel.update(normal=False)
 
                 self.Timers.start_timer("ScalarLimiter")
@@ -1253,6 +1255,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 for lbcs in [ParentNest.LBC, ParentNest.LBCVel]:
                     lbcs.set_vars_on_boundary(ParentNest=ParentNest)
+                self.LBC.inflow_pert(self.LBCVel)
 
                 ParentNest.LBCVel.update(normal=False)
 

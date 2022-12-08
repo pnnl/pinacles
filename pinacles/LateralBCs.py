@@ -98,6 +98,12 @@ class LateralBCsBase:
 
         return
 
+
+    def inflow_pert(self, LBCVel):
+        
+        
+        return
+
     def all_scalars(self, normal):
 
         for var_name in self._State._dofs:

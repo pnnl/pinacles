@@ -441,12 +441,32 @@ class LateralBCsNest(LateralBCsBase):
                 0, :, :
             ]
 
+        return 
 
-            if var_name == 's':
-   
-                x_high[:, :3] += np.random.uniform(-0.1, 0.1, size=(x_high.shape[0], 3))
-                x_low[:, :3] += np.random.uniform(-0.1, 0.1, size=(x_low.shape[0], 3))
-                y_low[:, :3] += np.random.uniform(-0.1, 0.1, size=(y_low.shape[0], 3))
-                y_high[:, :3] += np.random.uniform(-0.1, 0.1, size=(y_high.shape[0], 3))
+    def inflow_pert(self, LBCVel):
+        
+        nh = self._Grid.n_halo
+        x_low, x_high, y_low, y_high = self.get_vars_on_boundary('s')
+        u_x_low, u_x_high, u_y_low, u_y_high = LBCVel.get_vars_on_boundary('u')
+        v_x_low, v_x_high, v_y_low, v_y_high = LBCVel.get_vars_on_boundary('v')
+    
+        k_depth = 1  + nh[2]
+        Ek = 0.16
+        
+        speed = (u_x_low[:, nh[2]:k_depth]**2.0 + v_x_low[:, nh[2]:k_depth]**2.0)
+        s_p = (speed)/(1250.0 * Ek)
+        x_low[:, nh[2]:k_depth] += np.random.uniform(-1.0, 1.0, size=(x_low.shape[0], 1)) * s_p
+        
+        speed = (u_x_high[:, nh[2]:k_depth]**2.0 + v_x_high[:, nh[2]:k_depth]**2.0)
+        s_p = (speed)/(1250.0 * Ek)
+        x_high[:, nh[2]:k_depth] += np.random.uniform(-1.0, 1.0, size=(x_high.shape[0], 1)) * s_p
+        
+        speed = (u_y_low[:, nh[2]:k_depth]**2.0 + v_y_low[:, nh[2]:k_depth]**2.0)
+        s_p = (speed)/(1250.0 * Ek)
+        y_low[:, nh[2]:k_depth] += np.random.uniform(-1.0, 1.0, size=(y_low.shape[0], 1)) * s_p
+        
+        speed = (u_y_high[:, nh[2]:k_depth]**2.0 + v_y_high[:, nh[2]:k_depth]**2.0)
+        s_p = (speed)/(1250.0 * Ek)
+        y_high[:, nh[2]:k_depth] += np.random.uniform(-1.0, 1.0, size=(y_high.shape[0], 1)) * s_p
 
         return
