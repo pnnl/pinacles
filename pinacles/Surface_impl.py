@@ -254,8 +254,8 @@ def exchange_coefficients_byun(Ri, zb, z0):  # , cm, ch):
 
     cu = VKB / (logz - psi_m)
     cth = VKB / (logz - psi_h) / PR0
-    cm = cu * cu
-    ch = cu * cth
+    cm = max(0.0, cu * cu)
+    ch = max(cu * cth,0.0)
     return cm, ch, psi_m, psi_h
 
 
@@ -266,6 +266,7 @@ def exchange_coefficients_charnock(Ri, zb, z0, windspeed):
         cm, ch, psi_m, psi_h= exchange_coefficients_byun(Ri, zb, z0)
         u_star = np.sqrt(cm) * windspeed
         z0 = 0.015 * u_star * u_star / parameters.G
+
 
     return cm, ch, psi_m, psi_h, z0
 
