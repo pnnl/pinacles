@@ -25,6 +25,16 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
             latex_name="\theta_v",
             units="K",
         )
+        DiagnosticState.add_variable(
+            "qt",
+            long_name="Total water specific humidity",
+            latex_name="q_t",
+            units="kg/kg",
+        )
+
+        DiagnosticState.add_variable(
+            "s_dry", long_name="Dry Static Energy", latex_name="s_d", units="K"
+        )
 
         self._Timers.add_timer("ThermoDynamicsMoist_update")
 
@@ -49,8 +59,10 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         qv = self._ScalarState.get_field("qv")
         ql = self._Micro.get_qc()
         qi = self._Micro.get_qi()
+        qt = self._DiagnosticState.get_field("qt")
 
         T = self._DiagnosticState.get_field("T")
+        s_dry = self._DiagnosticState.get_field("s_dry")
         thetav = self._DiagnosticState.get_field("thetav")
         alpha = self._DiagnosticState.get_field("alpha")
         buoyancy = self._DiagnosticState.get_field("buoyancy")
@@ -59,7 +71,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         buoyancy_gradient_mag = self._DiagnosticState.get_field("buoyancy_gradient_mag")
 
         ThermodynamicsMoist_impl.eos(
-            z, p0, alpha0, s, qv, ql, qi, T, tref, alpha, buoyancy
+            z, p0, alpha0, s, s_dry, qv, ql, qi, T, tref, alpha, buoyancy
         )
 
         # Compute the buoyancy frequency
@@ -76,6 +88,8 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         self._DiagnosticState.remove_mean("buoyancy")
 
         self.compute_buoyancy_gradient(dxi, buoyancy, buoyancy_gradient_mag)
+
+        qt[:, :, :] = self.get_qt()
 
         self._Timers.end_timer("ThermoDynamicsMoist_update")
         return
@@ -131,10 +145,10 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         # Output Temperature
         if fx is not None:
             t = fx.create_dataset(
-                        "T",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "T",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 t.dims[i].attach_scale(fx[d])
@@ -150,10 +164,10 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         # Output specific humidity
         if fx is not None:
             qv_var = fx.create_dataset(
-                        "qv",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "qv",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 qv_var.dims[i].attach_scale(fx[d])
@@ -167,5 +181,4 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         if fx is not None:
             qv_var[:, :] = recv_buffer
 
- 
         return

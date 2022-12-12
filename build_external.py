@@ -12,6 +12,11 @@ def main():
     # Build P3
     build_script("pinacles/externals/wrf_p3_wrapper", "build_p3.sh", "p3")
 
+    # Build M2005_MA
+    build_script(
+        "pinacles/externals/sam_m2005_ma_wrapper", "build_m2005_ma.sh", "m2005_ma"
+    )
+
     # Build Kessler
     f2py_file(
         "pinacles/externals/wrf_kessler_wrapper", "module_mp_kessler.f95", "kessler"

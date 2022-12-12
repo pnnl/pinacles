@@ -19,6 +19,7 @@ def main(namelist):
         Sim.StatsIO,
         Sim.FieldsIO,
         Sim.Fields2d,
+        Sim.CoarseGrain,
         Sim.IOTower,
         Sim.Restart,
         Sim.Timers,
@@ -52,16 +53,16 @@ def main(namelist):
     last_io_time = np.zeros_like(io_frequencies) + Sim.TimeSteppingController.time
     integrate_by_dt = np.amin(io_frequencies)
 
-    # This is the outerloop over time
+    # This is the outer loop over time
     while Sim.TimeSteppingController.time < Sim.TimeSteppingController.time_max:
 
         # Integrate model forward by integrate_by_dt seconds
         Sim.update(integrate_by_dt=integrate_by_dt)
 
-        # Adjust the integration to to make sure output is at the correct time
+        # Adjust the integration to make sure output is at the correct time
         time = Sim.TimeSteppingController.time
         for idx, item in enumerate(io_classes):
-            if time - io_frequencies[idx] == last_io_time[idx]:
+            if np.round(time - io_frequencies[idx],10) == np.round(last_io_time[idx],10):
                 if hasattr(item, "output"):
                     item.output()
                 elif hasattr(item, "update"):
@@ -69,11 +70,12 @@ def main(namelist):
                 elif hasattr(item, "dump_restart"):
                     item.dump_restart(Sim.TimeSteppingController.time)
                 # We did output here so lets update last io-time
-                last_io_time[idx] = time
+                last_io_time[idx] = np.round(time, 10)
 
-        # Coupute how long t
         integrate_by_dt = np.amin(last_io_time + io_frequencies - time)
-
+        
+        integrate_by_dt = np.round(integrate_by_dt, 10)
+        
     return
 
 

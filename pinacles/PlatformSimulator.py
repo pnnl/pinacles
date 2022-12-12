@@ -47,7 +47,6 @@ class PlatformSimulator:
             self._flight_path = pickle.load(f)
             self._starttime = self._flight_path["time_offset"][0]
             self._endtime = self._flight_path["time_offset"][-1]
-        
 
         # "Fast-forward the location if the time is greater than the start time of the platform
         if (
@@ -63,8 +62,6 @@ class PlatformSimulator:
                     wrap_x=True,
                     wrap_y=True,
                 )
-
-  
 
         return
 

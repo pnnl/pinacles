@@ -17,6 +17,14 @@ class ParticlesDummy:
 
         return
 
+    def restart(self, data_dict, **kwargs):
+
+        return
+
+    def dump_restart(self, data_dict):
+
+        return
+
 
 def ParticlesFactory(
     namelist,
@@ -27,6 +35,11 @@ def ParticlesFactory(
     ScalarState,
     DiagnosticState,
 ):
+    try:
+        import h5py
+    except:
+        UtilitiesParallel.print_root("\t No H5PY--Disabling Particles.")
+        return ParticlesDummy()
 
     if "particles" in namelist:
 

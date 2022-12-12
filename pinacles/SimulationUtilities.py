@@ -126,7 +126,7 @@ class Albedo:
         MPI.COMM_WORLD.Allreduce(local_array, global_array)
 
         out = {}
-        out["Albdeo"] = global_array
+        out["Albedo"] = global_array
 
         time = self._Sim.TimeSteppingController.time
         fname = os.path.join(

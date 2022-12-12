@@ -32,6 +32,10 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
             units="K",
         )
 
+        DiagnosticState.add_variable(
+            "s_dry", long_name="Dry Static Energy", latex_name="s_d", units="K"
+        )
+
         self._Timers.add_timer("ThermoDynamicsDry_update")
 
         return
@@ -53,6 +57,7 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         theta_ref = T0 / exner
 
         s = self._ScalarState.get_field("s")
+        s_dry = self._DiagnosticState.get_field("s_dry")
         qv = self._ScalarState.get_field("qv")
         T = self._DiagnosticState.get_field("T")
         alpha = self._DiagnosticState.get_field("alpha")
@@ -63,6 +68,9 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         buoyancy_gradient_mag = self._DiagnosticState.get_field("buoyancy_gradient_mag")
 
         ThermodynamicsDry_impl.eos(z, p0, alpha0, s, qv, T, tref, alpha, buoyancy)
+
+        s_dry[:, :, :] = s[:, :, :]
+
         ThermodynamicsDry_impl.compute_bvf(
             n_halo, theta_ref, exner, T, qv, dz, thetav, bvf
         )
@@ -90,14 +98,13 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         # Output Temperature
         if fx is not None:
             t = fx.create_dataset(
-                        "T",
-                        (1, self._Grid.n[0], self._Grid.n[1]),
-                        dtype=np.double,
-                    )
+                "T",
+                (1, self._Grid.n[0], self._Grid.n[1]),
+                dtype=np.double,
+            )
 
             for i, d in enumerate(["time", "X", "Y"]):
                 t.dims[i].attach_scale(fx[d])
-                
 
         T = self._DiagnosticState.get_field("T")
         send_buffer[start[0] : end[0], start[1] : end[1]] = T[

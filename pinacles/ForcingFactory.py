@@ -27,7 +27,7 @@ def factory(
         return CaseBOMEX.ForcingBOMEX(
             namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
-    elif casename == "dycoms":
+    elif casename == "dycoms" or casename == "dycoms_rotated":
         return CaseDYCOMS.ForcingDYCOMS(
             namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )

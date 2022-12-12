@@ -66,6 +66,7 @@ class RadiationDycoms:
         return
 
     def update(self, force=False):
+
         self._Timers.start_timer("RadiationDycoms")
 
         if not force:

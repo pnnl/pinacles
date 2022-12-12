@@ -36,7 +36,7 @@ def water_path_lasso(n_halo, dz, rho, qc):
 
 
 @numba.njit()
-def water_fraction(n_halo, npts, q, threshold=1e-8):
+def water_fraction(n_halo, npts, q, threshold=1e-20):
     frac = 0.0
     shape = q.shape
     for i in range(n_halo[0], shape[0] - n_halo[0]):
@@ -50,7 +50,7 @@ def water_fraction(n_halo, npts, q, threshold=1e-8):
 
 
 @numba.njit()
-def water_fraction_profile(n_halo, npts, q, threshold=1e-8):
+def water_fraction_profile(n_halo, npts, q, threshold=1e-20):
     frac = 0.0
     shape = q.shape
     frac = np.zeros((shape[2],), dtype=np.double)
@@ -61,6 +61,34 @@ def water_fraction_profile(n_halo, npts, q, threshold=1e-8):
                     frac[k] += 1.0
 
     return frac / npts
+
+
+@numba.njit()
+def compute_cloud_base_top(n_halo, z, q, threshold=1e-20):
+    base_mean = 0.0
+    top_mean = 0.0
+    count = 0
+
+    shape = q.shape
+    cloud_base = np.empty((shape[0], shape[1]), dtype=np.double)
+    cloud_top = np.empty((shape[0], shape[1]), dtype=np.double)
+
+    cloud_base.fill(1e9)
+    cloud_top.fill(-1)
+
+    for i in range(n_halo[0], shape[0] - n_halo[0]):
+        for j in range(n_halo[1], shape[1] - n_halo[1]):
+            for k in range(n_halo[2], shape[2] - n_halo[2]):
+                if q[i, j, k] >= threshold:
+                    cloud_base[i, j] = min(z[k], cloud_base[i, j])
+                    cloud_top[i, j] = max(z[k], cloud_top[i, j])
+
+            if cloud_top[i, j] >= 0.0:
+                count += 1
+                base_mean += cloud_base[i, j]
+                top_mean += cloud_top[i, j]
+
+    return cloud_base, cloud_top, base_mean, top_mean, count
 
 
 class MicrophysicsBase:
