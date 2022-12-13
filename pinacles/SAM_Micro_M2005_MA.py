@@ -980,7 +980,7 @@ class Micro_M2005_MA(MicrophysicsBase):
         if nc_grp is not None:
             lwp[:, :] = recv_buffer
 
-        # Compute and output the LWP
+        # Compute and output the IWP
         if nc_grp is not None:
             iwp = nc_grp.create_dataset(
                 "IWP", (1, self._Grid.n[0], self._Grid.n[1]), dtype=np.double,
