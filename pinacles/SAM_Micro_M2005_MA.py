@@ -831,6 +831,27 @@ class Micro_M2005_MA(MicrophysicsBase):
         v.standard_name = "RF"
         v.units = ""
 
+        #Surface fluxes of aerosol
+        v = timeseries_grp.createVariable("qad_sf", np.double, dimensions=("time",))
+        v.long_name = "Aerosol surface flux"
+        v.standard_name = "qad_sf"
+        v.units = ""
+
+        v = timeseries_grp.createVariable("qnad_sf", np.double, dimensions=("time",))
+        v.long_name = "Aerosol number flux"
+        v.standard_name = "qnad_sf"
+        v.units = ""
+
+        v = timeseries_grp.createVariable("qad2_sf", np.double, dimensions=("time",))
+        v.long_name = "Aitken mode surface flux"
+        v.standard_name = "qad2_sf"
+        v.units = ""
+
+        v = timeseries_grp.createVariable("qnad2_sf", np.double, dimensions=("time",))
+        v.long_name = "Aitken mode number flux"
+        v.standard_name = "qnad2_sf"
+        v.units = ""
+
         return
 
     def io_update(self, nc_grp):
@@ -898,6 +919,29 @@ class Micro_M2005_MA(MicrophysicsBase):
 
             profiles_grp["CF"][-1, :] = cf_prof[n_halo[2] : -n_halo[2]]
             profiles_grp["RF"][-1, :] = rf_prof[n_halo[2] : -n_halo[2]]
+        
+        if "qad" in self._ScalarState._dofs:
+            qadt = self._ScalarState.get_tend("qad")
+            qnadt = self._ScalarState.get_tend("qnad")
+            qad2t = self._ScalarState.get_tend("qad2")
+            qnad2t = self._ScalarState.get_tend("qnad2")
+            
+            grid_cell_mass = self._Grid.dx[0] * self._Grid.dx[1] *self._Grid.dx[2] * self._Ref.rho0[n_halo[2]]
+            qad_sf = np.sum(np.sum(qadt[:,:,n_halo[2]],axis = 1),axis = 0) * grid_cell_mass
+            qad_sf = UtilitiesParallel.ScalarAllReduce(qad_sf)
+            qnad_sf = np.sum(np.sum(qnadt[:,:,n_halo[2]],axis = 1),axis = 0) * grid_cell_mass
+            qnad_sf = UtilitiesParallel.ScalarAllReduce(qnad_sf)
+            qad2_sf = np.sum(np.sum(qad2t[:,:,n_halo[2]],axis = 1),axis = 0) * grid_cell_mass
+            qad2_sf = UtilitiesParallel.ScalarAllReduce(qad2_sf)
+            qnad2_sf = np.sum(np.sum(qnad2t[:,:,n_halo[2]],axis = 1),axis = 0) * grid_cell_mass
+            qnad2_sf = UtilitiesParallel.ScalarAllReduce(qnad2_sf)
+            
+            if my_rank == 0:
+                timeseries_grp = nc_grp["timeseries"]
+                timeseries_grp["qad_sf"][-1] = qad_sf
+                timeseries_grp["qnad_sf"][-1] = qnad_sf
+                timeseries_grp["qad2_sf"][-1] = qad2_sf
+                timeseries_grp["qnad2_sf"][-1] = qnad2_sf
 
         return
 

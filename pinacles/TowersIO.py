@@ -24,8 +24,8 @@ class Tower:
 
         if location_in_latlon:
             self.latlon_loc = copy.deepcopy(loc)
-        x, y = self._Grid.latlon_to_xy(loc[0], loc[1])        
-        loc = (x, y)
+            x, y = self._Grid.latlon_to_xy(loc[0], loc[1])        
+            loc = (x, y)
 
 
         # Get the tower indicies

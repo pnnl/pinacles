@@ -97,7 +97,7 @@ class Plume:
             dxs = self._Grid.dx
 
             grid_cell_volume = dxs[0] * dxs[1] * dxs[2]
-            grid_cell_mass = grid_cell_volume * self._Ref.rho0[self._indicies[0]]
+            grid_cell_mass = grid_cell_volume * self._Ref.rho0[self._indicies[2]]
 
             # Add the plume scalar flux
             plume_tend = self._ScalarState.get_tend(self._scalar_name)
@@ -608,9 +608,91 @@ class Plumes:
                                 ] = item_mean[k]
 
         for plume_i in self._list_of_plumes:
-            plume_i.update()
+            plume_i.update()    
 
         self._Timers.end_timer("Plumes_update")
+        return
+    
+    def plume_width(self, fx):
+                
+        try:
+            plume_sc = self._ScalarState.get_field("plume_0")
+        except:
+            return
+        
+        start = self._Grid.local_start
+        end = self._Grid._local_end
+        nh = self._Grid.n_halo    
+        send_buffer = np.zeros((self._Grid.n[0], self._Grid.n[2]), dtype=np.double)
+        recv_buffer = np.empty_like(send_buffer)
+        lim1 = 100e6
+        lim2 = 300e6        
+        
+        if fx is not None:
+            var_f1 = fx.create_dataset(
+                "plume_width_1e8",
+                (1, self._Grid.n[0], self._Grid.n[2]),
+                dtype=np.double,
+            )
+
+            for i, d in enumerate(["time", "X", "Z"]):
+                var_f1.dims[i].attach_scale(fx[d])
+        
+        tmp_plume = np.zeros_like(plume_sc)
+        pot_plume = np.zeros_like(plume_sc)
+        tmp_plume_2 = np.zeros_like(plume_sc)
+                
+        for plume_i in self._list_of_plumes:
+            plume_sc = self._ScalarState.get_field(plume_i._scalar_name)
+            tmp_plume[plume_sc>lim1] += 1.0
+            pot_plume += plume_sc
+            tmp_plume_2[plume_sc>lim2] += 1.0
+
+        plume1e8 = np.sum(tmp_plume[nh[0] : -nh[0], nh[1] : -nh[1], nh[2] : -nh[2]], axis = 1) * self._Grid.dx[1]
+
+        send_buffer.fill(0.0)    
+        send_buffer[start[0]:end[0], start[2]:end[2]] = plume1e8
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)    
+
+        if fx is not None:
+            var_f1[:, :] = recv_buffer
+
+            var_fp = fx.create_dataset(
+                "pot_width_1e8",
+                (1, self._Grid.n[0], self._Grid.n[2]),
+                dtype=np.double,
+            )
+
+            for i, d in enumerate(["time", "X", "Z"]):
+                var_fp.dims[i].attach_scale(fx[d])
+
+        pot1e8 = np.sum(pot_plume[nh[0] : -nh[0], nh[1] : -nh[1], nh[2] : -nh[2]], axis = 1) * self._Grid.dx[1]/lim1   
+
+        send_buffer.fill(0.0)    
+        send_buffer[start[0]:end[0], start[2]:end[2]] = pot1e8
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+
+        if fx is not None:
+            var_fp[:, :] = recv_buffer
+
+            var_f3 = fx.create_dataset(
+                "plume_width_3e8",
+                (1, self._Grid.n[0], self._Grid.n[2]),
+                dtype=np.double,
+            )
+
+            for i, d in enumerate(["time", "X", "Z"]):
+                var_f3.dims[i].attach_scale(fx[d])
+
+        plume3e8 = np.sum(tmp_plume_2[nh[0] : -nh[0], nh[1] : -nh[1], nh[2] : -nh[2]], axis = 1) * self._Grid.dx[1]     
+
+        send_buffer.fill(0.0)    
+        send_buffer[start[0]:end[0], start[2]:end[2]] = plume3e8
+        MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+
+        if fx is not None:
+            var_f3[:, :] = recv_buffer
+                    
         return
 
     def io_fields2d_update(self, fx):
@@ -618,6 +700,8 @@ class Plumes:
         for plume_i in self._list_of_plumes:
             for z_index in self._field2d_zindex:
                 plume_i.io_fields2d(fx, z_index)
+            
+        self.plume_width(fx)
 
         return
 

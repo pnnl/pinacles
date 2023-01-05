@@ -444,7 +444,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ScalarState,
             self.VelocityState,
             self.DiagnosticState,
-            self.Plumes,
             self.TimeSteppingController,
         )
 
@@ -1060,7 +1059,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.ScalarState,
             self.VelocityState,
             self.DiagnosticState,
-            self.Plumes,
             self.TimeSteppingController,
         )
         self.Fields2d.add_class(self.Micro)
