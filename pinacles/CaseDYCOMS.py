@@ -229,6 +229,27 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
         v.units = "W m^{-2}"
         v.standard_name = "lhf"
 
+        #Surface fluxes of aerosol
+        v = timeseries_grp.createVariable("qad_sf", np.double, dimensions=("time",))
+        v.long_name = "Aerosol surface flux"
+        v.standard_name = "qad_sf"
+        v.units = ""
+
+        v = timeseries_grp.createVariable("qnad_sf", np.double, dimensions=("time",))
+        v.long_name = "Aerosol number flux"
+        v.standard_name = "qnad_sf"
+        v.units = ""
+
+        v = timeseries_grp.createVariable("qad2_sf", np.double, dimensions=("time",))
+        v.long_name = "Aitken mode surface flux"
+        v.standard_name = "qad2_sf"
+        v.units = ""
+
+        v = timeseries_grp.createVariable("qnad2_sf", np.double, dimensions=("time",))
+        v.long_name = "Aitken mode number flux"
+        v.standard_name = "qnad2_sf"
+        v.units = ""
+
         return
 
     def io_update(self, rt_grp):
@@ -268,6 +289,24 @@ class SurfaceDYCOMS(Surface.SurfaceBase):
             )
             timeseries_grp["shf"][-1] = self._shf
             timeseries_grp["lhf"][-1] = self._lhf
+            
+             
+        if "qad" in self._ScalarState._dofs:
+            qad_sf = np.sum(np.sum(self._qaflux_sfc))
+            qad_sf = UtilitiesParallel.ScalarAllReduce(qad_sf)
+            qnad_sf = np.sum(np.sum(self._naflux_sfc))
+            qnad_sf = UtilitiesParallel.ScalarAllReduce(qnad_sf)
+            qad2_sf = np.sum(np.sum(self._qa2flux_sfc))
+            qad2_sf = UtilitiesParallel.ScalarAllReduce(qad2_sf)
+            qnad2_sf = np.sum(np.sum(self._na2flux_sfc))
+            qnad2_sf = UtilitiesParallel.ScalarAllReduce(qnad2_sf)
+            
+            if my_rank == 0:
+                timeseries_grp = rt_grp["timeseries"]
+                timeseries_grp["qad_sf"][-1] = qad_sf
+                timeseries_grp["qnad_sf"][-1] = qnad_sf
+                timeseries_grp["qad2_sf"][-1] = qad2_sf
+                timeseries_grp["qnad2_sf"][-1] = qnad2_sf
         return
 
     def update(self):
