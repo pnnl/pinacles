@@ -319,14 +319,14 @@ class Fields2D:
                 var_fx.dims[i].attach_scale(fx[d])
                 
         var = self._ScalarState.get_field("qc")
-        k = 0
+        
         for i in range(self._Grid._local_shape[0]):
             for j in range(self._Grid._local_shape[1]):
-                while (var[nh[0] + i, nh[1] + j, nh[2] + k]<1e-5):
-                    k = k + 1
+                for k in range(10,self._Grid._local_shape[2]-1):
+                    if (var[nh[0] + i, nh[1] + j, nh[2] + k]>1e-5):
+                        break
                 cloud_base[start[0]+i,start[1]+j] = k
                 send_buffer[start[0]+i,start[1]+j] = self._Grid.z_global[nh[2] + k]
-                k = 10
                 
         MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
         if fx is not None:
