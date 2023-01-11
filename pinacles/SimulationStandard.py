@@ -1149,8 +1149,10 @@ class SimulationStandard(SimulationBase.SimulationBase):
             # Loop over the Runge-Kutta steps
             for n in range(self.ScalarTimeStepping.n_rk_step):
                 # Adjust the timestep at the beginning of the step
-                self.TimeSteppingController.adjust_timestep(n, end_time)
-
+                if ParentNest is None:
+                    self.TimeSteppingController.adjust_timestep(n, end_time)
+                else:
+                    self.TimeSteppingController.same_timestep(n, end_time, integrate_by_dt)
                 # Update Thermodynamics
                 self.Thermo.update()
 

@@ -179,6 +179,82 @@ class TimeSteppingController:
 
         return
 
+    def same_timestep(self, n_rk_step, end_time, integrate_by_dt):
+        if n_rk_step == 0:
+
+            nhalo = self._Grid.n_halo
+            dxi = self._Grid.dxi
+
+            # Get velocity components
+            u = self._VelocityState.get_field("u")
+            v = self._VelocityState.get_field("v")
+            w = self._VelocityState.get_field("w")
+
+            eddy_diffusivity = self._DiagnosticState.get_field("eddy_diffusivity")
+
+            cfl_max = 0.0
+            cfl_max_local, umax, vmax, wmax = TS_impl.comput_local_cfl_max(
+                nhalo, dxi, u, v, w
+            )
+
+            umax = UtilitiesParallel.ScalarAllReduce(umax, op=MPI.MAX)
+            vmax = UtilitiesParallel.ScalarAllReduce(vmax, op=MPI.MAX)
+            wmax = UtilitiesParallel.ScalarAllReduce(wmax, op=MPI.MAX)
+
+            recv_buffer = np.zeros((1,), dtype=np.double)
+            MPI.COMM_WORLD.Allreduce(
+                np.array([cfl_max_local], dtype=np.double), recv_buffer, op=MPI.MAX
+            )
+            cfl_max = recv_buffer[0]
+            self._cfl_current = self._dt * cfl_max
+
+            diff_num_max_local = TS_impl.compute_local_diff_num_max(
+                nhalo, dxi, self._dt, eddy_diffusivity
+            )
+            MPI.COMM_WORLD.Allreduce(
+                np.array([diff_num_max_local], dtype=np.double), recv_buffer, op=MPI.MAX
+            )
+            diff_num_max_time_div_dt = recv_buffer[0] / max(self._dt, 0.001)
+            self._diff_num_current = recv_buffer[0]
+            
+            self._dt = integrate_by_dt
+            self._dt = min(self._dt, self._dt_max)
+
+            if self._time + self._dt > end_time:
+                self._dt = end_time - self._time
+
+            for Stepper in self._TimeStepper:
+                Stepper._dt = self._dt
+
+            if MPI.COMM_WORLD.Get_rank() == 0:
+                print("Time:", self._time)
+                print(
+                    "\tCFL Before Adjustment:",
+                    np.round(self._cfl_current, 5),
+                    "CFL After Adjustment:",
+                    np.round(cfl_max * self._dt, 5),
+                )
+                print(
+                    "\tDiffusion Number Before Adjustment:",
+                    np.round(self._diff_num_current, 5),
+                    "Diffusion Number After Adjustment:",
+                    np.round(diff_num_max_time_div_dt * self._dt, 5),
+                )
+                print(
+                    "\tdt:",
+                    self._dt,
+                )
+                print(
+                    "\tumax: ",
+                    np.round(umax, 5),
+                    "\t vmax:",
+                    np.round(vmax, 5),
+                    "\t wmax:",
+                    np.round(wmax, 5),
+                )
+
+        return
+
     def match_time(self):
         # Must be called after dt is computed
         for match in self._times_to_match:
