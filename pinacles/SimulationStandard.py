@@ -943,6 +943,54 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.ScalarTimeStepping.initialize()
         self.VelocityTimeStepping.initialize()
 
+        if self.ParentNest is None:
+            UtilitiesParallel.print_root('Nest None')
+            self.LBC = LateralBCsFactory.LateralBCsFactory(
+                self._namelist,
+                self.ModelGrid,
+                self.Ref,
+                self.DiagnosticState,
+                self.ScalarState,
+                self.VelocityState,
+                self.TimeSteppingController,
+                self.Ingest,
+            )
+            self.LBCVel = LateralBCsFactory.LateralBCsFactory(
+                self._namelist,
+                self.ModelGrid,
+                self.Ref,
+                self.DiagnosticState,
+                self.VelocityState,
+                self.VelocityState,
+                self.TimeSteppingController,
+                self.Ingest,
+            )
+        else:
+            self.LBC = LateralBCsFactory.LateralBCsFactory(
+                self._namelist,
+                self.ModelGrid,
+                self.Ref,
+                self.DiagnosticState,
+                self.ScalarState,
+                self.VelocityState,
+                self.TimeSteppingController,
+                self.Ingest,
+                Parent=self.ParentNest,
+                NestState=self.ParentNest.ScalarState,
+            )
+            self.LBCVel = LateralBCsFactory.LateralBCsFactory(
+                self._namelist,
+                self.ModelGrid,
+                self.Ref,
+                self.DiagnosticState,
+                self.VelocityState,
+                self.VelocityState,
+                self.TimeSteppingController,
+                self.Ingest,
+                Parent=self.ParentNest,
+                NestState=self.ParentNest.VelocityState,
+            )
+
         # Do case specific initializations the initial profiles are integrated here
         Initialization.initialize(
             self._namelist,
