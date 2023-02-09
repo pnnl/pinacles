@@ -27,11 +27,18 @@ class Fields2D:
         self._ScalarState = ScalarState
         self._VelocityState = VelocityState
         self._DiagnosticState = DiagnosticState
+
+        trial_scalar_list = ["qc","qnc","qad","qnad","qad2","qnad2"]
+        self._scalar_list = []
+
+        for dof in self._ScalarState._dofs:
+            if dof in trial_scalar_list:
+                self._scalar_list.append(dof)
         
-        if "qad" in self._ScalarState._dofs:
-            self._scalar_list = ["qc","qnc","qad","qnad","qad2","qnad2"]
-        else:
-            self._scalar_list = ["qc","qnc"]
+        # if "qad" in self._ScalarState._dofs:
+        #     self._scalar_list = ["qc","qnc","qad","qnad","qad2","qnad2"]
+        # else:
+        #     self._scalar_list = ["qc","qnc"]
 
         """Set the output frequency, default it to the stats frequency 
         but allow in to be overridden """
