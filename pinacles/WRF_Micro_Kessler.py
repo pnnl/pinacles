@@ -504,9 +504,9 @@ class MicroKessler(MicrophysicsBase):
 
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
-        qc = self._ScalarState.get_field("qc")[nh[0] : -nh[0], nh[1] : -nh[1], :]
+        qc = self._ScalarState.get_field("qc")[nh[0] : -nh[0], nh[1] : -nh[1], nh[2] : -nh[2]]
         lwp_compute = np.sum(
-            qc * rho0[np.newaxis, np.newaxis, 0] * self._Grid.dx[2], axis=2
+            qc * rho0[np.newaxis, np.newaxis, nh[2] : -nh[2]] * self._Grid.dx[2], axis=2
         )
 
         send_buffer.fill(0.0)
