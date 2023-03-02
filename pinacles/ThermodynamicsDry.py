@@ -3,7 +3,8 @@ import numba
 from mpi4py import MPI
 from pinacles import Thermodynamics, ThermodynamicsDry_impl
 from pinacles import parameters
-
+from functools import partial
+import jax 
 
 class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
     def __init__(self, Timers, Grid, Ref, ScalarState, VelocityState, DiagnosticState):
@@ -120,6 +121,8 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
             t[:, :] = recv_buffer
 
         return
+    
+
 
     @staticmethod
     @numba.njit()
@@ -143,4 +146,58 @@ class ThermodynamicsDry(Thermodynamics.ThermodynamicsBase):
         qv = self._ScalarState.get_field("qv")
         return np.copy(qv)
     
+@jax.jit
+def update_jax(Grid, Ref, Scalars, Velocities, Diagnostics):
+    
+    nh = Grid.n_halo
+    
+    p0 = Ref.p0
+    exner = Ref.exner
+    T0 = Ref.T0
+    alpha0 = Ref.alpha0
+    z = Grid.z_global
+    idz = Grid.dxi[2]
+    
+    theta_ref = T0 / exner
+    
+    s = Scalars.get_field('s')    
+    qv = Scalars.get_field('qv')
+    wt = Velocities.get_tend('w')
+    
+    thetav = Diagnostics.get_field('thetav')
+    bvf = Diagnostics.get_field('bvf')
+    
+    #Compute thermodynamic quantities
+    T = s - parameters.G * z[np.newaxis, np.newaxis, :] * parameters.ICPD
+    alpha = 1.0/(p0[np.newaxis, np.newaxis,:])*parameters.RD * T
+    buoyancy = parameters.G * (alpha - alpha0[np.newaxis, np.newaxis, :]) / alpha
+    
+    #Compute Velocity Tendency
+    wt = wt.at[:,:,:-1].add(0.5 * (buoyancy[:,:,:-1] + buoyancy[:,:,1:]))
+    
+    #Compute virtual potential temperature
+    thetav = T / exner[np.newaxis, np.newaxis, :] * (1.0 + 0.61 * qv)
+ 
+    #Compute buoyancy frequency
+    # @ surface
+    k = nh[2]
+    bvf = bvf.at[:,:,k].set(parameters.G / theta_ref[np.newaxis, np.newaxis, k] * (thetav[:,:,k+1] - thetav[:,:,k])*idz)
 
+    # @ interior 
+    kstart = nh[2] + 1 
+    kend = -nh[2]
+    bvf = bvf.at[:,:,kstart:kend].set(parameters.G / theta_ref[np.newaxis, np.newaxis, kstart:kend] * (thetav[:,:,kstart:kend] - thetav[:,:,kstart-1:kend-1])*idz)
+    
+    # @ domain top
+    k = -nh[2] - 1
+    bvf = bvf.at[:,:,k].set(parameters.G / theta_ref[np.newaxis, np.newaxis, k] * (thetav[:,:,k] - thetav[:,:,k-1])*idz)
+    
+    
+    #Update containers
+    Diagnostics = Diagnostics.set_field('thetav', thetav)
+    Diagnostics = Diagnostics.set_field('T', T)
+    Diagnostics = Diagnostics.set_field('buoyancy', buoyancy)
+    Diagnostics = Diagnostics.set_field('bvf', bvf)
+    Velocities = Velocities.set_tend('w', wt)
+    
+    return  Velocities, Diagnostics

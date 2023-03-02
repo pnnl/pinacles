@@ -74,7 +74,7 @@ class PressureSolver:
         v = self._VelocityState.get_field("v")
         w = self._VelocityState.get_field("w")
 
-        dynp = self._DiagnosticState.get_field("dynamic pressure")
+        dynp = self._DiagnosticState.get_field("dynamic_pressure")
 
         rho0 = self._Ref.rho0
         rho0_edge = self._Ref.rho0_edge

@@ -1,10 +1,4 @@
 from pinacles import Microphysics
-from pinacles import WRF_Micro_Kessler
-from pinacles import WRF_Micro_P3
-from pinacles import SAM_Micro_M2005_MA
-from pinacles import WRF_Micro_SBM
-from pinacles import Microphysics_SA
-
 
 def factory(
     namelist,
@@ -33,6 +27,7 @@ def factory(
             TimeSteppingController,
         )
     elif scheme == "sa":
+        from pinacles import Microphysics_SA
         return Microphysics_SA.MicroSA(
             Timers,
             Grid,
@@ -43,6 +38,7 @@ def factory(
             TimeSteppingController,
         )
     elif scheme == "kessler":
+        from pinacles import WRF_Micro_Kessler
         return WRF_Micro_Kessler.MicroKessler(
             Timers,
             Grid,
@@ -53,6 +49,7 @@ def factory(
             TimeSteppingController,
         )
     elif scheme == "p3":
+        from pinacles import WRF_Micro_P3
         return WRF_Micro_P3.MicroP3(
             namelist,
             Timers,
@@ -64,6 +61,7 @@ def factory(
             TimeSteppingController,
         )
     elif scheme == "m2005_ma":
+        from pinacles import WRF_Micro_SBM
         return SAM_Micro_M2005_MA.Micro_M2005_MA(
             namelist,
             Timers,
@@ -75,6 +73,7 @@ def factory(
             TimeSteppingController,
         )
     elif scheme == "sbm":
+        from pinacles import WRF_Micro_SBM
         return WRF_Micro_SBM.MicroSBM(
             namelist,
             Timers,

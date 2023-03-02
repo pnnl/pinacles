@@ -1,5 +1,6 @@
 import time
-
+from jax.config import config
+config.update("jax_enable_x64", True)
 global_start_time = time.perf_counter()
 import numba
 import json
@@ -463,6 +464,16 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Timers.add_timer("main")
         self.Timers.initialize()
 
+        from pinacles import JaxStep
+        
+        self.jax_step = JaxStep.JaxStep(self.ModelGrid,
+            self.Ref,
+            self.Thermo,
+            self.VelocityState,
+            self.ScalarState,
+            self.DiagnosticState)
+
+
         # if MPI.COMM_WORLD.Get_rank() == 0:
         #     gather =  self.ModelGrid.CreateGather((0,64), (0,64))
         # else:
@@ -908,6 +919,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Timers.add_timer("main")
         self.Timers.initialize()
 
+        from pinacles import JaxStep
+        
+        self.jax_step = JaxStep.JaxStep(self.ModelGrid,
+            self.Ref,
+            self.Thermo,
+            self.VelocityState,
+            self.ScalarState,
+            self.DiagnosticState)
+
+
+
         return
 
     def update(self, integrate_by_dt=0.0):
@@ -925,24 +947,31 @@ class SimulationStandard(SimulationBase.SimulationBase):
             # Loop over the Runge-Kutta steps
             for n in range(self.ScalarTimeStepping.n_rk_step):
 
+
+                self.ScalarState.index_tuple
+
+
                 # Adjust the timestep at the beginning of the step
                 self.TimeSteppingController.adjust_timestep(n, end_time)
 
+
+                self.jax_step.update()
+
+                self.ScalarState._tend_array.array[:,:,:,:] = 0.0
                 # Update Thermodynamics
-                self.Thermo.update()
-
-                # Update the surface
-                self.Surf.update()
-
-                # Update plumes if any
-                self.Plumes.update()
-
-                # Update the forcing
-                self.Force.update()
-
+                #tic = time.perf_counter()
+                #self.Thermo.update()
+                #toc = time.perf_counter()
+                #print('Thermo:', toc - tic)
+                
                 # Update Kinematics and SGS model
-                self.Kine.update()
+                tic = time.perf_counter()
+                self.Thermo.update()
+                self.Kine.update() 
                 self.SGS.update()
+                toc = time.perf_counter() 
+                print('SGS:', toc - tic)               
+                #self.SGS.update()
 
                 # Update scalar and momentum advection
                 self.ScalarAdv.update()
@@ -954,6 +983,15 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 # Do Damping
                 self.RayleighDamping.update()
+
+                # Update the surface
+                self.Surf.update()
+
+                # Update plumes if any
+                self.Plumes.update()
+
+                # Update the forcing
+                self.Force.update()
 
                 # Do time stepping
                 self.ScalarTimeStepping.update()

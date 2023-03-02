@@ -2,7 +2,10 @@ from pinacles import ParallelArrays
 import numpy as np
 import numba
 from mpi4py import MPI
-
+from collections import namedtuple
+import jax 
+import jax.numpy as jnp
+from functools import partial
 
 class ModelState:
     def __init__(self, Grid, container_name, prognostic=False, identical_bcs=False):
@@ -14,7 +17,7 @@ class ModelState:
         )
         self._state_array = None  # This will store present values of the model state
         self._tend_array = (
-            None  # If prognostic this will store the values of the tend array
+           None  # If prognostic this will store the values of the tend array
         )
         self._dofs = {}  # This maps variable name to the GhostArray dof where it stored
         self._long_names = {}  # Store long names for the variables
@@ -82,7 +85,27 @@ class ModelState:
     def get_tend_array(self):
         # TODO this is a property so we should remove the get in the function name
         return self._tend_array
+    
+    def numpy_to_jax(self):
+        self._jax_array = jax.device_put(
+            jnp.asarray(self._state_array.array)
+        )
 
+    def numpy_to_jax_tend(self):
+        self._jax_array_tend = jax.device_put(
+            jnp.asarray(self._tend_array.array)
+        )
+                        
+    def jax_to_numpy(self):
+        self._state_array.array = np.array( self._jax_array )
+        print(np.amax(self._state_array.array), np.amin(self._state_array.array))
+        
+    def jax_to_numpy_tend(self):
+        self._tend_array.array = np.array(self._jax_array_tend )
+        
+
+
+    
     @property
     def identical_bcs(self):
         return self._identical_bcs
@@ -101,6 +124,8 @@ class ModelState:
         is_prognosed_ice=False,
     ):
 
+
+        name = name.replace(" ", "_")
         # Do some correctness checks and warn for some behavior
         assert bcs in ["gradient zero", "value zero"]
 
@@ -138,9 +163,25 @@ class ModelState:
         if self._prognostic:
             self._tend_array = ParallelArrays.GhostArray(self._Grid, ndof=self._nvars)
             self._tend_array.zero()
+            #self._jax_array_tend = jnp.zeros_like(self._tend_array.array)
+        
+        #self._jax_array = jnp.zeros_like(self._state_array.array)
+            
+        # Set-up state tuples
+        self._statetuple = namedtuple('State', self._dofs)    
+        self._index_tuple = self._statetuple(**self._dofs)
+
+        
         return
 
+
+    @property
+    def index_tuple(self):
+        return self._index_tuple 
+
     def boundary_exchange(self, var=None):
+        if var is not None:
+            var = var.replace(" ", "_")
         # Call boundary exchange on the _state_array (Ghost Array)
         if var is None:
             self._state_array.boundary_exchange()
@@ -227,44 +268,58 @@ class ModelState:
         return
 
     def get_field(self, name):
+        name = name.replace(" ", "_")
         # Return a contiguous memory slice of _state_array containing the values of name
         dof = self._dofs[name]
         return self._state_array.array[dof, :, :, :]
+    
+    def get_field_jax(self, name):
+        name = name.replace(" ", "_")
+        # Return a contiguous memory slice of _state_array containing the values of name
+        dof = self._dofs[name]
+        return self._jax_array[dof, :, :, :]
 
     def get_tend(self, name):
+        name = name.replace(" ", "_")
         # Return a contiguous memory slice of _tend_array containing the tendencies of name
         # TODO add error handling for this case.
         dof = self._dofs[name]
         return self._tend_array.array[dof, :, :, :]
 
     def remove_mean(self, name):
+        name = name.replace(" ", "_")
         # This removes the mean from a field
         dof = self._dofs[name]
         self._state_array.remove_mean(dof)
         return
 
     def mean(self, name, pow=1.0):
+        name = name.replace(" ", "_")
         dof = self._dofs[name]
         return self._state_array.mean(dof, pow=pow)
 
     def max_prof(self, name):
+        name = name.replace(" ", "_")
         dof = self._dofs[name]
         return self._state_array.max_prof(dof)
 
     def max(self, name):
+        name = name.replace(" ", "_")
         dof = self._dofs[name]
         return self._state_array.max(dof)
 
     def min_prof(self, name):
+        name = name.replace(" ", "_")
         dof = self._dofs[name]
         return self._state_array.min_prof(dof)
 
     def min(self, name):
+        name = name.replace(" ", "_")
         dof = self._dofs[name]
         return self._state_array.min(dof)
 
     def get_field_slice_z(self, name, indx=0):
-
+        name = name.replace(" ", "_")
         ls = self._Grid.local_start
         nl = self._Grid.nl
         nh = self._Grid.n_halo
@@ -282,6 +337,7 @@ class ModelState:
         return recv_buf
 
     def get_field_slice_h(self, name, indx, y=False):
+        name = name.replace(" ", "_")
         ls = self._Grid.local_start
         nl = self._Grid.nl
         nh = self._Grid.n_halo
@@ -322,6 +378,7 @@ class ModelState:
         return recv_buf
 
     def get_loc(self, var):
+        var = var.replace(" ", "_")
         return self._loc[var]
 
     @property
@@ -336,14 +393,19 @@ class ModelState:
     def tend_array(self):
         return self._tend_array.array[:, :, :, :]
 
+
+
+    
     @property
     def stats_io_init(self):
         return
 
     def is_limited(self, name):
+        name = name.replace(" ", "_")
         return self._limit[name]
 
     def flux_divergence_type(self, name):
+        name = name.replace(" ", "_")
         return self._flux_divergence[name]
 
     @staticmethod
