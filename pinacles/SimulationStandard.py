@@ -1,5 +1,6 @@
 import time
 from jax.config import config
+
 config.update("jax_enable_x64", True)
 global_start_time = time.perf_counter()
 import numba
@@ -49,7 +50,6 @@ os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
 class SimulationStandard(SimulationBase.SimulationBase):
     def __init__(self, namelist):
-
         # This is used to keep track of how long the model has been running.
         self.t_init = time.perf_counter()
         self.t_init = MPI.COMM_WORLD.bcast(self.t_init)
@@ -70,7 +70,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
         return
 
     def initialize(self):
-
         # Instantiate the model grid
         self.ModelGrid = Grid.RegularCartesian(self._namelist)
 
@@ -465,14 +464,15 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Timers.initialize()
 
         from pinacles import JaxStep
-        
-        self.jax_step = JaxStep.JaxStep(self.ModelGrid,
+
+        self.jax_step = JaxStep.JaxStep(
+            self.ModelGrid,
             self.Ref,
             self.Thermo,
             self.VelocityState,
             self.ScalarState,
-            self.DiagnosticState)
-
+            self.DiagnosticState,
+        )
 
         # if MPI.COMM_WORLD.Get_rank() == 0:
         #     gather =  self.ModelGrid.CreateGather((0,64), (0,64))
@@ -499,7 +499,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
         return
 
     def initialize_from_restart(self):
-
         # Announce that this is a restart simulation
         if MPI.COMM_WORLD.Get_rank() == 0:
             print("This is a restarted simulation!")
@@ -920,20 +919,19 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Timers.initialize()
 
         from pinacles import JaxStep
-        
-        self.jax_step = JaxStep.JaxStep(self.ModelGrid,
+
+        self.jax_step = JaxStep.JaxStep(
+            self.ModelGrid,
             self.Ref,
             self.Thermo,
             self.VelocityState,
             self.ScalarState,
-            self.DiagnosticState)
-
-
+            self.DiagnosticState,
+        )
 
         return
 
     def update(self, integrate_by_dt=0.0):
-
         """This function integrates the model forward by integrate_by_dt seconds."""
         # Compute the startime and endtime for this integration
         start_time = self.TimeSteppingController.time
@@ -946,39 +944,37 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
             # Loop over the Runge-Kutta steps
             for n in range(self.ScalarTimeStepping.n_rk_step):
-
-
                 self.ScalarState.index_tuple
-
 
                 # Adjust the timestep at the beginning of the step
                 self.TimeSteppingController.adjust_timestep(n, end_time)
 
+                #self.jax_step.update()
 
-                self.jax_step.update()
-
-                self.ScalarState._tend_array.array[:,:,:,:] = 0.0
+                #self.ScalarState._tend_array.array[:, :, :, :] = 0.0
                 # Update Thermodynamics
-                #tic = time.perf_counter()
-                #self.Thermo.update()
-                #toc = time.perf_counter()
-                #print('Thermo:', toc - tic)
-                
+                # tic = time.perf_counter()
+                # self.Thermo.update()
+                # toc = time.perf_counter()
+                # print('Thermo:', toc - tic)
+
                 # Update Kinematics and SGS model
                 tic = time.perf_counter()
                 self.Thermo.update()
-                self.Kine.update() 
+                self.Kine.update()
                 self.SGS.update()
-                toc = time.perf_counter() 
-                print('SGS:', toc - tic)               
-                #self.SGS.update()
-
-                # Update scalar and momentum advection
-                self.ScalarAdv.update()
-                self.MomAdv.update()
 
                 # Update scalar and momentum diffusion
                 self.ScalarDiff.update()
+                self.ScalarAdv.update()
+                toc = time.perf_counter()
+                print("SGS:", toc - tic)
+                # self.SGS.update()
+
+                # Update scalar and momentum advection
+                #self.ScalarAdv.update()
+                self.MomAdv.update()
+
                 self.MomDiff.update()
 
                 # Do Damping
