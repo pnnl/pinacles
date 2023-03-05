@@ -949,9 +949,21 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 # Adjust the timestep at the beginning of the step
                 self.TimeSteppingController.adjust_timestep(n, end_time)
 
-                #self.jax_step.update()
+                #tic = time.perf_counter()
+                #self.Thermo.update()
+                #self.Kine.update()
+                #self.SGS.update()
+                #Update scalar and momentum diffusion
+                #self.ScalarDiff.update()
+                #self.ScalarAdv.update()
+                #toc = time.perf_counter()
+                #print("SGS:", toc - tic)
+                self.ScalarState._tend_array.array[:] = 0.0
+                self.VelocityState._tend_array.array[:] = 0.0
+                
+                self.jax_step.update()
 
-                #self.ScalarState._tend_array.array[:, :, :, :] = 0.0
+
                 # Update Thermodynamics
                 # tic = time.perf_counter()
                 # self.Thermo.update()
@@ -959,16 +971,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 # print('Thermo:', toc - tic)
 
                 # Update Kinematics and SGS model
-                tic = time.perf_counter()
-                self.Thermo.update()
-                self.Kine.update()
-                self.SGS.update()
 
-                # Update scalar and momentum diffusion
-                self.ScalarDiff.update()
-                self.ScalarAdv.update()
-                toc = time.perf_counter()
-                print("SGS:", toc - tic)
                 # self.SGS.update()
 
                 # Update scalar and momentum advection
@@ -1006,7 +1009,10 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.Timers.end_timer("BoundaryUpdate")
 
                 # Call pressure solver
+                tic = time.perf_counter()
                 self.PSolver.update()
+                toc = time.perf_counter()
+                print('pressure solver', toc - tic)
 
                 if n == 1:
                     self.Thermo.update(apply_buoyancy=False)

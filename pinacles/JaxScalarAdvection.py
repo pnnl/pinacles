@@ -131,7 +131,7 @@ def weno7_update(Grid, Ref, Scalars, Velocities, Diagnostics):
     ist, jst, kst = nh[0], nh[1], nh[2]
     iend, jend, kend = -nh[0], -nh[1], -nh[2]
     phi_t = phi_t.at[:, ist:iend, jst:jend, kst:jend].add(
-        (flux[:, 1:, :, :] - flux[:, :-1, :, :])
+        -(flux[:, 1:, :, :] - flux[:, :-1, :, :])
         * dxi[0]
         * alpha0[jnp.newaxis, jnp.newaxis, jnp.newaxis, kst:kend]
     )
@@ -177,7 +177,7 @@ def weno7_update(Grid, Ref, Scalars, Velocities, Diagnostics):
     ist, jst, kst = nh[0], nh[1], nh[2]
     iend, jend, kend = -nh[0], -nh[1], -nh[2]
     phi_t = phi_t.at[:, ist:iend, jst:jend, kst:jend].add(
-        (flux[:, :, 1:, :] - flux[:, :, :-1, :])
+        -(flux[:, :, 1:, :] - flux[:, :, :-1, :])
         * dxi[1]
         * alpha0[jnp.newaxis, jnp.newaxis, jnp.newaxis, kst:kend]
     )
@@ -225,7 +225,7 @@ def weno7_update(Grid, Ref, Scalars, Velocities, Diagnostics):
     ist, jst, kst = nh[0], nh[1], nh[2]
     iend, jend, kend = -nh[0], -nh[1], -nh[2]
     phi_t = phi_t.at[:, ist:iend, jst:jend, kst:jend].add(
-        (flux[:, :, :, 1:] - flux[:, :, :, :-1])
+        -(flux[:, :, :, 1:] - flux[:, :, :, :-1])
         * dxi[2]
         * alpha0[jnp.newaxis, jnp.newaxis, jnp.newaxis, kst:kend]
     )
