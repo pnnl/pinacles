@@ -74,6 +74,7 @@ def interp_weno7(phim3, phim2, phim1, phi, phip1, phip2, phip3):
     return w0 * p0 + w1 * p1 + w2 * p2 + w3 * p3
 
 
+@jax.jit
 def weno7_update(Grid, Ref, Scalars, Velocities, Diagnostics):
     nh = Grid.n_halo
 
@@ -220,7 +221,6 @@ def weno7_update(Grid, Ref, Scalars, Velocities, Diagnostics):
         + flux_neg * neg_indicator[jnp.newaxis, :, :, :]
     ) * rho0_edge[jnp.newaxis, jnp.newaxis, jnp.newaxis, kst:kend]
 
-
     # Add the tendency
     ist, jst, kst = nh[0], nh[1], nh[2]
     iend, jend, kend = -nh[0], -nh[1], -nh[2]
@@ -237,7 +237,6 @@ def weno7_update(Grid, Ref, Scalars, Velocities, Diagnostics):
 
 @jax.jit
 def update_jax(Grid, Ref, Scalars, Velocities, Diagnostics):
-    
     Scalars = weno7_update(Grid, Ref, Scalars, Velocities, Diagnostics)
 
     return Scalars

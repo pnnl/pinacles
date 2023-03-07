@@ -10,6 +10,7 @@ from pinacles import JaxKinematic
 from pinacles import JaxSmagorinsky
 from pinacles import JaxScalarDiffusion
 from pinacles import JaxScalarAdvection
+from pinacles import JaxMomentumAdvection
 
 
 config.update("jax_enable_x64", True)
@@ -41,6 +42,7 @@ class JaxRef(Pytree):
         self.p0 = jax.device_put(jnp.asarray(Ref.p0))
         self.T0 = jax.device_put(jnp.asarray(Ref.T0))
         self.alpha0 = jax.device_put(jnp.asarray(Ref.alpha0))
+        self.alpha0_edge = jax.device_put(jnp.asarray(Ref.alpha0_edge))
         self.exner = jax.device_put(jnp.asarray(Ref.exner))
         self.rho0 = jax.device_put(jnp.asarray(Ref.rho0))
         self.rho0_edge = jax.device_put(jnp.asarray(Ref.rho0_edge))
@@ -125,16 +127,24 @@ class JaxStep:
         Velocities, Diagnostics = ThermodynamicsDry.update_jax(
             Grid, Ref, Scalars, Velocities, Diagnostics
         )
+
         Diagnostics = JaxKinematic.update_jax(
             Grid, Ref, Scalars, Velocities, Diagnostics
         )
+
         Diagnostics = JaxSmagorinsky.update_jax(
             Grid, Ref, Scalars, Velocities, Diagnostics
         )
+
         Scalars = JaxScalarDiffusion.update_jax(
             Grid, Ref, Scalars, Velocities, Diagnostics
         )
+
         Scalars = JaxScalarAdvection.update_jax(
+            Grid, Ref, Scalars, Velocities, Diagnostics
+        )
+
+        Velocities = JaxMomentumAdvection.update_jax(
             Grid, Ref, Scalars, Velocities, Diagnostics
         )
 
@@ -168,9 +178,5 @@ class JaxStep:
                 p._state_array.array[:] = j.array
             if hasattr(p, "_tend_array") and p._tend_array is not None:
                 p._tend_array.array[:] = j.tend_array
-
-        toc1 = time.perf_counter()
-
-        print("Jax Thermo", toc1 - tic1)
 
         return
