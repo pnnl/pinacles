@@ -1,14 +1,5 @@
-import pylab as plt
 import tqdm as tqdm
-import pandas as pd
 from herbie import FastHerbie
-import cartopy.crs as ccrs
-import numpy as np
-import xarray as xr
-import warnings
-warnings.filterwarnings('ignore')
-import zarr
-from IPython.utils import io
 
 DATES = pd.date_range('2021-03-09 00:00', '2021-03-10 00:00', freq='1H')
 
