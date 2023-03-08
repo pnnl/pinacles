@@ -11,6 +11,7 @@ from pinacles import JaxSmagorinsky
 from pinacles import JaxScalarDiffusion
 from pinacles import JaxScalarAdvection
 from pinacles import JaxMomentumAdvection
+from pinacles import JaxDamping
 
 
 config.update("jax_enable_x64", True)
@@ -103,7 +104,9 @@ class JaxDiagnostic(Pytree, mutable=True):
 
 
 class JaxStep:
-    def __init__(self, Grid, Ref, Thermo, VelocityState, ScalarState, DiagnosticState):
+    def __init__(
+        self, Grid, Ref, Thermo, VelocityState, ScalarState, DiagnosticState, Damping
+    ):
         self._Grid = Grid
         self._Ref = Ref
         self._Thermo = Thermo
@@ -121,6 +124,7 @@ class JaxStep:
         self._JaxScalars = JaxPrognostic(ScalarState)
         self._JaxVelocities = JaxPrognostic(VelocityState)
         self._JaxDiagnostics = JaxDiagnostic(DiagnosticState)
+        self._Damping = JaxDamping.Damping(Damping)
 
     @partial(jax.jit, static_argnums=(0,))
     def jax_update(self, Grid, Ref, Scalars, Velocities, Diagnostics):
@@ -145,6 +149,10 @@ class JaxStep:
         )
 
         Velocities = JaxMomentumAdvection.update_jax(
+            Grid, Ref, Scalars, Velocities, Diagnostics
+        )
+
+        Velocities = self._Damping.update_jax(
             Grid, Ref, Scalars, Velocities, Diagnostics
         )
 

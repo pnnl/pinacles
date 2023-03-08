@@ -472,7 +472,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.VelocityState,
             self.ScalarState,
             self.DiagnosticState,
+            self.RayleighDamping
         )
+
 
         # if MPI.COMM_WORLD.Get_rank() == 0:
         #     gather =  self.ModelGrid.CreateGather((0,64), (0,64))
@@ -927,6 +929,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.VelocityState,
             self.ScalarState,
             self.DiagnosticState,
+            self.RayleighDamping
         )
 
         return
@@ -949,20 +952,23 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 # Adjust the timestep at the beginning of the step
                 self.TimeSteppingController.adjust_timestep(n, end_time)
 
-                #tic = time.perf_counter()
-                #self.Thermo.update()
-                #self.Kine.update()
-                #self.SGS.update()
+                tic = time.perf_counter()
+                self.Thermo.update()
+                self.Kine.update()
+                self.SGS.update()
                 #Update scalar and momentum diffusion
-                #self.ScalarDiff.update()
-                #self.ScalarAdv.update()
-                #toc = time.perf_counter()
-                #print("SGS:", toc - tic)
+                self.ScalarDiff.update()
+                self.ScalarAdv.update()
+                self.MomAdv.update()
+                toc = time.perf_counter()
+                print("Numba:", toc - tic)
                 self.ScalarState._tend_array.array[:] = 0.0
                 self.VelocityState._tend_array.array[:] = 0.0
                 
+                tic = time.perf_counter()
                 self.jax_step.update()
-
+                toc = time.perf_counter()
+                print("JAX", toc - tic)
 
                 # Update Thermodynamics
                 # tic = time.perf_counter()
@@ -976,12 +982,16 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 # Update scalar and momentum advection
                 #self.ScalarAdv.update()
-                self.MomAdv.update()
-
+               
+                #tic = time.perf_counter() 
+                #self.MomAdv.update()
+                #toc = time.perf_counter()
+                #print(tic - toc, adv)
+                #self.MomAdv.update()
                 self.MomDiff.update()
 
                 # Do Damping
-                self.RayleighDamping.update()
+                #self.RayleighDamping.update()
 
                 # Update the surface
                 self.Surf.update()
