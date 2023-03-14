@@ -166,7 +166,7 @@ def advection_of_u(Grid, Ref, Velocities):
     )
 
     # Rest fluxes back to zero
-    flux = flux.at[...].set(0.0)
+    #flux = flux.at[...].set(0.0)
 
     vp = centered_sixth(
         v[ist - 2 : iend - 2, jst:jend, kst:kend],
@@ -215,7 +215,7 @@ def advection_of_u(Grid, Ref, Velocities):
     )
 
     # Reset fluxes to zero
-    flux = flux.at[...].set(0.0)
+    #flux = flux.at[...].set(0.0)
 
     wp = centered_sixth(
         w[ist - 2 : iend - 2, jst:jend, kst:kend],
@@ -334,7 +334,7 @@ def advection_of_v(Grid, Ref, Velocities):
     )
 
     # Reset fluxes to zero
-    flux = flux.at[...].set(0.0)
+    #flux = flux.at[...].set(0.0)
 
     vp = centered_sixth(
         v[ist:iend, jst - 2 : jend - 2, kst:kend],
@@ -383,7 +383,7 @@ def advection_of_v(Grid, Ref, Velocities):
     )
 
     # Reset fluxes to zero
-    flux = flux.at[...].set(0.0)
+    #flux = flux.at[...].set(0.0)
 
     wp = centered_sixth(
         w[ist:iend, jst - 2 : jend - 2, kst:kend],
@@ -504,7 +504,7 @@ def advection_of_w(Grid, Ref, Velocities):
     )
 
     # Reset fluxes to zero
-    flux = flux.at[...].set(0.0)
+    #flux = flux.at[...].set(0.0)
 
     vp = centered_sixth(
         v[ist:iend, jst - 2 : jend - 2, kst:kend],
@@ -553,7 +553,7 @@ def advection_of_w(Grid, Ref, Velocities):
     )
 
     # Reset fluxes to zero
-    flux = flux.at[...].set(0.0)
+    #flux = flux.at[...].set(0.0)
 
     wp = centered_sixth(
         w[ist:iend, jst - 2 : jend - 2, kst:kend],

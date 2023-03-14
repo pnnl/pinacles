@@ -472,7 +472,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.VelocityState,
             self.ScalarState,
             self.DiagnosticState,
-            self.RayleighDamping
+            self.RayleighDamping, 
+            self.Force
         )
 
 
@@ -929,7 +930,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.VelocityState,
             self.ScalarState,
             self.DiagnosticState,
-            self.RayleighDamping
+            self.RayleighDamping,
+            self.Force
         )
 
         return
@@ -947,23 +949,26 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
             # Loop over the Runge-Kutta steps
             for n in range(self.ScalarTimeStepping.n_rk_step):
-                self.ScalarState.index_tuple
 
                 # Adjust the timestep at the beginning of the step
                 self.TimeSteppingController.adjust_timestep(n, end_time)
 
-                tic = time.perf_counter()
-                self.Thermo.update()
-                self.Kine.update()
-                self.SGS.update()
-                #Update scalar and momentum diffusion
-                self.ScalarDiff.update()
-                self.ScalarAdv.update()
-                self.MomAdv.update()
-                toc = time.perf_counter()
-                print("Numba:", toc - tic)
-                self.ScalarState._tend_array.array[:] = 0.0
-                self.VelocityState._tend_array.array[:] = 0.0
+
+                # tic = time.perf_counter()
+                # self.Thermo.update()
+                # self.Kine.update()
+                # self.SGS.update()
+                # #Update scalar and momentum diffusion
+                # self.ScalarDiff.update()
+                # self.MomDiff.update()
+                # self.ScalarAdv.update()
+                # self.MomAdv.update()
+                # # Update the forcing
+                # self.Force.update()
+                # toc = time.perf_counter()
+                # print("Numba:", toc - tic)
+                # self.ScalarState._tend_array.array[:] = 0.0
+                # self.VelocityState._tend_array.array[:] = 0.0
                 
                 tic = time.perf_counter()
                 self.jax_step.update()
@@ -988,7 +993,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 #toc = time.perf_counter()
                 #print(tic - toc, adv)
                 #self.MomAdv.update()
-                self.MomDiff.update()
+               # self.MomDiff.update()
 
                 # Do Damping
                 #self.RayleighDamping.update()
@@ -999,8 +1004,6 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 # Update plumes if any
                 self.Plumes.update()
 
-                # Update the forcing
-                self.Force.update()
 
                 # Do time stepping
                 self.ScalarTimeStepping.update()

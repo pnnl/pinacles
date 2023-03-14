@@ -38,6 +38,7 @@ class Kinematics:
             "grad_ri", long_name="gradient Richardson", latex_name="Ri_g", units="[-]}"
         )
 
+
         nl = self._Grid.ngrid_local
 
         # Gradients of u
