@@ -574,6 +574,13 @@ class InitializeReanalysis:
 
         lon_lat = (lon.flatten(), lat.flatten())
 
+        print(np.amax(self._Grid.lon_local), np.amin(self._Grid.lon_local))
+        print(np.amax(lon), np.amin(lon))
+        
+        print(np.amax(self._Grid.lat_local), np.amin(self._Grid.lat_local))
+        print(np.amax(lat), np.amin(lat))
+        #import sys; sys.exit()
+
         TSKIN = interpolate.griddata(
             lon_lat,
             skin_T.flatten(),

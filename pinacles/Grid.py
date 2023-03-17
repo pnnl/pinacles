@@ -3,7 +3,7 @@ import mpi4py_fft
 import numpy as np
 from numba import stencil
 from mpi4py_fft.pencil import Subcomm
-from pinacles import ProjectionLCC
+from pinacles import Projection
 import numba
 
 
@@ -441,13 +441,16 @@ class RegularCartesian(GridBase):
         if "center_latlon" in namelist["grid"]:
             self._center_latlon = tuple(namelist["grid"]["center_latlon"])
             self._conic_intersection = tuple(namelist["grid"]["conic_intersection"])
+            self._stand_lon = namelist["grid"]["stand_lon"]
 
-            self.MapProj = ProjectionLCC.LambertConformal(
-                6.3781e6,
+
+            self.MapProj = Projection.LambertConformal(
+                6.3780e6,
                 self._conic_intersection[0],
                 self._conic_intersection[1],
                 self._center_latlon[0],
                 self._center_latlon[1],
+                self._stand_lon,
             )
 
             self.compute_latlon()
@@ -492,7 +495,6 @@ class RegularCartesian(GridBase):
        # print(self._global_axes_edge[0]); import sys; sys.exit()
         
     def compute_latlon(self):
-
 
         # Compute domain half width
         halfwidth = None

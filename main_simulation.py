@@ -20,7 +20,6 @@ def main(namelist):
         Sim.FieldsIO,
         Sim.Fields2d,
         Sim.CoarseGrain,
-        Sim.IOTower,
         Sim.Restart,
         Sim.Timers,
         Sim.Parts,

@@ -62,8 +62,8 @@ class IngestWRF(IngestERA5):
         #print(self.lat_margin, self.lon_margin)
         #import sys; sys.exit()
         
-        self.sfc_data_file = 'test_out.nc'
-        self.atm_data_file = 'test_out.nc'
+        self.sfc_data_file = './support/test_out_frontal.nc'
+        self.atm_data_file = './support/test_out_frontal.nc'
 
         
         
@@ -81,7 +81,7 @@ class IngestWRF(IngestERA5):
             print("Reading in timedata data from input files.")
 
         
-            wrf_data = xr.open_dataset(os.path.join(self._real_data, "test_out.nc"))
+            wrf_data = xr.open_dataset(self.atm_data_file)
         
             
             try:
@@ -125,8 +125,8 @@ class IngestWRF(IngestERA5):
                 os.path.join(self._real_data, self.sfc_data_file)
             )
             skin_T = sfc_data.SST.values[self.sfc_timeindx + shift, :, :]
-            lon = sfc_data.XLONG.values[:,:]
-            lat = sfc_data.XLAT.values[:,:]
+            lon = sfc_data.longitude.values[:,:]
+            lat = sfc_data.latitude.values[:,:]
             
 
         else:
@@ -150,8 +150,8 @@ class IngestWRF(IngestERA5):
                 os.path.join(self._real_data, self.sfc_data_file)
             )
             slp = sfc_data.PSFC.values[self.sfc_timeindx + shift, :, :]
-            lon = sfc_data.XLONG.values[:,:]
-            lat = sfc_data.XLAT.values[:,:]
+            lon = sfc_data.longitude.values[:,:]
+            lat = sfc_data.latitude.values[:,:]
         else:
             lon = None
             lat = None
@@ -217,8 +217,8 @@ class IngestWRF(IngestERA5):
 
             hgt = atm_data.Z.values[self.sfc_timeindx + shift, :, :, :]
 
-            lat = atm_data.LAT.values[:,:]
-            lon = atm_data.LONG.values[:,:]
+            lat = atm_data.latitude.values[:,:]
+            lon = atm_data.longitude.values[:,:]
 
         else:
             lon = None
@@ -244,8 +244,8 @@ class IngestWRF(IngestERA5):
             t2m = np.array(atm_data.T2m[self.sfc_timeindx + shift, :, :])
 
             t = np.concatenate((t2m.reshape(1, t2m.shape[0], t2m.shape[1]), t), axis=0)
-            lat = atm_data.LAT.values[:,:]
-            lon = atm_data.LONG.values[:,:]
+            lat = atm_data.latitude.values[:,:]
+            lon = atm_data.longitude.values[:,:]
 
         else:
             t = None
@@ -268,8 +268,8 @@ class IngestWRF(IngestERA5):
 
             p = np.array(atm_data.P[self.sfc_timeindx + shift, :, :, :])
 
-            lat = atm_data.LAT.values[:,:]
-            lon = atm_data.LONG.values[:,:]
+            lat = atm_data.latitude.values[:,:]
+            lon = atm_data.longitude.values[:,:]
 
         else:
             p = None
@@ -290,11 +290,13 @@ class IngestWRF(IngestERA5):
         )
 
 
+
         lat_shape = lat.shape
         lon_shape = lon.shape
 
 
         lon_T, lat_T, T = self.get_T(shift=shift)
+
 
         lon_T_grid = lon_T.flatten()
         lat_T_grid = lat_T.flatten()
@@ -353,8 +355,8 @@ class IngestWRF(IngestERA5):
 
     #         t = np.array(atm_data.T[self.sfc_timeindx + shift, :, :, :])
 
-    #         lat = atm_data.LAT.values[:,:]
-    #         lon = atm_data.LONG.values[:,:]
+    #         lat = atm_data.latitude.values[:,:]
+    #         lon = atm_data.longitude.values[:,:]
 
     #     else:
     #         t = None
@@ -379,8 +381,8 @@ class IngestWRF(IngestERA5):
             qv2m = np.array(atm_data.QV2m[self.sfc_timeindx + shift, :, :])
             qv = np.concatenate((qv2m.reshape(1, qv2m.shape[0], qv2m.shape[1]), qv), axis=0)
 
-            lat = atm_data.LAT.values[:,:]
-            lon = atm_data.LONG.values[:,:]
+            lat = atm_data.latitude.values[:,:]
+            lon = atm_data.longitude.values[:,:]
 
         else:
             qv = None
@@ -457,8 +459,8 @@ class IngestWRF(IngestERA5):
             qc = np.array(atm_data.QC[self.sfc_timeindx + shift, :, :, :])
             qc = np.concatenate((np.zeros((1, qc.shape[1], qc.shape[2])), qc), axis=0)
 
-            lat = atm_data.LAT.values[:,:]
-            lon = atm_data.LONG.values[:,:]
+            lat = atm_data.latitude.values[:,:]
+            lon = atm_data.longitude.values[:,:]
 
         else:
             qc = None
@@ -532,8 +534,8 @@ class IngestWRF(IngestERA5):
             qi = np.array(atm_data.QI[self.sfc_timeindx + shift, :, :, :])
             qi = np.concatenate((np.zeros((1, qi.shape[1], qi.shape[2])), qi), axis=0)
 
-            lat = atm_data.LAT.values[:,:]
-            lon = atm_data.LONG.values[:,:]
+            lat = atm_data.latitude.values[:,:]
+            lon = atm_data.longitude.values[:,:]
 
         else:
             qi = None
@@ -610,8 +612,8 @@ class IngestWRF(IngestERA5):
             u = np.concatenate((u10m.reshape(1,u10m.shape[0], u10m.shape[1]), u), axis=0)            
             # u = np.concatenate((u10.reshape(1,u10.shape[0], u10.shape[1]), u), axis=0)
 
-            lat = atm_data.LAT_U.values[:,:]
-            lon = atm_data.LONG_U.values[:,:]
+            lat = atm_data.latitude.values[:,:]
+            lon = atm_data.longitude.values[:,:]
             
             
 
@@ -692,8 +694,8 @@ class IngestWRF(IngestERA5):
             v10m = np.array(atm_data.V10m[self.sfc_timeindx + shift, :, :])
             v = np.concatenate((v10m.reshape(1,v10m.shape[0], v10m.shape[1]), v), axis=0)
 
-            lat = atm_data.LAT_V.values[:,:]
-            lon = atm_data.LONG_V.values[:,:]
+            lat = atm_data.latitude.values[:,:]
+            lon = atm_data.longitude.values[:,:]
             
             
 

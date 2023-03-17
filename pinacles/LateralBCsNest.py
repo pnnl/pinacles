@@ -1,5 +1,3 @@
-from tkinter.tix import CheckList
-from turtle import update
 import numpy as np
 from pinacles.LateralBCs import LateralBCsBase
 from mpi4py import MPI

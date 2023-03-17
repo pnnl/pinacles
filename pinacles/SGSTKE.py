@@ -16,7 +16,7 @@ def tke_ell(cn, e, buoyancy_frequency, delta):
 def tke_viscosity_diffusivity(dx, e, buoyancy_frequency, visc, diff, cn, ck):
     shape = diff.shape
 
-    delta = (dx[0] * dx[1] * dx[2]) ** (1.0 / 3.0)
+    delta = dx[2] # (dx[0] * dx[1] * dx[2]) ** (1.0 / 3.0)
 
     for i in range(shape[0]):
         for j in range(shape[1]):

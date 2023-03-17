@@ -452,20 +452,20 @@ class SimulationStandard(SimulationBase.SimulationBase):
         self.Fields2d.add_class(self.Surf)
 
         # Instantiate optional TowerIO
-        self.IOTower = TowersIO.Towers(
-            self._namelist,
-            self.Timers,
-            self.ModelGrid,
-            self.TimeSteppingController,
-            self.Surf,
-            self.Rad,
-            self.Micro
-        )
+        # self.IOTower = TowersIO.Towers(
+        #     self._namelist,
+        #     self.Timers,
+        #     self.ModelGrid,
+        #     self.TimeSteppingController,
+        #     self.Surf,
+        #     self.Rad,
+        #     self.Micro
+        # )
         # Add state container to TowerIO
         # Todo move this inside of TowerIO class instantiation
-        for state in [self.VelocityState, self.ScalarState, self.DiagnosticState]:
-            self.IOTower.add_state_container(state)
-        self.IOTower.initialize()
+        # for state in [self.VelocityState, self.ScalarState, self.DiagnosticState]:
+        #     self.IOTower.add_state_container(state)
+        # self.IOTower.initialize()
 
         self.PlatSim.initialize()
 
@@ -956,20 +956,20 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
 
         # Instantiate optional TowerIO
-        self.IOTower = TowersIO.Towers(
-            self._namelist,
-            self.Timers,
-            self.ModelGrid,
-            self.TimeSteppingController,
-            self.Surf,
-            self.Rad,
-            self.Micro
-        )
+        # self.IOTower = TowersIO.Towers(
+        #     self._namelist,
+        #     self.Timers,
+        #     self.ModelGrid,
+        #     self.TimeSteppingController,
+        #     self.Surf,
+        #     self.Rad,
+        #     self.Micro
+        # )
         # Add state container to TowerIO
         # Todo move this inside of TowerIO class instantiation
-        for state in [self.VelocityState, self.ScalarState, self.DiagnosticState]:
-            self.IOTower.add_state_container(state)
-        self.IOTower.initialize()
+        # for state in [self.VelocityState, self.ScalarState, self.DiagnosticState]:
+        #     self.IOTower.add_state_container(state)
+        # self.IOTower.initialize()
 
         # Initialize statistical diagnostics for turbulence and clouds
         self.DiagClouds = DiagnosticsClouds.DiagnosticsClouds(
