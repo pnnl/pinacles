@@ -333,8 +333,11 @@ class IngestWRF(IngestERA5):
                 
                 
                 z = np.concatenate(([2.0], z))
-                
-                interp = interpolate.Akima1DInterpolator(z, T_horizontal[:, i, j])
+
+                ids = np.argsort(z)
+                z = z[ids]
+                Th =  T_horizontal[ids, i, j]
+                interp = interpolate.Akima1DInterpolator(z, Th)
                 Ti[i, j, :] = np.pad(
                     interp.__call__(height[nh[2] : -nh[2]]), nh[2], mode="edge"
                 )
@@ -438,7 +441,11 @@ class IngestWRF(IngestERA5):
 
                 z = hgt_horizontal_interp[:, i, j]
                 z = np.concatenate(([2.0], z))
-                interp = interpolate.Akima1DInterpolator(z, qv_horizontal[:, i, j])
+                
+                ids = np.argsort(z)
+                z = z[ids]
+                qvh = qv_horizontal[ids, i, j]
+                interp = interpolate.Akima1DInterpolator(z, qvh)
                 
                 
                 qvi[i, j, :] = np.pad(
@@ -515,7 +522,12 @@ class IngestWRF(IngestERA5):
 
                 z = hgt_horizontal_interp[:, i, j]
                 z = np.concatenate(([0.0], z))
-                interp = interpolate.Akima1DInterpolator(z, qc_horizontal[:, i, j])
+
+                ids = np.argsort(z)
+                z = z[ids]
+                qch = qc_horizontal[ids, i, j]
+
+                interp = interpolate.Akima1DInterpolator(z, qch)
                 qci[i, j, :] = np.pad(
                     interp.__call__(height[nh[2] : -nh[2]]), nh[2], mode="edge"
                 )
@@ -590,7 +602,11 @@ class IngestWRF(IngestERA5):
 
                 z = hgt_horizontal_interp[:, i, j]
                 z = np.concatenate(([0.0], z))
-                interp = interpolate.Akima1DInterpolator(z, qi_horizontal[:, i, j])
+
+                ids = np.argsort(z)
+                z = z[ids]
+                qih = qi_horizontal[ids, i, j]
+                interp = interpolate.Akima1DInterpolator(z, qih)
                 qii[i, j, :] = np.pad(
                     interp.__call__(height[nh[2] : -nh[2]]), nh[2], mode="edge"
                 )
@@ -672,8 +688,12 @@ class IngestWRF(IngestERA5):
             for j in range(u_horizontal.shape[2]):
 
                 z = hgt_horizontal_interp[:, i, j]
-                z = np.concatenate(([10.0], z))
-                interp = interpolate.Akima1DInterpolator(z[:], u_horizontal[:, i, j])
+                z = np.concatenate(([10.0], z))		
+                ids = np.argsort(z)
+                z = z[ids]
+                uh = u_horizontal[ids, i, j]
+
+                interp = interpolate.Akima1DInterpolator(z[:], uh)
                 ui[i, j, :] = np.pad(
                     interp.__call__(height[nh[2] : -nh[2]]), nh[2], mode="edge"
                 )
@@ -753,7 +773,15 @@ class IngestWRF(IngestERA5):
 
                 z = hgt_horizontal_interp[:, i, j]
                 z = np.concatenate(([10.0], z))
-                interp = interpolate.Akima1DInterpolator(z[:], v_horizontal[:, i, j])
+
+                z = hgt_horizontal_interp[:, i, j]
+                z = np.concatenate(([10.0], z))
+                ids = np.argsort(z)
+                z = z[ids]
+
+                vh = v_horizontal[ids, i, j]
+
+                interp = interpolate.Akima1DInterpolator(z[:], vh)
                 vi[i, j, :] = np.pad(
                     interp.__call__(height[nh[2] : -nh[2]]), nh[2], mode="edge"
                 )

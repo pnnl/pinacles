@@ -103,6 +103,10 @@ class DumpFields_hdf:
         )
         fx.attrs["dt"] = self._TimeSteppingController.dt
 
+        MPI.COMM_WORLD.barrier()
+        if self._this_rank == 0:
+            print('Here 1')
+
         nhalo = self._Grid.n_halo
         local_start = self._Grid._local_start
         local_end = self._Grid._local_end
@@ -115,7 +119,9 @@ class DumpFields_hdf:
         dset.make_scale()
         dset[:] = self._TimeSteppingController.time
 
-
+        MPI.COMM_WORLD.barrier()
+        if self._this_rank == 0:
+            print('Here 2')
         # Now output lat and lon
         if self._Grid.lat_lon:
             
@@ -132,7 +138,9 @@ class DumpFields_hdf:
                 local_start[1] : local_end[1]] = self._Grid.lat_local[nhalo[0] : -nhalo[0],nhalo[1] : -nhalo[1]]             
 
                 
-
+        MPI.COMM_WORLD.barrier()
+        if self._this_rank == 0:
+            print('Here 3')
 
         # import sys; sys.exit()
         for ac in self._classes:
@@ -145,16 +153,16 @@ class DumpFields_hdf:
                     dset = fx.create_dataset(
                         v,
                         (1, self._Grid.n[0], self._Grid.n[1], self._Grid.n[2]),
-                        dtype=np.double,
-                        compression=self.compression,
-                        shuffle=self.shuffle,
-                        chunks=(
-                            1,
-                            np.max(self._Grid.rank_nx),
-                            np.max(self._Grid.rank_ny),
-                            self._Grid.n[2],
-                        ),
-                    )
+                        dtype=np.double)
+                        #compression=self.compression,
+                        #shuffle=self.shuffle,
+                        #chunks=(
+                        #    1,
+                        #    np.max(self._Grid.rank_nx),
+                        #    np.max(self._Grid.rank_ny),
+                        #    self._Grid.n[2],
+                        #),
+                    #)
 
                     for i, d in enumerate(["time", "X", "Y", "Z"]):
                         dset.dims[i].attach_scale(fx[d])
@@ -189,6 +197,10 @@ class DumpFields_hdf:
                     dset.attrs["standard_name"] = ac.get_standard_name(v)
 
                 MPI.COMM_WORLD.barrier()
+        
+        MPI.COMM_WORLD.barrier()
+        if self._this_rank == 0:
+            print('Here 4')
 
         fx.close()
         t1 = time.perf_counter()

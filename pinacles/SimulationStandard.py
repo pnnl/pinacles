@@ -38,7 +38,7 @@ from pinacles import LateralBCsFactory
 from pinacles.ingest import Ingest
 from pinacles import DiagnosticsCoarseGrain
 from pinacles import DiagnosticsCase
-from pinacles import reproducibility
+##from pinacles import reproducibility
 from mpi4py import MPI
 import numpy as np
 import os
@@ -66,7 +66,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Set up the restart, restart modifies the namelist, so this call should not be moved
         self.Restart = Restart.Restart(namelist)
-        Re = reproducibility.Reproducibility(namelist)
+        #Re = reproducibility.Reproducibility(namelist)
 
         # Initialize differently if this is a restart simulation
         if not self.Restart.restart_simulation:
