@@ -23,6 +23,7 @@ def main(namelist):
         Sim.Restart,
         Sim.Timers,
         Sim.Parts,
+        Sim.IOTower,
         Sim.PlatSim
     ]
 

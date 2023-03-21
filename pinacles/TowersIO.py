@@ -24,13 +24,16 @@ class Tower:
 
         if location_in_latlon:
             self.latlon_loc = copy.deepcopy(loc)
-        x, y = self._Grid.latlon_to_xy(loc[0], loc[1])        
-        loc = (x, y)
 
+            x, y = self._Grid.latlon_to_xy(loc[1], loc[0])        
+            loc = (x - self._Grid.MapProj.center_e, y - self._Grid.MapProj.center_n)
 
         # Get the tower indicies
         self._i_indx = int((loc[0] - xbnds[0]) // dx[0]) + self._Grid.n_halo[0] - 1
         self._j_indx = int((loc[1] - ybnds[0]) // dx[1]) + self._Grid.n_halo[1] - 1 
+
+
+
 
         try:
             self._frequency = namelist["towers"]["frequency"]
