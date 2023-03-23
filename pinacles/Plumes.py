@@ -55,7 +55,7 @@ class Plume:
             )
 
         # Add a new scalar variable associated with this plume
-        self._ScalarState.add_variable(self._scalar_name, limit=True)
+        self._ScalarState.add_variable(self._scalar_name, limit=True, flux_divergence="EMONO")
 
         return
 

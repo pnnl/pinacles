@@ -96,6 +96,7 @@ class SGSTKE(SGSBase):
             long_name="Subgrid-scale turbulence kinetic energy",
             units="m^2s^-2",
             latex_name=r"e_{sgs}",
+            flux_divergence="EMONO",
         )
         self._DiagnosticState.add_variable(
             "eddy_viscosity",

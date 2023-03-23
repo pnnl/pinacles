@@ -31,9 +31,9 @@ class Fields2D:
         if "qad" in self._ScalarState._dofs:
             self._scalar_list = ["qc","qnc","qad","qnad","qad2","qnad2"]
         else:
-            try:
+            if "qnc" in self._ScalarState._dofs:
                 self._scalar_list = ["qc","qnc"]
-            except:
+            else:
                 self._scalar_list = ["qc"]
 
         """Set the output frequency, default it to the stats frequency 
@@ -392,7 +392,10 @@ class Fields2D:
         nh = self._Grid.n_halo
         rho0 = self._Ref.rho0
         qc = self._ScalarState.get_field("qc")[nh[0] : -nh[0], nh[1] : -nh[1], nh[2] : -nh[2]]
-        reff = self._DiagnosticState.get_field("diag_effc_3d")[nh[0] : -nh[0], nh[1] : -nh[1], nh[2] : -nh[2]]
+        try:
+            reff = self._DiagnosticState.get_field("diag_effc_3d")[nh[0] : -nh[0], nh[1] : -nh[1], nh[2] : -nh[2]]
+        except:
+            reff = 15.0  #chandru for other microphysics schemes
         tau = 1.5 * 1000.0 * np.sum(
             np.divide(qc,reff) * rho0[np.newaxis, np.newaxis, 0] * self._Grid.dx[2], axis=2
         )

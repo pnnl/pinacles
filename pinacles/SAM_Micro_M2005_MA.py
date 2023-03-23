@@ -129,6 +129,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="kg kg^{-1}",
                 latex_name="q_{v}",
                 limit=True,
+                flux_divergence="EMONO",
             )
 
         if self._iqarray[1] > 0:
@@ -143,6 +144,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{c}",
                 limit=True,
                 is_prognosed_liquid=True,
+                flux_divergence="EMONO",
             )
 
         if self._iqarray[2] > 0:
@@ -155,6 +157,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{i}",
                 limit=True,
                 is_prognosed_ice=True,
+                flux_divergence="EMONO",
             )
 
         if self._iqarray[3] > 0:
@@ -167,6 +170,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{r}",
                 limit=True,
                 is_prognosed_liquid=True,
+                flux_divergence="EMONO",
             )
 
         if self._iqarray[4] > 0:
@@ -179,6 +183,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{s}",
                 limit=True,
                 is_prognosed_ice=True,
+                flux_divergence="EMONO",
             )
 
         if self._iqarray[5] > 0:
@@ -191,6 +196,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 latex_name="q_{g}",
                 limit=True,
                 is_prognosed_ice=True,
+                flux_divergence="EMONO",
             )
 
         if self._iqarray[6] > 0:
@@ -202,6 +208,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="# kg^{-1}",
                 latex_name="q_{nc}",
                 limit=True,
+                flux_divergence="EMONO",
             )
 
         if self._iqarray[7] > 0:
@@ -213,6 +220,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="# kg^{-1}",
                 latex_name="q_{nci}",
                 limit=True,
+                flux_divergence="EMONO",
             )
 
         if self._iqarray[8] > 0:
@@ -224,6 +232,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="# kg^{-1}",
                 latex_name="q_{nr}",
                 limit=True,
+                flux_divergence="EMONO",
             )
 
         if self._iqarray[9] > 0:
@@ -235,6 +244,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="# kg^{-1}",
                 latex_name="q_{ns}",
                 limit=True,
+                flux_divergence="EMONO",
             )
 
         if self._iqarray[10] > 0:
@@ -246,6 +256,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="# kg^{-1}",
                 latex_name="q_{ng}",
                 limit=True,
+                flux_divergence="EMONO",
             )
 
         if self._iqarray[11] > 0:
@@ -257,6 +268,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="kg kg^{-1}",
                 latex_name="q_{ad}",
                 limit=True,
+                flux_divergence="EMONO",
             )
 
         if self._iqarray[12] > 0:
@@ -268,6 +280,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="kg kg^{-1}",
                 latex_name="q_{aw}",
                 limit=True,
+                flux_divergence="EMONO",
             )
 
         if self._iqarray[13] > 0:
@@ -279,6 +292,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="kg kg^{-1}",
                 latex_name="q_{ar}",
                 limit=True,
+                flux_divergence="EMONO",
             )
 
         if self._iqarray[14] > 0:
@@ -290,6 +304,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="# kg^{-1}",
                 latex_name="q_{nad}",
                 limit=True,
+                flux_divergence="EMONO",
             )
 
         if self._iqarray[15] > 0:
@@ -301,6 +316,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="kg kg^{-1}",
                 latex_name="q_{ad2}",
                 limit=True,
+                flux_divergence="EMONO",
             )
 
         if self._iqarray[16] > 0:
@@ -312,6 +328,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="# kg^{-1}",
                 latex_name="q_{nad2}",
                 limit=True,
+                flux_divergence="EMONO",
             )
 
         if self._iqarray[17] > 0:
@@ -326,6 +343,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="kg kg^{-1}",
                 latex_name="DMS",
                 limit=True,
+                flux_divergence="EMONO",
             )
 
         if self._iqarray[19] > 0:
@@ -337,6 +355,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="kg kg^{-1}",
                 latex_name="SO2",
                 limit=True,
+                flux_divergence="EMONO",
             )
 
         if self._iqarray[20] > 0:
@@ -348,6 +367,7 @@ class Micro_M2005_MA(MicrophysicsBase):
                 units="kg kg^{-1}",
                 latex_name="H2SO4",
                 limit=True,
+                flux_divergence="EMONO",
             )
 
         # Allocate microphysical/thermodynamic variables
