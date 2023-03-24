@@ -24,8 +24,23 @@ class LambertConformal:
         #Compute esting and westings for domain center
         self.center_e, self.center_n = self.transformer.transform(self.lon_0, self.lat_0)
         
+        #Compute alpha
+
+        
         
         return
+
+    def  compute_alpha(self, lat, lon):
+        
+        m = pyproj.Proj(self.lcc).get_factors(lon, lat)
+        
+        dy_dphi = m.dy_dphi
+        dy_dlam = m.dy_dlam
+
+        alpha = np.arctan2(-np.cos(np.deg2rad(lat)) * (1.0/dy_dlam),(1.0/dy_dphi))
+    
+        return alpha 
+
 
 
 

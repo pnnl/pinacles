@@ -509,43 +509,62 @@ class ForcingReanalysis(Forcing.ForcingBase):
         self.f_at_v = (
             2.0 * parameters.OMEGA * np.sin(np.pi / 180.0 * self._Grid.lat_local_edge_y)
         )
+        
+        self.f =  (
+            2.0 * parameters.OMEGA * np.sin(np.pi / 180.0 * self._Grid.lat_local)
+        )
 
+        self.e =  (
+            2.0 * parameters.OMEGA * np.cos(np.pi / 180.0 * self._Grid.lat_local)
+        )
+
+
+        self.alpha = self._Grid.MapProj.compute_alpha(self._Grid.lat_local, self._Grid.lon_local)
+        
+        print(self.alpha)
+        
         return
 
     def update(self):
 
         u = self._VelocityState.get_field("u")
         v = self._VelocityState.get_field("v")
+        w  = self._VelocityState.get_field("w")
 
         ut = self._VelocityState.get_tend("u")
         vt = self._VelocityState.get_tend("v")
+        wt = self._VelocityState.get_tend("w")
 
-        self.coriolis_apparent_force(u, v, self.f_at_u, self.f_at_v, ut, vt)
+        self.coriolis_apparent_force(u, v, w, self.e, self.f, self.alpha, ut, vt, wt)
 
         return
 
     @staticmethod
     @numba.njit()
-    def coriolis_apparent_force(u, v, f_at_u, f_at_v, ut, vt):
+    def coriolis_apparent_force(u, v, w, e, f, alpha, ut, vt, wt):
 
         shape = u.shape
         for i in range(1, shape[0] - 1):
             for j in range(1, shape[1] - 1):
                 for k in range(1, shape[2] - 1):
-                    u_at_v = 0.25 * (
-                        u[i, j, k]
-                        + u[i - 1, j, k]
-                        + u[i - 1, j + 1, k]
-                        + u[i, j + 1, k]
-                    )
-                    v_at_u = 0.25 * (
-                        v[i, j, k]
-                        + v[i + 1, j, k]
-                        + v[i + 1, j - 1, k]
-                        + v[i, j - 1, k]
-                    )
-                    ut[i, j, k] += f_at_u[i, j] * v_at_u
-                    vt[i, j, k] -= f_at_v[i, j] * u_at_v
+                    ut_ = 0.0
+                    vt_ = 0.0
+                    wt_ = 0.0 
+                    for s in range(1):                    
+                        uc = (u[i + s - 1, j, k] + u[i + s, j, k] ) * 0.5
+                        vc = (v[i , j+ s - 1, k] + v[i , j+ s, k] ) * 0.5
+                        wc = (w[i , j, k+ s - 1] + w[i, j, k + s] ) * 0.5
+                    
+                         
+                        ut_ += (f[i,j] * vc) - (uc/6370000.0 + e[i,j] * np.cos(alpha[i,j]))*wc
+                        vt_ += -(f[i,j] * uc) + (vc/6370000.0 - e[i,j] * np.sin(alpha[i,j]))*wc                     
+                        wt_ += e[i,j] * (uc * np.cos(alpha[i,j]) - vc*np.sin(alpha[i,j])) + (1/6370000.0) * (uc*uc + vc * vc)
+
+                    ut[i, j, k] += 0.5 * ut_ 
+                    vt[i, j, k] += 0.5 * vt_ 
+                    wt[i ,j, k] += 0.5 *  wt_
+                    
+                    
 
         return
 
@@ -662,7 +681,7 @@ class InitializeReanalysis:
             / parameters.CPD
         )
 
-        random = 0.0 * np.random.uniform(-0.1, 0.1, size=(s.shape[0], s.shape[1], 3))
+        random = np.random.uniform(-0.1, 0.1, size=(s.shape[0], s.shape[1], 3))
         s[:, :, nhalo[2] : nhalo[2] + 3] += random
 
         # Remove condensate from qv
@@ -1175,7 +1194,7 @@ class LateralBCsReanalysis(LateralBCsBase):
         return
 
     def nudge_half(self, weight):
-
+        
         if self._Grid.low_rank[0] and self._Grid.low_rank[1]:
             weight[: self.nudge_width, : self.nudge_width] *= 0.5
 
@@ -1198,19 +1217,19 @@ class LateralBCsReanalysis(LateralBCsBase):
         dx = self._Grid.dx
         assert dx[0] == dx[1]
 
-        weight = (1.0 - np.tanh(np.arange(self.nudge_width) / 2)) / (10.0)
+        weight = (1.0 - np.tanh(np.arange(self.nudge_width) / 2)) / (100.0)
 
         # weight = self.nudge_half(weight)
 
         # weight[self.nudge_width:-self.nudge_width,self.nudge_width:-self.nudge_width]  *= 0.5
 
-        weight_u = (1.0 - np.tanh(self._Grid._edge_dist_u / dx[0] / 2)) / (10.0)
+        weight_u = (1.0 - np.tanh(self._Grid._edge_dist_u / dx[0] / 2)) / (100.0)
 
         weight_u = self.nudge_half(weight_u)
 
         # weight_u[self.nudge_width:-self.nudge_width,self.nudge_width:-self.nudge_width]  *= 0.5
 
-        weight_v = (1.0 - np.tanh(self._Grid._edge_dist_v / dx[1] / 2)) / (10.0)
+        weight_v = (1.0 - np.tanh(self._Grid._edge_dist_v / dx[1] / 2)) / (100.0)
 
         weight_v = self.nudge_half(weight_v)
 
@@ -1436,6 +1455,7 @@ class LateralBCsReanalysis(LateralBCsBase):
 
             elif var == 's' or var == 'qv': #(var == "s" or var == "qv" and False
             #):  # or var == "qc" or var=="qi" or var == 'qi1':
+            
                 phi = self._State.get_field(var)
                 phi_t = self._State.get_tend(var)
                 # s_t = self._State.get_tend("s")
@@ -1538,11 +1558,14 @@ class LateralBCsReanalysis(LateralBCsBase):
                 v = self._VelocityState.get_field('v')
                 nz_pert = 1
                 amp = 0.1
-                Ek =0.16 
+                Ek =0.26
                 
                 if self._Grid.low_rank[0]:
                     start = nh[0]  #     start = nh[0]
-                    end = nh[0] + 1 #self.nudge_width
+                    end = nh[0] + 3 #self.nudge_width
+                    
+                    #start = self._Grid._ibl[0] + self.nudge_width
+                    #end = start + 3
                     
                     speed = u[start:end, :, nh[2] : nh[2] + nz_pert] ** 2.0 + v[start:end, :, nh[2] : nh[2] + nz_pert]**2.0
                     s_p = (speed)/(1250.0 * Ek)
@@ -1553,9 +1576,12 @@ class LateralBCsReanalysis(LateralBCsBase):
                     )    * s_p
 
                 if self._Grid.high_rank[0]:
-                    start = -nh[0] - 1#self.nudge_width
+                    start = -nh[0] - 3#self.nudge_width
                     end = -nh[0]
-                    
+
+                    #start = self._Grid._ibl[0] - 3
+                    #end = start + 3
+                        
                     speed = u[start:end, :, nh[2] : nh[2] + nz_pert] ** 2.0 + v[start:end, :, nh[2] : nh[2] + nz_pert]**2.0
                     s_p = (speed)/(1250.0 * Ek)
                     
@@ -1566,7 +1592,11 @@ class LateralBCsReanalysis(LateralBCsBase):
 
                 if self._Grid.low_rank[1]:
                     start = nh[1]
-                    end = nh[1] + 1 #self.nudge_width
+                    end = nh[1] + 3 #self.nudge_width
+ 
+                   # start = self._Grid._ibl[1] + self.nudge_width
+                   # end = start + 3
+ 
                     pert_shape = s[:, start:end, nh[2] : nh[2] + nz_pert].shape
         
                     speed = u[:, start:end, nh[2] : nh[2]+ nz_pert] ** 2.0 + v[:, start:end, nh[2] : nh[2]+ nz_pert]**2.0
@@ -1578,8 +1608,12 @@ class LateralBCsReanalysis(LateralBCsBase):
                     ) * s_p
 
                 if self._Grid.high_rank[1]:
-                    start = -nh[1] - 1 #self.nudge_width
+                    start = -nh[1] - 3 #self.nudge_width
                     end = -nh[1]
+                    
+                    #start = self._Grid._ibl[1] - 3
+                    #end = start + 3                   
+                    
                     pert_shape = s[:, start:end, nh[2] : nh[2] + nz_pert].shape
                     
                     speed = u[:, start:end, nh[2] : nh[2]+ nz_pert] ** 2.0 + v[:, start:end, nh[2] : nh[2]+ nz_pert]**2.0
