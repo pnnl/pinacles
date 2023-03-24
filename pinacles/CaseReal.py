@@ -662,7 +662,7 @@ class InitializeReanalysis:
             / parameters.CPD
         )
 
-        random = np.random.uniform(-0.1, 0.1, size=(s.shape[0], s.shape[1], 3))
+        random = 0.0 * np.random.uniform(-0.1, 0.1, size=(s.shape[0], s.shape[1], 3))
         s[:, :, nhalo[2] : nhalo[2] + 3] += random
 
         # Remove condensate from qv
@@ -708,7 +708,7 @@ class LateralBCsReanalysis(LateralBCsBase):
 
         self.time_previous = self._TimeSteppingController._time
 
-        self.nudge_width = 3
+        self.nudge_width = 3 
         self.ingest_freq = 3600.0
 
         return
@@ -1434,7 +1434,7 @@ class LateralBCsReanalysis(LateralBCsBase):
             #          - w[:, start: end, :]
             #      ) * weight[np.newaxis, ::-1, np.newaxis]
 
-            elif False: #(var == "s" or var == "qv" and False
+            elif var == 's' or var == 'qv': #(var == "s" or var == "qv" and False
             #):  # or var == "qc" or var=="qi" or var == 'qi1':
                 phi = self._State.get_field(var)
                 phi_t = self._State.get_tend(var)
