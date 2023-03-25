@@ -1417,8 +1417,8 @@ class LateralBCsReanalysis(LateralBCsBase):
                     vt[nh[0] : -nh[0], start:end, :] -= (
                         v[nh[0] : -nh[0], start:end, :]
                         - v_nudge[nh[0] : -nh[0], :-1, :]
-                    ) * weight_v[:, -self.nudge_width - 1 : -1, np.newaxis]
-
+                    ) * weight_v[:, -self.nudge_width:, np.newaxis]
+                    
             # elif var == "w":
 
             #     w = self._State.get_field(var)
