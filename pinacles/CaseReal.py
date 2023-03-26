@@ -1288,7 +1288,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                     ut[start:end, corner_low:corner_high, :] -= (
                         u[start:end, corner_low:corner_high, :]
                         - u_nudge[:-1, corner_low:corner_high, :]
-                    ) * weight_u[-self.nudge_width - 1 : -1, :, np.newaxis]
+                    ) * weight_u[-self.nudge_width:, :, np.newaxis]
 
                 u_nudge = (
                     self._previous_bdy[var]["y_low"][:, :, :]

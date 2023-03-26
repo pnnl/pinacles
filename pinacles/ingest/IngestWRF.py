@@ -62,8 +62,8 @@ class IngestWRF(IngestERA5):
         #print(self.lat_margin, self.lon_margin)
         #import sys; sys.exit()
         
-        self.sfc_data_file = './support/test_out_frontal.nc'
-        self.atm_data_file = './support/test_out_frontal.nc'
+        self.sfc_data_file = self._real_data #'./support/test_out_frontal.nc'
+        self.atm_data_file = self._real_data #'./support/test_out_frontal.nc'
 
         
         
@@ -122,7 +122,7 @@ class IngestWRF(IngestERA5):
         
         if MPI.COMM_WORLD.Get_rank() == 0:
             sfc_data = xr.open_dataset(
-                os.path.join(self._real_data, self.sfc_data_file)
+                self._real_data
             )
             skin_T = sfc_data.SST.values[self.sfc_timeindx + shift, :, :]
             lon = sfc_data.longitude.values[:,:]
@@ -147,7 +147,7 @@ class IngestWRF(IngestERA5):
 
         if MPI.COMM_WORLD.Get_rank() == 0:
             sfc_data = xr.open_dataset(
-                os.path.join(self._real_data, self.sfc_data_file)
+                self._real_data
             )
             slp = sfc_data.PSFC.values[self.sfc_timeindx + shift, :, :]
             lon = sfc_data.longitude.values[:,:]
@@ -212,7 +212,7 @@ class IngestWRF(IngestERA5):
         if MPI.COMM_WORLD.Get_rank() == 0:
 
             atm_data = xr.open_dataset(
-                os.path.join(self._real_data, self.atm_data_file)
+                self._real_data
             )
 
             hgt = atm_data.Z.values[self.sfc_timeindx + shift, :, :, :]
@@ -237,7 +237,7 @@ class IngestWRF(IngestERA5):
         if MPI.COMM_WORLD.Get_rank() == 0:
 
             atm_data = xr.open_dataset(
-                os.path.join(self._real_data, self.atm_data_file)
+                self._real_data
             )
 
             t = np.array(atm_data.T[self.sfc_timeindx + shift, :, :, :])
@@ -263,7 +263,7 @@ class IngestWRF(IngestERA5):
         if MPI.COMM_WORLD.Get_rank() == 0:
 
             atm_data = xr.open_dataset(
-                os.path.join(self._real_data, self.atm_data_file)
+                self._real_data
             )
 
             p = np.array(atm_data.P[self.sfc_timeindx + shift, :, :, :])
@@ -353,7 +353,7 @@ class IngestWRF(IngestERA5):
     #     if MPI.COMM_WORLD.Get_rank() == 0:
 
     #         atm_data = xr.open_dataset(
-    #             os.path.join(self._real_data, self.atm_data_file)
+    #             self._real_data
     #         )
 
     #         t = np.array(atm_data.T[self.sfc_timeindx + shift, :, :, :])
@@ -377,7 +377,7 @@ class IngestWRF(IngestERA5):
         if MPI.COMM_WORLD.Get_rank() == 0:
 
             atm_data = xr.open_dataset(
-                os.path.join(self._real_data, self.atm_data_file)
+                self._real_data
             )
 
             qv = np.array(atm_data.QV[self.sfc_timeindx + shift, :, :, :])
@@ -460,7 +460,7 @@ class IngestWRF(IngestERA5):
         if MPI.COMM_WORLD.Get_rank() == 0:
 
             atm_data = xr.open_dataset(
-                os.path.join(self._real_data, self.atm_data_file)
+                self._real_data
             )
 
             qc = np.array(atm_data.QC[self.sfc_timeindx + shift, :, :, :])
@@ -540,7 +540,7 @@ class IngestWRF(IngestERA5):
         if MPI.COMM_WORLD.Get_rank() == 0:
 
             atm_data = xr.open_dataset(
-                os.path.join(self._real_data, self.atm_data_file)
+                self._real_data
             )
 
             qi = np.array(atm_data.QI[self.sfc_timeindx + shift, :, :, :])
@@ -619,7 +619,7 @@ class IngestWRF(IngestERA5):
         if MPI.COMM_WORLD.Get_rank() == 0:
 
             atm_data = xr.open_dataset(
-                os.path.join(self._real_data, self.atm_data_file)
+                self._real_data
             )
 
             # u10 = np.array(sfc_data.u10[self.sfc_timeindx + shift, :, :])
@@ -706,7 +706,7 @@ class IngestWRF(IngestERA5):
         if MPI.COMM_WORLD.Get_rank() == 0:
 
             atm_data = xr.open_dataset(
-                os.path.join(self._real_data, self.atm_data_file)
+                self._real_data
             )
 
             # u10 = np.array(sfc_data.u10[self.sfc_timeindx + shift, :, :])
