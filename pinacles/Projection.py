@@ -37,7 +37,7 @@ class LambertConformal:
         dy_dphi = m.dy_dphi
         dy_dlam = m.dy_dlam
 
-        alpha = np.arctan2(-np.cos(np.deg2rad(lat)) * (1.0/dy_dlam),(1.0/dy_dphi))
+        alpha = np.arctan2(-np.cos(np.deg2rad(lat)) * np.deg2rad(1.0/dy_dlam),np.deg2rad(1.0/dy_dphi))
     
         return alpha 
 
