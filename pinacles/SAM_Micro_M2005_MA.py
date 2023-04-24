@@ -334,41 +334,41 @@ class Micro_M2005_MA(MicrophysicsBase):
         if self._iqarray[17] > 0:
             igas1 = self._iqarray[17] - 1
 
-        if self._iqarray[18] > 0:
-            iDMS = self._iqarray[18] - 1
-            self._micro_vars[iDMS] = "DMS"
-            self._ScalarState.add_variable(
-                "DMS",
-                long_name="DMS GAS CONCENTRATION",
-                units="kg kg^{-1}",
-                latex_name="DMS",
-                limit=True,
-                flux_divergence="EMONO",
-            )
+        # if self._iqarray[18] > 0:
+        #     iDMS = self._iqarray[18] - 1
+        #     self._micro_vars[iDMS] = "DMS"
+        #     self._ScalarState.add_variable(
+        #         "DMS",
+        #         long_name="DMS GAS CONCENTRATION",
+        #         units="kg kg^{-1}",
+        #         latex_name="DMS",
+        #         limit=True,
+        #         flux_divergence="EMONO",
+        #     )
 
-        if self._iqarray[19] > 0:
-            iSO2 = self._iqarray[19] - 1
-            self._micro_vars[iSO2] = "SO2"
-            self._ScalarState.add_variable(
-                "SO2",
-                long_name="SO2 GAS CONCENTRATION",
-                units="kg kg^{-1}",
-                latex_name="SO2",
-                limit=True,
-                flux_divergence="EMONO",
-            )
+        # if self._iqarray[19] > 0:
+        #     iSO2 = self._iqarray[19] - 1
+        #     self._micro_vars[iSO2] = "SO2"
+        #     self._ScalarState.add_variable(
+        #         "SO2",
+        #         long_name="SO2 GAS CONCENTRATION",
+        #         units="kg kg^{-1}",
+        #         latex_name="SO2",
+        #         limit=True,
+        #         flux_divergence="EMONO",
+        #     )
 
-        if self._iqarray[20] > 0:
-            iH2SO4 = self._iqarray[20] - 1
-            self._micro_vars[iH2SO4] = "H2SO4"
-            self._ScalarState.add_variable(
-                "H2SO4",
-                long_name="H2SO4 GAS CONCENTRATION",
-                units="kg kg^{-1}",
-                latex_name="H2SO4",
-                limit=True,
-                flux_divergence="EMONO",
-            )
+        # if self._iqarray[20] > 0:
+        #     iH2SO4 = self._iqarray[20] - 1
+        #     self._micro_vars[iH2SO4] = "H2SO4"
+        #     self._ScalarState.add_variable(
+        #         "H2SO4",
+        #         long_name="H2SO4 GAS CONCENTRATION",
+        #         units="kg kg^{-1}",
+        #         latex_name="H2SO4",
+        #         limit=True,
+        #         flux_divergence="EMONO",
+        #     )
 
         # Allocate microphysical/thermodynamic variables
 

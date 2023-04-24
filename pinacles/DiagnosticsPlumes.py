@@ -29,74 +29,76 @@ class DiagnosticsPlumes:
         # Get aliases to the timeseries and profiles groups
         timeseries_grp = this_grp["timeseries"]
         profiles_grp = this_grp["profiles"]
+        
+        for plume_i in self._Plumes._list_of_plumes:
+        
+            v = profiles_grp.createVariable(
+                plume_i._scalar_name + "_frac",
+                np.double,
+                dimensions=(
+                    "time",
+                    "z",
+                ),
+            )
+            v.long_name = "Plume fraction"
+            v.units = ""
+            v.standard_name = "Plume"
 
-        v = profiles_grp.createVariable(
-            "plume_frac",
-            np.double,
-            dimensions=(
-                "time",
-                "z",
-            ),
-        )
-        v.long_name = "Plume fraction"
-        v.units = ""
-        v.standard_name = "Plume"
+            v = profiles_grp.createVariable(
+                "u_" + plume_i._scalar_name,
+                np.double,
+                dimensions=(
+                    "time",
+                    "z",
+                ),
+            )
+            v.long_name = "u velocity plume conditional mean"
+            v.units = "m/s"
+            v.standard_name = "u_{plume}"
 
-        v = profiles_grp.createVariable(
-            "u_plume",
-            np.double,
-            dimensions=(
-                "time",
-                "z",
-            ),
-        )
-        v.long_name = "u velocity plume conditional mean"
-        v.units = "m/s"
-        v.standard_name = "u_{plume}"
+            v = profiles_grp.createVariable(
+                "v_" + plume_i._scalar_name,
+                np.double,
+                dimensions=(
+                    "time",
+                    "z",
+                ),
+            )
+            v.long_name = "v velocity plume conditional mean"
+            v.units = "m/s"
+            v.standard_name = "v_{plume}"
 
-        v = profiles_grp.createVariable(
-            "v_plume",
-            np.double,
-            dimensions=(
-                "time",
-                "z",
-            ),
-        )
-        v.long_name = "v velocity plume conditional mean"
-        v.units = "m/s"
-        v.standard_name = "v_{plume}"
+            v = profiles_grp.createVariable(
+                "w_" + plume_i._scalar_name,
+                np.double,
+                dimensions=(
+                    "time",
+                    "z",
+                ),
+            )
+            v.long_name = "w velocity plume conditional mean"
+            v.units = "m/s"
+            v.standard_name = "w_{plume}"
 
-        v = profiles_grp.createVariable(
-            "w_plume",
-            np.double,
-            dimensions=(
-                "time",
-                "z",
-            ),
-        )
-        v.long_name = "w velocity plume conditional mean"
-        v.units = "m/s"
-        v.standard_name = "w_{plume}"
+            for container in [self._ScalarState, self._DiagnosticState]:
+                for var in container.names:
+                    if "ff" in var:
+                        continue
 
-        for container in [self._ScalarState, self._DiagnosticState]:
-            for var in container.names:
-                if "ff" in var:
-                    continue
-
-                for stype in ["plume"]:
-                    v = profiles_grp.createVariable(
-                        var + "_" + stype,
-                        np.double,
-                        dimensions=(
-                            "time",
-                            "z",
-                        ),
-                    )
-                    v.long_name = container.get_long_name(var) + " " + stype
-                    v.units = container.get_units(var)
-                    v.standard_name = (
-                        container.get_standard_name(var) + "_{" + stype + "}"
-                    )
+                    for stype in ["plume"]:
+                        v = profiles_grp.createVariable(
+                            var + "_" + plume_i._scalar_name,
+                            np.double,
+                            dimensions=(
+                                "time",
+                                "z",
+                            ),
+                        )
+                        v.long_name = container.get_long_name(var) + " " + plume_i._scalar_name
+                        v.units = container.get_units(var)
+                        v.standard_name = (
+                            container.get_standard_name(var) + "_{" + plume_i._scalar_name + "}"
+                        )
 
         return
 
@@ -162,13 +164,13 @@ class DiagnosticsPlumes:
         w = self._VelocityState.get_field("w")
         plume_0 = self._ScalarState.get_field("plume_0")
         
-        plume_count = np.zeros((plume_0.shape[2],), dtype=np.double, order="C")
-
-        u_plume = np.zeros_like(plume_count)
-        v_plume = np.zeros_like(plume_count)
-        w_plume = np.zeros_like(plume_count)
-        
         for plume_i in self._Plumes._list_of_plumes:
+        
+            plume_count = np.zeros((plume_0.shape[2],), dtype=np.double, order="C")
+
+            u_plume = np.zeros_like(plume_count)
+            v_plume = np.zeros_like(plume_count)
+            w_plume = np.zeros_like(plume_count)
             
             plume_sc = self._ScalarState.get_field(plume_i._scalar_name)
             
@@ -184,21 +186,21 @@ class DiagnosticsPlumes:
                 w_plume,
             )
 
-        plume_count = UtilitiesParallel.ScalarAllReduce(plume_count)
-        plume_frac = plume_count / npts
-        plume_points = plume_frac > 0
-        for var in [u_plume, v_plume, w_plume]:
-            var[:] = UtilitiesParallel.ScalarAllReduce(var)
-            var[plume_points] = var[plume_points] / plume_count[plume_points]
+            plume_count = UtilitiesParallel.ScalarAllReduce(plume_count)
+            plume_frac = plume_count / npts
+            plume_points = plume_frac > 0
+            for var in [u_plume, v_plume, w_plume]:
+                var[:] = UtilitiesParallel.ScalarAllReduce(var)
+                var[plume_points] = var[plume_points] / plume_count[plume_points]
 
-        MPI.COMM_WORLD.barrier()
-        if my_rank == 0:
-            profiles_grp = this_grp["profiles"]
-            profiles_grp["plume_frac"][-1, :] = plume_frac[n_halo[2] : -n_halo[2]]
+            MPI.COMM_WORLD.barrier()
+            if my_rank == 0:
+                profiles_grp = this_grp["profiles"]
+                profiles_grp[plume_i._scalar_name + "_frac"][-1, :] = plume_frac[n_halo[2] : -n_halo[2]]
 
-            profiles_grp["u_plume"][-1, :] = u_plume[n_halo[2] : -n_halo[2]]
-            profiles_grp["v_plume"][-1, :] = v_plume[n_halo[2] : -n_halo[2]]
-            profiles_grp["w_plume"][-1, :] = w_plume[n_halo[2] : -n_halo[2]]
+                profiles_grp["u_" + plume_i._scalar_name][-1, :] = u_plume[n_halo[2] : -n_halo[2]]
+                profiles_grp["v_" + plume_i._scalar_name][-1, :] = v_plume[n_halo[2] : -n_halo[2]]
+                profiles_grp["w_" + plume_i._scalar_name][-1, :] = w_plume[n_halo[2] : -n_halo[2]]
 
         return
 
@@ -221,12 +223,12 @@ class DiagnosticsPlumes:
                     # Skip SBM bin fields.
                     continue
 
-                plume_count.fill(0.0)
-                phi_plume.fill(0.0)
-
                 phi = container.get_field(var)
 
                 for plume_i in self._Plumes._list_of_plumes:
+
+                    plume_count.fill(0.0)
+                    phi_plume.fill(0.0)
 
                     plume_sc = self._ScalarState.get_field(plume_i._scalar_name)
     
@@ -234,23 +236,23 @@ class DiagnosticsPlumes:
                         n_halo, plume_sc, phi, plume_count, phi_plume
                     )
 
-                # Todo precompute these they shouldn't change by variable
-                plume_count = UtilitiesParallel.ScalarAllReduce(plume_count)
+                    # Todo precompute these they shouldn't change by variable
+                    plume_count = UtilitiesParallel.ScalarAllReduce(plume_count)
 
-                plume_points = plume_count > 0
+                    plume_points = plume_count > 0
 
-                phi_plume[:] = UtilitiesParallel.ScalarAllReduce(phi_plume)
-                phi_plume[plume_points] = (
-                    phi_plume[plume_points] / plume_count[plume_points]
-                )
+                    phi_plume[:] = UtilitiesParallel.ScalarAllReduce(phi_plume)
+                    phi_plume[plume_points] = (
+                        phi_plume[plume_points] / plume_count[plume_points]
+                    )
 
-                MPI.COMM_WORLD.barrier()
+                    MPI.COMM_WORLD.barrier()
 
-                if my_rank == 0:
-                    profiles_grp = this_grp["profiles"]
-                    profiles_grp[var + "_plume"][-1, :] = phi_plume[
-                        n_halo[2] : -n_halo[2]
-                    ]
+                    if my_rank == 0:
+                        profiles_grp = this_grp["profiles"]
+                        profiles_grp[var + "_" + plume_i._scalar_name][-1, :] = phi_plume[
+                            n_halo[2] : -n_halo[2]
+                        ]
 
         return
 
