@@ -646,7 +646,7 @@ class InitializeReanalysis:
         qc = self._ScalarState.get_field("qc")
         qc_interp = self._Ingest.interp_qc(
             self._Grid.lon_local, self._Grid.lat_local, self._Grid.z_local
-        )
+        ) * 0.0
 
         # qc[:, :, :] = qc_interp[:, :, :]
         # qc[:, :, :] = qc[:, :, :] #/ self._Ref.rho0[np.newaxis, np.newaxis, :]
@@ -658,7 +658,7 @@ class InitializeReanalysis:
 
         qi_interp = self._Ingest.interp_qi(
             self._Grid.lon_local, self._Grid.lat_local, self._Grid.z_local
-        )
+        ) * 0.0
 
         # qi[:, :, :] = qi_interp[:, :, :]
         # qi[:, :, :] = qi[:, :, :] #/ self._Ref.rho0[np.newaxis, np.newaxis, :]
@@ -667,8 +667,8 @@ class InitializeReanalysis:
             T
             + (
                 self._Grid.z_local[np.newaxis, np.newaxis, :] * (parameters.G)
-                - parameters.LV * qc_interp
-                - parameters.LS * qi_interp
+                + parameters.LV * qc_interp
+                + parameters.LS * qi_interp
             )
             / parameters.CPD
         )
@@ -891,14 +891,14 @@ class LateralBCsReanalysis(LateralBCsBase):
                             self.bdy_lats["scalar"][bdy],
                             self._Grid.z_local,
                             shift=shift,
-                        ).squeeze()
+                        ).squeeze() * 0.0 
 
                         qi = self._Ingest.interp_qi(
                             self.bdy_lons["scalar"][bdy],
                             self.bdy_lats["scalar"][bdy],
                             self._Grid.z_local,
                             shift=shift,
-                        ).squeeze()
+                        ).squeeze() * 0.0 
 
                         # qc[:, :] = 0.0  # qc[:,:]/self._Ref.rho0[np.newaxis,:]
                         # qi[:, :] = 0.0  # qi[:,:]/self._Ref.rho0[np.newaxis,:]
@@ -914,8 +914,8 @@ class LateralBCsReanalysis(LateralBCsBase):
                             T
                             + (
                                 self._Grid.z_local[np.newaxis, :] * (parameters.G)
-                                - parameters.LV * qc
-                                - parameters.LS * qi
+                                +  parameters.LV * qc
+                                + parameters.LS * qi
                             )
                             / parameters.CPD
                         )
@@ -929,14 +929,14 @@ class LateralBCsReanalysis(LateralBCsBase):
                             self.bdy_lats["scalar"][bdy],
                             self._Grid.z_local,
                             shift=shift,
-                        ).squeeze()
+                        ).squeeze() * 0.0 
 
                         qi = self._Ingest.interp_qi(
                             self.bdy_lons["scalar"][bdy],
                             self.bdy_lats["scalar"][bdy],
                             self._Grid.z_local,
                             shift=shift,
-                        ).squeeze()
+                        ).squeeze() * 0.0 
 
                         qv = self._Ingest.interp_qv(
                             self.bdy_lons["scalar"][bdy],
@@ -1029,14 +1029,14 @@ class LateralBCsReanalysis(LateralBCsBase):
                         self.bdy_lats["scalar"][bdy],
                         self._Grid.z_local,
                         shift=shift,
-                    ).squeeze()
+                    ).squeeze() * 0.0 
 
                     qi = self._Ingest.interp_qi(
                         self.bdy_lons["scalar"][bdy],
                         self.bdy_lats["scalar"][bdy],
                         self._Grid.z_local,
                         shift=shift,
-                    ).squeeze()
+                    ).squeeze() * 0.0 
 
                     qc[:, :] = qc[:, :]  # /self._Ref.rho0[np.newaxis,:]
                     qi[:, :] = qi[:, :]  # /self._Ref.rho0[np.newaxis,:]
@@ -1066,14 +1066,14 @@ class LateralBCsReanalysis(LateralBCsBase):
                         self.bdy_lats["scalar"][bdy],
                         self._Grid.z_local,
                         shift=shift,
-                    ).squeeze()
+                    ).squeeze()* 0.0 
 
                     qi = self._Ingest.interp_qi(
                         self.bdy_lons["scalar"][bdy],
                         self.bdy_lats["scalar"][bdy],
                         self._Grid.z_local,
                         shift=shift,
-                    ).squeeze()
+                    ).squeeze()*0.0
 
                     qv = self._Ingest.interp_qv(
                         self.bdy_lons["scalar"][bdy],
