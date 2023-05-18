@@ -10,6 +10,8 @@ class Tower:
         self._Grid = Grid
         self._TimeSteppingController = TimeSteppingController
         self._containers = []
+        self._accu = {}
+        self._accuCounter = 0
         self._out_file = None
 
         xbnds = self._Grid.x_range_local
@@ -75,14 +77,97 @@ class Tower:
             dimensions=("time"),
         )
 
+        rt_grp.createVariable(
+            "accu_counter",
+            np.int64,
+            dimensions=("time"),
+        )
+
+        self._accuCounter = 0
+
         for con in self._containers:
             for var in con._dofs.keys():
                 if con._loc[var] != "z":
+                    # create both snapshot and mean variables for the output file
                     rt_grp.createVariable(var, np.double, dimensions=("time", "z"))
+                    rt_grp.createVariable(var+"_mean", np.double, dimensions=("time", "z"))
+                    # create new np arrays to store the accumulated values
+                    self._accu[var+"_mean"] = np.zeros(self._Grid.n[2], dtype=np.double)
                 else:
                     rt_grp.createVariable(var, np.double, dimensions=("time", "z_edge"))
+                    rt_grp.createVariable(var+"_mean", np.double, dimensions=("time", "z_edge"))
+                    self._accu[var+"_mean"] = np.zeros(self._Grid.n[2]+1, dtype=np.double)
+                
+                if var in ["u", "v"]:
+                    rt_grp.createVariable(var+"_squared", np.double, dimensions=("time", "z"))
+                    self._accu[var+"_squared"] = np.zeros(self._Grid.n[2], dtype=np.double)
+
+                if var == "w":
+                    rt_grp.createVariable(var+"_squared", np.double, dimensions=("time", "z_edge"))
+                    self._accu[var+"_squared"] = np.zeros(self._Grid.n[2]+1, dtype=np.double)
+                    rt_grp.createVariable(var+"_cubed", np.double, dimensions=("time", "z_edge"))
+                    self._accu[var+"_cubed"] = np.zeros(self._Grid.n[2]+1, dtype=np.double)
+
+        rt_grp.createVariable("uw_mean", np.double, dimensions=("time", "z"))
+        self._accu["uw_mean"] = np.zeros(self._Grid.n[2], dtype=np.double)
+        rt_grp.createVariable("vw_mean", np.double, dimensions=("time", "z"))
+        self._accu["vw_mean"] = np.zeros(self._Grid.n[2], dtype=np.double)
 
         rt_grp.close()
+        return
+
+    def accumulate(self):
+
+        if not self._tower_on_this_rank:
+            return
+
+        nh = self._Grid.n_halo
+
+        for con in self._containers:
+            for var in con._dofs.keys():
+                phi = con.get_field(var)
+                if var == "u":
+                    u_tower = (
+                        np.add(
+                            phi[self._i_indx, self._j_indx, nh[2] : -nh[2]],
+                            phi[self._i_indx - 1, self._j_indx, nh[2] : -nh[2]],
+                        )
+                        * 0.5
+                    )
+                    self._accu[var+"_mean"][:] += u_tower 
+                    self._accu[var+"_squared"][:] += np.power(u_tower, 2)
+                elif var == "v":
+                    v_tower = (
+                        np.add(
+                            phi[self._i_indx, self._j_indx, nh[2] : -nh[2]],
+                            phi[self._i_indx, self._j_indx - 1, nh[2] : -nh[2]],
+                        )
+                        * 0.5
+                    )
+                    self._accu[var+"_mean"][:] += v_tower 
+                    self._accu[var+"_squared"][:] += np.power(v_tower, 2)
+                elif var == "w":
+                    w_tower = phi[
+                        self._i_indx, self._j_indx, nh[2] - 1 : -nh[2]
+                    ]
+                    self._accu[var+"_mean"][:] += w_tower 
+                    self._accu[var+"_squared"][:] += np.power(w_tower, 2)
+                    self._accu[var+"_cubed"][:] += np.power(w_tower, 3)
+                else:
+                    if con._loc[var] != "z":
+                        self._accu[var+"_mean"][:] += phi[
+                            self._i_indx, self._j_indx, nh[2] : -nh[2]
+                        ]
+                    else:
+                        self._accu[var+"_mean"][:] += phi[
+                            self._i_indx, self._j_indx, nh[2] - 1 : -nh[2]
+                        ]
+
+        self._accu["uw_mean"][:] += 0.5*(w_tower[1:]+w_tower[:-1])*u_tower
+        self._accu["vw_mean"][:] += 0.5*(w_tower[1:]+w_tower[:-1])*v_tower
+
+        self._accuCounter += 1
+
         return
 
     def update(self):
@@ -102,7 +187,13 @@ class Tower:
 
         for con in self._containers:
             for var in con._dofs.keys():
+
+                rt_grp[var+"_mean"][-1, :] = self._accu[var+"_mean"]/self._accuCounter
+                self._accu[var+"_mean"][:] = 0.0
+
                 if var == "u":
+                    rt_grp[var+"_squared"][-1, :] = self._accu[var+"_squared"]/self._accuCounter
+                    self._accu[var+"_squared"][:] = 0.0
                     phi = con.get_field(var)
                     rt_grp[var][-1, :] = (
                         np.add(
@@ -111,8 +202,9 @@ class Tower:
                         )
                         * 0.5
                     )
-
                 elif var == "v":
+                    rt_grp[var+"_squared"][-1, :] = self._accu[var+"_squared"]/self._accuCounter
+                    self._accu[var+"_squared"][:] = 0.0
                     phi = con.get_field(var)
                     rt_grp[var][-1, :] = (
                         np.add(
@@ -121,7 +213,15 @@ class Tower:
                         )
                         * 0.5
                     )
-
+                elif var == "w":
+                    rt_grp[var+"_squared"][-1, :] = self._accu[var+"_squared"]/self._accuCounter
+                    self._accu[var+"_squared"][:] = 0.0
+                    rt_grp[var+"_cubed"][-1, :] = self._accu[var+"_cubed"]/self._accuCounter
+                    self._accu[var+"_cubed"][:] = 0.0
+                    phi = con.get_field(var)
+                    rt_grp[var][-1, :] = phi[
+                        self._i_indx, self._j_indx, nh[2] - 1 : -nh[2]
+                    ]
                 else:
                     if con._loc[var] != "z":
                         phi = con.get_field(var)
@@ -134,7 +234,15 @@ class Tower:
                             self._i_indx, self._j_indx, nh[2] - 1 : -nh[2]
                         ]
 
+        rt_grp["uw_mean"][-1, :] = self._accu["uw_mean"]/self._accuCounter
+        self._accu["uw_mean"][:] = 0.0
+        rt_grp["vw_mean"][-1, :] = self._accu["vw_mean"]/self._accuCounter
+        self._accu["vw_mean"][:] = 0.0
+        rt_grp["accu_counter"][-1] = self._accuCounter
+        self._accuCounter = 0 
+
         rt_grp.close()
+
 
         return
 
@@ -184,6 +292,14 @@ class Towers:
             tower.update()
 
         self._Timers.end_timer("Towers")
+        return
+
+
+    def accumulate(self):
+
+        for tower in self._list_of_towers:
+            tower.accumulate()
+        
         return
 
     @property

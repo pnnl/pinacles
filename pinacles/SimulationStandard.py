@@ -992,6 +992,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
                     # Get a consistant temperature for io
                     self.Thermo.update(apply_buoyancy=False)
 
+                    # do accumulation for tower output
+                    self.IOTower.accumulate()
+
             self.Timers.finish_timestep()
             self.TimeSteppingController._time += self.TimeSteppingController._dt
 
