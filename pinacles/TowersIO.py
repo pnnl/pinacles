@@ -11,7 +11,7 @@ class Tower:
         self._TimeSteppingController = TimeSteppingController
         self._containers = []
         self._accu = {}
-        self._accuCounter = 0
+        self._accuTime = 0.0
         self._out_file = None
 
         xbnds = self._Grid.x_range_local
@@ -78,12 +78,12 @@ class Tower:
         )
 
         rt_grp.createVariable(
-            "accu_counter",
-            np.int64,
+            "accu_time",
+            np.double,
             dimensions=("time"),
         )
 
-        self._accuCounter = 0
+        self._accuTime = 0.0
 
         for con in self._containers:
             for var in con._dofs.keys():
@@ -121,6 +121,8 @@ class Tower:
         if not self._tower_on_this_rank:
             return
 
+        dt = self._TimeSteppingController._dt
+
         nh = self._Grid.n_halo
 
         for con in self._containers:
@@ -134,8 +136,8 @@ class Tower:
                         )
                         * 0.5
                     )
-                    self._accu[var+"_mean"][:] += u_tower 
-                    self._accu[var+"_squared"][:] += np.power(u_tower, 2)
+                    self._accu[var+"_mean"][:] += u_tower * dt 
+                    self._accu[var+"_squared"][:] += np.power(u_tower, 2) * dt
                 elif var == "v":
                     v_tower = (
                         np.add(
@@ -144,29 +146,29 @@ class Tower:
                         )
                         * 0.5
                     )
-                    self._accu[var+"_mean"][:] += v_tower 
-                    self._accu[var+"_squared"][:] += np.power(v_tower, 2)
+                    self._accu[var+"_mean"][:] += v_tower * dt 
+                    self._accu[var+"_squared"][:] += np.power(v_tower, 2) * dt
                 elif var == "w":
                     w_tower = phi[
                         self._i_indx, self._j_indx, nh[2] - 1 : -nh[2]
                     ]
-                    self._accu[var+"_mean"][:] += w_tower 
-                    self._accu[var+"_squared"][:] += np.power(w_tower, 2)
-                    self._accu[var+"_cubed"][:] += np.power(w_tower, 3)
+                    self._accu[var+"_mean"][:] += w_tower * dt
+                    self._accu[var+"_squared"][:] += np.power(w_tower, 2) * dt
+                    self._accu[var+"_cubed"][:] += np.power(w_tower, 3) * dt
                 else:
                     if con._loc[var] != "z":
                         self._accu[var+"_mean"][:] += phi[
                             self._i_indx, self._j_indx, nh[2] : -nh[2]
-                        ]
+                        ] * dt
                     else:
                         self._accu[var+"_mean"][:] += phi[
                             self._i_indx, self._j_indx, nh[2] - 1 : -nh[2]
-                        ]
+                        ] * dt
 
-        self._accu["uw_mean"][:] += 0.5*(w_tower[1:]+w_tower[:-1])*u_tower
-        self._accu["vw_mean"][:] += 0.5*(w_tower[1:]+w_tower[:-1])*v_tower
+        self._accu["uw_mean"][:] += 0.5*(w_tower[1:]+w_tower[:-1])*u_tower*dt
+        self._accu["vw_mean"][:] += 0.5*(w_tower[1:]+w_tower[:-1])*v_tower*dt
 
-        self._accuCounter += 1
+        self._accuTime += dt 
 
         return
 
@@ -188,11 +190,11 @@ class Tower:
         for con in self._containers:
             for var in con._dofs.keys():
 
-                rt_grp[var+"_mean"][-1, :] = self._accu[var+"_mean"]/self._accuCounter
+                rt_grp[var+"_mean"][-1, :] = self._accu[var+"_mean"]/self._frequency
                 self._accu[var+"_mean"][:] = 0.0
 
                 if var == "u":
-                    rt_grp[var+"_squared"][-1, :] = self._accu[var+"_squared"]/self._accuCounter
+                    rt_grp[var+"_squared"][-1, :] = self._accu[var+"_squared"]/self._frequency
                     self._accu[var+"_squared"][:] = 0.0
                     phi = con.get_field(var)
                     rt_grp[var][-1, :] = (
@@ -203,7 +205,7 @@ class Tower:
                         * 0.5
                     )
                 elif var == "v":
-                    rt_grp[var+"_squared"][-1, :] = self._accu[var+"_squared"]/self._accuCounter
+                    rt_grp[var+"_squared"][-1, :] = self._accu[var+"_squared"]/self._frequency
                     self._accu[var+"_squared"][:] = 0.0
                     phi = con.get_field(var)
                     rt_grp[var][-1, :] = (
@@ -214,9 +216,9 @@ class Tower:
                         * 0.5
                     )
                 elif var == "w":
-                    rt_grp[var+"_squared"][-1, :] = self._accu[var+"_squared"]/self._accuCounter
+                    rt_grp[var+"_squared"][-1, :] = self._accu[var+"_squared"]/self._frequency
                     self._accu[var+"_squared"][:] = 0.0
-                    rt_grp[var+"_cubed"][-1, :] = self._accu[var+"_cubed"]/self._accuCounter
+                    rt_grp[var+"_cubed"][-1, :] = self._accu[var+"_cubed"]/self._frequency
                     self._accu[var+"_cubed"][:] = 0.0
                     phi = con.get_field(var)
                     rt_grp[var][-1, :] = phi[
@@ -234,12 +236,12 @@ class Tower:
                             self._i_indx, self._j_indx, nh[2] - 1 : -nh[2]
                         ]
 
-        rt_grp["uw_mean"][-1, :] = self._accu["uw_mean"]/self._accuCounter
+        rt_grp["uw_mean"][-1, :] = self._accu["uw_mean"]/self._frequency
         self._accu["uw_mean"][:] = 0.0
-        rt_grp["vw_mean"][-1, :] = self._accu["vw_mean"]/self._accuCounter
+        rt_grp["vw_mean"][-1, :] = self._accu["vw_mean"]/self._frequency
         self._accu["vw_mean"][:] = 0.0
-        rt_grp["accu_counter"][-1] = self._accuCounter
-        self._accuCounter = 0 
+        rt_grp["accu_time"][-1] = self._accuTime
+        self._accuTime = 0.0
 
         rt_grp.close()
 
