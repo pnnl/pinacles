@@ -1,5 +1,6 @@
 import numpy as np
 from pinacles.LateralBCs import LateralBCsBase
+from pinacles import parameters
 from mpi4py import MPI
 import numba
 
@@ -261,6 +262,7 @@ class LateralBCsNest(LateralBCsBase):
         for var_name in self._State._dofs:
 
             x_low, x_high, y_low, y_high = self.get_vars_on_boundary(var_name)
+            
 
             # Compute location of the lower edge to extract from the parent domain
             # these are indicies in the parent nest's domain
@@ -338,19 +340,6 @@ class LateralBCsNest(LateralBCsBase):
                 slab_repeate,
                 size=(self.factor[0], 1, 1),
             )
-            #import time
-            #time.sleep(MPI.COMM_WORLD.Get_rank()+0.01)
-            #print(local_part_of_parent, si, ei)
-            #print('ll_corner:', self._Grid._ll_corner)
-            #print('RANK:', MPI.COMM_WORLD.Get_rank())
-            #print('slab:', slab_filter[si:ei,0,0][:6]/2.0)
-            #print('local_axes:', self._Grid.local_axes_edge[0][:6])
-            #MPI.COMM_WORLD.Barrier()
-            
-            #import sys; sys.exit()
-
-            #slab_filter = slab_repeate
-
 
             y_high[:, nh[2] : -nh[2]] = slab_filter[
                 si:ei,
@@ -384,8 +373,6 @@ class LateralBCsNest(LateralBCsBase):
                 size=(1, self.factor[1], 1),
             )
 
-            #slab_filter = slab_repeate
-        
             odd_shift = 0
             if var_name == 'u':
                 odd_shift = self.factor[0]//2
@@ -429,7 +416,6 @@ class LateralBCsNest(LateralBCsBase):
                 size=(1, self.factor[1], 1),
             )
 
-            #slab_filter = slab_repeate
 
             x_high[:, nh[2] : -nh[2]] = slab_filter[
                 :,
@@ -438,7 +424,16 @@ class LateralBCsNest(LateralBCsBase):
             ][
                 0, :, :
             ]
-
+            
+            if var_name is 's':
+                qc_x_low, qc_x_high, qc_y_low, qc_y_high = self.get_vars_on_boundary('qc')
+                qr_x_low, qr_x_high, qr_y_low, qr_y_high = self.get_vars_on_boundary('qr')
+                qi_x_low, qi_x_high, qi_y_low, qi_y_high = self.get_vars_on_boundary('qi1')
+                
+                x_low += ((qc_x_low + qr_x_low)*parameters.LV + qi_x_low * parameters.LS)*parameters.ICPD
+                x_high += ((qc_x_high + qr_x_high)*parameters.LV + qi_x_high * parameters.LS)*parameters.ICPD
+                y_low += ((qc_y_low + qr_y_low)*parameters.LV + qi_y_low * parameters.LS)*parameters.ICPD
+                y_high += ((qc_y_high + qr_y_high)*parameters.LV + qi_y_high * parameters.LS)*parameters.ICPD
         return 
 
     def inflow_pert(self, LBCVel):

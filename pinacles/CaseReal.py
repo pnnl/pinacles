@@ -569,7 +569,7 @@ class ForcingReanalysis(Forcing.ForcingBase):
 
 
 class InitializeReanalysis:
-    def __init__(self, namelist, Grid, Ref, ScalarState, VelocityState, Ingest):
+    def __init__(self, namelist, Grid, Ref, ScalarState, VelocityState, Ingest, nest):
 
         self._namelist = namelist
         self._Grid = Grid
@@ -577,7 +577,7 @@ class InitializeReanalysis:
         self._VelocityState = VelocityState
         self._ScalarState = ScalarState
         self._Ingest = Ingest
-
+        self.nest = nest
         assert "real_data" in namelist["meta"]
         self._real_data = namelist["meta"]["real_data"]
         assert os.path.exists(self._real_data)
@@ -637,11 +637,15 @@ class InitializeReanalysis:
             print("Initizliaing specific humidity")
 
         qv = self._ScalarState.get_field("qv")
-        qv[:, :, :] = self._Ingest.interp_qv(
+        qv_interp = self._Ingest.interp_qv(
             self._Grid.lon_local, self._Grid.lat_local, self._Grid.z_local
         )
+        if self.nest is not None and self.nest > 0:
+            qv_interp.fill(0.0)
 
+        qv[:, :, :] = qv_interp  
         qv[:, :, :] = qv[:, :, :]  # / self._Ref.rho0[np.newaxis, np.newaxis, :]
+
 
         qc = self._ScalarState.get_field("qc")
         qc_interp = self._Ingest.interp_qc(
@@ -662,6 +666,12 @@ class InitializeReanalysis:
 
         # qi[:, :, :] = qi_interp[:, :, :]
         # qi[:, :, :] = qi[:, :, :] #/ self._Ref.rho0[np.newaxis, np.newaxis, :]
+
+        if nest is not None and nest > 0:
+            qi_interp.fill(0.0)
+            qc_interp.fill(0.0)
+
+
 
         s[:, :, :] = (
             T

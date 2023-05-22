@@ -25,6 +25,10 @@ class LateralBCsDummy:
     def lateral_nudge(self):
 
         return
+    
+    def inflow_pert(self, LBCVel):
+        
+        return
 
 
 class LateralBCsBase:

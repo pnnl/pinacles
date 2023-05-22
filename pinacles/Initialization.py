@@ -27,10 +27,10 @@ CASENAMES = [
 ]
 
 
-def real(namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest):
+def real(namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest, nest):
 
     init_class = InitializeReanalysis(
-        namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest
+        namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest, nest
     )
     init_class.initialize()
 
@@ -62,7 +62,7 @@ def factory(namelist):
         )
 
 
-def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest=None):
+def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest=None, nest=None):
     init_function = factory(namelist)
 
     try:
@@ -70,6 +70,6 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest=None
         init_function(namelist, ModelGrid, Ref, ScalarState, VelocityState)
     except:
         UtilitiesParallel.print_root('\t Initializing with ingest option')
-        init_function(namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest)
+        init_function(namelist, ModelGrid, Ref, ScalarState, VelocityState, Ingest, nest)
     
     return

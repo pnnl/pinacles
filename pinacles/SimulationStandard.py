@@ -408,6 +408,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.VelocityState,
             self.Ingest,
         )
+        
 
         # If necessary initialize Radiation initial profiles.
         self.Rad.init_profiles()
@@ -1118,6 +1119,13 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
             # Loop over the Runge-Kutta steps
             for n in range(self.ScalarTimeStepping.n_rk_step):
+                
+                if ParentNest is not None:
+                    for v in self.ScalarState._dofs:
+                        if v != 's':
+                            data = self.ScalarState.get_field(v)
+                            data.fill(0.0)
+
                 # Adjust the timestep at the beginning of the step
                 self.TimeSteppingController.adjust_timestep(n, end_time)
 
@@ -1186,11 +1194,17 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 self.Timers.end_timer("BoundaryUpdate")
 
+                for v in self.ScalarState._dofs:
+                    if v != 's':
+                        data = self.ScalarState.get_field(v)
+                        data.fill(0.0)
+
                 if n == 1:
                     self.Thermo.update(apply_buoyancy=False)
 
                     # We call the microphysics update at the end of the RK steps.
-                    self.Micro.update()
+                    if self.ParentNest is None:
+                        self.Micro.update()
                     if not self.Rad.time_synced:
                         self.Rad.update()
                     self.Rad.update_apply_tend()
