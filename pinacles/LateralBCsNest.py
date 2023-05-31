@@ -448,18 +448,18 @@ class LateralBCsNest(LateralBCsBase):
         
         speed = (u_x_low[:, nh[2]:k_depth]**2.0 + v_x_low[:, nh[2]:k_depth]**2.0)
         s_p = (speed)/(1250.0 * Ek)
-        x_low[:, nh[2]:k_depth] += np.random.uniform(-1.0, 1.0, size=(x_low.shape[0], 1)) * s_p
+        x_low[:, nh[2]:k_depth] += np.random.uniform(-1.0, 1.0, size=(x_low.shape[0], 1)) * s_p * 0.0
         
         speed = (u_x_high[:, nh[2]:k_depth]**2.0 + v_x_high[:, nh[2]:k_depth]**2.0)
         s_p = (speed)/(1250.0 * Ek)
-        x_high[:, nh[2]:k_depth] += np.random.uniform(-1.0, 1.0, size=(x_high.shape[0], 1)) * s_p
+        x_high[:, nh[2]:k_depth] += np.random.uniform(-1.0, 1.0, size=(x_high.shape[0], 1)) * s_p * 0.0 
         
         speed = (u_y_low[:, nh[2]:k_depth]**2.0 + v_y_low[:, nh[2]:k_depth]**2.0)
         s_p = (speed)/(1250.0 * Ek)
-        y_low[:, nh[2]:k_depth] += np.random.uniform(-1.0, 1.0, size=(y_low.shape[0], 1)) * s_p
+        y_low[:, nh[2]:k_depth] += np.random.uniform(-1.0, 1.0, size=(y_low.shape[0], 1)) * s_p * 0.0
         
         speed = (u_y_high[:, nh[2]:k_depth]**2.0 + v_y_high[:, nh[2]:k_depth]**2.0)
         s_p = (speed)/(1250.0 * Ek)
-        y_high[:, nh[2]:k_depth] += np.random.uniform(-1.0, 1.0, size=(y_high.shape[0], 1)) * s_p
+        y_high[:, nh[2]:k_depth] += np.random.uniform(-1.0, 1.0, size=(y_high.shape[0], 1)) * s_p * 0.0
 
         return
