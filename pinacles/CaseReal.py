@@ -667,7 +667,7 @@ class InitializeReanalysis:
         # qi[:, :, :] = qi_interp[:, :, :]
         # qi[:, :, :] = qi[:, :, :] #/ self._Ref.rho0[np.newaxis, np.newaxis, :]
 
-        if nest is not None and nest > 0:
+        if self.nest is not None and self.nest > 0:
             qi_interp.fill(0.0)
             qc_interp.fill(0.0)
 

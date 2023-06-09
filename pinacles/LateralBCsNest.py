@@ -425,7 +425,7 @@ class LateralBCsNest(LateralBCsBase):
                 0, :, :
             ]
             
-            if var_name is 's':
+            if var_name == 's':
                 qc_x_low, qc_x_high, qc_y_low, qc_y_high = self.get_vars_on_boundary('qc')
                 qr_x_low, qr_x_high, qr_y_low, qr_y_high = self.get_vars_on_boundary('qr')
                 qi_x_low, qi_x_high, qi_y_low, qi_y_high = self.get_vars_on_boundary('qi1')
