@@ -244,6 +244,22 @@ class MomentumDiffusion:
         self._fluxy = np.zeros_like(self._fluxx)
         self._fluxz = np.zeros_like(self._fluxx)
 
+        # Add diagnostic fields
+        self._DiagnosticState.add_variable(
+            "uw_sgs",
+            long_name="Vertical SGS flux of zonal momentum",
+            loc='z',
+            units="m^2 s^-2",
+            latex_name=f"\overline{u'w'}_{sgs}",
+        )
+        self._DiagnosticState.add_variable(
+            "vw_sgs",
+            long_name="Vertical SGS flux of meridional momentum",
+            loc='z',
+            units="m^2 s^-2",
+            latex_name=f"\overline{v'w'}_{sgs}",
+        )
+
         self._Timers.add_timer("MomentumDiffusion_update")
         return
 
@@ -311,6 +327,9 @@ class MomentumDiffusion:
             ut,
         )
 
+        uw_sgs = self._DiagnosticState.get_field('uw_sgs')
+        uw_sgs[:] = fluxz[:]
+
         compute_v_fluxes(
             n_halo,
             dx,
@@ -332,6 +351,9 @@ class MomentumDiffusion:
             vt,
         )
 
+        vw_sgs = self._DiagnosticState.get_field('vw_sgs')
+        vw_sgs[:] = fluxz[:]
+        
         compute_w_fluxes(
             n_halo,
             dx,

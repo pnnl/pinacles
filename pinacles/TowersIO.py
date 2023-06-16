@@ -15,6 +15,8 @@ class Tower:
         self._Micro = Micro
         self._TimeSteppingController = TimeSteppingController
         self._containers = []
+        self._accu = {}
+        self._accuTime = 0.0
         self._out_file = None
 
         xbnds = self._Grid.x_range_local
@@ -96,13 +98,61 @@ class Tower:
             dimensions=("time"),
         )
 
+        rt_grp.createVariable(
+            "accu_time",
+            np.double,
+            dimensions=("time"),
+        )
+
+        self._accuTime = 0.0
+
         for con in self._containers:
             for var in con._dofs.keys():
                 if con._loc[var] != "z":
+                    # create both snapshot and mean variables for the output file
                     rt_grp.createVariable(var, np.double, dimensions=("time", "z"))
+                    rt_grp.createVariable(
+                        var + "_mean_tave", np.double, dimensions=("time", "z")
+                    )
+                    # create new np arrays to store the accumulated values
+                    self._accu[var + "_mean_tave"] = np.zeros(
+                        self._Grid.n[2], dtype=np.double
+                    )
                 else:
                     rt_grp.createVariable(var, np.double, dimensions=("time", "z_edge"))
+                    rt_grp.createVariable(
+                        var + "_mean_tave", np.double, dimensions=("time", "z_edge")
+                    )
+                    self._accu[var + "_mean_tave"] = np.zeros(
+                        self._Grid.n[2] + 1, dtype=np.double
+                    )
 
+                if var in ["u", "v"]:
+                    rt_grp.createVariable(
+                        var + "_squared_tave", np.double, dimensions=("time", "z")
+                    )
+                    self._accu[var + "_squared_tave"] = np.zeros(
+                        self._Grid.n[2], dtype=np.double
+                    )
+
+                if var == "w":
+                    rt_grp.createVariable(
+                        var + "_squared_tave", np.double, dimensions=("time", "z_edge")
+                    )
+                    self._accu[var + "_squared_tave"] = np.zeros(
+                        self._Grid.n[2] + 1, dtype=np.double
+                    )
+                    rt_grp.createVariable(
+                        var + "_cubed_tave", np.double, dimensions=("time", "z_edge")
+                    )
+                    self._accu[var + "_cubed_tave"] = np.zeros(
+                        self._Grid.n[2] + 1, dtype=np.double
+                    )
+
+        rt_grp.createVariable("uw_mean_tave", np.double, dimensions=("time", "z_edge"))
+        self._accu["uw_mean_tave"] = np.zeros(self._Grid.n[2] + 1, dtype=np.double)
+        rt_grp.createVariable("vw_mean_tave", np.double, dimensions=("time", "z_edge"))
+        self._accu["vw_mean_tave"] = np.zeros(self._Grid.n[2] + 1, dtype=np.double)
 
         if hasattr(self._Surface, 'io_tower_init'):
             self._Surface.io_tower_init(rt_grp)
@@ -110,11 +160,90 @@ class Tower:
         if hasattr(self._Rad, 'io_tower_init'):
             self._Rad.io_tower_init(rt_grp)
 
-
-        if hasattr(self._Rad, 'io_tower_init'):
+        if hasattr(self._Micro, 'io_tower_init'):
             self._Micro.io_tower_init(rt_grp)
 
         rt_grp.close()
+
+        return
+
+    def accumulate(self):
+        if not self._tower_on_this_rank:
+            return
+
+        weight = self._TimeSteppingController._dt / self._frequency
+
+        nh = self._Grid.n_halo
+
+        for con in self._containers:
+            for var in con._dofs.keys():
+                phi = con.get_field(var)
+                if var == "u":
+                    u_tower = (
+                        np.add(
+                            phi[self._i_indx, self._j_indx, nh[2] : -nh[2]],
+                            phi[self._i_indx - 1, self._j_indx, nh[2] : -nh[2]],
+                        )
+                        * 0.5
+                    )
+                    self._accu[var + "_mean_tave"][:] += u_tower * weight
+                    self._accu[var + "_squared_tave"][:] += (
+                        np.power(u_tower, 2) * weight
+                    )
+                elif var == "uw_sgs":
+                    self._accu[var + "_mean_tave"][:] += (
+                        np.add(
+                            phi[self._i_indx, self._j_indx, nh[2] -1 : -nh[2]],
+                            phi[self._i_indx - 1, self._j_indx, nh[2] - 1: -nh[2]],
+                        )
+                        * 0.5
+                        ) * weight
+                elif var == "v":
+                    v_tower = (
+                        np.add(
+                            phi[self._i_indx, self._j_indx, nh[2] : -nh[2]],
+                            phi[self._i_indx, self._j_indx - 1, nh[2] : -nh[2]],
+                        )
+                        * 0.5
+                    )
+                    self._accu[var + "_mean_tave"][:] += v_tower * weight
+                    self._accu[var + "_squared_tave"][:] += (
+                        np.power(v_tower, 2) * weight
+                    )
+                elif var == "vw_sgs":
+                    self._accu[var + "_mean_tave"][:] += (
+                        np.add(
+                            phi[self._i_indx, self._j_indx, nh[2] - 1 : -nh[2]],
+                            phi[self._i_indx, self._j_indx - 1, nh[2] - 1: -nh[2]],
+                        )
+                        * 0.5
+                        ) * weight
+                elif var == "w":
+                    w_tower = phi[self._i_indx, self._j_indx, nh[2] - 1 : -nh[2]]
+                    self._accu[var + "_mean_tave"][:] += w_tower * weight
+                    self._accu[var + "_squared_tave"][:] += (
+                        np.power(w_tower, 2) * weight
+                    )
+                    self._accu[var + "_cubed_tave"][:] += np.power(w_tower, 3) * weight
+                else:
+                    if con._loc[var] != "z":
+                        self._accu[var + "_mean_tave"][:] += (
+                            phi[self._i_indx, self._j_indx, nh[2] : -nh[2]] * weight
+                        )
+                    else:
+                        self._accu[var + "_mean_tave"][:] += (
+                            phi[self._i_indx, self._j_indx, nh[2] - 1 : -nh[2]] * weight
+                        )
+
+        self._accu["uw_mean_tave"][1:-1] += (
+            0.5 * w_tower[1:-1] * (u_tower[:-1] + u_tower[1:]) * weight
+        )
+        self._accu["vw_mean_tave"][1:-1] += (
+            0.5 * w_tower[1:-1] * (v_tower[:-1] + v_tower[1:]) * weight
+        )
+
+        self._accuTime += self._TimeSteppingController._dt
+
         return
 
     def update(self):
@@ -131,7 +260,14 @@ class Tower:
 
         for con in self._containers:
             for var in con._dofs.keys():
+                rt_grp[var + "_mean_tave"][-1, :] = self._accu[var + "_mean_tave"]
+                self._accu[var + "_mean_tave"][:] = 0.0
+
                 if var == "u":
+                    rt_grp[var + "_squared_tave"][-1, :] = self._accu[
+                        var + "_squared_tave"
+                    ]
+                    self._accu[var + "_squared_tave"][:] = 0.0
                     phi = con.get_field(var)
                     rt_grp[var][-1, :] = (
                         np.add(
@@ -142,6 +278,10 @@ class Tower:
                     )
 
                 elif var == "v":
+                    rt_grp[var + "_squared_tave"][-1, :] = self._accu[
+                        var + "_squared_tave"
+                    ]
+                    self._accu[var + "_squared_tave"][:] = 0.0
                     phi = con.get_field(var)
                     rt_grp[var][-1, :] = (
                         np.add(
@@ -150,7 +290,17 @@ class Tower:
                         )
                         * 0.5
                     )
-
+                elif var == "w":
+                    rt_grp[var + "_squared_tave"][-1, :] = self._accu[
+                        var + "_squared_tave"
+                    ]
+                    self._accu[var + "_squared_tave"][:] = 0.0
+                    rt_grp[var + "_cubed_tave"][-1, :] = self._accu[var + "_cubed_tave"]
+                    self._accu[var + "_cubed_tave"][:] = 0.0
+                    phi = con.get_field(var)
+                    rt_grp[var][-1, :] = phi[
+                        self._i_indx, self._j_indx, nh[2] - 1 : -nh[2]
+                    ]
                 else:
                     if con._loc[var] != "z":
                         phi = con.get_field(var)
@@ -162,13 +312,20 @@ class Tower:
                         rt_grp[var][-1, :] = phi[
                             self._i_indx, self._j_indx, nh[2] - 1 : -nh[2]
                         ]
+
+        rt_grp["uw_mean_tave"][-1, :] = self._accu["uw_mean_tave"]
+        self._accu["uw_mean_tave"][:] = 0.0
+        rt_grp["vw_mean_tave"][-1, :] = self._accu["vw_mean_tave"]
+        self._accu["vw_mean_tave"][:] = 0.0
+        rt_grp["accu_time"][-1] = self._accuTime
+        self._accuTime = 0.0
+
         if hasattr(self._Surface, 'io_tower'):
             self._Surface.io_tower(rt_grp, self._i_indx, self._j_indx)
         if hasattr(self._Rad, 'io_tower'):
             self._Rad.io_tower(rt_grp, self._i_indx, self._j_indx)
         if hasattr(self._Micro, 'io_tower'):
             self._Micro.io_tower(rt_grp, self._i_indx, self._j_indx)
-
 
         rt_grp.close()
 
@@ -226,6 +383,12 @@ class Towers:
             tower.update()
 
         self._Timers.end_timer("Towers")
+        return
+
+    def accumulate(self):
+        for tower in self._list_of_towers:
+            tower.accumulate()
+
         return
 
     @property
