@@ -66,7 +66,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # Set up the restart, restart modifies the namelist, so this call should not be moved
         self.Restart = Restart.Restart(namelist)
-        #Re = reproducibility.Reproducibility(namelist)
+        Re = reproducibility.Reproducibility(namelist)
 
         # Initialize differently if this is a restart simulation
         if not self.Restart.restart_simulation:
@@ -1194,10 +1194,11 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 self.Timers.end_timer("BoundaryUpdate")
 
-                for v in self.ScalarState._dofs:
-                    if v != 's':
-                        data = self.ScalarState.get_field(v)
-                        data.fill(0.0)
+                if ParentNest is not None:
+                    for v in self.ScalarState._dofs:
+                        if v != 's':
+                            data = self.ScalarState.get_field(v)
+                            data.fill(0.0)
 
                 if n == 1:
                     self.Thermo.update(apply_buoyancy=False)

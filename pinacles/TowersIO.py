@@ -4,6 +4,7 @@ from mpi4py import MPI
 from pinacles import UtilitiesParallel
 import os
 import copy 
+import json
 
 
 class Tower:
@@ -347,7 +348,12 @@ class Towers:
         if "towers" not in namelist:
             return
 
-        tower_locations = namelist["towers"]["location"]
+        if "location_file" in namelist["towers"]:
+            with open(namelist["towers"]["location_file"], 'r') as f:
+                tower_locations = json.load(f)
+            UtilitiesParallel.print_root(f'\t \t {len(tower_locations)} tower locations read in from {namelist["towers"]["location_file"]}.')
+        else:
+            tower_locations = namelist["towers"]["location"]
 
         self.location_in_latlon = False
         if 'location_in_latlon' in namelist["towers"]:
