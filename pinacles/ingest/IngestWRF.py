@@ -87,7 +87,8 @@ class IngestWRF(IngestERA5):
             try:
                 self.time_atm = wrf_data.XTIME.values
             except:
-                self.time_atm = wrf_data.time.values
+                # self.time_atm = wrf_data.time.values
+                self.time_atm = wrf_data.valid_time.values
             self.time_sfc = self.time_atm
             
             print(self.time_atm, self.time_atm[-1] - self.end_time )

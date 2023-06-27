@@ -250,14 +250,14 @@ class MomentumDiffusion:
             long_name="Vertical SGS flux of zonal momentum",
             loc='z',
             units="m^2 s^-2",
-            latex_name=f"\overline{u'w'}_{sgs}",
+            latex_name=r"\overline{u'w'}_{sgs}",
         )
         self._DiagnosticState.add_variable(
             "vw_sgs",
             long_name="Vertical SGS flux of meridional momentum",
             loc='z',
             units="m^2 s^-2",
-            latex_name=f"\overline{v'w'}_{sgs}",
+            latex_name=r"\overline{v'w'}_{sgs}",
         )
 
         self._Timers.add_timer("MomentumDiffusion_update")
