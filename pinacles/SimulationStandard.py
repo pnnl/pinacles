@@ -38,7 +38,7 @@ from pinacles import LateralBCsFactory
 from pinacles.ingest import Ingest
 from pinacles import DiagnosticsCoarseGrain
 from pinacles import DiagnosticsCase
-##from pinacles import reproducibility
+from pinacles import reproducibility
 from mpi4py import MPI
 import numpy as np
 import os
