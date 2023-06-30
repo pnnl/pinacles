@@ -156,7 +156,14 @@ class Tower:
         self._accu["vw_mean_tave"] = np.zeros(self._Grid.n[2] + 1, dtype=np.double)
 
         if hasattr(self._Surface, 'io_tower_init'):
-            self._Surface.io_tower_init(rt_grp)
+            # self._Surface.io_tower_init(rt_grp)
+            # passing the variables added by io_tower_init
+            sfc_vars = self._Surface.io_tower_init(rt_grp)
+
+        # initialize _accu for sfc_ars
+        if sfc_vars is not None:
+            for v in sfc_vars:
+                self._accu[v+"_mean_tave"] = 0.0
 
         if hasattr(self._Rad, 'io_tower_init'):
             self._Rad.io_tower_init(rt_grp)
@@ -243,6 +250,14 @@ class Tower:
             0.5 * w_tower[1:-1] * (v_tower[:-1] + v_tower[1:]) * weight
         )
 
+        sfc_vars = None
+        if hasattr(self._Surface, "io_tower_accu"):
+            sfc_vars = self._Surface.io_tower_accu(self._i_indx, self._j_indx)
+
+        if sfc_vars is not None:
+            for var in sfc_vars:
+                self._accu[var["name"] + "_mean_tave"] += var["data"]*weight
+
         self._accuTime += self._TimeSteppingController._dt
 
         return
@@ -322,7 +337,11 @@ class Tower:
         self._accuTime = 0.0
 
         if hasattr(self._Surface, 'io_tower'):
-            self._Surface.io_tower(rt_grp, self._i_indx, self._j_indx)
+            sfc_vars = self._Surface.io_tower(rt_grp, self._i_indx, self._j_indx)
+            if sfc_vars is not None:
+               for var in sfc_vars:
+                   rt_grp[var+"_mean_tave"][-1] = self._accu[var+"_mean_tave"]
+                   self._accu[var+"_mean_tave"] = 0.0
         if hasattr(self._Rad, 'io_tower'):
             self._Rad.io_tower(rt_grp, self._i_indx, self._j_indx)
         if hasattr(self._Micro, 'io_tower'):

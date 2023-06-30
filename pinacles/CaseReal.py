@@ -314,6 +314,33 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         ]
         for v in vars:
             rt_grp.createVariable(v, np.double, dimensions=("time"))
+            rt_grp.createVariable(v+"_mean_tave", np.double, dimensions=("time"))
+
+        return vars 
+
+    def io_tower_accu(self, i_indx, j_indx):
+
+        out_list = []
+        out_list.append({"name": "Tskin", "data": self._TSKIN[i_indx, j_indx]})
+        out_list.append({"name": "windspeed4", "data": self._windspeed4[i_indx, j_indx]})
+        out_list.append({"name": "windspeed10", "data": self._windspeed10[i_indx, j_indx]})
+        out_list.append({"name": "u4", "data": self._u4[i_indx, j_indx]})
+        out_list.append({"name": "v4", "data": self._v4[i_indx, j_indx]})
+        out_list.append({"name": "u10", "data": self._u10[i_indx, j_indx]})
+        out_list.append({"name": "v10", "data": self._v10[i_indx, j_indx]})
+        out_list.append({"name": "taux", "data": self._taux_sfc[i_indx, j_indx]})
+        out_list.append({"name": "tauy", "data": self._tauy_sfc[i_indx, j_indx]})
+        out_list.append({"name": "z0", "data": self._z0[i_indx, j_indx]})
+        out_list.append({"name": "T4", "data": self._T4[i_indx, j_indx]})
+        out_list.append({"name": "qv4", "data": self._qv4[i_indx, j_indx]})
+        out_list.append({"name": "LHF", "data": self._lhf[i_indx, j_indx]})
+        out_list.append({"name": "SHF", "data": self._shf[i_indx, j_indx]})
+        out_list.append({"name": "cm", "data": self._cm[i_indx, j_indx]})
+        out_list.append({"name": "cq", "data": self._cq[i_indx, j_indx]})
+        out_list.append({"name": "deltaS_sfc", "data": self._deltas_sfc[i_indx, j_indx]})
+        out_list.append({"name": "deltaqv_sfc", "data": self._deltaqv_sfc[i_indx, j_indx]})
+        
+        return out_list
 
     def io_tower(self, rt_grp, i_indx, j_indx):
         out_list = []
@@ -339,7 +366,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         for out_var in out_list:
             rt_grp[out_var['name']][-1] = out_var['data'][i_indx, j_indx]
 
-        return
+        return [out_var["name"] for out_var in out_list]
 
     def update(self):
 

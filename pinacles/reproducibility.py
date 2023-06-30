@@ -57,25 +57,25 @@ class Reproducibility:
             "utf-8"
         )
 
-        self._master_commit_hash = self._set_commit_hash
+        # self._master_commit_hash = self._set_commit_hash
 
-        if self._branch != "master":
-            cmd = "git rev-parse origin/master".split()
-            master_hash = subprocess.run(
-                cmd, capture_output=True, check=True
-            ).stdout.decode("utf-8")
+        # if self._branch != "master":
+        #     cmd = "git rev-parse origin/master".split()
+        #     master_hash = subprocess.run(
+        #         cmd, capture_output=True, check=True
+        #     ).stdout.decode("utf-8")
 
-            cmd = "git diff master..".split()
+        #     cmd = "git diff master..".split()
 
-            self._diff += (
-                "\n On a branch from master: \n so running: git diff master...\n"
-            )
+        #     self._diff += (
+        #         "\n On a branch from master: \n so running: git diff master...\n"
+        #     )
 
-            self._diff += "Hash of master is: " + master_hash + "\n"
+        #     self._diff += "Hash of master is: " + master_hash + "\n"
 
-            self._diff += subprocess.run(
-                cmd, capture_output=True, check=True
-            ).stdout.decode("utf-8")
+        #     self._diff += subprocess.run(
+        #         cmd, capture_output=True, check=True
+        #     ).stdout.decode("utf-8")
 
     @property
     def branch(self):
