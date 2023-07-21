@@ -29,6 +29,11 @@ def factory(
         return CaseDYCOMS.ForcingDYCOMS(
             namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
+    elif casename == "dycoms_roughness":
+        from pinacles import CaseDYCOMS_roughness
+        return CaseDYCOMS_roughness.ForcingDYCOMS_roughness(
+            namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+        )
     elif casename == "rico":
         from pinacles import CaseRICO   
         return CaseRICO.ForcingRICO(

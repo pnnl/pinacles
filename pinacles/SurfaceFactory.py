@@ -1,6 +1,7 @@
 from pinacles import CaseSullivanAndPatton
 from pinacles import CaseBOMEX
 from pinacles import CaseDYCOMS
+from pinacles import CaseDYCOMS_roughness
 from pinacles import CaseStableBubble
 from pinacles import CaseRICO
 from pinacles import CaseATEX
@@ -35,6 +36,10 @@ def factory(
         )
     elif casename == "dycoms":
         return CaseDYCOMS.SurfaceDYCOMS(
+            namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
+        )
+    elif casename == "dycoms_roughness":
+        return CaseDYCOMS_roughness.SurfaceDYCOMS_roughness(
             namelist, Timers, Grid, Ref, VelocityState, ScalarState, DiagnosticState
         )
     elif casename == "rico":

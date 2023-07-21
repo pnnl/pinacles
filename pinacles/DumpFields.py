@@ -1,7 +1,7 @@
 import numpy as np
 import os
 from mpi4py import MPI
-import h5py
+
 
 import time
 from pinacles import UtilitiesParallel
@@ -15,6 +15,7 @@ def DumpFieldsFactory(namelist, Timers, Grid, TimeSteppingController):
     elif namelist["fields"]["io_type"].upper() == "NETCDF":
         return DumpFields(namelist, Timers, Grid, TimeSteppingController)
     elif namelist["fields"]["io_type"].upper() == "HDF5":
+        import h5py
         return DumpFields_hdf(namelist, Timers, Grid, TimeSteppingController)
 
     return

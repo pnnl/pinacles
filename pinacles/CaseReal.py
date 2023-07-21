@@ -77,6 +77,52 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         self._TSKIN_pre = np.zeros_like(self._windspeed_sfc)
         self._TSKIN_post = np.zeros_like(self._windspeed_sfc)
         self.T_surface = np.zeros_like(self._windspeed_sfc)
+
+        try:
+            self._roughness_option = namelist['surface']['roughness']
+            # Wave Steepness = Taylor Yelland 2001 with limiter
+            
+        except:
+            self._roughness_option = 'charnock'
+          
+
+        # wave roughness options
+        # Can depend on wave steepness or wave age
+        # Wave age parameterization can depend on peak wavelength or mean wavelength
+        # Drennan et al 2005 -- use peak wavelength but diagnose the "wind sea component"
+        # and use only the peak over that component
+        # Sauvage et al 2022 (DOI: 10.1002/essoar.10512415.1) use mean wave period to de-emphasize
+        # swell
+
+        
+        if 'wave' in self._roughness_option: 
+            self.ingest_freq_wave = 3600.0
+            self._Hs = np.zeros_like(self._windspeed_sfc)  # Significant wave height
+            self._Hs_pre = np.zeros_like(self._windspeed_sfc) 
+            self._Hs_post = np.zeros_like(self._windspeed_sfc) 
+            self._Lw =  np.zeros_like(self._windspeed_sfc)  # wavelength at peak of wave spectrum
+            self._Lw_pre =  np.zeros_like(self._windspeed_sfc)
+            self._Lw_post = np.zeros_like(self._windspeed_sfc)
+        else:
+            self.ingest_freq_wave = 1.0e9
+            self._Hs = None
+            self._Lw = None
+        
+        if self._roughness_option == 'wave_steepness': # Taylor and Yelland 2001
+            self._z0_prefactor  = 1200.0
+            self._z0_exponent = 4.5
+        # elif self._roughness_option == 'wave_age_windsea': #Drennan 2003
+        #     self._z0_prefactor = 3.35
+        #     self._z0_exponent = 3.4
+        elif self._roughness_option == 'wave_age_COARE3.5': # Edson et al 2013
+            self._z0_prefactor = 0.09
+            self._z0_exponent = 2.0
+        elif self._roughness_option == 'wave_age_Lmean': #Sauvage et al 2022
+            self._z0_prefactor = 0.39
+            self._z0_exponent = 2.6
+        
+     
+
         self._previous_ingest = 1
 
         return
@@ -100,8 +146,46 @@ class SurfaceReanalysis(Surface.SurfaceBase):
 
         self.T_surface[:, :] = self._TSKIN_pre[:, :]
 
+        self._previous_shift_wave = 1
+        if self._Hs is not None:
+            for hs, shift in zip([self._Hs_pre, self._Hs_post], [0, 1]):
+          
+                lon, lat, hs_ = self._Ingest.get_wave_height(shift=shift)
+                
+                lon_lat = (lon.flatten(), lat.flatten())
+
+                hs[:, :] = interpolate.griddata(
+                    lon_lat,
+                    hs_.flatten(),
+                    (self._Grid.lon_local, self._Grid.lat_local),
+                    method="cubic",
+                )
+
+            self._Hs[:, :] = self._Hs_pre[:, :]
+        
+        if self._Lw is not None:
+            for lw, shift in zip([self._Lw_pre, self._Lw_post], [0, 1]):
+
+                if self._roughness_option == 'wave_age_Lmean':
+                    lon, lat, lw_ = self._Ingest.get_mean_wavelength(shift=shift)
+                else:
+                    lon, lat, lw_ = self._Ingest.get_peak_wavelength(shift=shift)
+                
+                lon_lat = (lon.flatten(), lat.flatten())
+
+                lw[:, :] = interpolate.griddata(
+                    lon_lat,
+                    lw_.flatten(),
+                    (self._Grid.lon_local, self._Grid.lat_local),
+                    method="cubic",
+                )
+            self._Lw[:, :] = self._Lw_pre[:, :]
+        
+
+
         return super().initialize()
 
+    # Refactor for multiple ingests?
     def update_ingest(self):
 
         self._previous_shift += 1
@@ -116,7 +200,51 @@ class SurfaceReanalysis(Surface.SurfaceBase):
             (self._Grid.lon_local, self._Grid.lat_local),
             method="cubic",
         )
+  
 
+        return
+    
+    def update_ingest_wave(self):
+
+        self._previous_shift_wave += 1
+        self._Hs_pre = np.copy(self._Hs_post)
+        self._Lw_pre = np.copy(self._Lw_post)
+        self.time_previous = self._TimeSteppingController._time
+
+
+
+        if self._Hs is not None:
+            
+          
+            lon, lat, hs_ = self._Ingest.get_wave_height(shift=self._previous_shift_wave)
+                
+            lon_lat = (lon.flatten(), lat.flatten())
+
+            self._Hs_post[:, :] = interpolate.griddata(
+                lon_lat,
+                hs_.flatten(),
+                (self._Grid.lon_local, 
+                self._Grid.lat_local),
+                method="cubic",
+                )
+
+        
+        if self._Lw is not None:
+            
+            if self._roughness_option == 'wave_age_Lmean':
+                lon, lat, lw_ = self._Ingest.get_mean_wavelength(shift=self._previous_shift_wave)
+            else:
+                lon, lat, lw_ = self._Ingest.get_peak_wavelength(shift=self._previous_shift_wave)
+                
+            lon_lat = (lon.flatten(), lat.flatten())
+
+            self._Lw_post[:, :] = interpolate.griddata(
+                    lon_lat,
+                    lw_.flatten(),
+                    (self._Grid.lon_local, self._Grid.lat_local),
+                    method="cubic",
+                )
+          
         return
 
     def io_initialize(self, rt_grp):
@@ -343,7 +471,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
 
     def update(self):
 
-        self._Timers.start_timer("SurfaceRICO_update")
+        # self._Timers.start_timer("SurfaceRICO_update")
 
         nh = self._Grid.n_halo
         dxi2 = self._Grid.dxi[2]
@@ -383,11 +511,13 @@ class SurfaceReanalysis(Surface.SurfaceBase):
 
         self._N[:, :] = N2sfc
 
+        # Update the ingest, if needed
         if self._previous_shift * self.ingest_freq <= self._TimeSteppingController.time:
             print("Updating boundary data: ", self._TimeSteppingController.time)
             self.update_ingest()
             self.time_previous = self._TimeSteppingController._time
 
+        # Interpolate to the simulation time
         self._TSKIN[:, :] = (
             self._TSKIN_pre[:, :]
             + (self._TSKIN_post[:, :] - self._TSKIN_pre[:, :])
@@ -396,6 +526,26 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         )
         self.T_surface[:, :] = self._TSKIN[:, :]
 
+
+        if self._previous_shift_wave * self.ingest_freq_wave <= self._TimeSteppingController.time:
+            print("Updating wave data: ", self._TimeSteppingController.time)
+            self.update_ingest_wave()
+            self.time_previous_wave = self._TimeSteppingController._time
+
+        # Interpolate to the simulation time
+        self._Hs[:, :] = (
+            self._Hs_pre[:, :]
+            + (self._Hs_post[:, :] - self._Hs_pre[:, :])
+            * (self._TimeSteppingController._time - self.time_previous_wave)
+            / self.ingest_freq_wave
+        )
+
+        self._Lw[:, :] = (
+            self._Lw_pre[:, :]
+            + (self._Lw_post[:, :] - self._Lw_pre[:, :])
+            * (self._TimeSteppingController._time - self.time_previous_wave)
+            / self.ingest_freq_wave
+        )
         Surface_impl.compute_windspeed_sfc(
             usfc, vsfc, self._Ref.u0, self._Ref.v0, self.gustiness, self._windspeed_sfc
         )
@@ -432,17 +582,70 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         #     self._psi_m,
         #     self._psi_h
         # )
+        if self._roughness_option == 'wave_steepness': # Taylor and Yelland 2001
+            Surface_impl.compute_exchange_coefficients_wave_steepness(
+                self._Ri, 
+                z_edge[nh[2]] / 2.0, 
+                self._z0,
+                self._windspeed_sfc, 
+                self._cm, 
+                self._ch, 
+                self._psi_m,
+                self._psi_h, 
+                self._Hs, 
+                self._Lw, 
+                self._z0_prefactor,
+                self._z0_exponent,
+                self._TSKIN,
+                Tsfc)
 
-        Surface_impl.compute_exchange_coefficients_charnock(
-            self._Ri,
-            z_edge[nh[2]] / 2.0,
-            self._z0,
-            self._windspeed_sfc,
-            self._cm,
-            self._ch,
-            self._psi_m,
-            self._psi_h,
-        )
+           
+        # elif self._roughness_option == 'wave_age_windsea': #Drennan 2003
+   
+        elif self._roughness_option == 'wave_age_COARE3.5': # Edson et al 2013
+            Surface_impl.compute_exchange_coefficients_wave_age(
+                self._Ri,
+                z_edge[nh[2]] / 2.0,  
+                self._z0, 
+                self._windspeed_sfc, 
+                self._cm, 
+                self._ch,
+                self._psi_m,
+                self._psi_h,
+                self._Hs, 
+                self._Lw, 
+                self._z0_prefactor,
+                self._z0_exponent)
+            
+        elif self._roughness_option == 'wave_age_Lmean': #Sauvage et al 2022
+                Surface_impl.compute_exchange_coefficients_wave_age(
+                    self._Ri,
+                    z_edge[nh[2]] / 2.0,  
+                    self._z0, 
+                    self._windspeed_sfc, 
+                    self._cm, 
+                    self._ch,
+                    self._psi_m,
+                    self._psi_h,
+                    self._Hs, 
+                    self._Lw, 
+                    self._z0_prefactor,
+                    self._z0_exponent)
+                
+        else: # Charnock
+        
+            Surface_impl.compute_exchange_coefficients_charnock(
+                self._Ri,
+                z_edge[nh[2]] / 2.0,
+                self._z0,
+                self._windspeed_sfc,
+                self._cm,
+                self._ch,
+                self._psi_m,
+                self._psi_h,
+            )
+
+
         self._cq[:, :] = self._ch[:, :]
 
 

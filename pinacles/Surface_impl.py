@@ -271,6 +271,67 @@ def exchange_coefficients_charnock(Ri, zb, z0, windspeed):
     return cm, ch, psi_m, psi_h, z0
 
 
+@numba.njit
+def exchange_coefficients_wave_steepness(Ri, zb, z0, windspeed, Hs, Lp, z0_pre, z0_exp):
+
+    z0 = z0_pre * (Hs/Lp)**z0_exp * Hs
+    cm, ch, psi_m, psi_h = exchange_coefficients_byun(Ri, zb, z0)
+    u_star = np.sqrt(cm) * windspeed
+    return cm, ch, psi_m, psi_h, z0
+
+@numba.njit
+def exchange_coefficients_wave_age(Ri, zb, z0, windspeed, Hs, Lw, z0_pre, z0_exp):
+
+    for i in range(10):
+        cm, ch, psi_m, psi_h = exchange_coefficients_byun(Ri, zb, z0)
+        u_star = np.sqrt(cm) * windspeed
+        phase_speed = np.sqrt(parameters.G * Lw/ (2.0*np.pi))
+        z0 = z0_pre * (u_star/phase_speed) ** z0_exp * Hs
+
+
+    return cm, ch, psi_m, psi_h, z0
+
+@numba.njit
+def exchange_coefficients_Smith1980(Ri, zb, z0, windspeed, Tskin, Tb ):
+
+    # use guess of z0 
+    z10 = 10.0
+    ubn = windspeed
+    u10n =ubn * np.log(z10/z0)/np.log(zb/z0)
+    ct10 = 1.0e-3 # use intermediate value as first guess
+    ctb = ct10 * (np.log(z10/z0) /np.log(zb/z0))**2 # rough number for first guess
+    bflux_smith = ctb * (Tskin - Tb) * windspeed
+    for i in range(10):
+        u_star = u10n * np.sqrt(1e-3*(0.61 + 0.063*u10n))
+
+        L_ob = -u_star * u_star * u_star/parameters.G/0.4/bflux_smith
+        zeta10 = z10 / L_ob
+        zetab = zb/L_ob
+        zeta0 = z0 / L_ob
+        if L_ob > 0:
+            psi_m_10 = psi_m_stable(zeta10, zeta0) # stable
+            psi_m = psi_m_stable(zetab,zeta0)
+            ct10=1.1e-3
+        else:
+            psi_m_10 = psi_m_unstable(zeta10, zeta0)
+            psi_m = psi_m_unstable(zetab,zeta0)
+            ct10 = 0.83e-3
+        ctb = ct10 * (np.log(z10/z0) /np.log(zb/z0))**2
+        bflux_smith = ctb * (Tskin - Tb) * windspeed
+        ubn = windspeed + u_star/0.4 *psi_m
+        u10n = ubn * np.log(z10/z0)/np.log(zb/z0)
+
+        # what is the best formula to back out z0 from?? this seems too circular
+        z0 = z10/np.exp(0.4 * u10n/u_star)
+
+    # using the smith formulae to get z0, then plugging that z0 into the Byun approximation
+    # could approach differently       
+    cm, ch, psi_m, psi_h= exchange_coefficients_byun(Ri, zb, z0)
+ 
+
+    return cm, ch, psi_m, psi_h, z0
+
+
 @numba.njit()
 def compute_exchange_coefficients(Ri, zb, z0, cm, ch, psi_m, psi_h):
     shape = cm.shape
@@ -291,6 +352,32 @@ def compute_exchange_coefficients_charnock(Ri, zb, z0, windspeed, cm, ch, psi_m,
             cm[i, j], ch[i, j], psi_m[i,j], psi_h[i,j], z0[i,j]= exchange_coefficients_charnock(
                 Ri[i, j], zb, z0_i, windspeed[i, j]
             )  # , cm[i,j], ch[i,j])
+    return 
+
+@numba.njit()
+def compute_exchange_coefficients_wave_age(Ri, zb, z0, windspeed, cm, ch, psi_m, psi_h, Hs, Lw, z0_pre,z0_exp):
+    shape = cm.shape
+    for i in range(1, shape[0]):
+        for j in range(1, shape[1]):
+            z0_i = z0[i,j]
+            cm[i, j], ch[i, j], psi_m[i,j], psi_h[i,j], z0[i,j]= exchange_coefficients_wave_age(
+                Ri[i, j], zb, z0_i, windspeed[i, j], Hs[i,j], Lw[i,j], z0_pre, z0_exp
+            )  # , cm[i,j], ch[i,j])
+    return 
+
+@numba.njit()
+def compute_exchange_coefficients_wave_steepness(Ri, zb, z0, windspeed, cm, ch, psi_m, psi_h, Hs, Lw, z0_pre, z0_exp, Tskin,Tb):
+    shape = cm.shape
+    for i in range(1, shape[0]):
+        for j in range(1, shape[1]):
+            z0_i = z0[i,j]
+            # if Hs[i,j]/Lw[i,j] < 0.02:
+            #     # swell dominant--use Smith formula
+            #     cm[i, j], ch[i, j], psi_m[i,j], psi_h[i,j], z0[i,j]= exchange_coefficients_Smith1980(
+            #         Ri[i, j], zb, z0_i, windspeed[i, j], Tskin[i,j], Tb[i,j])
+            # else:
+            cm[i, j], ch[i, j], psi_m[i,j], psi_h[i,j], z0[i,j]= exchange_coefficients_wave_steepness(
+                Ri[i, j], zb, z0_i, windspeed[i, j], Hs[i,j], Lw[i,j], z0_pre, z0_exp)  # , cm[i,j], ch[i,j])
     return 
 
 
