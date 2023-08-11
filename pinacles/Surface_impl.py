@@ -287,6 +287,7 @@ def exchange_coefficients_wave_age(Ri, zb, z0, windspeed, Hs, Lw, z0_pre, z0_exp
         u_star = np.sqrt(cm) * windspeed
         phase_speed = np.sqrt(parameters.G * Lw/ (2.0*np.pi))
         z0 = z0_pre * (u_star/phase_speed) ** z0_exp * Hs
+        print(i, z0)
 
 
     return cm, ch, psi_m, psi_h, z0

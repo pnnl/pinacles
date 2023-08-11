@@ -65,6 +65,23 @@ class IngestWRF(IngestERA5):
         self.sfc_data_file = self._real_data #'./support/test_out_frontal.nc'
         self.atm_data_file = self._real_data #'./support/test_out_frontal.nc'
 
+        #WAVE DATA INGEST
+        try:
+            self._WW3_data_prefix= namelist["meta"]["WW3_data"]
+        except:
+            self._WW3_data_prefix = None
+        
+        if self._WW3_data_prefix is not None:
+            self._WW3_lm_file = self._WW3_data_prefix + '_lm.nc'
+            self._WW3_pkwl_file = self._WW3_data_prefix + '_pkwl.nc'
+            self._WW3_hs_file = self._WW3_data_prefix + '_hs.nc'
+
+            assert os.path.exists(self._WW3_lm_file)
+            assert os.path.exists(self._WW3_pkwl_file)
+            assert os.path.exists(self._WW3_hs_file)
+
+
+
         
         
     def initialize(self):
@@ -109,6 +126,7 @@ class IngestWRF(IngestERA5):
         
             self.atm_timeindx = None
             self.sfc_timeindx = None
+        
             
         # Broadcasting datat to all nodes
         self.time_atm = MPI.COMM_WORLD.bcast(self.time_atm)
@@ -116,8 +134,40 @@ class IngestWRF(IngestERA5):
 
         self.atm_timeindx = MPI.COMM_WORLD.bcast(self.atm_timeindx)
         self.sfc_timeindx = MPI.COMM_WORLD.bcast(self.sfc_timeindx)  
+
+        if self._WW3_data_prefix is not None:
+            self.get_times_wave()
+        return
+            
+    def get_times_wave(self):
+        print("Getting wave data times.")
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            ww3_data = xr.open_dataset(self._WW3_hs_file)
+            # Note: This makes a very mild assumption that times are consistent 
+            # among the different wave-watch output files. this should be okay
+            # due to requiring them all to have the same "prefix" but just be aware
+            #--Colleen
+            self.time_wave = ww3_data.time.values
+            print("Checking wave input data covers the correct time range.")
+            assert self.time_wave[0] - self.start_time <= 0
+            assert self.time_wave[-1] - self.end_time >= 0
+            print("Great, the wave data covers the correct range.")
+            
+            self.wave_timeindx = np.abs(self.time_wave - self.start_time).argmin()
+        else:
+            self.time_wave = None
             
         
+            self.wave_timeindx = None
+            
+        
+            
+        # Broadcasting datat to all nodes
+        self.time_wave = MPI.COMM_WORLD.bcast(self.time_wave)
+       
+        self.wave_timeindx = MPI.COMM_WORLD.bcast(self.wave_timeindx)
+   
+        return   
     def get_skin_T(self, shift=0):
         
         if MPI.COMM_WORLD.Get_rank() == 0:
