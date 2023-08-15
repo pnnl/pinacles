@@ -73,11 +73,11 @@ class IngestWRF(IngestERA5):
         
         if self._WW3_data_prefix is not None:
             self._WW3_lm_file = self._WW3_data_prefix + '_lm.nc'
-            self._WW3_pkwl_file = self._WW3_data_prefix + '_pkwl.nc'
+            self._WW3_lp_file = self._WW3_data_prefix + '_pkwl.nc'
             self._WW3_hs_file = self._WW3_data_prefix + '_hs.nc'
 
             assert os.path.exists(self._WW3_lm_file)
-            assert os.path.exists(self._WW3_pkwl_file)
+            assert os.path.exists(self._WW3_lp_file)
             assert os.path.exists(self._WW3_hs_file)
 
 
@@ -86,6 +86,9 @@ class IngestWRF(IngestERA5):
         
     def initialize(self):
         self.get_times()
+        if self._WW3_data_prefix is not None:
+            self.get_times_wave()
+
         
         
     def get_times(self):
@@ -838,3 +841,92 @@ class IngestWRF(IngestERA5):
 
 
         return vi
+    
+    def get_mean_wavelength(self, shift=0):
+        
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            lm_data = xr.open_dataset(
+                self._WW3_lm_file 
+            )
+            wave_lm = lm_data.lm.values[self.wave_timeindx + shift, :, :]
+            lon = lm_data.longitude.values[:,:]
+            lat = lm_data.latitude.values[:,:]
+            
+
+        else:
+            lon = None
+            lat = None
+            wave_lm = None
+
+        lon = MPI.COMM_WORLD.bcast(lon)
+        lat = MPI.COMM_WORLD.bcast(lat)
+        wave_lm = MPI.COMM_WORLD.bcast(wave_lm)
+
+        return lon, lat, wave_lm
+    
+    def get_peak_wavelength(self, shift=0):
+        
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            lp_data = xr.open_dataset(
+                self._WW3_lp_file 
+            )
+            wave_lp = lp_data.pkwl.values[self.wave_timeindx + shift, :, :]
+            lon = 360 - lp_data.longitude.values[:,:]
+            lat = 360 - lp_data.latitude.values[:,:]
+            
+
+        else:
+            lon = None
+            lat = None
+            wave_lp = None
+
+        lon = MPI.COMM_WORLD.bcast(lon)
+        lat = MPI.COMM_WORLD.bcast(lat)
+        wave_lp = MPI.COMM_WORLD.bcast(wave_lp)
+
+        return lon, lat, wave_lp
+    
+    def get_peak_wavelength(self, shift=0):
+        
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            lp_data = xr.open_dataset(
+                self._WW3_lp_file 
+            )
+            wave_lp = lp_data.pkwl.values[self.wave_timeindx + shift, :, :]
+            lon = 360.0 - lp_data.longitude.values[:,:]
+            lat = 360.0 - lp_data.latitude.values[:,:]
+            
+
+        else:
+            lon = None
+            lat = None
+            wave_lp = None
+
+        lon = MPI.COMM_WORLD.bcast(lon)
+        lat = MPI.COMM_WORLD.bcast(lat)
+        wave_lp = MPI.COMM_WORLD.bcast(wave_lp)
+
+        return lon, lat, wave_lp
+    
+        
+    def get_wave_height(self, shift=0):
+        
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            hs_data = xr.open_dataset(
+                self._WW3_hs_file 
+            )
+            wave_hs = hs_data.hs.values[self.wave_timeindx + shift, :, :]
+            lon = 360.0 - hs_data.longitude.values[:,:]
+            lat = 360.0 - hs_data.latitude.values[:,:]
+            
+
+        else:
+            lon = None
+            lat = None
+            wave_hs = None
+
+        lon = MPI.COMM_WORLD.bcast(lon)
+        lat = MPI.COMM_WORLD.bcast(lat)
+        wave_hs = MPI.COMM_WORLD.bcast(wave_hs)
+
+        return lon, lat, wave_hs
