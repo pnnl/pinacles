@@ -73,7 +73,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         if not self.Restart.restart_simulation:
             self.initialize(self.ParentNest)
         else:
-            self.initialize_from_restart()
+            self.initialize_from_restart(self.ParentNest)
 
         return
 
@@ -663,7 +663,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         return
 
-    def initialize_from_restart(self):
+    def initialize_from_restart(self, ParentNest=None):
 
         # Announce that this is a restart simulation
         if MPI.COMM_WORLD.Get_rank() == 0:
@@ -674,8 +674,13 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # Much of the data in many of these classes will be overwritten by the restart.
 
         # Instantiate the model grid
-        self.ModelGrid = Grid.RegularCartesian(self._namelist)
-
+               
+        self.ModelGrid = Grid.RegularCartesian(
+            self._namelist,
+            llx=self._ll_corner[0],
+            lly=self._ll_corner[1],
+            llz=self._ll_corner[2],
+        )
         # This is so we can restart non-real cases
         # restart of real cases needs more work
 
@@ -1001,6 +1006,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.VelocityState,
         )
 
+        self.LBC.init_vars_on_boundary()
+        self.LBCVel.init_vars_on_boundary()
         # Initialize any work arrays for the microphysics package
         self.Micro.initialize()
 

@@ -533,6 +533,8 @@ class Micro_M2005_MA(MicrophysicsBase):
 
         self._time = self._TimeSteppingController.time
 
+        UtilitiesParallel.print_root(" instantiate SAM micro class")
+
         return
 
     def initialize(self):
@@ -577,6 +579,8 @@ class Micro_M2005_MA(MicrophysicsBase):
             ]
         )    
 
+        UtilitiesParallel.print_root("micro_vars") 
+        UtilitiesParallel.print_root(self._micro_vars)
         for i, vn in enumerate(self._micro_vars):
             dv = self._ScalarState.get_field(vn)
             self._microfield[:, :, :, i] = np.asfortranarray(
@@ -632,6 +636,9 @@ class Micro_M2005_MA(MicrophysicsBase):
         sam_to_our_order(self._nhalo, diag_effi_3d_sam, diag_effi_3d)
 
         self._Timers.add_timer("MicroM2005_MA_update")
+
+        UtilitiesParallel.print_root(" initialize SAM micro class")
+
         return
 
     def update(self):

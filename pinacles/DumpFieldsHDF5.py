@@ -146,7 +146,7 @@ class DumpFields_hdf:
                         v,
                         (1, self._Grid.n[0], self._Grid.n[1], self._Grid.n[2]),
                         dtype=np.double,
-                        compression=self.compression,
+                        #compression=self.compression,
                         shuffle=self.shuffle,
                         chunks=(
                             1,

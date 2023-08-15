@@ -51,7 +51,9 @@ def main(namelist):
         nest_namelist["grid"]["n"][2] = (
             parent_namelist["grid"]["n"][2] * namelist["nests"]["factor"][i][2]
         )
-
+        #CK's changes for restart
+        nest_namelist["restart"]["infile"] = namelist["nests"]["infile"][i]
+        
         # Here we use the i + 1 th nest namelist to communicat informaton to the nest class
         # TODO Perhaps we could clean this up as may get confusing
         
