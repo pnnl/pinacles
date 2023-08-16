@@ -526,26 +526,26 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         )
         self.T_surface[:, :] = self._TSKIN[:, :]
 
+        if 'wave' in self._roughness_option: 
+            if self._previous_shift_wave * self.ingest_freq_wave <= self._TimeSteppingController.time:
+                print("Updating wave data: ", self._TimeSteppingController.time)
+                self.update_ingest_wave()
+                self.time_previous_wave = self._TimeSteppingController._time
 
-        if self._previous_shift_wave * self.ingest_freq_wave <= self._TimeSteppingController.time:
-            print("Updating wave data: ", self._TimeSteppingController.time)
-            self.update_ingest_wave()
-            self.time_previous_wave = self._TimeSteppingController._time
+            # Interpolate to the simulation time
+            self._Hs[:, :] = (
+                self._Hs_pre[:, :]
+                + (self._Hs_post[:, :] - self._Hs_pre[:, :])
+                * (self._TimeSteppingController._time - self.time_previous_wave)
+                / self.ingest_freq_wave
+            )
 
-        # Interpolate to the simulation time
-        self._Hs[:, :] = (
-            self._Hs_pre[:, :]
-            + (self._Hs_post[:, :] - self._Hs_pre[:, :])
-            * (self._TimeSteppingController._time - self.time_previous_wave)
-            / self.ingest_freq_wave
-        )
-
-        self._Lw[:, :] = (
-            self._Lw_pre[:, :]
-            + (self._Lw_post[:, :] - self._Lw_pre[:, :])
-            * (self._TimeSteppingController._time - self.time_previous_wave)
-            / self.ingest_freq_wave
-        )
+            self._Lw[:, :] = (
+                self._Lw_pre[:, :]
+                + (self._Lw_post[:, :] - self._Lw_pre[:, :])
+                * (self._TimeSteppingController._time - self.time_previous_wave)
+                / self.ingest_freq_wave
+            )
         Surface_impl.compute_windspeed_sfc(
             usfc, vsfc, self._Ref.u0, self._Ref.v0, self.gustiness, self._windspeed_sfc
         )
