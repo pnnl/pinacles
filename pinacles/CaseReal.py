@@ -131,6 +131,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         self._previous_shift = 1
         self.ingest_freq = 3600.0
         self.time_previous = self._TimeSteppingController._time
+        self.time_previous_wave = self._TimeSteppingController._time
         for tskin, shift in zip([self._TSKIN_pre, self._TSKIN_post], [0, 1]):
             # Compute reference profiles
             lon, lat, skin_T = self._Ingest.get_skin_T(shift=shift)
