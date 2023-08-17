@@ -209,7 +209,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         self._previous_shift_wave += 1
         self._Hs_pre = np.copy(self._Hs_post)
         self._Lw_pre = np.copy(self._Lw_post)
-        self.time_previous = self._TimeSteppingController._time
+        self.time_previous_wave = self._TimeSteppingController._time
 
 
 
