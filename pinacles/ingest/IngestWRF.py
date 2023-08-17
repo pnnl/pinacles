@@ -871,10 +871,10 @@ class IngestWRF(IngestERA5):
                 self._WW3_lp_file 
             )
             wave_lp = lp_data.pkwl.values[self.wave_timeindx + shift, :, :]
-            lon = 360 - lp_data.longitude.values[:,:]
-            lat = 360 - lp_data.latitude.values[:,:]
+            grid = np.meshgrid(lp_data.longitude.values,lp_data.latitude.values)
+            lon = (grid[0][:][:]+ 180) % 360 -180
+            lat = grid[1][:][:]
             
-
         else:
             lon = None
             lat = None
@@ -893,9 +893,9 @@ class IngestWRF(IngestERA5):
                 self._WW3_lp_file 
             )
             wave_lp = lp_data.pkwl.values[self.wave_timeindx + shift, :, :]
-            lon = 360.0 - lp_data.longitude.values[:,:]
-            lat = 360.0 - lp_data.latitude.values[:,:]
-            
+            grid = np.meshgrid(lp_data.longitude.values,lp_data.latitude.values)
+            lon = (grid[0][:][:]+ 180) % 360 -180
+            lat = grid[1][:][:]
 
         else:
             lon = None
@@ -916,8 +916,9 @@ class IngestWRF(IngestERA5):
                 self._WW3_hs_file 
             )
             wave_hs = hs_data.hs.values[self.wave_timeindx + shift, :, :]
-            lon = 360.0 - hs_data.longitude.values[:,:]
-            lat = 360.0 - hs_data.latitude.values[:,:]
+            grid = np.meshgrid(hs_data.longitude.values,hs_data.latitude.values)
+            lon = (grid[0][:][:]+ 180) % 360 -180
+            lat = grid[1][:][:]
             
 
         else:
