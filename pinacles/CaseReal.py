@@ -583,6 +583,8 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         #     self._psi_m,
         #     self._psi_h
         # )
+
+        
         if self._roughness_option == 'wave_steepness': # Taylor and Yelland 2001
             # Surface_impl.compute_exchange_coefficients_wave_steepness(
             #     self._Ri, 
@@ -599,6 +601,8 @@ class SurfaceReanalysis(Surface.SurfaceBase):
             #     self._z0_exponent,
             #     self._TSKIN,
             #     Tsfc)
+            print("HS", np.mean(self._Hs),np.amax(self._Hs),np.amin(self._Hs))
+            print("LW", np.mean(self._Lw),np.amax(self._Lw),np.amin(self._Lw))
             Surface_impl.compute_exchange_coefficients_charnock(
                 self._Ri,
                 z_edge[nh[2]] / 2.0,
@@ -626,6 +630,8 @@ class SurfaceReanalysis(Surface.SurfaceBase):
             #     self._Lw, 
             #     self._z0_prefactor,
             #     self._z0_exponent)
+            print("HS", np.mean(self._Hs),np.amax(self._Hs),np.amin(self._Hs))
+            print("LW", np.mean(self._Lw),np.amax(self._Lw),np.amin(self._Lw))
             Surface_impl.compute_exchange_coefficients_charnock(
                 self._Ri,
                 z_edge[nh[2]] / 2.0,
@@ -651,6 +657,9 @@ class SurfaceReanalysis(Surface.SurfaceBase):
                 #     self._Lw, 
                 #     self._z0_prefactor,
                 #     self._z0_exponent)
+
+            print("HS", np.mean(self._Hs),np.amax(self._Hs),np.amin(self._Hs))
+            print("LW", np.mean(self._Lw),np.amax(self._Lw),np.amin(self._Lw))
 
 
             Surface_impl.compute_exchange_coefficients_charnock(
