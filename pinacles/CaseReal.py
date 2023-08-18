@@ -245,6 +245,11 @@ class SurfaceReanalysis(Surface.SurfaceBase):
                     (self._Grid.lon_local, self._Grid.lat_local),
                     method="cubic",
                 )
+        print("LON, LAT ingested", np.amax(lon),np.amin(lon),np.amax(lat),np.amin(lat))
+        print("LON, LAT gridlocal", np.amax(lself._Grid.lon_local)
+              ,np.amin(self._Grid.lon_local)
+              ,np.amax(self._Grid.lat_local),
+              np.amin(self._Grid.lat_local))
         print("HS", np.mean(self._Hs),np.amax(self._Hs),np.amin(self._Hs))
         print("LW", np.mean(self._Lw),np.amax(self._Lw),np.amin(self._Lw))
             
