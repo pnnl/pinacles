@@ -79,10 +79,7 @@ class IngestWRF(IngestERA5):
             assert os.path.exists(self._WW3_lm_file)
             assert os.path.exists(self._WW3_lp_file)
             assert os.path.exists(self._WW3_hs_file)
-
-
-
-        
+           
         
     def initialize(self):
         self.get_times()
@@ -93,7 +90,7 @@ class IngestWRF(IngestERA5):
         
     def get_times(self):
         
-        print("Getting model times.")
+        # print("Getting model times.")
         if MPI.COMM_WORLD.Get_rank() == 0:
             print("Simulation starts at: ", self.start_time)
             print("Simulation ends at ", self.end_time)
@@ -143,7 +140,7 @@ class IngestWRF(IngestERA5):
         return
             
     def get_times_wave(self):
-        print("Getting wave data times.")
+        # print("Getting wave data times.")
         if MPI.COMM_WORLD.Get_rank() == 0:
             ww3_data = xr.open_dataset(self._WW3_hs_file)
             # Note: This makes a very mild assumption that times are consistent 
@@ -874,7 +871,7 @@ class IngestWRF(IngestERA5):
             grid = np.meshgrid(lp_data.longitude.values,lp_data.latitude.values)
             lon = (grid[0][:][:]+ 180) % 360 -180
             lat = grid[1][:][:]
-            
+
         else:
             lon = None
             lat = None
