@@ -245,6 +245,9 @@ class SurfaceReanalysis(Surface.SurfaceBase):
                     (self._Grid.lon_local, self._Grid.lat_local),
                     method="cubic",
                 )
+        print("HS", np.mean(self._Hs),np.amax(self._Hs),np.amin(self._Hs))
+        print("LW", np.mean(self._Lw),np.amax(self._Lw),np.amin(self._Lw))
+            
           
         return
 
