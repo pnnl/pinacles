@@ -154,6 +154,8 @@ class IngestWRF(IngestERA5):
             print("Great, the wave data covers the correct range.")
             
             self.wave_timeindx = np.abs(self.time_wave - self.start_time).argmin()
+
+            print("\t Starting index for wave: ", self.wave_timeindx)
         else:
             self.time_wave = None
             

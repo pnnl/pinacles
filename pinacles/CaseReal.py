@@ -584,55 +584,85 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         #     self._psi_h
         # )
         if self._roughness_option == 'wave_steepness': # Taylor and Yelland 2001
-            Surface_impl.compute_exchange_coefficients_wave_steepness(
-                self._Ri, 
-                z_edge[nh[2]] / 2.0, 
+            # Surface_impl.compute_exchange_coefficients_wave_steepness(
+            #     self._Ri, 
+            #     z_edge[nh[2]] / 2.0, 
+            #     self._z0,
+            #     self._windspeed_sfc, 
+            #     self._cm, 
+            #     self._ch, 
+            #     self._psi_m,
+            #     self._psi_h, 
+            #     self._Hs, 
+            #     self._Lw, 
+            #     self._z0_prefactor,
+            #     self._z0_exponent,
+            #     self._TSKIN,
+            #     Tsfc)
+            Surface_impl.compute_exchange_coefficients_charnock(
+                self._Ri,
+                z_edge[nh[2]] / 2.0,
                 self._z0,
-                self._windspeed_sfc, 
-                self._cm, 
-                self._ch, 
+                self._windspeed_sfc,
+                self._cm,
+                self._ch,
                 self._psi_m,
-                self._psi_h, 
-                self._Hs, 
-                self._Lw, 
-                self._z0_prefactor,
-                self._z0_exponent,
-                self._TSKIN,
-                Tsfc)
-
+                self._psi_h,
+            )
            
         # elif self._roughness_option == 'wave_age_windsea': #Drennan 2003
    
         elif self._roughness_option == 'wave_age_COARE3.5': # Edson et al 2013
-            Surface_impl.compute_exchange_coefficients_wave_age(
+            # Surface_impl.compute_exchange_coefficients_wave_age(
+            #     self._Ri,
+            #     z_edge[nh[2]] / 2.0,  
+            #     self._z0, 
+            #     self._windspeed_sfc, 
+            #     self._cm, 
+            #     self._ch,
+            #     self._psi_m,
+            #     self._psi_h,
+            #     self._Hs, 
+            #     self._Lw, 
+            #     self._z0_prefactor,
+            #     self._z0_exponent)
+            Surface_impl.compute_exchange_coefficients_charnock(
                 self._Ri,
-                z_edge[nh[2]] / 2.0,  
-                self._z0, 
-                self._windspeed_sfc, 
-                self._cm, 
+                z_edge[nh[2]] / 2.0,
+                self._z0,
+                self._windspeed_sfc,
+                self._cm,
                 self._ch,
                 self._psi_m,
                 self._psi_h,
-                self._Hs, 
-                self._Lw, 
-                self._z0_prefactor,
-                self._z0_exponent)
+            )
             
         elif self._roughness_option == 'wave_age_Lmean': #Sauvage et al 2022
-                Surface_impl.compute_exchange_coefficients_wave_age(
-                    self._Ri,
-                    z_edge[nh[2]] / 2.0,  
-                    self._z0, 
-                    self._windspeed_sfc, 
-                    self._cm, 
-                    self._ch,
-                    self._psi_m,
-                    self._psi_h,
-                    self._Hs, 
-                    self._Lw, 
-                    self._z0_prefactor,
-                    self._z0_exponent)
-                
+                # Surface_impl.compute_exchange_coefficients_wave_age(
+                #     self._Ri,
+                #     z_edge[nh[2]] / 2.0,  
+                #     self._z0, 
+                #     self._windspeed_sfc, 
+                #     self._cm, 
+                #     self._ch,
+                #     self._psi_m,
+                #     self._psi_h,
+                #     self._Hs, 
+                #     self._Lw, 
+                #     self._z0_prefactor,
+                #     self._z0_exponent)
+
+
+            Surface_impl.compute_exchange_coefficients_charnock(
+                self._Ri,
+                z_edge[nh[2]] / 2.0,
+                self._z0,
+                self._windspeed_sfc,
+                self._cm,
+                self._ch,
+                self._psi_m,
+                self._psi_h,
+            )               
         else: # Charnock
         
             Surface_impl.compute_exchange_coefficients_charnock(
