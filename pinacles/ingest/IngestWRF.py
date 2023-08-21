@@ -930,3 +930,20 @@ class IngestWRF(IngestERA5):
         wave_hs = MPI.COMM_WORLD.bcast(wave_hs)
 
         return lon, lat, wave_hs
+    
+    def get_wave_mapstatus(self):
+        
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            hs_data = xr.open_dataset(
+                self._WW3_hs_file 
+            )
+            mapstatus = hs_data.MAPSTA.values[:, :]
+           
+
+        else:
+            mapstatus = None
+
+      
+        mapstatus = MPI.COMM_WORLD.bcast(mapstatus)
+
+        return mapstatus

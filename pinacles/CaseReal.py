@@ -223,11 +223,11 @@ class SurfaceReanalysis(Surface.SurfaceBase):
           
             lon, lat, hs_ = self._Ingest.get_wave_height(shift=self._previous_shift_wave)
                 
-            lon_lat = (lon.flatten(), lat.flatten())
+            lon_lat = (lon[self._wavemask==False].flatten(), lat[self._wavemask==False].flatten())
 
             self._Hs_post[:, :] = interpolate.griddata(
                 lon_lat,
-                hs_.flatten(),
+                hs_[self._wavemask==False].flatten(),
                 (self._Grid.lon_local, 
                 self._Grid.lat_local),
                 method="cubic",
@@ -241,11 +241,11 @@ class SurfaceReanalysis(Surface.SurfaceBase):
             else:
                 lon, lat, lw_ = self._Ingest.get_peak_wavelength(shift=self._previous_shift_wave)
                 
-            lon_lat = (lon.flatten(), lat.flatten())
+            lon_lat = (lon[self._wavemask==False].flatten(), lat[self._wavemask==False].flatten())
 
             self._Lw_post[:, :] = interpolate.griddata(
                     lon_lat,
-                    lw_.flatten(),
+                    lw_[self._wavemask==False].flatten(),
                     (self._Grid.lon_local, self._Grid.lat_local),
                     method="cubic",
                 )
