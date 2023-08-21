@@ -148,16 +148,20 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         self.T_surface[:, :] = self._TSKIN_pre[:, :]
 
         self._previous_shift_wave = 1
+        if 'wave' in self._roughness_option: 
+            mapstatus = self._Ingest.get_wave_mapstatus()
+            mapsta_masked = np.ma.masked_not_equal(mapstatus, 1, copy=True)
+            self._wavemask = mapsta_masked.mask
         if self._Hs is not None:
             for hs, shift in zip([self._Hs_pre, self._Hs_post], [0, 1]):
           
                 lon, lat, hs_ = self._Ingest.get_wave_height(shift=shift)
                 
-                lon_lat = (lon.flatten(), lat.flatten())
+                lon_lat = (lon[self._wavemask==False].flatten(), lat[self._wavemask==False].flatten())
 
                 hs[:, :] = interpolate.griddata(
                     lon_lat,
-                    hs_.flatten(),
+                    hs_[self._wavemask==False].flatten(),
                     (self._Grid.lon_local, self._Grid.lat_local),
                     method="cubic",
                 )
@@ -172,11 +176,11 @@ class SurfaceReanalysis(Surface.SurfaceBase):
                 else:
                     lon, lat, lw_ = self._Ingest.get_peak_wavelength(shift=shift)
                 
-                lon_lat = (lon.flatten(), lat.flatten())
+                lon_lat = (lon[self._wavemask==False].flatten(), lat[self._wavemask==False].flatten())
 
                 lw[:, :] = interpolate.griddata(
                     lon_lat,
-                    lw_.flatten(),
+                    lw_[self._wavemask==False].flatten(),
                     (self._Grid.lon_local, self._Grid.lat_local),
                     method="cubic",
                 )
@@ -246,7 +250,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
                     method="cubic",
                 )
         print("LON, LAT ingested", np.amax(lon),np.amin(lon),np.amax(lat),np.amin(lat))
-        print("LON, LAT gridlocal", np.amax(lself._Grid.lon_local)
+        print("LON, LAT gridlocal", np.amax(self._Grid.lon_local)
               ,np.amin(self._Grid.lon_local)
               ,np.amax(self._Grid.lat_local),
               np.amin(self._Grid.lat_local))
