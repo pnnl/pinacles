@@ -281,13 +281,18 @@ def exchange_coefficients_wave_steepness(Ri, zb, z0, windspeed, Hs, Lp, z0_pre, 
 
 @numba.njit
 def exchange_coefficients_wave_age(Ri, zb, z0, windspeed, Hs, Lw, z0_pre, z0_exp):
-
-    for i in range(10):
+    i=0
+    while i <10:
+        z0_old = z0
         cm, ch, psi_m, psi_h = exchange_coefficients_byun(Ri, zb, z0)
         u_star = np.sqrt(cm) * windspeed
         phase_speed = np.sqrt(parameters.G * Lw/ (2.0*np.pi))
         z0 = z0_pre * (u_star/phase_speed) ** z0_exp * Hs
-        print(i, z0)
+        if np.abs(z0_old-z0)/z0_old < 1e-3:
+            i = 100
+        else:
+            i+=1
+        
 
 
     return cm, ch, psi_m, psi_h, z0
