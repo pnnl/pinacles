@@ -249,14 +249,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
                     (self._Grid.lon_local, self._Grid.lat_local),
                     method="cubic",
                 )
-        print("LON, LAT ingested", np.amax(lon),np.amin(lon),np.amax(lat),np.amin(lat))
-        print("LON, LAT gridlocal", np.amax(self._Grid.lon_local)
-              ,np.amin(self._Grid.lon_local)
-              ,np.amax(self._Grid.lat_local),
-              np.amin(self._Grid.lat_local))
-        print("HS", np.mean(self._Hs),np.amax(self._Hs),np.amin(self._Hs))
-        print("LW", np.mean(self._Lw),np.amax(self._Lw),np.amin(self._Lw))
-            
+        
           
         return
 
@@ -526,7 +519,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
 
         # Update the ingest, if needed
         if self._previous_shift * self.ingest_freq <= self._TimeSteppingController.time:
-            print("Updating boundary data: ", self._TimeSteppingController.time)
+            # print("Updating boundary data: ", self._TimeSteppingController.time)
             self.update_ingest()
             self.time_previous = self._TimeSteppingController._time
 
@@ -541,7 +534,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
 
         if 'wave' in self._roughness_option: 
             if self._previous_shift_wave * self.ingest_freq_wave <= self._TimeSteppingController.time:
-                print("Updating wave data: ", self._TimeSteppingController.time)
+                # print("Updating wave data: ", self._TimeSteppingController.time)
                 self.update_ingest_wave()
                 self.time_previous_wave = self._TimeSteppingController._time
 
@@ -598,92 +591,90 @@ class SurfaceReanalysis(Surface.SurfaceBase):
 
         
         if self._roughness_option == 'wave_steepness': # Taylor and Yelland 2001
-            # Surface_impl.compute_exchange_coefficients_wave_steepness(
-            #     self._Ri, 
-            #     z_edge[nh[2]] / 2.0, 
-            #     self._z0,
-            #     self._windspeed_sfc, 
-            #     self._cm, 
-            #     self._ch, 
-            #     self._psi_m,
-            #     self._psi_h, 
-            #     self._Hs, 
-            #     self._Lw, 
-            #     self._z0_prefactor,
-            #     self._z0_exponent,
-            #     self._TSKIN,
-            #     Tsfc)
-            print("HS", np.mean(self._Hs),np.amax(self._Hs),np.amin(self._Hs))
-            print("LW", np.mean(self._Lw),np.amax(self._Lw),np.amin(self._Lw))
-            Surface_impl.compute_exchange_coefficients_charnock(
-                self._Ri,
-                z_edge[nh[2]] / 2.0,
+            Surface_impl.compute_exchange_coefficients_wave_steepness(
+                self._Ri, 
+                z_edge[nh[2]] / 2.0, 
                 self._z0,
-                self._windspeed_sfc,
-                self._cm,
-                self._ch,
+                self._windspeed_sfc, 
+                self._cm, 
+                self._ch, 
                 self._psi_m,
-                self._psi_h,
-            )
+                self._psi_h, 
+                self._Hs, 
+                self._Lw, 
+                self._z0_prefactor,
+                self._z0_exponent,
+                self._TSKIN,
+                Tsfc)
+            # print("HS", np.mean(self._Hs),np.amax(self._Hs),np.amin(self._Hs))
+            # print("LW", np.mean(self._Lw),np.amax(self._Lw),np.amin(self._Lw))
+            # Surface_impl.compute_exchange_coefficients_charnock(
+            #     self._Ri,
+            #     z_edge[nh[2]] / 2.0,
+            #     self._z0,
+            #     self._windspeed_sfc,
+            #     self._cm,
+            #     self._ch,
+            #     self._psi_m,
+            #     self._psi_h,
+            # )
            
         # elif self._roughness_option == 'wave_age_windsea': #Drennan 2003
    
         elif self._roughness_option == 'wave_age_COARE3.5': # Edson et al 2013
-            # Surface_impl.compute_exchange_coefficients_wave_age(
+            Surface_impl.compute_exchange_coefficients_wave_age(
+                self._Ri,
+                z_edge[nh[2]] / 2.0,  
+                self._z0, 
+                self._windspeed_sfc, 
+                self._cm, 
+                self._ch,
+                self._psi_m,
+                self._psi_h,
+                self._Hs, 
+                self._Lw, 
+                self._z0_prefactor,
+                self._z0_exponent)
+            # print("HS", np.mean(self._Hs),np.amax(self._Hs),np.amin(self._Hs))
+            # print("LW", np.mean(self._Lw),np.amax(self._Lw),np.amin(self._Lw))
+            # Surface_impl.compute_exchange_coefficients_charnock(
             #     self._Ri,
-            #     z_edge[nh[2]] / 2.0,  
-            #     self._z0, 
-            #     self._windspeed_sfc, 
-            #     self._cm, 
+            #     z_edge[nh[2]] / 2.0,
+            #     self._z0,
+            #     self._windspeed_sfc,
+            #     self._cm,
             #     self._ch,
             #     self._psi_m,
             #     self._psi_h,
-            #     self._Hs, 
-            #     self._Lw, 
-            #     self._z0_prefactor,
-            #     self._z0_exponent)
-            print("HS", np.mean(self._Hs),np.amax(self._Hs),np.amin(self._Hs))
-            print("LW", np.mean(self._Lw),np.amax(self._Lw),np.amin(self._Lw))
-            Surface_impl.compute_exchange_coefficients_charnock(
-                self._Ri,
-                z_edge[nh[2]] / 2.0,
-                self._z0,
-                self._windspeed_sfc,
-                self._cm,
-                self._ch,
-                self._psi_m,
-                self._psi_h,
-            )
+            # )
             
         elif self._roughness_option == 'wave_age_Lmean': #Sauvage et al 2022
-                # Surface_impl.compute_exchange_coefficients_wave_age(
-                #     self._Ri,
-                #     z_edge[nh[2]] / 2.0,  
-                #     self._z0, 
-                #     self._windspeed_sfc, 
-                #     self._cm, 
-                #     self._ch,
-                #     self._psi_m,
-                #     self._psi_h,
-                #     self._Hs, 
-                #     self._Lw, 
-                #     self._z0_prefactor,
-                #     self._z0_exponent)
+                Surface_impl.compute_exchange_coefficients_wave_age(
+                    self._Ri,
+                    z_edge[nh[2]] / 2.0,  
+                    self._z0, 
+                    self._windspeed_sfc, 
+                    self._cm, 
+                    self._ch,
+                    self._psi_m,
+                    self._psi_h,
+                    self._Hs, 
+                    self._Lw, 
+                    self._z0_prefactor,
+                    self._z0_exponent)
+            
+           
 
-            print("HS", np.mean(self._Hs),np.amax(self._Hs),np.amin(self._Hs))
-            print("LW", np.mean(self._Lw),np.amax(self._Lw),np.amin(self._Lw))
-
-
-            Surface_impl.compute_exchange_coefficients_charnock(
-                self._Ri,
-                z_edge[nh[2]] / 2.0,
-                self._z0,
-                self._windspeed_sfc,
-                self._cm,
-                self._ch,
-                self._psi_m,
-                self._psi_h,
-            )               
+            # Surface_impl.compute_exchange_coefficients_charnock(
+            #     self._Ri,
+            #     z_edge[nh[2]] / 2.0,
+            #     self._z0,
+            #     self._windspeed_sfc,
+            #     self._cm,
+            #     self._ch,
+            #     self._psi_m,
+            #     self._psi_h,
+            # )               
         else: # Charnock
         
             Surface_impl.compute_exchange_coefficients_charnock(
@@ -1124,7 +1115,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                 for var in self._State._dofs:
                     MPI.COMM_WORLD.Barrier()
                     if MPI.COMM_WORLD.Get_rank() == 0:
-                        print("Setting boundaries for: ", var, bdy)
+                        # print("Setting boundaries for: ", var, bdy)
                     if var == "u":
                         bdy_data[var][bdy][:, :] = self._Ingest.interp_u(
                             self.bdy_lons[var][bdy],
@@ -1380,7 +1371,7 @@ class LateralBCsReanalysis(LateralBCsBase):
     def set_vars_on_boundary(self, **kwargs):
 
         if self.presvious_shift * self.ingest_freq <= self._TimeSteppingController.time:
-            print("Updating boundary data: ", self._TimeSteppingController.time)
+            # print("Updating boundary data: ", self._TimeSteppingController.time)
             self.update_ingest()
             self.time_previous = self._TimeSteppingController._time
 
