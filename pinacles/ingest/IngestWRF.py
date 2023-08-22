@@ -848,10 +848,10 @@ class IngestWRF(IngestERA5):
                 self._WW3_lm_file 
             )
             wave_lm = lm_data.lm.values[self.wave_timeindx + shift, :, :]
-            lon = lm_data.longitude.values[:,:]
-            lat = lm_data.latitude.values[:,:]
+            grid = np.meshgrid(lm_data.longitude.values,lm_data.latitude.values)
+            lon = (grid[0][:][:]+ 180) % 360 -180
+            lat = grid[1][:][:]
             
-
         else:
             lon = None
             lat = None
