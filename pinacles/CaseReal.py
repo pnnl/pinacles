@@ -1115,7 +1115,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                 for var in self._State._dofs:
                     MPI.COMM_WORLD.Barrier()
                     if MPI.COMM_WORLD.Get_rank() == 0:
-                        # print("Setting boundaries for: ", var, bdy)
+                        print("Setting boundaries for: ", var, bdy)
                     if var == "u":
                         bdy_data[var][bdy][:, :] = self._Ingest.interp_u(
                             self.bdy_lons[var][bdy],
