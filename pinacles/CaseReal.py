@@ -336,6 +336,15 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         out_list.append({"name": "cq", "data": self._cq})
         out_list.append({"name": "deltaS_sfc", "data": self._deltas_sfc})
         out_list.append({"name": "deltaqv_sfc", "data": self._deltaqv_sfc})
+        if self._Hs is not None:
+            out_list.append({"name": "wave_Hs", "data": self._Hs})
+        if self._Lw is not None:
+            if self._roughness_option == 'wave_age_Lmean':
+                out_list.append({"name": "wave_Lmean", "data": self._Lw})
+            else:
+                out_list.append({"name": "wave_Lpeak", "data": self._Lw})
+
+
         # Output the sensible heat flux
         for out_var in out_list:
             if fx is not None:
@@ -662,6 +671,17 @@ class SurfaceReanalysis(Surface.SurfaceBase):
                     self._Lw, 
                     self._z0_prefactor,
                     self._z0_exponent)
+        elif self._roughness_option == 'charnock_COARE':
+            Surface_impl.compute_exchange_coefficients_charnock_COARE(
+                self._Ri,
+                z_edge[nh[2]] / 2.0,
+                self._z0,
+                self._windspeed_sfc,
+                self._cm,
+                self._ch,
+                self._psi_m,
+                self._psi_h,
+            )
             
            
 

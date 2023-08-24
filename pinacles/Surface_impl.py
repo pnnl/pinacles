@@ -273,7 +273,7 @@ def exchange_coefficients_charnock(Ri, zb, z0, windspeed):
 
 
 @numba.njit
-def exchange_coefficients_charnockCOARE(Ri, zb, z0, windspeed, Tskin, Tb ):
+def exchange_coefficients_charnock_COARE(Ri, zb, z0, windspeed):
 
     i = 0
     while i < 10:
@@ -395,6 +395,18 @@ def compute_exchange_coefficients_charnock(Ri, zb, z0, windspeed, cm, ch, psi_m,
                 Ri[i, j], zb, z0_i, windspeed[i, j]
             )  # , cm[i,j], ch[i,j])
     return 
+
+@numba.njit()
+def compute_exchange_coefficients_charnock_COARE(Ri, zb, z0, windspeed, cm, ch, psi_m, psi_h):
+    shape = cm.shape
+    for i in range(1, shape[0]):
+        for j in range(1, shape[1]):
+            z0_i = z0[i,j]
+            cm[i, j], ch[i, j], psi_m[i,j], psi_h[i,j], z0[i,j]= exchange_coefficients_charnock_COARE(
+                Ri[i, j], zb, z0_i, windspeed[i, j]
+            )  # , cm[i,j], ch[i,j])
+    return 
+
 
 @numba.njit()
 def compute_exchange_coefficients_wave_age(Ri, zb, z0, windspeed, cm, ch, psi_m, psi_h, Hs, Lw, z0_pre,z0_exp):
