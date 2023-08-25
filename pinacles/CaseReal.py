@@ -163,7 +163,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
                     lon_lat,
                     hs_[self._wavemask==False].flatten(),
                     (self._Grid.lon_local, self._Grid.lat_local),
-                    method="cubic",
+                    method="linear",
                 )
 
             self._Hs[:, :] = self._Hs_pre[:, :]
@@ -182,7 +182,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
                     lon_lat,
                     lw_[self._wavemask==False].flatten(),
                     (self._Grid.lon_local, self._Grid.lat_local),
-                    method="cubic",
+                    method="linear",
                 )
             self._Lw[:, :] = self._Lw_pre[:, :]
         
@@ -230,7 +230,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
                 hs_[self._wavemask==False].flatten(),
                 (self._Grid.lon_local, 
                 self._Grid.lat_local),
-                method="cubic",
+                method="linear",
                 )
 
         
@@ -247,7 +247,7 @@ class SurfaceReanalysis(Surface.SurfaceBase):
                     lon_lat,
                     lw_[self._wavemask==False].flatten(),
                     (self._Grid.lon_local, self._Grid.lat_local),
-                    method="cubic",
+                    method="linear",
                 )
         
           
