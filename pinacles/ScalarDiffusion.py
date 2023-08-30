@@ -49,7 +49,7 @@ def compute_fluxes(
                     * (phi[i, j, k + 1] - phi[i, j, k])
                     * dxi[2]
                     * rho0_edge[k]
-                )  # * kz_fact
+                ) * 0.0  # * kz_fact
 
     for i in range(n_halo[0], shape[0] - n_halo[0]):
         for j in range(n_halo[1], shape[1] - n_halo[1]):

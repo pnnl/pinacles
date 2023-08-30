@@ -38,6 +38,7 @@ from pinacles import LateralBCsFactory
 from pinacles.ingest import Ingest
 from pinacles import DiagnosticsCoarseGrain
 from pinacles import DiagnosticsCase
+from pinacles import SHOC
 ##from pinacles import reproducibility
 from mpi4py import MPI
 import numpy as np
@@ -294,6 +295,10 @@ class SimulationStandard(SimulationBase.SimulationBase):
             self.TimeSteppingController,
         )
 
+        self.SHOC = SHOC.SHOC(self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.DiagnosticState, self.TimeSteppingController, self.Surf)
+
+        
+
         self.PlatSim = PlatformSimulator.PlatformSimulators(
             self._namelist,
             self.TimeSteppingController,
@@ -411,7 +416,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
         # If necessary initialize Radiation initial profiles.
         self.Rad.init_profiles()
-
+        self.SHOC.initialize()
         self.LBC.init_vars_on_boundary()
         self.LBCVel.init_vars_on_boundary()
 
@@ -557,7 +562,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         for lbc in [self.LBC, self.LBCVel]:
             # lbc.set_vars_on_boundary_to_mean()
             lbc.set_vars_on_boundary(ParentNest=self.ParentNest)
-        self.LBC.inflow_pert(self.LBCVel)
+       # self.LBC.inflow_pert(self.LBCVel)
 
         for prog_state in [self.ScalarState, self.VelocityState]:
             prog_state.boundary_exchange()
@@ -1145,7 +1150,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.ScalarDiff.update()
                 self.MomDiff.update()
 
-                # self.PBL.update()
+                #Call shoc update here
+                self.SHOC.update()
 
                 # Do Damping
                 self.RayleighDamping.update()
@@ -1171,7 +1177,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 for lbcs in [self.LBC, self.LBCVel]:
                     lbcs.set_vars_on_boundary(ParentNest=self.ParentNest)
 
-                self.LBC.inflow_pert(self.LBCVel)
+                #self.LBC.inflow_pert(self.LBCVel)
                 self.LBCVel.update(normal=False)
 
                 self.Timers.start_timer("ScalarLimiter")
@@ -1187,9 +1193,8 @@ class SimulationStandard(SimulationBase.SimulationBase):
                 self.Timers.end_timer("BoundaryUpdate")
 
                 if n == 1:
-                    self.Thermo.update(apply_buoyancy=False)
-
                     # We call the microphysics update at the end of the RK steps.
+                    self.Thermo.update(apply_buoyancy=False)
                     self.Micro.update()
                     if not self.Rad.time_synced:
                         self.Rad.update()
@@ -1255,7 +1260,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 for lbcs in [ParentNest.LBC, ParentNest.LBCVel]:
                     lbcs.set_vars_on_boundary(ParentNest=ParentNest)
-                self.LBC.inflow_pert(self.LBCVel)
+                #self.LBC.inflow_pert(self.LBCVel)
 
                 ParentNest.LBCVel.update(normal=False)
 

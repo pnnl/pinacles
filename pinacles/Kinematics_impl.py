@@ -79,9 +79,9 @@ def strain_rate(
                 s22[i, j, k] = dvdy[i, j, k]
                 s33[i, j, k] = dwdz[i, j, k]
 
-                s12[i, j, k] = 0.5 * ((dvdx[i, j, k] + dudy[i, j, k]))
-                s13[i, j, k] = 0.5 * ((dudz[i, j, k] + dwdx[i, j, k]))
-                s23[i, j, k] = 0.5 * ((dvdz[i, j, k] + dwdy[i, j, k]))
+                s12[i, j, k] = 0.5 * ((dvdx[i, j, k] + dudy[i, j, k])) * 0.0 
+                s13[i, j, k] = 0.5 * ((dudz[i, j, k] + dwdx[i, j, k])) * 0.0
+                s23[i, j, k] = 0.5 * ((dvdz[i, j, k] + dwdy[i, j, k])) * 0.0 
 
     for i in range(1, shape[0]):
         for j in range(1, shape[1]):

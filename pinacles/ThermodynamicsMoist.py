@@ -38,6 +38,13 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
             latex_name="s_d",
             units="K"
         )
+        
+        DiagnosticState.add_variable(
+            "thetal", 
+            long_name = "Liquid-Ice Potential Temperatue",
+            latex_name = "thetal",
+            units = "K"
+        )
 
         self._Timers.add_timer("ThermoDynamicsMoist_update")
 
@@ -68,6 +75,7 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         T = self._DiagnosticState.get_field("T")
         s_dry = self._DiagnosticState.get_field("s_dry")
         thetav = self._DiagnosticState.get_field("thetav")
+        thetal = self._DiagnosticState.get_field("thetal")
         alpha = self._DiagnosticState.get_field("alpha")
         buoyancy = self._DiagnosticState.get_field("buoyancy")
         bvf = self._DiagnosticState.get_field("bvf")
@@ -95,6 +103,9 @@ class ThermodynamicsMoist(Thermodynamics.ThermodynamicsBase):
         self.compute_buoyancy_gradient(dxi, buoyancy, buoyancy_gradient_mag)
 
         qt[:, :, :] = self.get_qt()
+        
+        # Compute the liquid ice potential temperature
+        self.compute_thetali(exner, T, thetal, ql, qi)
 
         self._Timers.end_timer("ThermoDynamicsMoist_update")
         return

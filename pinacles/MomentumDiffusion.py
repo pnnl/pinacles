@@ -57,7 +57,7 @@ def compute_u_fluxes(
                         + eddy_viscosity[i + 1, j, k + 1]
                     )
                     * s13[i, j, k]
-                )
+                ) * 0.0 
 
     # Compute the flux divergences
     for i in range(1, shape[0] - 1):
@@ -129,7 +129,7 @@ def compute_v_fluxes(
                         + eddy_viscosity[i, j + 1, k + 1]
                     )
                     * s23[i, j, k]
-                )  # * kz_fact
+                )  * 0.0 # * kz_fact
 
     # Compute the flux divergences
     for i in range(1, shape[0] - 1):
@@ -202,7 +202,7 @@ def compute_w_fluxes(
                 )
                 fluxz[i, j, k] = (
                     -2.0 * rho0[k + 1] * eddy_viscosity[i, j, k] * s33[i, j, k]
-                )
+                ) * 0.0
 
     # Compute the flux divergences
     for i in range(1, shape[0] - 1):

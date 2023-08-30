@@ -67,7 +67,10 @@ def compute_local_diff_num_max(nhalo, dxi, dt, Km):
     """
     shape = Km.shape
 
-    idx2_sum = (dxi[0] * dxi[0]) + (dxi[1] * dxi[1]) + (dxi[2] * dxi[2])
+    dx0 = 1.0/dxi[0]
+    dx1 = 1.0/dxi[1]
+   # idx2_sum = (dxi[0] * dxi[0]) + (dxi[1] * dxi[1]) + (dxi[2] * dxi[2])
+    idx2_sum = (dx0 * dx0 + dx1 * dx1)/(dx0 * dx0 * dx1 * dx1)
     diff_max = -1e-8
     for i in range(nhalo[0], shape[0] - nhalo[0]):
         for j in range(nhalo[1], shape[1] - nhalo[1]):

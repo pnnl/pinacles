@@ -43,7 +43,7 @@ def initialize(namelist, ModelGrid, Ref, ScalarState, VelocityState):
 
     shape = s.shape
 
-    perts = np.random.uniform(-0.01, 0.01, (shape[0], shape[1], shape[2])) * 10.0
+    perts = np.random.uniform(-0.01, 0.01, (shape[0], shape[1], shape[2])) 
     for i in range(shape[0]):
         for j in range(shape[1]):
             u700 = 0
@@ -107,11 +107,14 @@ class SurfaceBOMEX(Surface.SurfaceBase):
 
         nl = self._Grid.ngrid_local
 
+
         self._windspeed_sfc = np.zeros((nl[0], nl[1]), dtype=np.double)
         self._taux_sfc = np.zeros_like(self._windspeed_sfc)
         self._tauy_sfc = np.zeros_like(self._windspeed_sfc)
         self._bflx_sfc = np.zeros_like(self._windspeed_sfc) + self._buoyancy_flux
         self._ustar_sfc = np.zeros_like(self._windspeed_sfc) + self._ustar
+        self._theta_flux_sfc = np.zeros_like(self._windspeed_sfc) + self._theta_flux
+        self._qv_flux_sfc = np.zeros_like(self._windspeed_sfc) + self._qv_flux
 
         self._Timers.add_timer("SurfaceBomex_update")
 
@@ -256,18 +259,18 @@ class SurfaceBOMEX(Surface.SurfaceBase):
 
         tflx = np.zeros_like(self._taux_sfc) + self._theta_flux * exner_edge[nh[2] - 1]
         qv_flx_sf = np.zeros_like(self._taux_sfc) + self._qv_flux
-        Surface_impl.iles_surface_flux_application(
-            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._taux_sfc, ut
-        )
-        Surface_impl.iles_surface_flux_application(
-            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._tauy_sfc, vt
-        )
-        Surface_impl.iles_surface_flux_application(
-            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, tflx, st
-        )
-        Surface_impl.iles_surface_flux_application(
-            1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, qv_flx_sf, qvt
-        )
+        #Surface_impl.iles_surface_flux_application(
+        #   1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._taux_sfc, ut
+        #)
+        #Surface_impl.iles_surface_flux_application(
+        #   1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, self._tauy_sfc, vt
+        #)
+        #Surface_impl.iles_surface_flux_application(
+        #  1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, tflx, st
+        #)
+        #Surface_impl.iles_surface_flux_application(
+        #  1e-5, z_edge, dxi2, nh, alpha0, alpha0_edge, 100, qv_flx_sf, qvt
+        #)
 
         self._Timers.end_timer("SurfaceBomex_update")
         return
