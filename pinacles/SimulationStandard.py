@@ -39,6 +39,7 @@ from pinacles.ingest import Ingest
 from pinacles import DiagnosticsCoarseGrain
 from pinacles import DiagnosticsCase
 from pinacles import SHOC
+from pinacles import HyperViscosity
 ##from pinacles import reproducibility
 from mpi4py import MPI
 import numpy as np
@@ -296,8 +297,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         )
 
         self.SHOC = SHOC.SHOC(self.ModelGrid, self.Ref, self.ScalarState, self.VelocityState, self.DiagnosticState, self.TimeSteppingController, self.Surf)
-
-        
+        self.HyperViscosity = HyperViscosity.HyperViscosity(self._namelist, self.ModelGrid, self.ScalarState, self.VelocityState)
 
         self.PlatSim = PlatformSimulator.PlatformSimulators(
             self._namelist,
@@ -417,6 +417,7 @@ class SimulationStandard(SimulationBase.SimulationBase):
         # If necessary initialize Radiation initial profiles.
         self.Rad.init_profiles()
         self.SHOC.initialize()
+        self.HyperViscosity.initialize()
         self.LBC.init_vars_on_boundary()
         self.LBCVel.init_vars_on_boundary()
 
@@ -1152,6 +1153,9 @@ class SimulationStandard(SimulationBase.SimulationBase):
 
                 #Call shoc update here
                 self.SHOC.update()
+
+                #Call Hyper Viscosity
+                self.HyperViscosity.update()
 
                 # Do Damping
                 self.RayleighDamping.update()
