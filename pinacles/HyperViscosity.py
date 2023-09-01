@@ -36,7 +36,7 @@ class HyperViscosity:
         
         dx = self._Grid.dx
         
-        c = 1e8
+        c = (dx[0] * dx[1])**(3.0/2.0) * 0.125
         for v in ['u', 'v', 'w']:
             p = self._VelocityState.get_field(v)
             p_t = self._VelocityState.get_tend(v)
