@@ -11,7 +11,7 @@ def compute_hyper(dx0, dx1,c, p, pt):
     for i in range(2,shape[0]-2):
         for j in range(2,shape[1]-2):
             for k in range(2,shape[2]-2):
-                pt[i,j,k] += hyper_op(c, dx0, p[i-2,j,k], p[i-1, j, k], p[i,j,k], p[i+1, j, k], p[i+1, j, k])
+                pt[i,j,k] += hyper_op(c, dx0, p[i-2,j,k], p[i-1, j, k], p[i,j,k], p[i+1, j, k], p[i+2, j, k])
                 pt[i,j,k] += hyper_op(c, dx1, p[i,j-2, k], p[i, j-1, k], p[i, j, k], p[i,j+1,k], p[i,j+2,k])
 
 
@@ -33,16 +33,25 @@ class HyperViscosity:
         return 
     
     def update(self):
-        
+
         dx = self._Grid.dx
+
+        c = (dx[0] * dx[1])**(3.0/2.0) * 0.0125
         
-        c = (dx[0] * dx[1])**(3.0/2.0) * 0.125
         for v in ['u', 'v', 'w']:
             p = self._VelocityState.get_field(v)
             p_t = self._VelocityState.get_tend(v)
-            
-            compute_hyper(dx[0], dx[1], c, p, p_t)    
+
+            compute_hyper(dx[0], dx[1], c, p, p_t)
+
+        for v in ['s', 'qv', 'qc', 'qr', 'qi1']:
+            p = self._ScalarState.get_field(v)
+            p_t = self._ScalarState.get_tend(v)
+            compute_hyper(dx[0], dx[1], c, p, p_t)
+
+
+
+        return
+                 
         
         
-        
-        return 
