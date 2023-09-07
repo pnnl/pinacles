@@ -473,12 +473,12 @@ class SurfaceReanalysis(Surface.SurfaceBase):
         self._T4 = self._TSKIN - (self._tflx/self._ustar/0.35) * (np.log(4.0 / self._z0) - self._psi_h) - (parameters.G * 4.0)*parameters.ICPD
         self._qv4 = self._qv0 - (self._qvflx/self._ustar/0.35) * (np.log(4.0 / self._z0) - self._psi_h) 
 
-        #Surface_impl.iles_surface_flux_application(
-        #    10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._taux_sfc, ut
-        #)
-        #Surface_impl.iles_surface_flux_application(
-        #    10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._tauy_sfc, vt
-        #)
+        Surface_impl.iles_surface_flux_application(
+            10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._taux_sfc, ut
+        )
+        Surface_impl.iles_surface_flux_application(
+            10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._tauy_sfc, vt
+        )
         #Surface_impl.iles_surface_flux_application(
         #    10, z_edge, dxi2, nh, alpha0, alpha0_edge, 10, self._tflx, st
         #)
@@ -678,7 +678,7 @@ class InitializeReanalysis:
             / parameters.CPD
         )
 
-        random = np.random.uniform(-0.1, 0.1, size=(s.shape[0], s.shape[1], 1))
+        random = np.random.uniform(-0.1, 0.1, size=(s.shape[0], s.shape[1], 1)) * 0.0
         s[:, :, nhalo[2] : nhalo[2] + 1] += random
 
         # Remove condensate from qv
@@ -1536,7 +1536,7 @@ class LateralBCsReanalysis(LateralBCsBase):
                         - phi_nudge[nh[0] : -nh[0], :-1, :]
                     ) * weight[np.newaxis, ::-1, np.newaxis]
 
-            if var == "s":
+            if False: #var == "s":
 
                 s = self._State.get_field(var)
                 u = self._VelocityState.get_field('u')
